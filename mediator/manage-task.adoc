@@ -1,0 +1,368 @@
+---
+permalink: mediator/manage-task.html 
+sidebar: sidebar 
+keywords: mediator, username, password, change, uninstall 
+summary: Dopo aver installato il servizio ONTAP Mediator, è possibile modificare il nome utente o la password. È inoltre possibile disinstallare il servizio di supporto ONTAP. 
+---
+= Gestire il servizio ONTAP mediator
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dopo aver installato il servizio ONTAP, è possibile modificare il nome utente o la password. È inoltre possibile disinstallare il servizio di supporto ONTAP.
+
+
+
+== Modificare il nome utente
+
+.A proposito di queste attività
+Questa operazione viene eseguita sull'host Linux su cui è installato il servizio ONTAP Mediator.
+
+Se non si riesce a raggiungere questo comando, potrebbe essere necessario eseguire il comando utilizzando il percorso completo, come illustrato nell'esempio seguente:
+
+`/usr/local/bin/mediator_username`
+
+.Procedura
+Modificare il nome utente scegliendo una delle seguenti opzioni:
+
+* Eseguire il comando mediator_change_user e rispondere alle richieste come mostrato nell'esempio seguente:
++
+....
+ [root@mediator-host ~]# mediator_change_user
+ Modify the Mediator API username by entering the following values:
+     Mediator API User Name: mediatoradmin
+                   Password:
+ New Mediator API User Name: mediator
+ The account username has been modified successfully.
+ [root@mediator-host ~]#
+....
+* Eseguire il seguente comando:
++
+`MEDIATOR_USERNAME=mediator MEDIATOR_PASSWORD=mediator2 MEDIATOR_NEW_USERNAME=mediatoradmin mediator_change_user`
+
++
+....
+ [root@mediator-host ~]# MEDIATOR_USERNAME= mediator MEDIATOR_PASSWORD='mediator2' MEDIATOR_NEW_USERNAME= mediatoradmin mediator_change_user
+ The account username has been modified successfully.
+ [root@mediator-host ~]#
+....
+
+
+
+
+== Modificare la password
+
+.A proposito di questa attività
+Questa attività viene eseguita sull'host Linux su cui è installato il servizio ONTAP Mediator.
+
+Se non si riesce a raggiungere questo comando, potrebbe essere necessario eseguire il comando utilizzando il percorso completo, come illustrato nell'esempio seguente:
+
+`/usr/local/bin/mediator_change_password`
+
+.Procedura
+Modificare la password scegliendo una delle seguenti opzioni:
+
+* Eseguire `mediator_change_password` e rispondere ai prompt come mostrato nell'esempio seguente:
++
+....
+ [root@mediator-host ~]# mediator_change_password
+ Change the Mediator API password by entering the following values:
+    Mediator API User Name: mediatoradmin
+              Old Password:
+              New Password:
+          Confirm Password:
+ The password has been updated successfully.
+ [root@mediator-host ~]#
+....
+* Eseguire il seguente comando:
++
+`MEDIATOR_USERNAME= mediatoradmin MEDIATOR_PASSWORD=mediator1 MEDIATOR_NEW_PASSWORD=mediator2 mediator_change_password`
+
++
+L'esempio mostra che la password viene modificata da "mediator1" a "mediator2".
+
++
+....
+ [root@mediator-host ~]# MEDIATOR_USERNAME=mediatoradmin MEDIATOR_PASSWORD=mediator1 MEDIATOR_NEW_PASSWORD=mediator2 mediator_change_password
+ The password has been updated successfully.
+ [root@mediator-host ~]#
+....
+
+
+
+
+== Arrestare il servizio di supporto ONTAP
+
+Per interrompere il servizio ONTAP Mediator, attenersi alla seguente procedura:
+
+.Fasi
+. Arrestare il mediatore ONTAP.
++
+`systemctl stop ontap_mediator`
+
+. Arrestare SCST.
++
+`systemctl stop mediator-scst`
+
+. Disattivare il mediatore ONTAP e l'SCST.
++
+`systemctl diable ontap_mediator mediator-scst`
+
+
+
+
+
+== Riattivare il servizio di supporto ONTAP
+
+Per riattivare il servizio ONTAP Mediator, attenersi alla seguente procedura:
+
+.Fasi
+. Abilitare il mediatore ONTAP e l'SCST.
++
+`systemctl enable ontap_mediator mediator-scst`
+
+. Avviare SCST.
++
+`systemctl start mediator-scst`
+
+. Avviare il mediatore ONTAP.
++
+`systemctl start ontap_mediator`
+
+
+
+
+
+== Verificare che il mediatore ONTAP sia in buone condizioni
+
+Una volta installato il mediatore ONTAP, verificare che i servizi del mediatore ONTAP siano in esecuzione.
+
+.Fasi
+. Visualizza lo stato dei servizi di supporto ONTAP:
++
+.. `systemctl status ontap_mediator`
++
+[listing]
+----
+[root@scspr1915530002 ~]# systemctl status ontap_mediator
+
+ ontap_mediator.service - ONTAP Mediator
+Loaded: loaded (/etc/systemd/system/ontap_mediator.service; enabled; vendor preset: disabled)
+Active: active (running) since Mon 2022-04-18 10:41:49 EDT; 1 weeks 0 days ago
+Process: 286710 ExecStop=/bin/kill -s INT $MAINPID (code=exited, status=0/SUCCESS)
+Main PID: 286712 (uwsgi)
+Status: "uWSGI is ready"
+Tasks: 3 (limit: 49473)
+Memory: 139.2M
+CGroup: /system.slice/ontap_mediator.service
+      ├─286712 /opt/netapp/lib/ontap_mediator/pyenv/bin/uwsgi --ini /opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini
+      ├─286716 /opt/netapp/lib/ontap_mediator/pyenv/bin/uwsgi --ini /opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini
+      └─286717 /opt/netapp/lib/ontap_mediator/pyenv/bin/uwsgi --ini /opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini
+
+[root@scspr1915530002 ~]#
+----
+.. `systemctl status mediator-scst`
++
+[listing]
+----
+[root@scspr1915530002 ~]# systemctl status mediator-scst
+   Loaded: loaded (/etc/systemd/system/mediator-scst.service; enabled; vendor preset: disabled)
+   Active: active (running) since Mon 2022-04-18 10:41:47 EDT; 1 weeks 0 days ago
+  Process: 286595 ExecStart=/etc/init.d/scst start (code=exited, status=0/SUCCESS)
+ Main PID: 286662 (iscsi-scstd)
+    Tasks: 1 (limit: 49473)
+   Memory: 1.2M
+   CGroup: /system.slice/mediator-scst.service
+           └─286662 /usr/local/sbin/iscsi-scstd
+
+[root@scspr1915530002 ~]#
+----
+
+
+. Verificare le porte utilizzate dal servizio di supporto ONTAP:
++
+`netstat`
+
++
+[listing]
+----
+[root@scspr1905507001 ~]# netstat -anlt | grep -E '3260|31784'
+
+         tcp   0   0 0.0.0.0:31784   0.0.0.0:*      LISTEN
+
+         tcp   0   0 0.0.0.0:3260    0.0.0.0:*      LISTEN
+
+         tcp6  0   0 :::3260         :::*           LISTEN
+----
+
+
+
+
+== Disinstallare manualmente SCST per eseguire la manutenzione dell'host
+
+Per disinstallare SCST, è necessario il pacchetto tar SCST utilizzato per la versione installata di ONTAP Mediator.
+
+.Fasi
+. Scaricare il pacchetto SCST appropriato (come mostrato nella tabella seguente) e scaricarlo.
++
+[cols="50,50"]
+|===
+
+
+| Per questa versione ... | USA questo bundle tar... 
+
+
+ a| 
+Mediatore ONTAP 1.0
+ a| 
+scst-3.3.0.tar.bz2
+
+
+
+ a| 
+Mediatore ONTAP 1.1
+ a| 
+scst-3.4.0.tar.bz2
+
+
+
+ a| 
+Mediatore ONTAP 1.2
+ a| 
+scst-3.4.0.tar.bz2
+
+
+
+ a| 
+Mediatore ONTAP 1.3
+ a| 
+scst-3.5.0.tar.bz2
+
+
+
+ a| 
+Mediatore ONTAP 1.4
+ a| 
+scst-3.6.0.tar.bz2
+
+
+
+ a| 
+Mediatore ONTAP 1.5
+ a| 
+scst-3.6.0.tar.bz2
+
+
+
+ a| 
+Mediatore ONTAP 1.6
+ a| 
+scst-3.7.0.tar.bz2
+
+|===
+. Eseguire i seguenti comandi nella directory "scst":
++
+.. `systemctl stop mediator-scst`
+.. `make scstadm_uninstall`
+.. `make iscsi_uninstall`
+.. `make usr_uninstall`
+.. `make scst_uninstall`
+.. `depmod`
+
+
+
+
+
+
+== Installare manualmente SCST per eseguire la manutenzione dell'host
+
+Per installare manualmente SCST, è necessario disporre del pacchetto tar SCST utilizzato per la versione installata di ONTAP Mediator (vedere la <<scst-bundle-table,tabella precedente>>).
+
+. Eseguire i seguenti comandi nella directory "scst":
++
+.. `make 2release`
+.. `make scst_install`
+.. `make usr_install`
+.. `make iscsi_install`
+.. `make scstadm_install`
+.. `depmod`
+.. `cp scst/src/certs/scst_module_key.der /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/.`
+.. `cp scst/src/certs/scst_module_key.der /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/.`
+.. `patch /etc/init.d/scst < /opt/netapp/lib/ontap_mediator/systemd/scst.patch`
+
+
+. (Facoltativo) se l'opzione Secure Boot (Avvio protetto) è attivata, prima di riavviare il sistema, attenersi alla seguente procedura:
++
+.. Determinare ciascun nome di file per i moduli "scst_vdisk", "scst" e "iscsi_scst".
++
+....
+[root@localhost ~]# modinfo -n scst_vdisk
+[root@localhost ~]# modinfo -n scst
+[root@localhost ~]# modinfo -n iscst_scst_vdisk
+....
+.. Determinare la release del kernel.
++
+....
+[root@localhost ~]# uname -r
+....
+.. Firmare ogni file con il kernel.
++
+....
+[root@localhost ~]# /usr/src/kernels/<KERNEL-RELEASE>/scripts/sign-file \sha256 \
+/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.priv \
+/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.der \
+_module-filename_
+....
+.. Installare la chiave corretta con il firmware UEFI.
++
+Le istruzioni per l'installazione della chiave UEFI sono disponibili all'indirizzo:
+
++
+`/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/README.module-signing`
+
++
+La chiave UEFI generata si trova in:
+
++
+`/opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.der`
+
+
+
+. Eseguire un riavvio.
++
+`reboot`
+
+
+
+
+
+== Disinstallare il servizio di supporto ONTAP
+
+.Prima di iniziare
+Se necessario, è possibile rimuovere il servizio di supporto ONTAP. Il mediatore deve essere disconnesso da ONTAP prima di rimuovere il servizio.
+
+.A proposito di questa attività
+Questa attività viene eseguita sull'host Linux su cui è installato il servizio ONTAP Mediator.
+
+Se non si riesce a raggiungere questo comando, potrebbe essere necessario eseguire il comando utilizzando il percorso completo, come illustrato nell'esempio seguente:
+
+`/usr/local/bin/uninstall_ontap_mediator`
+
+.Fase
+. Disinstallare il servizio di supporto ONTAP:
++
+`uninstall_ontap_mediator`
+
++
+....
+ [root@mediator-host ~]# uninstall_ontap_mediator
+
+ ONTAP Mediator: Self Extracting Uninstaller
+
+ + Removing ONTAP Mediator. (Log: /tmp/ontap_mediator.GmRGdA/uninstall_ontap_mediator/remove.log)
+ + Remove successful.
+ [root@mediator-host ~]#
+....
+

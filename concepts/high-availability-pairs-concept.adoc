@@ -1,0 +1,34 @@
+---
+permalink: concepts/high-availability-pairs-concept.html 
+sidebar: sidebar 
+keywords: high-availability pairs 
+summary: 'I nodi del cluster sono configurati in coppie ad alta disponibilità (ha) per la fault tolerance e le operazioni senza interruzioni. Se un nodo si guasta o se è necessario interrompere un nodo per la manutenzione ordinaria, il partner può assumere il controllo dello storage e continuare a fornire i dati da esso. Il partner restituisce lo storage quando il nodo viene riportato on-line.' 
+---
+= Coppie ad alta disponibilità
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+I nodi del cluster sono configurati in _coppie ad alta disponibilità (ha)_ per la fault tolerance e le operazioni senza interruzioni. Se un nodo si guasta o se è necessario interrompere un nodo per la manutenzione ordinaria, il partner può _assumere_ il proprio storage e continuare a fornire i dati da esso. Il partner _restituisce lo storage quando il nodo viene riportato in linea.
+
+Le coppie HA sono sempre costituite da modelli di controller simili. In genere, i controller risiedono nello stesso chassis con alimentatori ridondanti.
+
+Un'interconnessione ha interna consente a ciascun nodo di controllare continuamente se il proprio partner funziona e di eseguire il mirroring dei dati di log per la memoria non volatile dell'altro. Quando una richiesta di scrittura viene effettuata a un nodo, viene registrata nella NVRAM su entrambi i nodi prima che una risposta venga rinviata al client o all'host. In caso di failover, il partner superstite impegna le richieste di scrittura non assegnate del nodo guasto sul disco, garantendo la coerenza dei dati.
+
+Le connessioni ai supporti di storage dell'altro controller consentono a ciascun nodo di accedere allo storage dell'altro in caso di takeover. I meccanismi di failover del percorso di rete garantiscono che client e host continuino a comunicare con il nodo esistente.
+
+Per garantire la disponibilità, è necessario mantenere l'utilizzo della capacità delle performance su entrambi i nodi al 50% per adattarsi al carico di lavoro aggiuntivo nel caso di failover. Per lo stesso motivo, è possibile configurare non più del 50% del numero massimo di interfacce di rete virtuale NAS per un nodo.
+
+image::../media/high-availability.gif[alta disponibilità]
+
+|===
+
+
+ a| 
+*_Takeover e giveback nelle implementazioni virtualizzate di ONTAP_*
+
+Lo storage non viene condiviso tra nodi in implementazioni ONTAP virtualizzate "hared-nothing `s`" come Cloud Volumes ONTAP per AWS o ONTAP Select. Quando un nodo non funziona, il suo partner continua a fornire i dati da una copia sincrona dei dati del nodo con mirroring. Non prende il controllo dello storage del nodo, ma solo della funzione di data serving.
+
+|===

@@ -1,0 +1,75 @@
+---
+permalink: system-admin/access-cluster-rsh-task.html 
+sidebar: sidebar 
+keywords: access, cluster, rsh, cluster, administrative, task, secure, protocol 
+summary: È possibile inviare richieste RSH al cluster per eseguire attività amministrative. RSH non è un protocollo sicuro ed è disattivato per impostazione predefinita. 
+---
+= Accedere al cluster utilizzando RSH
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile inviare richieste RSH al cluster per eseguire attività amministrative. RSH non è un protocollo sicuro ed è disattivato per impostazione predefinita.
+
+.Di cosa hai bisogno
+Prima di poter utilizzare RSH per accedere al cluster, è necessario soddisfare le seguenti condizioni:
+
+* È necessario disporre di un account utente locale del cluster configurato per utilizzare RSH come metodo di accesso.
++
+Il `-application` del parametro `security login` commands specifica il metodo di accesso per un account utente. Per ulteriori informazioni, consultare `security login` pagine man.
+
+* RSH deve essere già abilitato nella policy del firewall di gestione utilizzata dalle LIF di gestione del cluster o dei nodi, in modo che le richieste RSH possano passare attraverso il firewall.
++
+Per impostazione predefinita, RSH è disattivato. Il `system services firewall policy show` con il `-service rsh` Parametro indica se RSH è stato attivato in una policy firewall. Per ulteriori informazioni, consultare `system services firewall policy` pagine man.
+
+* Se si utilizzano connessioni IPv6, IPv6 deve essere già configurato e abilitato sul cluster e i criteri firewall devono essere già configurati con gli indirizzi IPv6.
++
+Il `network options ipv6 show` Il comando indica se IPv6 è attivato. Il `system services firewall policy show` visualizza i criteri del firewall.
+
+
+
+.A proposito di questa attività
+* RSH non è un protocollo sicuro.
++
+Si consiglia di utilizzare SSH per accedere al cluster. SSH offre una shell remota sicura e una sessione di rete interattiva.
+
+* ONTAP supporta un massimo di 50 sessioni RSH simultanee per nodo.
++
+Se la LIF di gestione del cluster risiede nel nodo, condivide questo limite con la LIF di gestione del nodo.
+
++
+Se la velocità delle connessioni in entrata è superiore a 10 al secondo, il servizio viene temporaneamente disattivato per 60 secondi.
+
+
+
+.Fasi
+. Da un host di amministrazione, immettere il seguente comando:
++
+`*rsh _hostname_or_IP_ -l _username:passwordcommand_*`
+
++
+`_hostname_or_IP_` È il nome host o l'indirizzo IP della LIF di gestione del cluster o di una LIF di gestione dei nodi. Si consiglia di utilizzare la LIF di gestione del cluster. È possibile utilizzare un indirizzo IPv4 o IPv6.
+
++
+`_command_` È il comando che si desidera eseguire su RSH.
+
+
+
+.Esempio di richiesta RSH
+L'esempio seguente mostra come l'utente "`joe`", che è stato configurato con accesso RSH, può emettere una richiesta RSH per eseguire `cluster show` comando:
+
+[listing]
+----
+
+admin_host$ rsh 10.72.137.28 -l joe:password cluster show
+
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
+2 entries were displayed.
+
+admin_host$
+----

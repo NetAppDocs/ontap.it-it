@@ -1,0 +1,308 @@
+---
+permalink: flexgroup/manage-flexgroup-rebalance-task.html 
+sidebar: sidebar 
+keywords: enable, storage, rebalance, modify, stop, status, flexgroup, volume 
+summary: A partire da ONTAP 9.12.1, è possibile ribilanciare i volumi FlexGroup spostando senza interruzioni i file da un costituente in un FlexGroup a un altro costituente. 
+---
+= Ribilanciare i volumi FlexGroup
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.12.1, è possibile ribilanciare i volumi FlexGroup spostando senza interruzioni i file da un costituente in un FlexGroup a un altro costituente.
+
+Il ribilanciamento di FlexGroup aiuta a ridistribuire la capacità quando si sviluppano squilibri nel tempo grazie all'aggiunta di nuovi file e alla crescita dei file. Dopo aver avviato manualmente l'operazione di ribilanciamento, ONTAP seleziona i file e li sposta automaticamente e senza interruzioni.
+
+Il ribilanciamento automatico è disponibile solo quando tutti i nodi del cluster eseguono ONTAP 9.12.1 o versioni successive. È necessario attivare la funzionalità granulare dei dati inode multiparte su qualsiasi volume FlexGroup che esegue l'operazione di ribilanciamento. Una volta attivata questa funzionalità, non è possibile ripristinare una versione precedente di ONTAP a meno che non si elimini FlexGroup e si ripristini una versione precedente.
+
+
+
+== Considerazioni sul ribilanciamento di FlexGroup
+
+È necessario conoscere il funzionamento del ribilanciamento di FlexGroup e il modo in cui interagisce con altre funzionalità di ONTAP.
+
+* Conversione da FlexVol a FlexGroup
++
+Si consiglia di _non_ utilizzare il ribilanciamento automatico di FlexGroup dopo una conversione da FlexVol a FlexGroup. È invece possibile utilizzare la funzione di spostamento dei file retroattivo e disgregativo disponibile in ONTAP 9.10.1 e versioni successive, immettendo il `volume rebalance file-move` comando. Per la sintassi dei comandi, vedere `volume rebalance file-move start` pagina man.
+
++
+Il ribilanciamento con la funzionalità di spostamento dei file retroattivo senza interruzioni può degradare le performance quando si spostano grandi quantità di file, come quando si esegue una conversione da FlexVol a FlexGroup, e fino al 50-85% dei dati sul volume FlexVol viene spostato in un nuovo componente.
+
+* Dimensione minima e massima del file
++
+La selezione del file per il ribilanciamento automatico si basa sui blocchi salvati. La dimensione minima del file da considerare per il ribilanciamento è di 100 MB per impostazione predefinita (può essere configurata fino a 4 KB utilizzando il parametro min-file-size mostrato di seguito) e la dimensione massima del file è di 100 GB.
+
+* File nelle copie Snapshot
++
+È possibile configurare il ribilanciamento di FlexGroup per considerare solo i file da spostare che non sono attualmente presenti in alcuna copia Snapshot. Quando si avvia il ribilanciamento, viene visualizzata una notifica se viene pianificata un'operazione di copia Snapshot in qualsiasi momento durante un'operazione di ribilanciamento.
+
++
+Le copie Snapshot sono limitate se un file viene spostato e viene sottoposto a framing nella destinazione. Un'operazione di ripristino della copia Snapshot non è consentita mentre è in corso il ribilanciamento del file.
+
+* Operazioni di SnapMirror
++
+Il ribilanciamento di FlexGroup deve avvenire tra le operazioni pianificate di SnapMirror. Un'operazione SnapMirror potrebbe non riuscire se un file viene spostato prima dell'inizio di un'operazione SnapMirror, se tale spostamento non viene completato entro il periodo di 24 minuti. Qualsiasi nuovo trasferimento di file che inizia dopo l'avvio di un trasferimento SnapMirror non avrà esito negativo.
+
+* Efficienza dello storage per la compressione basata su file
++
+Con l'efficienza dello storage di compressione basato su file, il file viene decompresso prima di essere spostato a destinazione, in modo da perdere i risparmi di compressione. I risparmi di compressione vengono riottenuti dopo l'esecuzione di uno scanner in background avviato manualmente sul volume FlexGroup dopo il ribilanciamento. Tuttavia, se un file è associato a una copia Snapshot su qualsiasi volume, il file viene ignorato per la compressione.
+
+* Deduplica
++
+Lo spostamento dei file deduplicati può causare un maggiore utilizzo generale del volume FlexGroup. Durante il ribilanciamento dei file, vengono spostati solo i blocchi univoci nella destinazione, liberando tale capacità nell'origine. I blocchi condivisi rimangono sull'origine e vengono copiati nella destinazione. Anche se questo raggiunge l'obiettivo di ridurre la capacità utilizzata su un componente di origine quasi completo, può anche portare a un maggiore utilizzo generale sul volume FlexGroup a causa delle copie dei blocchi condivisi sulle nuove destinazioni. Ciò è possibile anche quando i file che fanno parte di una copia Snapshot vengono spostati. Il risparmio di spazio non viene riconosciuto completamente fino a quando il programma di copia Snapshot non viene riciclato e non sono più presenti copie dei file nelle copie Snapshot.
+
+* Volumi FlexClone
++
+Se durante la creazione di un volume FlexClone è in corso il ribilanciamento dei file, il ribilanciamento non verrà eseguito sul volume FlexClone. Il ribilanciamento sul volume FlexClone deve essere eseguito dopo la sua creazione.
+
+* Spostamento del file
++
+Quando un file viene spostato durante un'operazione di ribilanciamento FlexGroup, la dimensione del file viene riportata come parte della contabilità delle quote sia sui componenti di origine che di destinazione. Una volta completato lo spostamento, la contabilità delle quote torna alla normalità e la dimensione del file viene riportata solo sulla nuova destinazione.
+
+* Protezione ransomware autonoma
++
+A partire da ONTAP 9.13.1, la protezione ransomware autonoma può essere copiata tra gli inode per operazioni di ribilanciamento senza interruzioni e senza interruzioni.
+
+
+
+
+
+== Abilitare il ribilanciamento FlexGroup
+
+A partire da ONTAP 9.12.1, è possibile abilitare il ribilanciamento automatico dei volumi FlexGroup senza interruzioni per ridistribuire i file tra i componenti di FlexGroup.
+
+A partire da ONTAP 9.13.1, è possibile pianificare una singola operazione di ribilanciamento FlexGroup per iniziare in futuro a una data e a un'ora.
+
+.Prima di iniziare
+È necessario aver attivato `granular-data` Sul volume FlexGroup prima di attivare il ribilanciamento FlexGroup. È possibile abilitarla utilizzando uno dei seguenti metodi:
+
+* Quando si crea un volume FlexGroup utilizzando `volume create` comando
+* Modificando un volume FlexGroup esistente per attivare l'impostazione utilizzando `volume modify` comando
+* Impostazione automatica quando si avvia il ribilanciamento FlexGroup utilizzando `volume rebalance` comando
+
+
+È possibile gestire il ribilanciamento FlexGroup utilizzando Gestione di sistema di ONTAP o l'interfaccia utente di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Accedere a *Storage > Volumes* (archiviazione > volumi) e individuare il volume FlexGroup da ribilanciare.
+. Selezionare image:icon_dropdown_arrow.gif["Mostra l'icona dei dettagli"] per visualizzare i dettagli del volume.
+. Selezionare *Ribilanciamento*.
+. Nella finestra *Rebalance Volume*, modificare le impostazioni predefinite in base alle necessità.
+. Per pianificare l'operazione di ribilanciamento, selezionare *Ribilanciamento successivo* e inserire la data e l'ora.
+
+
+--
+.CLI
+--
+.Fasi
+. Avviare il ribilanciamento automatico: `volume rebalance start -vserver _SVM_name_ -volume _volume_name_`
++
+In alternativa, è possibile specificare le seguenti opzioni:
+
++
+[[-max-runtime] <time interval>] durata massima
+
++
+[-max-threshold <percent>] soglia massima di sbilanciamento per costituente
+
++
+[-min-threshold <percent>] soglia minima di sbilanciamento per costituente
+
++
+[-max-file-Moves <integer>] numero massimo di spostamenti simultanei del file per costituente
+
++
+[-min-file-size {<integer>[KB|MB|GB|TB|PB]}] dimensione minima del file
+
++
+[-start-time <mm/dd/yyyy-00:00:00>] Ribilancia la data e l'ora di inizio del ribilanciamento
+
++
+[-exclude-snapshot {true|false}] Escludi i file bloccati nelle copie Snapshot
+
++
+Esempio:
+
++
+[listing]
+----
+volume rebalance start -vserver vs0 -volume fg1
+----
+
+
+--
+====
+
+
+== Modificare le configurazioni di ribilanciamento FlexGroup
+
+È possibile modificare una configurazione di ribilanciamento FlexGroup per aggiornare la soglia di squilibrio, il numero di file simultanei sposta la dimensione minima del file, il runtime massimo e per includere o escludere le copie Snapshot. Le opzioni per modificare la pianificazione del ribilanciamento FlexGroup sono disponibili a partire da ONTAP 9.13.1.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Accedere a *Storage > Volumes* (archiviazione > volumi) e individuare il volume FlexGroup da ribilanciare.
+. Selezionare image:icon_dropdown_arrow.gif["Mostra l'icona dei dettagli"] per visualizzare i dettagli del volume.
+. Selezionare *Ribilanciamento*.
+. Nella finestra *Rebalance Volume*, modificare le impostazioni predefinite in base alle necessità.
+
+
+--
+.CLI
+--
+.Fase
+. Modificare il ribilanciamento automatico: `volume rebalance modify -vserver _SVM_name_ -volume _volume_name_`
++
+È possibile specificare una o più delle seguenti opzioni:
+
++
+[[-max-runtime] <time interval>] durata massima
+
++
+[-max-threshold <percent>] soglia massima di sbilanciamento per costituente
+
++
+[-min-threshold <percent>] soglia minima di sbilanciamento per costituente
+
++
+[-max-file-Moves <integer>] numero massimo di spostamenti simultanei del file per costituente
+
++
+[-min-file-size {<integer>[KB|MB|GB|TB|PB]}] dimensione minima del file
+
++
+[-start-time <mm/dd/yyyy-00:00:00>] Ribilancia la data e l'ora di inizio del ribilanciamento
+
++
+[-exclude-snapshot {true|false}] Escludi i file bloccati nelle copie Snapshot
+
+
+
+--
+====
+
+
+== Arrestare il ribilanciamento FlexGroup
+
+Una volta attivato o pianificato il ribilanciamento FlexGroup, è possibile interromperlo in qualsiasi momento.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Accedere a *Storage > Volumes* e individuare il volume FlexGroup.
+. Selezionare image:icon_dropdown_arrow.gif["Mostra l'icona dei dettagli"] per visualizzare i dettagli del volume.
+. Selezionare *Stop Rebalance* (Interrompi ribilanciamento).
+
+
+--
+.CLI
+--
+.Fase
+. Arrestare il ribilanciamento FlexGroup: `volume rebalance stop -vserver _SVM_name_ -volume _volume_name_`
+
+
+--
+====
+
+
+== Visualizzare lo stato di ribilanciamento FlexGroup
+
+È possibile visualizzare lo stato di un'operazione di ribilanciamento FlexGroup, la configurazione di ribilanciamento FlexGroup, il tempo dell'operazione di ribilanciamento e i dettagli dell'istanza di ribilanciamento.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Accedere a *Storage > Volumes* e individuare il volume FlexGroup.
+. Selezionare image:icon_dropdown_arrow.gif["Mostra l'icona dei dettagli"] Per visualizzare i dettagli di FlexGroup.
+. *FlexGroup Balance Status* viene visualizzato nella parte inferiore del riquadro dei dettagli.
+. Per visualizzare le informazioni sull'ultima operazione di ribilanciamento, selezionare *Last Volume Rebalance Status* (ultimo stato di ribilanciamento del volume).
+
+
+--
+.CLI
+--
+.Fase
+. Visualizzare lo stato di un'operazione di ribilanciamento FlexGroup: `volume rebalance show`
++
+Esempio di stato di ribilanciamento:
+
++
+[listing]
+----
+> volume rebalance show
+Vserver: vs0
+                                                        Target     Imbalance
+Volume       State                  Total      Used     Used       Size     %
+------------ ------------------ --------- --------- --------- --------- -----
+fg1          idle                     4GB   115.3MB         -       8KB    0%
+----
++
+Esempio di dettagli di configurazione del ribilanciamento:
+
++
+[listing]
+----
+> volume rebalance show -config
+Vserver: vs0
+                    Max            Threshold         Max          Min          Exclude
+Volume              Runtime        Min     Max       File Moves   File Size    Snapshot
+---------------     ------------   -----   -----     ----------   ---------    ---------
+fg1                 6h0m0s         5%      20%          25          4KB          true
+----
++
+Esempio di dettagli sul tempo di ribilanciamento:
+
++
+[listing]
+----
+> volume rebalance show -time
+Vserver: vs0
+Volume               Start Time                    Runtime        Max Runtime
+----------------     -------------------------     -----------    -----------
+fg1                  Wed Jul 20 16:06:11 2022      0h1m16s        6h0m0s
+----
++
+Esempio di dettagli dell'istanza di ribilanciamento:
+
++
+[listing]
+----
+    > volume rebalance show -instance
+    Vserver Name: vs0
+    Volume Name: fg1
+    Is Constituent: false
+    Rebalance State: idle
+    Rebalance Notice Messages: -
+    Total Size: 4GB
+    AFS Used Size: 115.3MB
+    Constituent Target Used Size: -
+    Imbalance Size: 8KB
+    Imbalance Percentage: 0%
+    Moved Data Size: -
+    Maximum Constituent Imbalance Percentage: 1%
+    Rebalance Start Time: Wed Jul 20 16:06:11 2022
+    Rebalance Stop Time: -
+    Rebalance Runtime: 0h1m32s
+    Rebalance Maximum Runtime: 6h0m0s
+    Maximum Imbalance Threshold per Constituent: 20%
+    Minimum Imbalance Threshold per Constituent: 5%
+    Maximum Concurrent File Moves per Constituent: 25
+    Minimum File Size: 4KB
+    Exclude Files Stuck in Snapshot Copies: true
+----
+
+
+--
+====

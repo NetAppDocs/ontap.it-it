@@ -1,0 +1,166 @@
+---
+permalink: tape-backup/format-tape-config-file-concept.html 
+sidebar: sidebar 
+keywords: format, tape, configuration, file, vendor, id, product, compression, type, drive 
+summary: 'Il formato del file di configurazione del nastro è costituito da campi quali ID vendor, ID prodotto e dettagli sui tipi di compressione per un"unità a nastro. Questo file è inoltre costituito da campi facoltativi per l"abilitazione della funzione di caricamento automatico di un"unità a nastro e la modifica dei valori di timeout dei comandi di un"unità a nastro.' 
+---
+= Formato del file di configurazione del nastro
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il formato del file di configurazione del nastro è costituito da campi quali ID vendor, ID prodotto e dettagli sui tipi di compressione per un'unità a nastro. Questo file è inoltre costituito da campi facoltativi per l'abilitazione della funzione di caricamento automatico di un'unità a nastro e la modifica dei valori di timeout dei comandi di un'unità a nastro.
+
+Nella tabella seguente viene visualizzato il formato del file di configurazione del nastro:
+
+|===
+| Elemento | Dimensione | Descrizione 
+
+
+ a| 
+`vendor_id` (stringa)
+ a| 
+fino a 8 byte
+ a| 
+L'ID del vendor come riportato da `SCSI Inquiry` comando.
+
+
+
+ a| 
+`product_id`(stringa)
+ a| 
+fino a 16 byte
+ a| 
+L'ID del prodotto riportato da `SCSI Inquiry` comando.
+
+
+
+ a| 
+`id_match_size`(numero)
+ a| 
+ a| 
+Il numero di byte dell'ID prodotto da utilizzare per la corrispondenza per rilevare l'unità a nastro da identificare, iniziando dal primo carattere dell'ID prodotto nei dati della richiesta.
+
+
+
+ a| 
+`vendor_pretty` (stringa)
+ a| 
+fino a 16 byte
+ a| 
+Se questo parametro è presente, viene specificato dalla stringa visualizzata dal comando, `storage tape show -device-names`; In caso contrario, viene visualizzato INQ_VENDOR_ID.
+
+
+
+ a| 
+`product_pretty`(stringa)
+ a| 
+fino a 16 byte
+ a| 
+Se questo parametro è presente, viene specificato dalla stringa visualizzata dal comando, `storage tape show -device-names`; In caso contrario, viene visualizzato INQ_PRODUCT_ID.
+
+|===
+[NOTE]
+====
+Il `vendor_pretty` e. `product_pretty` i campi sono facoltativi, ma se uno di questi campi ha un valore, anche l'altro deve avere un valore.
+
+====
+La seguente tabella illustra la descrizione, il codice di densità e l'algoritmo di compressione per i vari tipi di compressione, ad esempio `l`, `m`, `h`, e. `a`:
+
+|===
+| Elemento | Dimensione | Descrizione 
+
+
+ a| 
+`{l | m | h | a}_description=(string)`
+ a| 
+fino a 24 byte
+ a| 
+La stringa da stampare per il comando nodeshell, `sysconfig -t`, che descrive le caratteristiche della particolare impostazione di densità.
+
+
+
+ a| 
+`{l | m | h | a}_density=(hex codes)`
+ a| 
+ a| 
+Il codice di densità da impostare nel descrittore di blocco di pagina di modalità SCSI corrispondente al codice di densità desiderato per l, m, h o a.
+
+
+
+ a| 
+`{l | m | h | a}_algorithm=(hex codes)`
+ a| 
+ a| 
+L'algoritmo di compressione da impostare nella pagina SCSI Compression Mode (modalità di compressione SCSI) corrispondente al codice di densità e alla caratteristica di densità desiderata.
+
+|===
+La seguente tabella descrive i campi opzionali disponibili nel file di configurazione del nastro:
+
+|===
+| Campo | Descrizione 
+
+
+ a| 
+`autoload=(Boolean yes/no)`
+ a| 
+Questo campo è impostato su `yes` se l'unità a nastro dispone di una funzione di caricamento automatico, ovvero dopo l'inserimento della cartuccia a nastro, l'unità a nastro diventa pronta senza eseguire un `SCSI load` (unità di avvio/arresto). L'impostazione predefinita per questo campo è `no`.
+
+
+
+ a| 
+`cmd_timeout_0x`
+ a| 
+Singolo valore di timeout. È necessario utilizzare questo campo solo se si desidera specificare un valore di timeout diverso da quello utilizzato per impostazione predefinita dal driver del nastro. Il file di esempio elenca i valori di timeout dei comandi SCSI predefiniti utilizzati dall'unità a nastro. Il valore di timeout può essere espresso in minuti (m), secondi (s) o millisecondi (ms).
+
+[NOTE]
+====
+Non modificare questo campo.
+
+====
+|===
+È possibile scaricare e visualizzare il file di configurazione del nastro dal NetApp Support Site.
+
+.Esempio di un formato di file di configurazione del nastro
+Il formato del file di configurazione del nastro per l'unità a nastro HP LTO5 ULTRIUM è il seguente:
+
+`vendor_id`="HP"
+
+`product_id`="Ultrium 5-SCSI"
+
+`id_match_size`=9
+
+`vendor_pretty`="Hewlett-Packard"
+
+`product_pretty`="LTO-5"
+
+`l_description`="LTO-3(ro)/4 4/800 GB"
+
+`l_density`=0x00
+
+`l_algorithm`=0x00
+
+`m_description`="lto-3(ro)/4 8/1600 GB cmp"
+
+`m_density`=0x00
+
+`m_algorithm`=0x01
+
+`h_description`="LTO-5 1600 GB"
+
+`h_density`=0x58
+
+`h_algorithm`=0x00
+
+`a_description`="lto-5 3200gb cmp"
+
+`a_density`=0x58
+
+`a_algorithm`=0x01
+
+`autoload`="sì"
+
+.Informazioni correlate
+https://mysupport.netapp.com/site/tools/tool-eula/5f4d322319c1ab1cf34fd063["NetApp Tools: File di configurazione dei dispositivi su nastro"]

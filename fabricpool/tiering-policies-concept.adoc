@@ -1,0 +1,238 @@
+---
+permalink: fabricpool/tiering-policies-concept.html 
+sidebar: sidebar 
+keywords: understanding, fabricpool, tiering, policies, types, modify, volume, clone, cloud migration 
+summary: Le policy di tiering di FabricPool ti consentono di spostare i dati in modo efficiente tra i vari livelli quando i dati diventano caldi o freddi. La comprensione delle policy di tiering ti aiuta a scegliere la policy più adatta alle tue esigenze di gestione dello storage. 
+---
+= Informazioni sulle policy di tiering FabricPool
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Le policy di tiering di FabricPool ti consentono di spostare i dati in modo efficiente tra i vari livelli quando i dati diventano caldi o freddi. La comprensione delle policy di tiering ti aiuta a scegliere la policy più adatta alle tue esigenze di gestione dello storage.
+
+
+
+== Tipi di policy di tiering FabricPool
+
+Le policy di tiering FabricPool determinano quando o se i blocchi di dati utente di un volume in FabricPool vengono spostati nel Tier cloud, in base al volume "`temperature`" di hot (attivo) o cold (inattivo). Il volume "`temperature`" aumenta quando si accede frequentemente e diminuisce quando non lo è. Alcune policy di tiering prevedono un periodo di raffreddamento minimo di tiering, che imposta il tempo in cui i dati utente in un volume di FabricPool devono rimanere inattivi affinché i dati vengano considerati "`cold`" e spostati al livello cloud.
+
+Il criterio di tiering FabricPool viene specificato a livello di volume. Sono disponibili quattro opzioni:
+
+* Il `snapshot-only` La policy di tiering (impostazione predefinita) sposta i blocchi di dati utente delle copie Snapshot del volume non associate al file system attivo nel Tier cloud.
++
+Il periodo di raffreddamento minimo per il tiering è di 2 giorni. È possibile modificare l'impostazione predefinita per il periodo di raffreddamento minimo di tiering con `-tiering-minimum-cooling-days` nel livello di privilegio avanzato di `volume create` e. `volume modify` comandi. I valori validi vanno da 2 a 183 giorni utilizzando ONTAP 9.8 e versioni successive. Se si utilizza una versione di ONTAP precedente alla 9.8, i valori validi sono compresi tra 2 e 63 giorni.
+
+* Il `auto` La policy di tiering, supportata solo su ONTAP 9.4 e versioni successive, sposta i blocchi di dati utente cold nelle copie Snapshot e nel file system attivo nel Tier cloud.
++
+Il periodo di raffreddamento minimo di tiering predefinito è di 31 giorni e si applica all'intero volume, sia per il file system attivo che per le copie Snapshot.
+
++
+È possibile modificare l'impostazione predefinita per il periodo di raffreddamento minimo di tiering con `-tiering-minimum-cooling-days` nel livello di privilegio avanzato di `volume create` e. `volume modify` comandi. I valori validi vanno da 2 a 183 giorni.
+
+* Il `all` La policy di tiering, supportata solo su ONTAP 9.6 e versioni successive, sposta tutti i blocchi di dati utente nel file system attivo e nelle copie Snapshot nel Tier cloud. Sostituisce il `backup` policy di tiering.
++
+Il periodo di raffreddamento minimo del tiering non si applica perché i dati spostano il Tier cloud non appena viene eseguita la scansione del tiering e non è possibile modificare l'impostazione.
+
+* Il `none` la policy di tiering mantiene i dati di un volume nel tier di performance e non passa al tier cloud.
++
+Impostazione del criterio di tiering su `none` impedisce il nuovo tiering. I dati del volume precedentemente spostati nel Tier cloud rimangono nel Tier cloud fino a quando non diventano hot e vengono automaticamente spostati di nuovo nel Tier locale.
+
++
+Il periodo di raffreddamento minimo del tiering non si applica perché i dati non si spostano mai al livello cloud e non è possibile modificare l'impostazione.
+
++
+Quando si blocca a freddo in un volume con una policy di tiering impostata su `none` vengono letti, vengono resi a caldo e scritti nel tier locale.
+
+
+
+Il `volume show` l'output del comando mostra la policy di tiering di un volume. Un volume che non è mai stato utilizzato con FabricPool mostra `none` policy di tiering nell'output.
+
+
+
+== Cosa accade quando si modifica il criterio di tiering di un volume in FabricPool
+
+È possibile modificare la policy di tiering di un volume eseguendo una `volume modify` operazione. Devi comprendere come la modifica della policy di tiering possa influire sul tempo necessario per far diventare i dati più freddi e spostarli nel Tier cloud.
+
+* Modifica della policy di tiering da `snapshot-only` oppure `none` a. `auto` Fa sì che ONTAP invii blocchi di dati utente nel file system attivo che sono già cold al livello cloud, anche se tali blocchi di dati utente non erano precedentemente idonei per il livello cloud.
+* Modifica della policy di tiering in `all` Da un altro criterio, ONTAP sposta tutti i blocchi utente nel file system attivo e nelle copie Snapshot nel Tier cloud alla successiva esecuzione della scansione di tiering.
++
+Non è consentito spostare nuovamente i blocchi nel Tier di performance.
+
+* Modifica della policy di tiering da `auto` a. `snapshot-only` oppure `none` non fa sì che i blocchi di file system attivi già spostati nel tier cloud vengano spostati di nuovo nel tier di performance.
++
+Le letture dei volumi sono necessarie per riportare i dati al Tier di performance.
+
+* Ogni volta che si modifica il criterio di tiering su un volume, il periodo minimo di raffreddamento del tiering viene ripristinato al valore predefinito per il criterio.
+
+
+
+
+== Cosa accade alla policy di tiering quando si sposta un volume
+
+* A meno che non si specifichi esplicitamente un criterio di tiering diverso, un volume conserva la propria policy di tiering originale quando viene spostato all'interno e all'esterno di un aggregato abilitato a FabricPool.
++
+Tuttavia, la policy di tiering ha effetto solo quando il volume si trova in un aggregato abilitato a FabricPool.
+
+* Il valore esistente di `-tiering-minimum-cooling-days` parametro per lo spostamento di un volume con il volume a meno che non si specifichi un criterio di tiering diverso per la destinazione.
++
+Se si specifica un criterio di tiering diverso, il volume utilizza il periodo di raffreddamento minimo di tiering predefinito per tale criterio. Questo è il caso se la destinazione è FabricPool o meno.
+
+* È possibile spostare un volume tra gli aggregati e contemporaneamente modificare la policy di tiering.
+* Prestare particolare attenzione quando un `volume move` l'operazione comprende `auto` policy di tiering.
++
+Supponendo che sia l'origine che la destinazione siano aggregati abilitati per FabricPool, la seguente tabella riassume il risultato di a. `volume move` operazione che comporta modifiche dei criteri correlate a. `auto`:
+
++
+|===
+
+
+| Quando si sposta un volume con una policy di tiering di... | Inoltre, è possibile modificare la policy di tiering passando a... | Quindi, dopo lo spostamento del volume... 
+
+
+ a| 
+`all`
+ a| 
+`auto`
+ a| 
+Tutti i dati vengono spostati nel Tier di performance.
+
+
+
+ a| 
+`snapshot-only`, `none`, o. `auto`
+ a| 
+`auto`
+ a| 
+I blocchi di dati vengono spostati nello stesso livello della destinazione in cui si trovavano in precedenza nell'origine.
+
+
+
+ a| 
+`auto` oppure `all`
+ a| 
+`snapshot-only`
+ a| 
+Tutti i dati vengono spostati nel Tier di performance.
+
+
+
+ a| 
+`auto`
+ a| 
+`all`
+ a| 
+Tutti i dati degli utenti vengono spostati nel livello cloud.
+
+
+
+ a| 
+`snapshot-only`,`auto` oppure `all`
+ a| 
+`none`
+ a| 
+Tutti i dati vengono conservati al livello di performance.
+
+|===
+
+
+
+
+== Cosa accade alla policy di tiering quando si clonano volumi
+
+* A partire da ONTAP 9.8, un volume clone eredita sempre sia la policy di tiering che la policy di recupero del cloud dal volume padre.
++
+Nelle release precedenti a ONTAP 9.8, un clone eredita la policy di tiering dall'origine, tranne quando l'origine dispone di `all` policy di tiering.
+
+* Se il volume padre dispone di `never` cloud retrieval policy, il suo volume clone deve disporre di `never` policy di recupero del cloud o di `all` policy di tiering e policy di recupero del cloud corrispondenti `default`.
+* Impossibile modificare la policy di recupero cloud del volume padre in `never` a meno che tutti i volumi cloni non dispongano di una policy di recupero cloud `never`.
+
+
+Quando si clonano i volumi, tenere presenti le seguenti Best practice:
+
+* Il `-tiering-policy` opzione e. `tiering-minimum-cooling-days` l'opzione del clone controlla solo il comportamento di tiering dei blocchi unici per il clone. Pertanto, si consiglia di utilizzare le impostazioni di tiering sul FlexVol padre che spostano la stessa quantità di dati o spostano una quantità inferiore di dati rispetto a uno qualsiasi dei cloni
+* La policy di recupero del cloud sul FlexVol padre deve spostare la stessa quantità di dati o spostare più dati rispetto alla policy di recupero di uno qualsiasi dei cloni
+
+
+
+
+== Come funzionano le policy di tiering con la migrazione del cloud
+
+Il recupero dei dati nel cloud di FabricPool è controllato da policy di tiering che determinano il recupero dei dati dal Tier cloud al Tier di performance in base al modello di lettura. I modelli di lettura possono essere sequenziali o casuali.
+
+La tabella seguente elenca le policy di tiering e le regole di recupero dei dati cloud per ogni policy.
+
+|===
+
+
+| Policy di tiering | Comportamento di recupero 
+
+
+ a| 
+nessuno
+ a| 
+Letture sequenziali e casuali
+
+
+
+ a| 
+solo snapshot
+ a| 
+Letture sequenziali e casuali
+
+
+
+ a| 
+automatico
+ a| 
+Letture casuali
+
+
+
+ a| 
+tutto
+ a| 
+Nessun recupero dei dati
+
+|===
+A partire da ONTAP 9.8, il controllo della migrazione nel cloud `cloud-retrieval-policy` l'opzione sovrascrive il comportamento predefinito di migrazione o recupero del cloud controllato dalla policy di tiering.
+
+La seguente tabella elenca le policy di recupero cloud supportate e il loro comportamento di recupero.
+
+|===
+
+
+| Policy di recupero del cloud | Comportamento di recupero 
+
+
+ a| 
+predefinito
+ a| 
+La policy di tiering decide quali dati devono essere ritirati, quindi non vi è alcuna modifica al recupero dei dati nel cloud con "`default,`" `cloud-retrieval-policy`. Questo criterio è il valore predefinito per qualsiasi volume, indipendentemente dal tipo di aggregato ospitato.
+
+
+
+ a| 
+a lettura
+ a| 
+Tutti i dati letti dal client vengono estratti dal Tier cloud al Tier di performance.
+
+
+
+ a| 
+mai
+ a| 
+Nessun dato client-driven viene estratto dal Tier cloud al Tier di performance
+
+
+
+ a| 
+promuovi
+ a| 
+* Per la policy di tiering "`none`", tutti i dati cloud vengono estratti dal Tier cloud al Tier di performance
+* Per la policy di tiering "`snapshot-only,`" vengono estratti i dati AFS.
+
+
+|===

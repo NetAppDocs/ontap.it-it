@@ -1,0 +1,238 @@
+---
+permalink: data-protection/convert-snapmirror-version-flexible-task.html 
+sidebar: sidebar 
+keywords: convert, exist, dp-type, relationship, xdp 
+summary: È possibile convertire facilmente una relazione di tipo DP esistente in XDP per sfruttare SnapMirror flessibile in versione. 
+---
+= Convertire una relazione di tipo DP esistente in XDP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile convertire facilmente una relazione di tipo DP esistente in XDP per sfruttare SnapMirror flessibile in versione.
+
+.A proposito di questa attività
+* Se si esegue l'aggiornamento a ONTAP 9.12.1 o versioni successive, è necessario convertire le relazioni di tipo DP in XDP prima di eseguire l'aggiornamento. ONTAP 9.12.1 e versioni successive non supportano le relazioni di tipo DP.
+* SnapMirror non converte automaticamente le relazioni di tipo DP esistenti in XDP. Per convertire la relazione, è necessario interrompere ed eliminare la relazione esistente, creare una nuova relazione XDP e risincronizzare la relazione. Per informazioni generali, vedere link:version-flexible-snapmirror-default-concept.html["XDP sostituisce DP come impostazione predefinita di SnapMirror"].
+* Durante la pianificazione della conversione, è necessario tenere presente che la preparazione in background e la fase di data warehousing di una relazione SnapMirror XDP possono richiedere molto tempo. Non è raro che la relazione di SnapMirror riporti lo stato di "preparazione" per un periodo di tempo prolungato.
+
+
+[NOTE]
+====
+Dopo aver convertito un tipo di relazione SnapMirror da DP a XDP, le impostazioni relative allo spazio, come la dimensione automatica e la garanzia dello spazio, non vengono più replicate nella destinazione.
+
+====
+.Fasi
+. Dal cluster di destinazione, assicurarsi che la relazione SnapMirror sia di tipo DP, che lo stato del mirror sia SnapMirrored, che lo stato della relazione sia inattivo e che la relazione sia integra:
++
+`snapmirror show -destination-path _SVM:volume_|_cluster://SVM/volume_`
+
++
+L'esempio seguente mostra l'output di `snapmirror show` comando:
+
++
+[listing]
+----
+cluster_dst::>snapmirror show -destination-path svm_backup:volA_dst
+
+Source Path: svm1:volA
+Destination Path: svm_backup:volA_dst
+Relationship Type: DP
+SnapMirror Schedule: -
+Tries Limit: -
+Throttle (KB/sec): unlimited
+Mirror State: Snapmirrored
+Relationship Status: Idle
+Transfer Snapshot: -
+Snapshot Progress: -
+Total Progress: -
+Snapshot Checkpoint: -
+Newest Snapshot: snapmirror.10af643c-32d1-11e3-954b-123478563412_2147484682.2014-06-27_100026
+Newest Snapshot Timestamp: 06/27 10:00:55
+Exported Snapshot: snapmirror.10af643c-32d1-11e3-954b-123478563412_2147484682.2014-06-27_100026
+Exported Snapshot Timestamp: 06/27 10:00:55
+Healthy: true
+----
++
+[NOTE]
+====
+Potrebbe essere utile conservare una copia di `snapmirror show` output dei comandi per tenere traccia delle impostazioni delle relazioni esistenti.
+
+====
+. Dai volumi di origine e di destinazione, assicurarsi che entrambi i volumi dispongano di una copia Snapshot comune:
++
+`volume snapshot show -vserver _SVM_ -volume _volume_`
+
++
+Nell'esempio riportato di seguito viene illustrato il `volume snapshot show` output per il souce e i volumi di destinazione:
+
++
+[listing]
+----
+cluster_src:> volume snapshot show -vserver vsm1 -volume volA
+---Blocks---
+Vserver Volume Snapshot State Size Total% Used%
+-------- ------- ------------------------------- -------- -------- ------ -----
+svm1 volA
+weekly.2014-06-09_0736 valid 76KB 0% 28%
+weekly.2014-06-16_1305 valid 80KB 0% 29%
+daily.2014-06-26_0842 valid 76KB 0% 28%
+hourly.2014-06-26_1205 valid 72KB 0% 27%
+hourly.2014-06-26_1305 valid 72KB 0% 27%
+hourly.2014-06-26_1405 valid 76KB 0% 28%
+hourly.2014-06-26_1505 valid 72KB 0% 27%
+hourly.2014-06-26_1605 valid 72KB 0% 27%
+daily.2014-06-27_0921 valid 60KB 0% 24%
+hourly.2014-06-27_0921 valid 76KB 0% 28%
+snapmirror.10af643c-32d1-11e3-954b-123478563412_2147484682.2014-06-27_100026
+valid 44KB 0% 19%
+11 entries were displayed.
+
+
+cluster_dest:> volume snapshot show -vserver svm_backup -volume volA_dst
+---Blocks---
+Vserver Volume Snapshot State Size Total% Used%
+-------- ------- ------------------------------- -------- -------- ------ -----
+svm_backup volA_dst
+weekly.2014-06-09_0736 valid 76KB 0% 30%
+weekly.2014-06-16_1305 valid 80KB 0% 31%
+daily.2014-06-26_0842 valid 76KB 0% 30%
+hourly.2014-06-26_1205 valid 72KB 0% 29%
+hourly.2014-06-26_1305 valid 72KB 0% 29%
+hourly.2014-06-26_1405 valid 76KB 0% 30%
+hourly.2014-06-26_1505 valid 72KB 0% 29%
+hourly.2014-06-26_1605 valid 72KB 0% 29%
+daily.2014-06-27_0921 valid 60KB 0% 25%
+hourly.2014-06-27_0921 valid 76KB 0% 30%
+snapmirror.10af643c-32d1-11e3-954b-123478563412_2147484682.2014-06-27_100026
+----
+. Per garantire che gli aggiornamenti pianificati non vengano eseguiti durante la conversione, interrompere la relazione DP-type esistente:
++
+`snapmirror quiesce -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione o dal cluster di destinazione.
+
+====
++
+Nell'esempio seguente viene meno la relazione tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror quiesce -destination-path svm_backup:volA_dst
+----
+. Interrompere la relazione di tipo DP esistente:
++
+`snapmirror break -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione o dal cluster di destinazione.
+
+====
++
+Nell'esempio seguente viene spezzata la relazione tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror break -destination-path svm_backup:volA_dst
+----
+. Se l'eliminazione automatica delle copie Snapshot è attivata sul volume di destinazione, disattivarla:
++
+`volume snapshot autodelete modify -vserver _SVM_ -volume _volume_ -enabled false`
+
++
+Nell'esempio seguente viene disattivata l'eliminazione automatica della copia Snapshot sul volume di destinazione `volA_dst`:
+
++
+[listing]
+----
+cluster_dst::> volume snapshot autodelete modify -vserver svm_backup -volume volA_dst -enabled false
+----
+. Eliminare la relazione DP-type esistente:
++
+`snapmirror delete -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione o dal cluster di destinazione.
+
+====
++
+Nell'esempio riportato di seguito viene eliminata la relazione tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror delete -destination-path svm_backup:volA_dst
+----
+. È possibile utilizzare l'output conservato da `snapmirror show` Comando per creare la nuova relazione XDP-type:
++
+`snapmirror create -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ... -type XDP -schedule _schedule_ -policy _policy_`
+
++
+La nuova relazione deve utilizzare lo stesso volume di origine e di destinazione. Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione o dal cluster di destinazione.
+
+====
++
+Nell'esempio seguente viene creata una relazione di DR di SnapMirror tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA_dst` acceso `svm_backup` utilizzando l'impostazione predefinita `MirrorAllSnapshots` policy:
+
++
+[listing]
+----
+cluster_dst::> snapmirror create -source-path svm1:volA -destination-path svm_backup:volA_dst
+-type XDP -schedule my_daily -policy MirrorAllSnapshots
+----
+. Risincronizzare i volumi di origine e di destinazione:
++
+`snapmirror resync -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per migliorare il tempo di risincronizzazione, è possibile utilizzare `-quick-resync` tuttavia, è importante tenere presente che i risparmi in termini di efficienza dello storage possono andare persi. Per la sintassi completa dei comandi, vedere la pagina man: link:https://docs.netapp.com/us-en/ontap-cli-9131/snapmirror-resync.html#parameters.html["Comando di risync di SnapMirror"].
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione o dal cluster di destinazione. Sebbene la risincronizzazione non richieda un trasferimento di riferimento, può richiedere molto tempo. È possibile eseguire la risincronizzazione in ore non di punta.
+
+====
++
+Nell'esempio riportato di seguito viene risincronata la relazione tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror resync -source-path svm1:volA -destination-path svm_backup:volA_dst
+----
+. Se l'eliminazione automatica delle copie Snapshot è stata disattivata, riattivarla:
++
+`volume snapshot autodelete modify -vserver _SVM_ -volume _volume_ -enabled true`
+
+
+
+.Al termine
+. Utilizzare `snapmirror show` Per verificare che sia stata creata la relazione SnapMirror. Per la sintassi completa dei comandi, vedere la pagina man.
+. Una volta che il volume di destinazione SnapMirror XDP inizia ad aggiornare le copie Snapshot come definito dal criterio SnapMirror, è possibile utilizzare l'output di `snapmirror list-destinations` Dal cluster di origine per visualizzare la nuova relazione SnapMirror XDP.
+

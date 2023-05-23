@@ -1,0 +1,126 @@
+---
+sidebar: sidebar 
+permalink: consistency-groups/modify-geometry-task.html 
+keywords: consistency group geometry, promote consistency group, demote, add consistency group 
+summary: 'A partire da ONTAP 9.13.1, è possibile modificare la geometria del gruppo di coerenza con un"interruzione delle operazioni io.' 
+---
+= Modificare la geometria del gruppo di coerenza
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.13.1, è possibile modificare la geometria di un gruppo di coerenza. La modifica della geometria di un gruppo di coerenza consente di modificare la configurazione dei gruppi di coerenza figlio o padre senza interrompere le operazioni io in corso.
+
+La modifica della geometria del gruppo di coerenza avrà un impatto sulle copie Snapshot esistenti.
+
+
+NOTE: Non è possibile modificare la geometria di un gruppo di coerenza configurato con un criterio di protezione remota. È necessario prima interrompere la relazione di protezione, modificare la geometria, quindi ripristinare la protezione remota.
+
+
+
+== Aggiungere un nuovo gruppo di coerenza figlio
+
+A partire da ONTAP 9.13.1, è possibile aggiungere un nuovo gruppo di coerenza figlio a un gruppo di coerenza padre esistente.
+
+.Prima di iniziare
+* Un gruppo di coerenza padre può contenere un massimo di cinque gruppi di coerenza figlio. Vedere xref:limits.html[limiti del gruppo di coerenza] per altri limiti.
+* Non è possibile aggiungere un gruppo di coerenza figlio a un singolo gruppo di coerenza. Devi prima <<promuovi>> il gruppo di coerenza, quindi è possibile aggiungere un gruppo di coerenza figlio.
+* Le copie Snapshot esistenti del gruppo di coerenza acquisite prima dell'operazione di espansione verranno considerate parziali. Qualsiasi operazione di ripristino basata su tale copia snapshot rifletterà il gruppo di coerenza nel momento in cui la copia Snapshot viene eseguita.
+
+
+.Fasi
+. Selezionare *Storage > Consistency groups*.
+. Selezionare il gruppo di coerenza padre a cui si desidera aggiungere un gruppo di coerenza figlio.
+. Accanto al nome del gruppo di coerenza padre, selezionare **Altro**, quindi **Aggiungi nuovo gruppo di coerenza figlio**.
+. Immettere un nome per il gruppo di coerenza.
+. Scegliere se si desidera aggiungere volumi nuovi o esistenti.
++
+.. Se si stanno aggiungendo volumi esistenti, selezionare **volumi esistenti**, quindi scegliere i volumi dal menu a discesa.
+.. Se si stanno aggiungendo nuovi volumi, selezionare **nuovi volumi**, quindi specificare il numero di volumi e le relative dimensioni.
+
+
+. Selezionare **Aggiungi**.
+
+
+
+
+== Scollegare un gruppo di coerenza figlio
+
+A partire da ONTAP 9.13.1, è possibile rimuovere un gruppo di coerenza figlio dal relativo padre, convertendolo in un singolo gruppo di coerenza.
+
+.Prima di iniziare
+* La rimozione di un gruppo di coerenza figlio causa l'invalidità e l'inaccessibilità degli snapshot del gruppo di coerenza padre. Gli snapshot granulari del volume rimangono validi.
+* Le copie Snapshot esistenti del singolo gruppo di coerenza rimangono valide.
+
+
+.Fasi
+. Selezionare *Storage > Consistency groups*.
+. Selezionare il gruppo di coerenza padre che contiene il figlio che si desidera scollegare.
+. Accanto al gruppo di coerenza figlio che si desidera scollegare, selezionare **Altro**, quindi **Scollega dall'origine**.
+. Facoltativamente, rinominare il gruppo di coerenza e selezionare un tipo di applicazione.
+. Selezionare **stacca**.
+
+
+
+
+== Spostare un singolo gruppo di coerenza in un gruppo di coerenza padre
+
+A partire da ONTAP 9.13.1, è possibile convertire un singolo gruppo di coerenza esistente in un gruppo di coerenza figlio. È possibile spostare il gruppo di coerenza in un gruppo di coerenza padre esistente o creare un nuovo gruppo di coerenza padre durante l'operazione di spostamento.
+
+.Prima di iniziare
+* Il gruppo di coerenza padre deve avere un massimo di quattro figli. Un gruppo di coerenza padre può contenere un massimo di cinque gruppi di coerenza figlio. Vedere xref:limits.html[limiti del gruppo di coerenza] per altri limiti.
+* Le copie Snapshot esistenti del gruppo di coerenza _padre_ catturate prima di questa operazione saranno considerate parziali. Qualsiasi operazione di ripristino basata su una di queste copie Snapshot rifletterà il gruppo di coerenza nel momento in cui la copia Snapshot viene eseguita.
+* Le snapshot dei gruppi di coerenza esistenti del singolo gruppo di coerenza rimangono valide.
+
+
+.Fasi
+. Selezionare *Storage > Consistency groups*.
+. Selezionare il gruppo di coerenza che si desidera convertire.
+. Selezionare **Altro**, quindi **spostarsi in un gruppo di coerenza diverso**.
+. Facoltativamente, immettere un nuovo nome per il gruppo di coerenza e selezionare un tipo di componente. Per impostazione predefinita, il tipo di componente sarà altro.
+. Scegliere se si desidera migrare a un gruppo di coerenza padre esistente o creare un nuovo gruppo di coerenza padre:
++
+.. Per migrare a un gruppo di coerenza padre esistente, selezionare **gruppo di coerenza esistente**, quindi scegliere il gruppo di coerenza dal menu a discesa.
+.. Per creare un nuovo gruppo di coerenza padre, selezionare **nuovo gruppo di coerenza**, quindi specificare un nome per il nuovo gruppo di coerenza.
+
+
+. Selezionare **Sposta**.
+
+
+
+
+== Promuovere un gruppo di coerenza figlio
+
+A partire da ONTAP 9.13.1, è possibile promuovere un singolo gruppo di coerenza in un gruppo di coerenza padre. Quando si promuove un singolo gruppo di coerenza a un gruppo padre, si crea anche un nuovo gruppo di coerenza figlio che eredita tutti i volumi nel singolo gruppo di coerenza originale.
+
+.Prima di iniziare
+* Se si desidera convertire un gruppo di coerenza figlio in un gruppo di coerenza padre, è necessario innanzitutto <<detach>> il gruppo di coerenza figlio quindi seguire questa procedura.
+* Le copie Snapshot esistenti del gruppo di coerenza rimangono valide dopo la promozione del gruppo di coerenza.
+
+
+.Fasi
+. Selezionare *Storage > Consistency groups*.
+. Selezionare il gruppo di coerenza che si desidera promuovere.
+. Selezionare **Altro**, quindi **Promuovi al gruppo di coerenza padre**.
+. Inserire un **Nome** e selezionare un **tipo di componente** per il gruppo di coerenza figlio.
+. Selezionare **Promuovi**.
+
+
+
+
+== Consente di declassare un padre in un singolo gruppo di coerenza
+
+A partire da ONTAP 9.13.1, è possibile ridurre un gruppo di coerenza padre in un singolo gruppo di coerenza. Il deeming del padre appiattisce la gerarchia del gruppo di coerenza, rimuovendo tutti i gruppi di coerenza figlio associati. Tutti i volumi nel gruppo di coerenza rimarranno nel nuovo gruppo di coerenza singolo.
+
+.Prima di iniziare
+* Le copie Snapshot esistenti del gruppo di coerenza padre rimangono valide dopo essere state retrocesse a una singola coerenza. Le copie Snapshot esistenti di uno qualsiasi dei gruppi di coerenza figlio associati di quel padre diventeranno non valide, ma le singole snapshot dei volumi al loro interno continuano ad essere accessibili come snapshot granulari dei volumi.
+
+
+.Fasi
+. Selezionare *Storage > Consistency groups*.
+. Selezionare il gruppo di coerenza padre che si desidera declassare.
+. Selezionare **Altro**, quindi **Demodi a singolo gruppo di coerenza**.
+. Viene visualizzato un avviso che indica che tutti i gruppi di coerenza figlio associati verranno eliminati e i relativi volumi verranno spostati all'interno del nuovo gruppo di coerenza singolo. Selezionare **Demote** per confermare di aver compreso l'impatto.
+

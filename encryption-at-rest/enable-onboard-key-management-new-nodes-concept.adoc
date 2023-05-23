@@ -1,0 +1,40 @@
+---
+permalink: encryption-at-rest/enable-onboard-key-management-new-nodes-concept.html 
+sidebar: sidebar 
+keywords: onboard key management, onboard new nodes, okm, encrypt 
+summary: È possibile utilizzare Onboard Key Manager per proteggere le chiavi utilizzate dal cluster per accedere ai dati crittografati. È necessario attivare Onboard Key Manager su ogni cluster che accede a un volume crittografato o a un disco con crittografia automatica. 
+---
+= Abilitare la gestione delle chiavi integrata nei nodi appena aggiunti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare Onboard Key Manager per proteggere le chiavi utilizzate dal cluster per accedere ai dati crittografati. È necessario attivare Onboard Key Manager su ogni cluster che accede a un volume crittografato o a un disco con crittografia automatica.
+
+[NOTE]
+====
+Per ONTAP 9.5 e versioni precedenti, è necessario eseguire `security key-manager setup` ogni volta che si aggiunge un nodo al cluster.
+
+Per ONTAP 9.6 e versioni successive, è necessario eseguire `security key-manager sync` ogni volta che si aggiunge un nodo al cluster.
+
+Se si aggiunge un nodo a un cluster che ha configurato la gestione delle chiavi integrate, eseguire questo comando per aggiornare le chiavi mancanti.
+
+====
+Se si dispone di una configurazione MetroCluster, consultare le seguenti linee guida:
+
+* A partire da ONTAP 9.6, è necessario eseguire `security key-manager onboard enable` sul cluster locale, quindi eseguire `security key-manager onboard sync` sul cluster remoto, utilizzando la stessa passphrase su ciascuno di essi.
+* In ONTAP 9.5, è necessario eseguire `security key-manager setup` sul cluster locale e. `security key-manager setup -sync-metrocluster-config yes` sul cluster remoto, utilizzando la stessa passphrase su ciascuno di essi.
+* Prima di ONTAP 9.5, è necessario eseguire `security key-manager setup` sul cluster locale, attendere circa 20 secondi, quindi eseguire `security key-manager setup` sul cluster remoto, utilizzando la stessa passphrase su ciascuno di essi.
+
+
+Per impostazione predefinita, non è necessario immettere la passphrase del gestore delle chiavi quando si riavvia un nodo. A partire da ONTAP 9.4, è possibile utilizzare `-enable-cc-mode yes` opzione per richiedere agli utenti di inserire la passphrase dopo un riavvio.
+
+Per NVE, se si imposta `-enable-cc-mode yes`, volumi creati con `volume create` e. `volume move start` i comandi vengono crittografati automaticamente. Per `volume create`, non è necessario specificare `-encrypt true`. Per `volume move start`, non è necessario specificare `-encrypt-destination true`.
+
+[NOTE]
+====
+Dopo un tentativo di passphrase non riuscito, riavviare nuovamente il nodo.
+
+====

@@ -1,0 +1,37 @@
+---
+permalink: smb-admin/export-policies-access-concept.html 
+sidebar: sidebar 
+keywords: export, policies, policy, smb, access, enable, cifs, server, control, svm, volume, client, data, associate, how export policies are used with smb access 
+summary: 'Se i criteri di esportazione per l"accesso SMB sono attivati sul server SMB, i criteri di esportazione vengono utilizzati per controllare l"accesso ai volumi SVM da parte dei client SMB. Per accedere ai dati, è possibile creare un criterio di esportazione che consenta l"accesso SMB e associare il criterio ai volumi contenenti condivisioni SMB.' 
+---
+= Come vengono utilizzate le policy di esportazione con l'accesso SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se i criteri di esportazione per l'accesso SMB sono attivati sul server SMB, i criteri di esportazione vengono utilizzati per controllare l'accesso ai volumi SVM da parte dei client SMB. Per accedere ai dati, è possibile creare un criterio di esportazione che consenta l'accesso SMB e associare il criterio ai volumi contenenti condivisioni SMB.
+
+Una policy di esportazione prevede l'applicazione di una o più regole che specificano i client ai quali è consentito l'accesso ai dati e i protocolli di autenticazione supportati per l'accesso in sola lettura e in lettura/scrittura. È possibile configurare i criteri di esportazione per consentire l'accesso tramite SMB a tutti i client, a una subnet di client o a un client specifico e per consentire l'autenticazione utilizzando l'autenticazione Kerberos, l'autenticazione NTLM o l'autenticazione Kerberos e NTLM quando si determina l'accesso di sola lettura e lettura/scrittura ai dati.
+
+Dopo aver elaborato tutte le regole di esportazione applicate ai criteri di esportazione, ONTAP può determinare se al client viene concesso l'accesso e quale livello di accesso viene concesso. Le regole di esportazione si applicano ai computer client, non agli utenti e ai gruppi Windows. Le regole di esportazione non sostituiscono l'autenticazione e l'autorizzazione basate su utenti e gruppi di Windows. Le regole di esportazione offrono un altro livello di sicurezza degli accessi oltre alle autorizzazioni di condivisione e accesso ai file.
+
+Per configurare l'accesso del client al volume, è necessario associare esattamente un criterio di esportazione a ciascun volume. Ogni SVM può contenere più policy di esportazione. Ciò consente di eseguire le seguenti operazioni per le SVM con più volumi:
+
+* Assegnare criteri di esportazione diversi a ciascun volume di SVM per il controllo degli accessi dei singoli client a ciascun volume di SVM.
+* Assegnare la stessa policy di esportazione a più volumi di SVM per un identico controllo dell'accesso client senza dover creare una nuova policy di esportazione per ciascun volume.
+
+
+Ogni SVM dispone di almeno una policy di esportazione chiamata "`default`", che non contiene regole. Non è possibile eliminare questo criterio di esportazione, ma è possibile rinominarlo o modificarlo. Per impostazione predefinita, ciascun volume della SVM è associato al criterio di esportazione predefinito. Se i criteri di esportazione per l'accesso SMB sono disattivati sulla SVM, la policy di esportazione "`default`" non ha alcun effetto sull'accesso SMB.
+
+È possibile configurare le regole che forniscono l'accesso agli host NFS e SMB e associare tale regola a un criterio di esportazione, che può quindi essere associato al volume che contiene i dati a cui devono accedere gli host NFS e SMB. In alternativa, se esistono volumi in cui solo i client SMB richiedono l'accesso, è possibile configurare un criterio di esportazione con regole che consentono l'accesso solo utilizzando il protocollo SMB e che utilizzano solo Kerberos o NTLM (o entrambi) per l'autenticazione in sola lettura e in scrittura. Il criterio di esportazione viene quindi associato ai volumi in cui si desidera solo l'accesso SMB.
+
+Se i criteri di esportazione per SMB sono attivati e un client effettua una richiesta di accesso non consentita dalla policy di esportazione applicabile, la richiesta non riesce e viene visualizzato un messaggio di autorizzazione negata. Se un client non corrisponde a nessuna regola nella policy di esportazione del volume, l'accesso viene negato. Se un criterio di esportazione è vuoto, tutti gli accessi vengono implicitamente negati. Ciò è vero anche se le autorizzazioni di condivisione e file consentirebbero altrimenti l'accesso. Ciò significa che è necessario configurare la policy di esportazione in modo da consentire in modo minimo quanto segue sui volumi contenenti condivisioni SMB:
+
+* Consentire l'accesso a tutti i client o al sottoinsieme appropriato di client
+* Consentire l'accesso tramite SMB
+* Consentire l'accesso di sola lettura e scrittura appropriato utilizzando l'autenticazione Kerberos o NTLM (o entrambe)
+
+
+Scopri di più link:../nfs-config/export-policies-concept.html["configurazione e gestione delle policy di esportazione"].

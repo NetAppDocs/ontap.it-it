@@ -1,0 +1,39 @@
+---
+permalink: nfs-config/verify-client-access-from-cluster-task.html 
+sidebar: sidebar 
+keywords: verify, nfs, client, access, cluster 
+summary: 'È possibile consentire ai client selezionati di accedere alla condivisione impostando le autorizzazioni per i file UNIX su un host di amministrazione UNIX. È possibile controllare l"accesso al client utilizzando il comando vserver export-policy check-access, regolando le regole di esportazione in base alle necessità.' 
+---
+= Verificare l'accesso del client NFS dal cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile consentire ai client selezionati di accedere alla condivisione impostando le autorizzazioni per i file UNIX su un host di amministrazione UNIX. È possibile controllare l'accesso del client utilizzando `vserver export-policy check-access` , regolando le regole di esportazione secondo necessità.
+
+.Fasi
+. Nel cluster, controllare l'accesso del client alle esportazioni utilizzando `vserver export-policy check-access` comando.
++
+Il seguente comando controlla l'accesso in lettura/scrittura per un client NFSv3 con l'indirizzo IP 1.2.3.4 nel volume home2. L'output del comando indica che il volume utilizza il criterio di esportazione `exp-home-dir` e che l'accesso è negato.
+
++
+[listing]
+----
+cluster1::> vserver export-policy check-access -vserver vs1 -client-ip 1.2.3.4 -volume home2 -authentication-method sys -protocol nfs3 -access-type read-write
+                                      Policy    Policy     Rule
+Path                    Policy        Owner     Owner Type Index  Access
+----------------------- ------------- --------- ---------- ------ ----------
+/                       default       vs1_root  volume          1 read
+/eng                    default       vs1_root  volume          1 read
+/eng/home2              exp-home-dir  home2     volume          1 denied
+
+3 entries were displayed.
+----
+. Esaminare l'output per determinare se il criterio di esportazione funziona come previsto e se l'accesso client si comporta come previsto.
++
+In particolare, è necessario verificare quali criteri di esportazione vengono utilizzati dal volume o dal qtree e il tipo di accesso che ne deriva dal client.
+
+. Se necessario, riconfigurare le regole dei criteri di esportazione.
+

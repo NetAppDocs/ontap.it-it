@@ -1,0 +1,69 @@
+---
+permalink: antivirus/create-on-access-policy-task.html 
+sidebar: sidebar 
+keywords: create, on-access, policy 
+summary: 'Un criterio di accesso definisce l"ambito di una scansione all"accesso. È possibile specificare le dimensioni massime dei file da sottoporre a scansione, le estensioni dei file da includere nella scansione e le estensioni e i percorsi dei file da escludere dalla scansione. È possibile creare una policy di accesso per una singola SVM o per tutte le SVM in un cluster.' 
+---
+= Creare una policy di accesso
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un criterio di accesso definisce l'ambito di una scansione all'accesso. È possibile specificare le dimensioni massime dei file da sottoporre a scansione, le estensioni dei file da includere nella scansione e le estensioni e i percorsi dei file da escludere dalla scansione. È possibile creare una policy di accesso per una singola SVM o per tutte le SVM in un cluster.
+
+.A proposito di questa attività
+Per impostazione predefinita, ONTAP crea una policy di accesso denominata "`default_CIFS`" e la abilita per tutte le SVM in un cluster.
+
+È possibile impostare `scan-mandatory` Selezionare Off per specificare che l'accesso al file è consentito quando non sono disponibili server Vscan per la scansione dei virus. Tenere presente che tutti i file che si qualificano per l'esclusione di scansione in base a. `paths-to-exclude`, `file-ext-to-exclude`, o. `max-file-size` i parametri non vengono presi in considerazione per la scansione anche se `scan-mandatory` l'opzione è impostata su on.
+
+[NOTE]
+====
+Per potenziali problemi relativi a. `scan-mandatory` vedere xref:vscan-server-connection-concept.adoc[Potenziali problemi di connettività che coinvolgono l'opzione di scansione obbligatoria].
+
+====
+Per impostazione predefinita, viene eseguita la scansione solo dei volumi di lettura/scrittura. È possibile specificare i filtri che consentono la scansione di volumi di sola lettura o che limitano la scansione ai file aperti con accesso di esecuzione.
+
+.Fasi
+. Creare una policy di accesso:
++
+`vserver vscan on-access-policy create -vserver _data_SVM|cluster_admin_SVM_ -policy-name _policy_name_ -protocol CIFS -max-file-size _max_size_of_files_to_scan_ –filters [scan-ro-volume,][scan-execute-access] -file-ext-to-include _extensions_of_files_to_include_ -file-ext-to-exclude _extensions_of_files_to_exclude_ -scan-files-with-no-ext true|false -paths-to-exclude _paths_of_files_to_exclude_ -scan-mandatory on|off`
+
++
+** Specificare una SVM di dati per una policy definita per una singola SVM, una SVM amministrativa del cluster per una policy definita per tutte le SVM in un cluster.
+** Il `-file-ext-to-exclude` l'impostazione ha la precedenza su `-file-ext-to-include` impostazione.
+** Impostare `-scan-files-with-no-ext` a true per eseguire la scansione dei file senza estensioni. Il comando seguente crea una policy di accesso denominata `Policy1` su ``vs1``SVM:
+
+
++
+[listing]
+----
+cluster1::> vserver vscan on-access-policy create -vserver vs1 -policy-name Policy1 -protocol CIFS -filters scan-ro-volume -max-file-size 3GB -file-ext-to-include “mp*”,"tx*" -file-ext-to-exclude "mp3","txt" -scan-files-with-no-ext false -paths-to-exclude "\vol\a b\","\vol\a,b\"
+----
+. Verificare che il criterio di accesso sia stato creato: `vserver vscan on-access-policy show -instance _data_SVM|cluster_admin_SVM_ -policy-name policy_name`
++
+Per un elenco completo delle opzioni, vedere la pagina man del comando.
+
++
+Il seguente comando visualizza i dettagli di `Policy1` policy:
+
++
+[listing]
+----
+cluster1::> vserver vscan on-access-policy show -instance vs1 -policy-name Policy1
+
+                           Vserver: vs1
+                            Policy: Policy1
+                     Policy Status: off
+               Policy Config Owner: vserver
+              File-Access Protocol: CIFS
+                           Filters: scan-ro-volume
+                    Mandatory Scan: on
+Max File Size Allowed for Scanning: 3GB
+            File Paths Not to Scan: \vol\a b\, \vol\a,b\
+       File Extensions Not to Scan: mp3, txt
+           File Extensions to Scan: mp*, tx*
+      Scan Files with No Extension: false
+----
+

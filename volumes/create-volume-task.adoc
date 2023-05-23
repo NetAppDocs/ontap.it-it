@@ -1,0 +1,85 @@
+---
+permalink: volumes/create-volume-task.html 
+sidebar: sidebar 
+keywords: create, volume 
+summary: È possibile creare un volume e specificarne il punto di giunzione e altre proprietà utilizzando il comando di creazione del volume. 
+---
+= Creare un volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare un volume e specificarne il punto di giunzione e altre proprietà utilizzando `volume create` comando.
+
+.A proposito di questa attività
+Un volume deve includere un _percorso di giunzione_ per rendere i dati disponibili ai client. È possibile specificare il percorso di giunzione quando si crea un nuovo volume. Se si crea un volume senza specificare un percorso di giunzione, è necessario _montare_ il volume nello spazio dei nomi SVM utilizzando `volume mount` comando.
+
+.Prima di iniziare
+* La SVM per il nuovo volume e l'aggregato che fornirà lo storage al volume devono già esistere.
+* Se la SVM dispone di un elenco di aggregati associati, l'aggregato deve essere incluso nell'elenco.
+* A partire da ONTAP 9.13.1, puoi creare volumi con l'analisi della capacità e il monitoraggio delle attività abilitati. Per attivare il monitoraggio della capacità o dell'attività, eseguire il `volume create` comando con `-analytics-state` oppure `-activity-tracking-state` impostare su `on`.
++
+Per ulteriori informazioni sull'analisi della capacità e sul monitoraggio delle attività, consulta xref:../task_nas_file_system_analytics_enable.html[Abilita analisi del file system].
+
+
+
+.Fasi
+. Creare un volume:
++
+`volume create -vserver _svm_name_ -volume _volume_name_ -aggregate _aggregate_name_ -size {integer[KB|MB|GB|TB|PB]} -security-style {ntfs|unix|mixed} -user _user_name_or_number_ -group _group_name_or_number_ -junction-path _junction_path_ [-policy _export_policy_name_]`
+
++
+Il `-security style`, `-user`, `-group`, `-junction-path`, e. `-policy` Le opzioni sono solo per gli spazi dei nomi NAS.
+
++
+Le scelte per `-junction-path` sono i seguenti:
+
++
+** Direttamente sotto root, ad esempio `/new_vol`
++
+È possibile creare un nuovo volume e specificarne il montaggio direttamente nel volume root SVM.
+
+** In una directory esistente, ad esempio `/existing_dir/new_vol`
++
+È possibile creare un nuovo volume e specificarne il montaggio in un volume esistente (in una gerarchia esistente), espresso come directory.
+
+
+
++
+Se si desidera creare un volume in una nuova directory (in una nuova gerarchia sotto un nuovo volume), ad esempio, `/new_dir/new_vol`, Quindi, è necessario creare prima un nuovo volume padre che sia congiunto al volume root SVM. Creare quindi il nuovo volume figlio nel percorso di giunzione del nuovo volume padre (nuova directory).
+
+. Verificare che il volume sia stato creato con il punto di giunzione desiderato:
++
+`volume show -vserver _svm_name_ -volume _volume_name_ -junction`
+
+
+
+.Esempi
+Il seguente comando crea un nuovo volume denominato users1 sulla SVM `vs1.example.com` e l'aggregato `aggr1`. Il nuovo volume è disponibile all'indirizzo `/users`. Il volume ha una dimensione di 750 GB e la relativa garanzia è di tipo volume (per impostazione predefinita).
+
+[listing]
+----
+cluster1::> volume create -vserver vs1.example.com -volume users1 -aggregate aggr1 -size 750g -junction-path /users
+[Job 1642] Job succeeded: Successful
+
+cluster1::> volume show -vserver vs1.example.com -volume users1 -junction
+                          Junction                 Junction
+Vserver           Volume  Active   Junction Path   Path Source
+----------------- ------- -------- --------------- -----------
+vs1.example.com   users1  true     /users          RW_volume
+----
+Il seguente comando crea un nuovo volume denominato "`home4`" su SVM"`vs1.example.com`" e l'aggregato "`aggr1`". La directory `/eng/` Esiste già nello spazio dei nomi per vs1 SVM e il nuovo volume è disponibile all'indirizzo `/eng/home`, che diventa la home directory di `/eng/` namespace. Il volume è di 750 GB e la relativa garanzia è di tipo `volume` (per impostazione predefinita).
+
+[listing]
+----
+cluster1::> volume create -vserver vs1.example.com -volume home4 -aggregate aggr1 -size 750g -junction-path /eng/home
+[Job 1642] Job succeeded: Successful
+
+cluster1::> volume show -vserver vs1.example.com -volume home4 -junction
+                         Junction                 Junction
+Vserver          Volume  Active   Junction Path   Path Source
+---------------- ------- -------- --------------- -----------
+vs1.example.com  home4   true     /eng/home       RW_volume
+----

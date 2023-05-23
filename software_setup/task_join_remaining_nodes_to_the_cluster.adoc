@@ -1,0 +1,73 @@
+---
+permalink: software_setup/task_join_remaining_nodes_to_the_cluster.html 
+sidebar: sidebar 
+keywords: ontap, software, setup, join, remaining, nodes, cluster, HA, high availability, autosupport 
+summary: 'Dopo aver creato un nuovo cluster, utilizzare la procedura guidata di installazione del cluster per unire ciascun nodo rimanente al cluster, uno alla volta. La procedura guidata consente di configurare l"interfaccia di gestione dei nodi di ciascun nodo.' 
+---
+= Unire i nodi rimanenti al cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dopo aver creato un nuovo cluster, utilizzare la procedura guidata di installazione del cluster per unire ciascun nodo rimanente al cluster, uno alla volta. La procedura guidata consente di configurare l'interfaccia di gestione dei nodi di ciascun nodo.
+
+Quando si uniscono due nodi in un cluster, si crea una coppia ad alta disponibilità (ha). Se si uniscono 4 nodi, si creano due coppie ha. Per ulteriori informazioni su ha, vedere link:https://docs.netapp.com/us-en/ontap/high-availability/index.html["Scopri di più su ha"].
+
+È possibile unire un solo nodo al cluster alla volta. Quando si inizia a unire un nodo al cluster, è necessario completare l'operazione di Unione per quel nodo e il nodo deve far parte del cluster prima di poter iniziare a unirsi al nodo successivo.
+
+*Best practice:* se si dispone di un sistema FAS2720 con 24 o meno dischi NL-SAS, verificare che la configurazione dello storage predefinita sia impostata su Active/Passive (attivo/passivo) per ottimizzare le prestazioni. Per ulteriori informazioni, vedere link:https://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-psmg/GUID-4AC35094-4077-4F1E-8D6E-82BF111354B0.html?cp=4_5_5_11["Impostazione di una configurazione Active-passive sui nodi utilizzando la partizione dei dati root"]
+
+. Accedere al nodo a cui si intende accedere nel cluster.
++
+L'installazione guidata del cluster viene avviata dalla console.
+
++
+[listing]
+----
+Welcome to the cluster setup wizard....
+----
+. Riconoscere l'istruzione AutoSupport.
++
+
+NOTE: AutoSupport è attivato per impostazione predefinita.
+
++
+[listing]
+----
+Type yes to confirm and continue {yes}: yes
+----
+. Seguire le istruzioni visualizzate sullo schermo per assegnare un indirizzo IP al nodo.
++
+A partire da ONTAP 9.13.1, è possibile assegnare indirizzi IPv6 per le LIF di gestione sulle piattaforme A800 e FAS8700. Per le versioni di ONTAP precedenti alla 9.13.1 o per la versione 9.13.1 e successive su altre piattaforme, è necessario assegnare indirizzi IPv4 per le LIF di gestione, quindi convertire in IPv6 dopo aver completato la configurazione del cluster.
+
+. Premere *Invio* per continuare.
++
+[listing]
+----
+Do you want to create a new cluster or join an existing cluster? {create, join}:
+----
+. Unire il nodo al cluster: `join`
+. Seguire le istruzioni sullo schermo per configurare il nodo e unirsi al cluster.
+. Una volta completata l'installazione, verificare che il nodo sia integro e idoneo a partecipare al cluster: `cluster show`
++
+L'esempio seguente mostra un cluster dopo che il secondo nodo (cluster1-02) è stato Unito al cluster:
+
++
+[listing]
+----
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+cluster1-01           true    true
+cluster1-02           true    true
+----
++
+È possibile accedere alla procedura guidata di configurazione del cluster per modificare i valori immessi per la SVM amministrativa o il nodo SVM utilizzando il comando di configurazione del cluster.
+
+. Ripetere questa operazione per ogni nodo rimanente.
+
+
+.Al termine
+Se necessario, link:convert-ipv4-to-ipv6-task.html["Converti da IPv4 a IPv6"].

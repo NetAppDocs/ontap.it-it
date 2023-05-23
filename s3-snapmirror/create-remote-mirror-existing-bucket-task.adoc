@@ -1,0 +1,170 @@
+---
+sidebar: sidebar 
+permalink: s3-snapmirror/create-remote-mirror-existing-bucket-task.html 
+keywords: snapmirror create a mirror relationship for an existing bucket, existing bucket, protect existing s3 buckets,s3 snapmirror relationship, remote cluster,  storage vm, bucket access policy, snapmirror protection, mirror buckets, snapmirror policy, source vm, destination vm, peering, mirror data to remote cluster, first s3 snapmirror relationship 
+summary: È possibile iniziare a proteggere i bucket S3 esistenti in qualsiasi momento, ad esempio se è stata aggiornata una configurazione S3 da una release precedente a ONTAP 9.10.1. 
+---
+= Creare una relazione mirror per un bucket esistente (cluster remoto)
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+:toc-position: content
+
+
+[role="lead"]
+È possibile iniziare a proteggere i bucket S3 esistenti in qualsiasi momento, ad esempio se è stata aggiornata una configurazione S3 da una release precedente a ONTAP 9.10.1.
+
+.Di cosa hai bisogno
+* I requisiti per le versioni di ONTAP, le licenze e la configurazione del server S3 sono stati completati.
+* Esiste una relazione di peering tra i cluster di origine e di destinazione e esiste una relazione di peering tra le VM di storage di origine e di destinazione.
+* I certificati CA sono necessari per le macchine virtuali di origine e di destinazione. È possibile utilizzare certificati CA autofirmati o certificati firmati da un vendor CA esterno.
+
+
+.A proposito di questa attività
+Sarà necessario eseguire attività sia sul cluster di origine che su quello di destinazione.
+
+
+
+== Procedura di System Manager
+
+. Se si tratta della prima relazione di S3 SnapMirror per questa VM di storage, verificare che le chiavi utente root esistano sia per le VM di storage di origine che di destinazione e rigenerarle in caso contrario:
++
+.. Fare clic su *Storage > Storage VM* (Storage VM), quindi selezionare la VM di storage.
+.. Nella scheda *Impostazioni*, fare clic su image:icon_pencil.gif["icona edit (modifica)"] Nel riquadro *S3*.
+.. Nella scheda *utenti*, verificare che sia presente una chiave di accesso per l'utente root.
+.. In caso contrario, fare clic su image:icon_kabob.gif["icona altro"] Accanto a *root*, quindi fare clic su *Rigenera chiave.* non rigenerare la chiave se ne esiste già una.
+
+
+. Verificare che l'accesso di utenti e gruppi sia corretto nelle macchine virtuali storage di origine e di destinazione: Fare clic su *Storage > Storage VM,* fare clic sulla macchina virtuale storage, fare clic su *Settings* (Impostazioni), quindi su image:icon_pencil.gif["icona edit (modifica)"] Sotto *S3*.
++
+Vedere link:../task_object_provision_add_s3_users_groups.html["Aggiungere utenti e gruppi S3"] per ulteriori informazioni.
+
+. Nel cluster di origine, creare un criterio S3 SnapMirror se non si dispone di un criterio esistente e non si desidera utilizzare il criterio predefinito:
++
+.. Fare clic su *protezione > Panoramica*, quindi su *Impostazioni policy locale*.
+.. Fare clic su image:../media/icon_arrow.gif["freccia destra"] Accanto a *Criteri di protezione*, quindi fare clic su *Aggiungi*.
+.. Immettere il nome e la descrizione della policy.
+.. Selezionare l'ambito del criterio, il cluster o SVM
+.. Selezionare *Continuous* per le relazioni di S3 SnapMirror.
+.. Inserire i valori *Throttle* e *Recovery Point Objective*.
+
+
+. Verificare che la policy di accesso al bucket del bucket esistente soddisfi ancora le proprie esigenze:
++
+.. Fare clic su *Storage > Bucket* (Storage > bucket), quindi selezionare il bucket che si desidera proteggere.
+.. Nella scheda *Permissions*, fare clic su image:icon_pencil.gif["icona edit (modifica)"] *Modifica*, quindi fare clic su *Aggiungi* in *permessi*.
++
+*** *Principal and Effect* (principale ed effetto): Selezionare i valori corrispondenti alle impostazioni del gruppo di utenti o accettare le impostazioni predefinite.
+*** *Azioni*: Verificare che vengano visualizzati i seguenti valori: `GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts`
+*** *Risorse*: Utilizzare le impostazioni predefinite `(_bucketname, bucketname_/*)` o altri valori di cui hai bisogno.
++
+Vedere link:../task_object_provision_manage_bucket_access.html["Gestire l'accesso degli utenti ai bucket"] per ulteriori informazioni su questi campi.
+
+
+
+
+
+. Proteggi un bucket esistente con la protezione di S3 SnapMirror:
++
+.. Fare clic su *Storage* > *Bucket*, quindi selezionare il bucket che si desidera proteggere.
+.. Fare clic su *Protect* (protezione) e immettere i seguenti valori:
++
+*** Destinazione
++
+**** *DESTINAZIONE*: Sistema ONTAP
+**** *CLUSTER*: Selezionare il cluster remoto.
+**** *STORAGE VM*: Selezionare una storage VM sul cluster remoto.
+**** *Certificato CA del SERVER S3*: Copia e incolla il contenuto del certificato _source_.
+
+
+*** Origine
++
+**** *Certificato CA server S3*: Copia e incolla il contenuto del certificato _destination_.
+
+
+
+
+
+
+
+
+Selezionare *Use the same certificate on the destination* (Usa lo stesso certificato sulla destinazione) se si utilizza un certificato firmato da un vendor CA esterno.
+
+Se si fa clic su *Destination Settings* (Impostazioni destinazione), è anche possibile inserire i propri valori al posto dei valori predefiniti per il nome del bucket, la capacità e il livello di servizio delle performance.
+
+Quando si fa clic su *Save* (Salva), il bucket esistente viene mirrorato in un nuovo bucket nella VM di storage di destinazione.
+
+
+
+== Procedura CLI
+
+. Se questa è la prima relazione di S3 SnapMirror per questa SVM, verificare che le chiavi utente root esistano sia per le SVM di origine che di destinazione e rigenerarle in caso contrario:
+`vserver object-store-server user show`+ verificare la presenza di una chiave di accesso per l'utente root. In caso contrario, immettere:
+`vserver object-store-server user regenerate-keys -vserver _svm_name_ -user _root_`+ non rigenerare la chiave se ne esiste già una.
+. Creare un bucket sulla SVM di destinazione come destinazione mirror:
++
+`vserver object-store-server bucket create -vserver _svm_name_ -bucket _dest_bucket_name_ [-size _integer_[KB|MB|GB|TB|PB]] [-comment _text_] [_additional_options_]`
+
+. Verificare che le regole di accesso delle policy di bucket predefinite siano corrette sia nelle SVM di origine che di destinazione:
++
+`vserver object-store-server bucket policy add-statement -vserver _svm_name_ -bucket _bucket_name_ -effect {allow|deny} -action _object_store_actions_ -principal _user_and_group_names_ -resource _object_store_resources_ [-sid _text_] [-index _integer_]`
+
++
+.Esempio
+[listing]
+----
+src_cluster::> vserver object-store-server bucket policy add-statement -bucket test-bucket -effect allow -action GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts -principal - -resource test-bucket, test-bucket /*
+----
+. Sulla SVM di origine, creare un criterio S3 SnapMirror se non si dispone di uno esistente e non si desidera utilizzare il criterio predefinito:
++
+`snapmirror policy create -vserver svm_name -policy policy_name -type continuous [-rpo _integer_] [-throttle _throttle_type_] [-comment _text_] [_additional_options_]`
+
++
+Parametri:
+
++
+** `continuous` – L'unico tipo di policy per le relazioni di S3 SnapMirror (obbligatorio).
+** `-rpo` – specifica il tempo per l'obiettivo del punto di ripristino, in secondi (facoltativo).
+** `-throttle` – specifica il limite massimo di throughput/larghezza di banda, in kilobyte/secondi (opzionale).
++
+.Esempio
+[listing]
+----
+src_cluster::> snapmirror policy create -vserver vs0 -type continuous -rpo 0 -policy test-policy
+----
+
+
+. Installare i certificati CA sulle SVM amministrative dei cluster di origine e di destinazione:
++
+.. Nel cluster di origine, installare il certificato CA che ha firmato il certificato del server S3 _destination_:
+`security certificate install -type server-ca -vserver _src_admin_svm_ -cert-name _dest_server_certificate_`
+.. Nel cluster di destinazione, installare il certificato CA che ha firmato il certificato del server S3 _source_:
+`security certificate install -type server-ca -vserver _dest_admin_svm_ -cert-name _src_server_certificate_`+ se si utilizza un certificato firmato da un vendor CA esterno, installare lo stesso certificato sulla SVM amministrativa di origine e destinazione.
++
+Vedere `security certificate install` pagina man per i dettagli.
+
+
+
+. Sulla SVM di origine, creare una relazione SnapMirror S3:
++
+`snapmirror create -source-path _src_svm_name_:/bucket/_bucket_name_ -destination-path dest_peer_svm_name:/bucket/_bucket_name_, ...} [-policy policy_name]`
+
++
+È possibile utilizzare un criterio creato o accettare quello predefinito.
+
++
+.Esempio
+[listing]
+----
+src_cluster::> snapmirror create -source-path vs0:/bucket/test-bucket -destination-path vs1:/bucket/test-bucket-mirror -policy test-policy
+----
+. Verificare che il mirroring sia attivo:
+`snapmirror show -policy-type continuous -fields status`
+

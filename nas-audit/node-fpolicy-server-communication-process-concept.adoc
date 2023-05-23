@@ -1,0 +1,48 @@
+---
+permalink: nas-audit/node-fpolicy-server-communication-process-concept.html 
+sidebar: sidebar 
+keywords: node-to-external, fpolicy, server communication process 
+summary: Per pianificare correttamente la configurazione di FPolicy, è necessario comprendere il processo di comunicazione da nodo a server FPolicy esterno. 
+---
+= Qual è il processo di comunicazione da nodo a server FPolicy esterno
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per pianificare correttamente la configurazione di FPolicy, è necessario comprendere il processo di comunicazione da nodo a server FPolicy esterno.
+
+Ogni nodo che partecipa a ciascuna macchina virtuale di storage (SVM) avvia una connessione a un server FPolicy esterno (server FPolicy) utilizzando TCP/IP. Le connessioni ai server FPolicy vengono configurate utilizzando LIF dei dati dei nodi; pertanto, un nodo partecipante può impostare una connessione solo se il nodo dispone di una LIF dei dati operativi per SVM.
+
+Ogni processo FPolicy sui nodi partecipanti tenta di stabilire una connessione con il server FPolicy quando il criterio è attivato. Utilizza l'indirizzo IP e la porta del motore esterno FPolicy specificato nella configurazione del criterio.
+
+La connessione stabilisce un canale di controllo da ciascuno dei nodi che partecipano a ciascuna SVM al server FPolicy attraverso la LIF dei dati. Inoltre, se gli indirizzi LIF dei dati IPv4 e IPv6 sono presenti sullo stesso nodo partecipante, FPolicy tenta di stabilire connessioni sia per IPv4 che per IPv6. Pertanto, in uno scenario in cui la SVM si estende su più nodi o se sono presenti entrambi gli indirizzi IPv4 e IPv6, il server FPolicy deve essere pronto per più richieste di configurazione del canale di controllo dal cluster dopo che la policy FPolicy è stata attivata sulla SVM.
+
+Ad esempio, se un cluster ha tre nodi - Node1, Node2 e node3 - e le LIF dei dati SVM sono distribuite solo su Node2 e node3, i canali di controllo vengono avviati solo da Node2 e node3, indipendentemente dalla distribuzione dei volumi di dati. Si supponga che Node2 abbia due LIF di dati (LIF e LF2) che appartengono alla SVM e che la connessione iniziale sia da LIF. In caso di errore di LIF, FPolicy tenta di stabilire un canale di controllo da LIE2.
+
+image::../media/what-node-to-fpolicy-server-communication-process-is.png[che nodo è il processo di comunicazione del server fpolicy]
+
+
+
+== Come FPolicy gestisce le comunicazioni esterne durante la migrazione LIF o il failover
+
+È possibile migrare le LIF dei dati nelle porte dati dello stesso nodo o nelle porte dati di un nodo remoto.
+
+Quando si esegue il failover o la migrazione di una LIF dati, viene stabilita una nuova connessione del canale di controllo al server FPolicy. FPolicy può quindi riprovare le richieste dei client SMB e NFS in timeout, con il risultato che le nuove notifiche vengono inviate ai server FPolicy esterni. Il nodo rifiuta le risposte del server FPolicy alle richieste SMB e NFS originali, con timeout.
+
+
+
+== Come FPolicy gestisce le comunicazioni esterne durante il failover del nodo
+
+Se il nodo del cluster che ospita le porte dati utilizzate per la comunicazione FPolicy non riesce, ONTAP interrompe la connessione tra il server FPolicy e il nodo.
+
+L'impatto del failover del cluster sul server FPolicy può essere mitigato configurando il gestore LIF per migrare la porta dati utilizzata nella comunicazione FPolicy su un altro nodo attivo. Una volta completata la migrazione, viene stabilita una nuova connessione utilizzando la nuova porta dati.
+
+Se il gestore LIF non è configurato per migrare la porta dati, il server FPolicy deve attendere che venga visualizzato il nodo guasto. Una volta attivato il nodo, viene avviata una nuova connessione da quel nodo con un nuovo ID sessione.
+
+[NOTE]
+====
+Il server FPolicy rileva le connessioni interrotte con il messaggio del protocollo Keep-alive. Il timeout per l'eliminazione dell'ID sessione viene determinato durante la configurazione di FPolicy. Il timeout di mantenimento predefinito è di due minuti.
+
+====

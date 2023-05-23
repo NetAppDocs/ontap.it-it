@@ -1,0 +1,77 @@
+---
+permalink: smb-admin/configure-default-unix-user-task.html 
+sidebar: sidebar 
+keywords: configure, unix, user, map, fail, individual, windows, authentication, non-mapped, configure the default unix user 
+summary: 'È possibile configurare l"utente UNIX predefinito da utilizzare se tutti gli altri tentativi di mappatura non riescono per un utente o se non si desidera mappare singoli utenti tra UNIX e Windows. In alternativa, se si desidera che l"autenticazione degli utenti non mappati non venga eseguita correttamente, non configurare l"utente UNIX predefinito.' 
+---
+= Configurare l'utente UNIX predefinito
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare l'utente UNIX predefinito da utilizzare se tutti gli altri tentativi di mappatura non riescono per un utente o se non si desidera mappare singoli utenti tra UNIX e Windows. In alternativa, se si desidera che l'autenticazione degli utenti non mappati non venga eseguita correttamente, non configurare l'utente UNIX predefinito.
+
+.A proposito di questa attività
+Per impostazione predefinita, il nome dell'utente UNIX predefinito è "`pcuser`", il che significa che, per impostazione predefinita, è attivata la mappatura dell'utente all'utente UNIX predefinito. È possibile specificare un altro nome da utilizzare come utente UNIX predefinito. Il nome specificato deve esistere nei database del servizio di nomi configurati per la macchina virtuale di storage (SVM). Se questa opzione è impostata su una stringa nulla, nessuno può accedere al server CIFS come utente predefinito UNIX. In altri termini, ogni utente deve disporre di un account nel database delle password prima di poter accedere al server CIFS.
+
+Per consentire a un utente di connettersi al server CIFS utilizzando l'account utente UNIX predefinito, l'utente deve soddisfare i seguenti prerequisiti:
+
+* L'utente viene autenticato.
+* L'utente si trova nel database utenti Windows locale del server CIFS, nel dominio principale del server CIFS o in un dominio attendibile (se le ricerche di mappatura dei nomi multidominio sono attivate sul server CIFS).
+* Il nome utente non è esplicitamente associato a una stringa nulla.
+
+
+.Fasi
+. Configurare l'utente UNIX predefinito:
++
+|===
+| Se si desidera ... | Inserire ... 
+
+
+ a| 
+Utilizzare l'utente UNIX predefinito "`pcuser`"
+ a| 
+`vserver cifs options modify -default-unix-user pcuser`
+
+
+
+ a| 
+Utilizzare un altro account utente UNIX come utente predefinito
+ a| 
+`vserver cifs options modify -default-unix-user _user_name_`
+
+
+
+ a| 
+Disattiva l'utente UNIX predefinito
+ a| 
+`vserver cifs options modify -default-unix-user ""`
+
+|===
++
+`vserver cifs options modify -default-unix-user pcuser`
+
+. Verificare che l'utente UNIX predefinito sia configurato correttamente: `vserver cifs options show -vserver _vserver_name_`
++
+Nell'esempio seguente, sia l'utente UNIX predefinito che l'utente UNIX guest su SVM vs1 sono configurati per utilizzare l'utente UNIX "`pcuser`":
+
++
+`vserver cifs options show -vserver vs1`
+
++
+[listing]
+----
+
+Vserver: vs1
+
+  Client Session Timeout : 900
+  Default Unix Group     : -
+  Default Unix User      : pcuser
+  Guest Unix User        : pcuser
+  Read Grants Exec       : disabled
+  Read Only Delete       : disabled
+  WINS Servers           : -
+----
+

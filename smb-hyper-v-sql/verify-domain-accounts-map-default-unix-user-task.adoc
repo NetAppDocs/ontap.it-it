@@ -1,0 +1,113 @@
+---
+permalink: smb-hyper-v-sql/verify-domain-accounts-map-default-unix-user-task.html 
+sidebar: sidebar 
+keywords: verfiy, domain, account, default, unix, server, smb, share, user 
+summary: 'Hyper-V e SQL Server utilizzano gli account di dominio per creare connessioni SMB alle condivisioni continuamente disponibili. Per creare correttamente la connessione, l"account del computer deve essere mappato correttamente a un utente UNIX. Il modo più conveniente per eseguire questa operazione consiste nel mappare l"account del computer all"utente UNIX predefinito.' 
+---
+= Verificare che gli account di dominio siano associati all'utente UNIX predefinito
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Hyper-V e SQL Server utilizzano gli account di dominio per creare connessioni SMB alle condivisioni continuamente disponibili. Per creare correttamente la connessione, l'account del computer deve essere mappato correttamente a un utente UNIX. Il modo più conveniente per eseguire questa operazione consiste nel mappare l'account del computer all'utente UNIX predefinito.
+
+.A proposito di questa attività
+Hyper-V e SQL Server utilizzano gli account dei computer di dominio per creare connessioni SMB. Inoltre, SQL Server utilizza un account utente di dominio come account di servizio che effettua anche connessioni SMB.
+
+Quando si crea una macchina virtuale per lo storage (SVM), ONTAP crea automaticamente l'utente predefinito "`pcuser`" (con un UID di `65534`) E il gruppo denominato "`pcuser`" (con un GID di `65534`) e aggiunge l'utente predefinito al gruppo "`pcuser`". Se si configura una soluzione Hyper-V su SMB su una SVM esistente prima dell'aggiornamento del cluster a Data ONTAP 8.2, l'utente e il gruppo predefiniti potrebbero non esistere. In caso contrario, è necessario crearli prima di configurare l'utente UNIX predefinito del server CIFS.
+
+.Fasi
+. Determinare se esiste un utente UNIX predefinito:
++
+`*vserver cifs options show -vserver _vserver_name_*`
+
+. Se l'opzione utente predefinita non è impostata, determinare se esiste un utente UNIX che può essere designato come utente UNIX predefinito:
++
+`*vserver services unix-user show -vserver _vserver_name_*`
+
+. Se l'opzione utente predefinita non è impostata e non esiste un utente UNIX che può essere designato come utente UNIX predefinito, creare l'utente UNIX predefinito e il gruppo predefinito, quindi aggiungere l'utente predefinito al gruppo.
++
+In genere, all'utente predefinito viene assegnato il nome utente "`pcuser`" e deve essere assegnato l'UID di `65534`. Al gruppo predefinito viene generalmente assegnato il nome "`pcuser`". Il GID assegnato al gruppo deve essere `65534`.
+
++
+.. Creare il gruppo predefinito: +
+`*vserver services unix-group create -vserver _vserver_name_ -name pcuser -id 65534*`
+.. Creare l'utente predefinito e aggiungerlo al gruppo predefinito: +
+`*vserver services unix-user create -vserver _vserver_name_ -user pcuser -id 65534 -primary-gid 65534*`
+.. Verificare che l'utente e il gruppo predefinito siano configurati correttamente: +
+`*vserver services unix-user show -vserver _vserver_name_*`+
+`*vserver services unix-group show -vserver _vserver_name_ -members*`
+
+
+. Se l'utente predefinito del server CIFS non è configurato, eseguire le seguenti operazioni:
++
+.. Configurare l'utente predefinito:
++
+`*vserver cifs options modify -vserver *vserver_name* -default-unix-user pcuser*`
+
+.. Verificare che l'utente UNIX predefinito sia configurato correttamente:
++
+`*vserver cifs options show -vserver _vserver_name_*`
+
+
+
+. Per verificare che l'account del computer del server applicazioni sia associato correttamente all'utente predefinito, mappare un'unità a una condivisione che risiede sulla SVM e confermare l'associazione dell'utente Windows all'utente UNIX utilizzando `vserver cifs session show` comando.
++
+Per ulteriori informazioni sull'utilizzo di questo comando, vedere le pagine man.
+
+
+
+.Esempio
+I seguenti comandi determinano che l'utente predefinito del server CIFS non è impostato, ma determinano l'esistenza dell'utente "`pcuser`" e del gruppo "`pcuser`". L'utente "`pcuser`" viene assegnato come utente predefinito del server CIFS su SVM vs1.
+
+[listing]
+----
+cluster1::> vserver cifs options show
+
+Vserver: vs1
+
+  Client Session Timeout : 900
+  Default Unix Group     : -
+  Default Unix User      : -
+  Guest Unix User        : -
+  Read Grants Exec       : disabled
+  Read Only Delete       : disabled
+  WINS Servers           : -
+
+
+
+cluster1::> vserver services unix-user show
+          User            User   Group  Full
+Vserver   Name            ID     ID     Name
+--------- --------------- ------ ------ ----------------
+vs1       nobody          65535  65535  -
+vs1       pcuser          65534  65534  -
+vs1       root            0      1      -
+
+cluster1::> vserver services unix-group show -members
+Vserver        Name                ID
+vs1            daemon              1
+       Users: -
+vs1            nobody              65535
+       Users: -
+vs1            pcuser              65534
+       Users: -
+vs1            root                0
+       Users: -
+
+cluster1::> vserver cifs options modify -vserver vs1 -default-unix-user pcuser
+
+cluster1::> vserver cifs options show
+
+Vserver: vs1
+
+  Client Session Timeout : 900
+  Default Unix Group     : -
+  Default Unix User      : pcuser
+  Guest Unix User        : -
+  Read Grants Exec       : disabled
+  Read Only Delete       : disabled
+  WINS Servers           : -
+----

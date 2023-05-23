@@ -1,0 +1,75 @@
+---
+permalink: san-admin/create-port-sets-binding-igroups-task.html 
+sidebar: sidebar 
+keywords: create, port, sets, binding, igroups, portsets,portset 
+summary: 'Oltre a utilizzare la mappa LUN selettiva (SLM), è possibile creare un portset e associare il portset a un igroup per limitare ulteriormente i LIF che un iniziatore può utilizzare per accedere a un LUN. Se non si associa un portset a un igroup, tutti gli iniziatori dell"igroup possono accedere alle LUN mappate attraverso tutte le LIF sul nodo che possiede il LUN e il partner ha del nodo proprietario.' 
+---
+= Creare un portset e associarlo a un igroup
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Oltre all'utilizzo link:selective-lun-map-concept.html["Mappa LUN selettiva (SLM)"], È possibile creare un portset e associare il portset a un igroup per limitare ulteriormente le LIF che possono essere utilizzate da un iniziatore per accedere a un LUN.
+
+Se non si associa un portset a un igroup, tutti gli iniziatori nell'igroup possono accedere alle LUN mappate attraverso tutte le LIF sul nodo che possiede il LUN e il partner ha del nodo proprietario.
+
+.Di cosa hai bisogno
+Devi avere almeno un LIF e un igroup.
+
+A meno che non si utilizzino gruppi di interfacce, si consigliano due LIF per la ridondanza sia per iSCSI che per FC. Per i gruppi di interfacce si consiglia un solo LIF.
+
+.A proposito di questa attività
+È vantaggioso utilizzare i portset con SLM quando si dispone di più di due LIF su un nodo e si desidera limitare un determinato iniziatore a un sottoinsieme di LIF. Senza i portset, tutti gli iniziatori avranno accesso al LUN a tutte le destinazioni del nodo tramite il nodo proprietario del LUN e il partner ha del nodo proprietario.
+
+.Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.10.1, è possibile utilizzare Gestione sistema per creare portset e associarli a igroups.
+
+Se è necessario creare un portset e associarlo a un igroup in una release di ONTAP precedente alla 9.10.1, è necessario utilizzare la procedura CLI di ONTAP.
+
+. In System Manager, fare clic su *Network > Overview > Portsets*, quindi fare clic su *Add*.
+. Inserire le informazioni relative al nuovo portset e fare clic su *Add* (Aggiungi).
+. Fare clic su *host > SAN Initiator Groups* (gruppi iniziatori SAN)
+. Per associare il portset a un nuovo igroup, fare clic su *Add* (Aggiungi).
++
+Per associare il portset a un igroup esistente, selezionare il igroup, quindi fare clic su image:icon_kabob.gif["Icona Kabob"], Quindi fare clic su *Edit Initiator Group* (Modifica gruppo iniziatore).
+
+
+
+.Informazioni correlate
+link:manage-san-initiators-task.html["Visualizza e gestisci gli iniziatori e gli igroups"]
+
+--
+.CLI
+--
+. Creare un set di porte contenente le LIF appropriate:
++
+`portset create -vserver _vserver_name_ -portset _portset_name_ -protocol _protocol_ -port-name _port_name_`
+
++
+Se si utilizza FC, specificare `protocol` parametro as `fcp`. Se si utilizza iSCSI, specificare `protocol` parametro as `iscsi`.
+
+. Collegare l'igroup al set di porte:
++
+`lun igroup bind -vserver _vserver_name_ -igroup _igroup_name_ -portset _portset_name_`
+
+. Verificare che i set di porte e i LIF siano corretti:
++
+`portset show -vserver _vserver_name_`
+
++
+[listing]
+----
+Vserver   Portset   Protocol Port Names    Igroups
+--------- --------- -------- ------------- --------
+vs3       portset0  iscsi    lif0,lif1     igroup1
+----
+
+
+--
+====

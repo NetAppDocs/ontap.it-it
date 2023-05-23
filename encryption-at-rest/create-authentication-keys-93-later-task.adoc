@@ -1,0 +1,104 @@
+---
+permalink: encryption-at-rest/create-authentication-keys-93-later-task.html 
+sidebar: sidebar 
+keywords: creating, authentication keys, ontap 9.5, earlier 
+summary: È possibile utilizzare il comando create-key del gestore delle chiavi di sicurezza per creare le chiavi di autenticazione per un nodo e memorizzarle nei server KMIP configurati. 
+---
+= Creare chiavi di autenticazione in ONTAP 9.5 e versioni precedenti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `security key-manager create-key` Per creare le chiavi di autenticazione per un nodo e memorizzarle nei server KMIP configurati.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.A proposito di questa attività
+Se la configurazione della protezione richiede l'utilizzo di chiavi diverse per l'autenticazione dei dati e l'autenticazione FIPS 140-2, è necessario creare una chiave separata per ciascuna di esse. In caso contrario, è possibile utilizzare la stessa chiave di autenticazione per la conformità FIPS utilizzata per l'accesso ai dati.
+
+ONTAP crea chiavi di autenticazione per tutti i nodi del cluster.
+
+* Questo comando non è supportato quando è attivata la gestione delle chiavi integrate.
+* Viene visualizzato un avviso se i server di gestione delle chiavi configurati memorizzano già più di 128 chiavi di autenticazione.
++
+È possibile utilizzare il software del server di gestione delle chiavi per eliminare le chiavi inutilizzate, quindi eseguire nuovamente il comando.
+
+
+
+.Fasi
+. Creare le chiavi di autenticazione per i nodi del cluster:
++
+`security key-manager create-key`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man del comando.
+
++
+[NOTE]
+====
+L'ID della chiave visualizzato nell'output è un identificatore utilizzato per fare riferimento alla chiave di autenticazione. Non si tratta della chiave di autenticazione effettiva o della chiave di crittografia dei dati.
+
+====
++
+Nell'esempio seguente vengono create le chiavi di autenticazione per `cluster1`:
+
++
+[listing]
+----
+cluster1::> security key-manager create-key
+   (security key-manager create-key)
+Verifying requirements...
+
+Node: cluster1-01
+Creating authentication key...
+Authentication key creation successful.
+Key ID: F1CB30AFF1CB30B00101000000000000A68B167F92DD54196297159B5968923C
+
+Node: cluster1-01
+Key manager restore operation initialized.
+Successfully restored key information.
+
+Node: cluster1-02
+Key manager restore operation initialized.
+Successfully restored key information.
+----
+. Verificare che le chiavi di autenticazione siano state create:
++
+`security key-manager query`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene verificata la creazione di chiavi di autenticazione per `cluster1`:
+
++
+[listing]
+----
+cluster1::> security key-manager query
+
+  (security key-manager query)
+
+          Node: cluster1-01
+   Key Manager: 20.1.1.1
+ Server Status: available
+
+Key Tag        Key Type  Restored
+-------------  --------  --------
+cluster1-01    NSE-AK    yes
+       Key ID: F1CB30AFF1CB30B00101000000000000A68B167F92DD54196297159B5968923C
+
+
+          Node: cluster1-02
+   Key Manager: 20.1.1.1
+ Server Status: available
+
+Key Tag        Key Type  Restored
+-------------  --------  --------
+cluster1-02    NSE-AK    yes
+       Key ID: F1CB30AFF1CB30B00101000000000000A68B167F92DD54196297159B5968923C
+----
+

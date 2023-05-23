@@ -1,0 +1,58 @@
+---
+permalink: smb-admin/add-ntfs-dacl-entries-security-descriptor-task.html 
+sidebar: sidebar 
+keywords: add, dacl, discretionary, access, control, list, access, control, entries, aces, ntfs, security, descriptor, acls, add ntfs dacl access control entries to the ntfs security 
+summary: 'L"aggiunta di voci di controllo di accesso (ACE) DACL (Discretionary Access Control List) al descrittore di protezione NTFS è il secondo passo nella configurazione e nell"applicazione di ACL NTFS a un file o a una cartella. Ciascuna voce identifica l"oggetto a cui è consentito o negato l"accesso e definisce le operazioni che l"oggetto può o non può eseguire nei file o nelle cartelle definiti nell"ACE.' 
+---
+= Aggiungere le voci di controllo dell'accesso DACL NTFS al descrittore di protezione NTFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'aggiunta di voci di controllo di accesso (ACE) DACL (Discretionary Access Control List) al descrittore di protezione NTFS è il secondo passo nella configurazione e nell'applicazione di ACL NTFS a un file o a una cartella. Ciascuna voce identifica l'oggetto a cui è consentito o negato l'accesso e definisce le operazioni che l'oggetto può o non può eseguire nei file o nelle cartelle definiti nell'ACE.
+
+.A proposito di questa attività
+È possibile aggiungere uno o più ACE al DACL del descrittore di protezione.
+
+Se il descrittore di protezione contiene un DACL con ACE esistenti, il comando aggiunge il nuovo ACE al DACL. Se il descrittore di protezione non contiene un DACL, il comando crea il DACL e aggiunge il nuovo ACE.
+
+È possibile personalizzare le voci DACL specificando i diritti che si desidera consentire o negare per l'account specificato in `-account` parametro. Esistono tre metodi di esclusione reciproca per specificare i diritti:
+
+* Diritti
+* Diritti avanzati
+* Diritti raw (privilegio avanzato)
+
+
+[NOTE]
+====
+Se non si specificano i diritti per la voce DACL, l'impostazione predefinita è impostare i diritti su `Full Control`.
+
+====
+È possibile personalizzare le voci DACL specificando come applicare l'ereditarietà.
+
+Il valore di qualsiasi parametro opzionale viene ignorato per Storage-Level Access Guard. Per ulteriori informazioni, consulta le pagine man.
+
+.Fasi
+. Aggiungere una voce DACL a un descrittore di protezione: `vserver security file-directory ntfs dacl add -vserver vserver_name -ntfs-sd SD_name -access-type {allow|deny} -account name_or_SIDoptional_parameters`
++
+`vserver security file-directory ntfs dacl add -ntfs-sd sd1 -access-type deny -account domain\joe -rights full-control -apply-to this-folder -vserver vs1`
+
+. Verificare che la voce DACL sia corretta: `vserver security file-directory ntfs dacl show -vserver vserver_name -ntfs-sd SD_name -access-type {allow|deny} -account name_or_SID`
++
+`vserver security file-directory ntfs dacl show -vserver vs1 -ntfs-sd sd1 -access-type deny -account domain\joe`
+
++
+[listing]
+----
+                       Vserver: vs1
+             Security Descriptor Name: sd1
+                        Allow or Deny: deny
+                  Account Name or SID: DOMAIN\joe
+                        Access Rights: full-control
+               Advanced Access Rights: -
+                             Apply To: this-folder
+                        Access Rights: full-control
+----
+

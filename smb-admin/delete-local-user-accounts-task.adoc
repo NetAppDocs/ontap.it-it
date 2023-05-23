@@ -1,0 +1,51 @@
+---
+permalink: smb-admin/delete-local-user-accounts-task.html 
+sidebar: sidebar 
+keywords: delete, local, user, account, storage, virtual, machine, svm, smb, authentication, cifs, determining, determine, data, contain, delete local user accounts 
+summary: 'È possibile eliminare gli account utente locali dalla macchina virtuale di storage (SVM) se non sono più necessari per l"autenticazione SMB locale al server CIFS o per determinare i diritti di accesso ai dati contenuti nella SVM.' 
+---
+= Eliminare gli account utente locali
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile eliminare gli account utente locali dalla macchina virtuale di storage (SVM) se non sono più necessari per l'autenticazione SMB locale al server CIFS o per determinare i diritti di accesso ai dati contenuti nella SVM.
+
+.A proposito di questa attività
+Quando si eliminano gli utenti locali, tenere presente quanto segue:
+
+* Il file system non viene modificato.
++
+I descrittori di protezione di Windows su file e directory che fanno riferimento a questo utente non vengono modificati.
+
+* Tutti i riferimenti agli utenti locali vengono rimossi dai database di appartenenza e privilegi.
+* Gli utenti standard e noti come Administrator non possono essere eliminati.
+
+
+.Fasi
+. Determinare il nome dell'account utente locale che si desidera eliminare: `vserver cifs users-and-groups local-user show -vserver _vserver_name_`
+. Eliminare l'utente locale: `vserver cifs users-and-groups local-user delete -vserver _vserver_name_ ‑user-name _username_name_`
+. Verificare che l'account utente sia stato eliminato: `vserver cifs users-and-groups local-user show -vserver _vserver_name_`
+
+
+.Esempio
+Nell'esempio seguente viene eliminato l'utente locale "`CIFS_SERVER` sue" associato a SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user show -vserver vs1
+Vserver  User Name                   Full Name      Description
+-------- --------------------------- -------------- -------------
+vs1      CIFS_SERVER\Administrator   James Smith    Built-in administrator account
+vs1      CIFS_SERVER\sue             Sue   Jones
+
+
+cluster1::> vserver cifs users-and-groups local-user delete -vserver vs1 -user-name CIFS_SERVER\sue
+
+cluster1::> vserver cifs users-and-groups local-user show -vserver vs1
+Vserver      User Name                   Full Name      Description
+-------- --------------------------- -------------- -------------
+vs1      CIFS_SERVER\Administrator   James Smith    Built-in administrator account
+----

@@ -1,0 +1,63 @@
+---
+sidebar: sidebar 
+permalink: file-system-analytics/considerations-concept.html 
+keywords: file system analytics, performance, SVM 
+summary: 'File System Analytics è progettato per fornire visibilità sui volumi con dati NAS attivi. Esistono limitazioni e limitazioni all"utilizzo.' 
+---
+= Considerazioni per l'analisi del file system
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Devi essere consapevole di determinati limiti di utilizzo e potenziali impatti sulle performance associati all'implementazione di file System Analytics.
+
+
+
+== Relazioni protette con SVM
+
+Se sono state attivate le analisi del file system su volumi con SVM contenente una relazione di protezione, i dati di analisi non vengono replicati nella SVM di destinazione. Se la SVM di origine deve essere risincronizzata in un'operazione di recovery, è necessario riabilitare manualmente le analisi sui volumi desiderati dopo il recovery.
+
+
+
+== Considerazioni sulle performance
+
+In alcuni casi, l'abilitazione di file System Analytics potrebbe avere un impatto negativo sulle performance durante la raccolta iniziale dei metadati. Ciò si verifica in genere nei sistemi che sono al massimo utilizzo. Per evitare di abilitare l'analisi su tali sistemi, è possibile utilizzare gli strumenti di monitoraggio delle performance di Gestore di sistema di ONTAP.
+
+Se si verifica un notevole aumento della latenza, consultare l'articolo della Knowledge base link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/High_or_fluctuating_latency_after_turning_on_NetApp_ONTAP_File_System_Analytics["Latenza elevata o fluttuante dopo l'attivazione dell'analisi del file system NetApp ONTAP"^].
+
+
+
+== Considerazioni sulla scansione
+
+Quando abiliti l'analisi della capacità, ONTAP esegue una scansione di inizializzazione. La scansione accede ai metadati per tutti i file nei volumi per i quali è abilitata l'analisi della capacità. Durante la scansione non viene letto alcun dato di file.
+
+Al termine della scansione, file System Analytics viene continuamente aggiornato in tempo reale in base alle modifiche del file system senza dover eseguire nuovamente la scansione.
+
+Il tempo richiesto per la scansione è proporzionale al numero di directory e file sul volume. Poiché la scansione raccoglie i metadati, le dimensioni del file non influiscono sul tempo di scansione.
+
+Per ulteriori informazioni sulla scansione di inizializzazione, vedere link:https://www.netapp.com/pdf.html?item=/media/20707-tr-4867.pdf["TR-4867: Linee guida sulle Best practice per l'analisi del file system"^].
+
+
+
+=== Best practice
+
+Si consiglia di avviare la scansione su volumi che non condividono aggregati. È possibile visualizzare gli aggregati che attualmente ospitano i volumi utilizzando il comando:
+
+`volume show -volume _comma-separated-list_of_volumes_ -fields aggr-list`
+
+Durante l'esecuzione della scansione, i volumi continuano a servire il traffico client. Si consiglia di avviare la scansione durante i periodi in cui si prevede una riduzione del traffico client.
+
+Se il traffico del client aumenta, consuma le risorse di sistema e la scansione richiede più tempo.
+
+A partire da ONTAP 9.12.1, è possibile sospendere la raccolta dei dati in Gestore di sistema e con l'interfaccia utente di ONTAP.
+
+* Se si utilizza l'interfaccia utente di ONTAP:
++
+** È possibile sospendere la raccolta dati con il comando: `volume analytics initialization pause -vserver _svm_name_ -volume _volume_name_`
+** Una volta rallentato il traffico del client, è possibile riprendere la raccolta dei dati con il comando: `volume analytics initialization resume -vserver _svm_name_ -volume _volume_name_`
+
+
+* Se si utilizza System Manager, nella vista *Explorer* del menu del volume, utilizzare i pulsanti *Pause Data Collection* e *Resume Data Collection* per gestire la scansione.
+

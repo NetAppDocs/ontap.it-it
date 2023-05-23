@@ -1,0 +1,82 @@
+---
+permalink: san-admin/configure-svm-iscsi-task.html 
+sidebar: sidebar 
+keywords: configure, svm, iscsi 
+summary: 'Per configurare una macchina virtuale di storage (SVM) per iSCSI, è necessario creare LIF per SVM e assegnare il protocollo iSCSI a tali LIF.' 
+---
+= Configurare una SVM per iSCSI
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per configurare una macchina virtuale di storage (SVM) per iSCSI, è necessario creare LIF per SVM e assegnare il protocollo iSCSI a tali LIF.
+
+.A proposito di questa attività
+È necessario un minimo di un LIF iSCSI per nodo per ogni SVM che fornisce dati con il protocollo iSCSI. Per la ridondanza, è necessario creare almeno due LIF per nodo.
+
+.Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+Configurazione di una VM di storage per iSCSI con Gestore di sistema di ONTAP (9.7 e versioni successive).
+
+[cols="2"]
+|===
+| Per configurare iSCSI su una nuova VM di storage | Per configurare iSCSI su una VM di storage esistente 
+
+
+ a| 
+. In System Manager, fare clic su *Storage > Storage VMS*, quindi su *Add*.
+. Immettere un nome per la VM di storage.
+. Selezionare *iSCSI* per il protocollo di accesso*.
+. Fare clic su *Enable iSCSI* (attiva iSCSI) e inserire l'indirizzo IP e la subnet mask dell'interfaccia di rete. + ogni nodo deve avere almeno due interfacce di rete.
+. Fare clic su *Save* (Salva).
+
+ a| 
+. In System Manager, fare clic su *Storage > Storage VM*.
+. Fare clic sulla VM di storage che si desidera configurare.
+. Fare clic sulla scheda *Impostazioni*, quindi su image:icon_gear.gif[""] Accanto al protocollo iSCSI.
+. Fare clic su *Enable iSCSI* (attiva iSCSI) e inserire l'indirizzo IP e la subnet mask dell'interfaccia di rete. + ogni nodo deve avere almeno due interfacce di rete.
+. Fare clic su *Save* (Salva).
+
+
+|===
+--
+.CLI
+--
+Configurare una VM di storage per iSCSI con l'interfaccia CLI di ONTAP.
+
+. Abilitare le SVM per l'ascolto del traffico iSCSI:
++
+`vserver iscsi create -vserver _vserver_name_ -target-alias _vserver_name_`
+
+. Creare una LIF per le SVM su ciascun nodo da utilizzare per iSCSI:
++
+** Per ONTAP 9.6 e versioni successive:
++
+`network interface create -vserver _vserver_name_ -lif _lif_name_ -data-protocol iscsi -service-policy default-data-iscsi -home-node _node_name_ -home-port _port_name_ -address _ip_address_ -netmask _netmask_`
+
+** Per ONTAP 9.5 e versioni precedenti:
++
+`network interface create -vserver _vserver_name_ -lif _lif_name_ -role data -data-protocol iscsi -home-node _node_name_ -home-port _port_name_ -address _ip_address_ -netmask _netmask_`
+
+
+
+. Verificare di aver configurato correttamente i file LIF:
++
+`network interface show -vserver _vserver_name_`
+
+. Verificare che iSCSI sia attivo e in esecuzione e che l'IQN di destinazione per la SVM:
++
+`vserver iscsi show –vserver _vserver_name_`
+
+. Dal tuo host, crea sessioni iSCSI sulle tue LIF.
+
+
+--
+====
+.Informazioni correlate
+https://www.netapp.com/media/10680-tr4080.pdf["Report tecnico di NetApp 4080: Best practice per LE SAN moderne"]

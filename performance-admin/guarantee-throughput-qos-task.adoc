@@ -1,0 +1,433 @@
+---
+permalink: performance-admin/guarantee-throughput-qos-task.html 
+sidebar: sidebar 
+keywords: throughput, qos, understand, ceilings, floors, shared, policy, adaptive, general, support, workloads, 
+summary: 'È possibile utilizzare la qualità del servizio (QoS) dello storage per garantire che le performance dei carichi di lavoro critici non vengano degradate dai carichi di lavoro concorrenti. È possibile impostare un limite massimo di throughput su un carico di lavoro concorrente per limitarne l"impatto sulle risorse di sistema o impostare un piano di throughput per un carico di lavoro critico, garantendo che soddisfi gli obiettivi di throughput minimi, indipendentemente dalla domanda dei carichi di lavoro concorrenti. È anche possibile impostare un soffitto e un pavimento per lo stesso carico di lavoro.' 
+---
+= Garantire il throughput con la panoramica QoS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare la qualità del servizio (QoS) dello storage per garantire che le performance dei carichi di lavoro critici non vengano degradate dai carichi di lavoro concorrenti. È possibile impostare un _soffitto_ di throughput su un carico di lavoro concorrente per limitarne l'impatto sulle risorse di sistema o impostare un _piano_ di throughput per un carico di lavoro critico, garantendo che soddisfi gli obiettivi di throughput minimi, indipendentemente dalla domanda dei carichi di lavoro concorrenti. È anche possibile impostare un soffitto e un pavimento per lo stesso carico di lavoro.
+
+
+
+== Informazioni sui limiti di throughput (QoS Max)
+
+Un limite massimo di throughput limita il throughput per un carico di lavoro a un numero massimo di IOPS o Mbps o IOPS e Mbps. Nella figura riportata di seguito, il limite massimo di throughput per il carico di lavoro 2 garantisce che i carichi di lavoro 1 e 3 non siano "ingombrati".
+
+Un _gruppo di policy_ definisce il limite massimo di throughput per uno o più carichi di lavoro. Un carico di lavoro rappresenta le operazioni di i/o per un _oggetto storage:_ volume, file, qtree o LUN o tutti i volumi, file, qtree o LUN di una SVM. È possibile specificare il limite massimo quando si crea il gruppo di criteri oppure attendere che i carichi di lavoro vengano monitorati per specificarlo.
+
+
+NOTE: Il throughput per i carichi di lavoro potrebbe superare il limite massimo specificato fino al 10%, soprattutto se un carico di lavoro subisce rapidi cambiamenti nel throughput. Il limite massimo potrebbe essere superato fino al 50% per gestire i burst. I burst si verificano su singoli nodi quando i token accumulano fino al 150%
+
+image::../media/qos-ceiling.gif[Grafico che confronta QoS prima e dopo l'applicazione del limite di throughput.]
+
+
+
+== Informazioni sui piani di throughput (QoS min)
+
+Un piano di throughput garantisce che il throughput per un carico di lavoro non scenda al di sotto di un numero minimo di IOPS o Mbps o IOPS e Mbps. Nella figura riportata di seguito, i livelli di throughput per il carico di lavoro 1 e il carico di lavoro 3 garantiscono il raggiungimento degli obiettivi di throughput minimi, indipendentemente dalla domanda per carico di lavoro 2.
+
+
+TIP: Come suggeriscono gli esempi, un limite di throughput rallenta direttamente il throughput. Un piano di throughput rallenta indirettamente il throughput, dando priorità ai carichi di lavoro per i quali è stato impostato il piano.
+
+È possibile specificare il piano di lavoro quando si crea il gruppo di policy oppure attendere fino a quando non si monitorano i carichi di lavoro per specificarlo.
+
+A partire da ONTAP 9.13.1, è possibile impostare i piani di throughput nell'ambito SVM con <<adaptive-qos-templates>>. Nelle versioni di ONTAP precedenti alla 9.13.1, un gruppo di criteri che definisce un piano di throughput non può essere applicato a una SVM.
+
+
+NOTE: Nelle versioni precedenti a ONTAP 9.7, i piani di throughput sono garantiti quando è disponibile una capacità di performance sufficiente.
+
+Inoltre, in ONTAP 9.7 e versioni successive, è possibile garantire il throughput anche in caso di capacità di performance insufficiente. Questo nuovo comportamento si chiama Floors v2. Per soddisfare le garanzie, floors v2 può comportare una latenza maggiore sui carichi di lavoro senza un piano di throughput o sul lavoro che supera le impostazioni di base. Floors v2 si applica sia alla QoS che alla QoS adattiva.
+
++ l'opzione di abilitare/disabilitare il nuovo comportamento dei piani v2 è disponibile in ONTAP 9.7P6 e versioni successive. Un carico di lavoro potrebbe scendere al di sotto del piano specificato durante operazioni critiche come `volume move trigger-cutover`. Anche quando è disponibile una capacità sufficiente e non si svolgono operazioni critiche, il throughput di un workload potrebbe scendere al di sotto del piano specificato fino al 5%. Se il provisioning dei piani è eccessivo e non esiste una capacità di performance, alcuni carichi di lavoro potrebbero scendere al di sotto del piano specificato.
+
+image::../media/qos-floor.gif[Due grafici che confrontano il throughput QoS prima e dopo l'applicazione di un piano.]
+
+
+
+== Informazioni sui gruppi di policy QoS condivisi e non condivisi
+
+A partire da ONTAP 9.4, è possibile utilizzare un gruppo di policy di qualità del servizio _non-shared_ per specificare che il limite di throughput definito o il piano si applica a ogni singolo carico di lavoro membro. Il comportamento dei gruppi di policy _shared_ dipende dal tipo di policy:
+
+* Per i limiti di throughput, il throughput totale per i carichi di lavoro assegnati al gruppo di criteri condivisi non può superare il limite massimo specificato.
+* Per i piani di throughput, il gruppo di policy condiviso può essere applicato solo a un singolo workload.
+
+
+
+
+== Informazioni su QoS adattiva
+
+Normalmente, il valore del gruppo di criteri assegnato a un oggetto di storage è fisso. È necessario modificare il valore manualmente quando la dimensione dell'oggetto di storage cambia. Un aumento della quantità di spazio utilizzata su un volume, ad esempio, richiede solitamente un aumento corrispondente del limite di throughput specificato per il volume.
+
+_QoS adattiva_ scala automaticamente il valore del gruppo di policy in base alle dimensioni del carico di lavoro, mantenendo il rapporto tra IOPS e TB|GB in base alle dimensioni del carico di lavoro. Si tratta di un vantaggio significativo quando si gestiscono centinaia o migliaia di carichi di lavoro in un'implementazione di grandi dimensioni.
+
+In genere, si utilizza la QoS adattiva per regolare i limiti di throughput, ma è anche possibile utilizzarla per gestire i piani di throughput (quando le dimensioni del carico di lavoro aumentano). La dimensione del carico di lavoro viene espressa come spazio allocato per l'oggetto di storage o come spazio utilizzato dall'oggetto di storage.
+
+
+NOTE: Lo spazio utilizzato è disponibile per i piani di throughput in ONTAP 9.5 e versioni successive. Non è supportato per i piani di throughput in ONTAP 9.4 e versioni precedenti.
+
+* Una policy di _spazio allocato_ mantiene il rapporto IOPS/TB|GB in base alle dimensioni nominali dell'oggetto di storage. Se il rapporto è di 100 IOPS/GB, un volume da 150 GB avrà un limite di throughput di 15,000 IOPS, a condizione che il volume rimanga tale. Se il volume viene ridimensionato a 300 GB, la QoS adattiva regola il limite di throughput a 30,000 IOPS.
+* Una policy _used space_ (predefinita) mantiene il rapporto IOPS/TB|GB in base alla quantità di dati effettivi memorizzati prima dell'efficienza dello storage. Se il rapporto è di 100 IOPS/GB, un volume da 150 GB con 100 GB di dati memorizzati avrebbe un limite massimo di throughput di 10,000 IOPS. Man mano che la quantità di spazio utilizzato cambia, la QoS adattiva regola il limite di throughput in base al rapporto.
+
+
+A partire da ONTAP 9.5, è possibile specificare una dimensione del blocco i/o per l'applicazione in uso che consenta di esprimere un limite di throughput in IOPS e Mbps. Il limite Mbps viene calcolato moltiplicando le dimensioni del blocco per il limite IOPS. Ad esempio, una dimensione del blocco i/o di 32K per un limite IOPS di 6144 IOPS/TB produce un limite di Mbps di 192 MBps.
+
+È possibile prevedere il seguente comportamento sia per i limiti di throughput che per i piani:
+
+* Quando un carico di lavoro viene assegnato a un gruppo di policy QoS adattivi, il soffitto o il piano vengono aggiornati immediatamente.
+* Quando un carico di lavoro in un gruppo di policy QoS adattiva viene ridimensionato, il soffitto o il piano viene aggiornato in circa cinque minuti.
+
+
+Il throughput deve aumentare di almeno 10 IOPS prima di eseguire gli aggiornamenti.
+
+I gruppi di policy di QoS adattivi non sono sempre condivisi: Il limite di throughput definito o il piano si applica a ciascun carico di lavoro membro singolarmente.
+
+A partire da ONTAP 9.6, i piani di throughput sono supportati da ONTAP Select Premium con SSD.
+
+
+
+=== Modello di gruppo di policy adattive
+
+A partire da ONTAP 9.13.1, è possibile impostare un modello QoS adattivo su una SVM. I modelli di gruppi di policy adattivi consentono di impostare i livelli e i limiti di throughput per tutti i volumi in una SVM.
+
+È possibile impostare i modelli di gruppi di criteri adattivi solo dopo la creazione di SVM. Utilizzare `vserver modify` con il `-qos-adaptive-policy-group-template` parametro per impostare il criterio.
+
+Quando si imposta un modello di gruppo di criteri adattativi, i volumi creati o migrati dopo l'impostazione del criterio ereditano automaticamente il criterio. Gli eventuali volumi presenti nella SVM non vengono influenzati quando si assegna il modello di policy. Se si disattiva il criterio su SVM, qualsiasi volume successivamente migrato o creato su SVM non riceverà il criterio. La disattivazione del modello di gruppo di criteri adattivi non influisce sui volumi che hanno ereditato il modello di criteri, poiché conservano il modello di criteri.
+
+Per ulteriori informazioni, vedere xref:../performance-admin/adaptive-policy-template-task.html[Impostare un modello di gruppo di criteri adattativi].
+
+
+
+== Supporto generale
+
+La seguente tabella mostra le differenze nel supporto per i limiti di throughput, i piani di throughput e la QoS adattiva.
+
+|===
+| Risorsa o funzione | Limite di throughput | Piano di throughput | Throughput floor v2 | QoS adattiva 
+
+
+ a| 
+Versione di ONTAP 9
+ a| 
+Tutto
+ a| 
+9.2 e versioni successive
+ a| 
+9.7 e versioni successive
+ a| 
+9.3 e versioni successive
+
+
+
+ a| 
+Piattaforme
+ a| 
+Tutto
+ a| 
+* AFF
+* C190 *
+* ONTAP Select premium con SSD *
+
+ a| 
+* AFF
+* C190
+* ONTAP Select Premium con SSD
+
+ a| 
+Tutto
+
+
+
+ a| 
+Protocolli
+ a| 
+Tutto
+ a| 
+Tutto
+ a| 
+Tutto
+ a| 
+Tutto
+
+
+
+ a| 
+FabricPool
+ a| 
+Sì
+ a| 
+Sì, se la policy di tiering è impostata su "nessuno" e non ci sono blocchi nel cloud.
+ a| 
+Sì, se la policy di tiering è impostata su "nessuno" e non ci sono blocchi nel cloud.
+ a| 
+Sì
+
+
+
+ a| 
+SnapMirror sincrono
+ a| 
+Sì
+ a| 
+No
+ a| 
+No
+ a| 
+Sì
+
+|===
+Il supporto di ONTAP Select e C190 è iniziato con la release ONTAP 9.6.
+
+
+
+== Carichi di lavoro supportati per i limiti di throughput
+
+La tabella seguente mostra il supporto dei workload per i limiti di throughput per la versione di ONTAP 9. I volumi root, i mirror di condivisione del carico e i mirror di protezione dei dati non sono supportati.
+
+|===
+| Supporto del carico di lavoro - soffitto | ONTAP 9.0 | ONTAP 9.1 | ONTAP 9.2 | ONTAP 9.3 | ONTAP 9.4 - 9.7 | ONTAP 9.8 e versioni successive 
+
+
+ a| 
+Volume
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+
+
+
+ a| 
+File
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+
+
+
+ a| 
+LUN
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+
+
+
+ a| 
+SVM
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+
+
+
+ a| 
+Volume FlexGroup
+ a| 
+no
+ a| 
+no
+ a| 
+no
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+
+
+
+ a| 
+qtree*
+ a| 
+no
+ a| 
+no
+ a| 
+no
+ a| 
+no
+ a| 
+no
+ a| 
+sì
+
+
+
+ a| 
+Carichi di lavoro multipli per gruppo di policy
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+ a| 
+sì
+
+
+
+ a| 
+Gruppi di criteri non condivisi
+ a| 
+no
+ a| 
+no
+ a| 
+no
+ a| 
+no
+ a| 
+sì
+ a| 
+sì
+
+|===
+A partire da ONTAP 9.8, l'accesso NFS è supportato nei qtree dei volumi FlexVol e FlexGroup con NFS attivato. A partire da ONTAP 9.9.1, l'accesso SMB è supportato anche nei qtree dei volumi FlexVol e FlexGroup con SMB attivato.
+
+
+
+== Carichi di lavoro supportati per i piani di throughput
+
+La seguente tabella mostra il supporto dei workload per i piani di throughput in base alla versione di ONTAP 9. I volumi root, i mirror di condivisione del carico e i mirror di protezione dei dati non sono supportati.
+
+|===
+| Supporto del workload - floor | ONTAP 9.2 | ONTAP 9.3 | ONTAP 9.4 - 9.7 | ONTAP 9.8 - 9.13.0 | ONTAP 9.13.1 e versioni successive 
+
+
+| Volume | sì | sì | sì | sì | sì 
+
+
+| File | no | sì | sì | sì | sì 
+
+
+| LUN | sì | sì | sì | sì | sì 
+
+
+| SVM | no | no | no | no | sì 
+
+
+| Volume FlexGroup | no | no | sì | sì | sì 
+
+
+| qtree * | no | no | no | sì | sì 
+
+
+| Carichi di lavoro multipli per gruppo di policy | no | no | sì | sì | sì 
+
+
+| Gruppi di criteri non condivisi | no | no | sì | sì | sì 
+|===
+A partire da ONTAP 9.8, l'accesso NFS è supportato nei qtree dei volumi FlexVol e FlexGroup con NFS attivato. A partire da ONTAP 9.9.1, l'accesso SMB è supportato anche nei qtree dei volumi FlexVol e FlexGroup con SMB attivato.
+
+
+
+== Carichi di lavoro supportati per QoS adattiva
+
+La seguente tabella mostra il supporto dei carichi di lavoro per la QoS adattiva in base alla versione di ONTAP 9. I volumi root, i mirror di condivisione del carico e i mirror di protezione dei dati non sono supportati.
+
+|===
+| Supporto del carico di lavoro - QoS adattiva | ONTAP 9.3 | ONTAP 9.4 - 9.13.0 | ONTAP 9.13.1 e versioni successive 
+
+
+| Volume | sì | sì | sì 
+
+
+| File | no | sì | sì 
+
+
+| LUN | no | sì | sì 
+
+
+| SVM | no | no | sì 
+
+
+| Volume FlexGroup | no | sì | sì 
+
+
+| Carichi di lavoro multipli per gruppo di policy | sì | sì | sì 
+
+
+| Gruppi di criteri non condivisi | sì | sì | sì 
+|===
+
+
+== Numero massimo di workload e gruppi di policy
+
+La seguente tabella mostra il numero massimo di workload e gruppi di policy per versione di ONTAP 9.
+
+|===
+| Supporto dei carichi di lavoro | ONTAP 9.3 e versioni precedenti | ONTAP 9.4 e versioni successive 
+
+
+ a| 
+Carichi di lavoro massimi per cluster
+ a| 
+12,000
+ a| 
+40,000
+
+
+
+ a| 
+Carichi di lavoro massimi per nodo
+ a| 
+12,000
+ a| 
+40,000
+
+
+
+ a| 
+Numero massimo di gruppi di criteri
+ a| 
+12,000
+ a| 
+12,000
+
+|===

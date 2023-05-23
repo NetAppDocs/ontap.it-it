@@ -1,0 +1,88 @@
+---
+permalink: data-protection/snapmirror-unified-replication-concept.html 
+sidebar: sidebar 
+keywords: snapmirror, unified, replication 
+summary: 'La replica unificata di SnapMirror consente di configurare il disaster recovery e l"archiviazione sullo stesso volume di destinazione. Quando la replica unificata è appropriata, offre vantaggi in termini di riduzione della quantità di storage secondario necessaria, limitazione del numero di trasferimenti di riferimento e riduzione del traffico di rete.' 
+---
+= Nozioni di base sulla replica unificata di SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+SnapMirror _replica unificata_ consente di configurare il disaster recovery e l'archiviazione sullo stesso volume di destinazione. Quando la replica unificata è appropriata, offre vantaggi in termini di riduzione della quantità di storage secondario necessaria, limitazione del numero di trasferimenti di riferimento e riduzione del traffico di rete.
+
+
+
+== Come vengono inizializzate le relazioni unificate di protezione dei dati
+
+Come con SnapMirror, la protezione unificata dei dati esegue un trasferimento di riferimento la prima volta che lo si richiama. Il criterio SnapMirror per la relazione definisce il contenuto della linea di base e gli eventuali aggiornamenti.
+
+Un trasferimento di riferimento in base alla policy di protezione dei dati unificata predefinita `MirrorAndVault` Esegue una copia Snapshot del volume di origine, quindi trasferisce la copia e i blocchi di dati a cui fa riferimento al volume di destinazione. Come l'archiviazione del vault, la protezione unificata dei dati non include copie Snapshot precedenti nella linea di base.
+
+
+
+== Come vengono aggiornate le relazioni unificate di protezione dei dati
+
+Ad ogni aggiornamento in `MirrorAndVault` Policy, SnapMirror crea una copia Snapshot del volume di origine e trasferisce la copia Snapshot e le copie Snapshot eseguite dall'ultimo aggiornamento, a condizione che le etichette corrispondano alle etichette definite nelle regole dei criteri di Snapshot. Nel seguente output da `snapmirror policy show` comando per `MirrorAndVault` policy, tenere presente quanto segue:
+
+* `Create Snapshot` è "`true`", a indicare che `MirrorAndVault` Crea una copia Snapshot quando SnapMirror aggiorna la relazione.
+* `MirrorAndVault` Dispone delle regole "`sm_created`", "`daily`" e "`settimanale`", che indicano che sia la copia Snapshot creata da SnapMirror che le copie Snapshot con le etichette corrispondenti sull'origine vengono trasferite quando SnapMirror aggiorna la relazione.
+
+
+[listing]
+----
+cluster_dst::> snapmirror policy show -policy MirrorAndVault -instance
+
+                     Vserver: vs0
+      SnapMirror Policy Name: MirrorAndVault
+      SnapMirror Policy Type: mirror-vault
+                Policy Owner: cluster-admin
+                 Tries Limit: 8
+           Transfer Priority: normal
+   Ignore accesstime Enabled: false
+     Transfer Restartability: always
+ Network Compression Enabled: false
+             Create Snapshot: true
+                     Comment: A unified Synchronous SnapMirror and SnapVault policy for
+                              mirroring the latest file system and daily and weekly snapshots.
+       Total Number of Rules: 3
+                  Total Keep: 59
+                       Rules: SnapMirror Label     Keep  Preserve Warn Schedule Prefix
+                              ----------------     ----  -------- ---- -------- ------
+                              sm_created              1  false       0 -        -
+                              daily                   7  false       0 -        -
+                              weekly                 52  false       0 -        -
+----
+
+
+== Politica Unified7year
+
+Preconfigurato `Unified7year` la policy funziona esattamente come `MirrorAndVault`, Ad eccezione del fatto che una quarta regola trasferisce le copie Snapshot mensili e le conserva per sette anni.
+
+[listing]
+----
+
+                       Rules: SnapMirror Label     Keep  Preserve Warn Schedule Prefix
+                              ----------------     ----  -------- ---- -------- ------
+                              sm_created              1  false       0 -        -
+                              daily                   7  false       0 -        -
+                              weekly                 52  false       0 -        -
+                              monthly                84  false       0 -        -
+----
+
+
+== Proteggersi da possibili danneggiamenti dei dati
+
+La replica unificata limita il contenuto del trasferimento di riferimento alla copia Snapshot creata da SnapMirror all'inizializzazione. A ogni aggiornamento, SnapMirror crea un'altra copia Snapshot dell'origine e trasferisce tale copia Snapshot e le nuove copie Snapshot che presentano etichette corrispondenti alle etichette definite nelle regole dei criteri Snapshot.
+
+È possibile proteggersi dalla possibilità che una copia Snapshot aggiornata venga danneggiata creando una copia dell'ultima copia Snapshot trasferita sulla destinazione. Questa "`copia locale`" viene conservata indipendentemente dalle regole di conservazione sull'origine, in modo che anche se l'istantanea originariamente trasferita da SnapMirror non è più disponibile sull'origine, una copia di essa sarà disponibile sulla destinazione.
+
+
+
+== Quando utilizzare la replica unificata dei dati
+
+È necessario valutare i vantaggi derivanti dal mantenimento di un mirror completo rispetto ai vantaggi offerti dalla replica unificata nella riduzione della quantità di storage secondario, nella limitazione del numero di trasferimenti di riferimento e nella riduzione del traffico di rete.
+
+Il fattore chiave per determinare l'adeguatezza della replica unificata è il tasso di cambiamento del file system attivo. Un mirror tradizionale potrebbe essere più adatto a un volume che contiene copie Snapshot orarie dei log delle transazioni del database, ad esempio.

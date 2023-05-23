@@ -1,0 +1,101 @@
+---
+permalink: system-admin/create-motd-task.html 
+sidebar: sidebar 
+keywords: create, motd, cli, user, clustershell, ssh, session, cluster, access, message, day 
+summary: 'È possibile creare un messaggio del giorno (MOTD) per comunicare informazioni agli utenti CLI autenticati. Il MOTD viene visualizzato in una sessione della console (solo per l"accesso al cluster) o in una sessione SSH (per l"accesso al cluster o alla SVM) dopo l"autenticazione di un utente, ma prima della visualizzazione del prompt della shell dei cluster.' 
+---
+= Creare un MOTD
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare un messaggio del giorno (MOTD) per comunicare informazioni agli utenti CLI autenticati. Il MOTD viene visualizzato in una sessione della console (solo per l'accesso al cluster) o in una sessione SSH (per l'accesso al cluster o alla SVM) dopo l'autenticazione di un utente, ma prima della visualizzazione del prompt della shell dei cluster.
+
+.Fasi
+. Utilizzare `security login motd modify` Comando per creare un MOTD per il cluster o SVM:
++
+|===
+| Se si desidera... | Quindi... 
+
+
+ a| 
+Specificare un messaggio che sia una singola riga
+ a| 
+Utilizzare `-message` "[.code]``text``" per specificare il testo.
+
+
+
+ a| 
+Includi newline (nota anche come fine delle righe)
+ a| 
+Utilizzare il comando senza `-message` oppure `-uri` Parametro per avviare la modalità interattiva per la modifica del MOTD.
+
+
+
+ a| 
+Caricare il contenuto da una posizione da utilizzare per il MOTD
+ a| 
+Utilizzare `-uri` Parametro per specificare la posizione FTP o HTTP del contenuto.
+
+|===
++
+La dimensione massima di un MOTD è di 2,048 byte, incluse le newline.
+
++
+Il `security login motd modify` La pagina man descrive le sequenze di escape che è possibile utilizzare per consentire a MOTD di visualizzare il contenuto generato dinamicamente.
+
++
+Un MOTD creato utilizzando `-uri` il parametro è statico. Non viene aggiornato automaticamente per riflettere le modifiche successive del contenuto di origine.
+
++
+Un MOTD creato per il cluster viene visualizzato anche per tutti gli accessi SVM per impostazione predefinita, insieme a un MOTD a livello di SVM che è possibile creare separatamente per un determinato SVM. Impostazione di `-is-cluster-message-enabled` parametro a. `false` Per una SVM impedisce la visualizzazione del MOTD a livello di cluster per tale SVM.
+
+. Verificare che il MOTD sia stato creato visualizzandolo con il `security login motd show` comando.
++
+Specifica di `-message` parametro con una stringa vuota (`""`) Visualizza i MOTD non configurati o privi di contenuto.
+
++
+Vedere https://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr-980/security%5F%5Flogin%5F%5Fmotd%5F%5Fmodify.html["modifica del motd di accesso di sicurezza"] Pagina man Command per un elenco di parametri da utilizzare per consentire a MOTD di visualizzare il contenuto generato dinamicamente. Controllare la pagina man specifica della versione di ONTAP.
+
+
+
+.Esempi di creazione di MOTD
+Nell'esempio seguente viene utilizzata la modalità non interattiva per creare un MOTD per il cluster "`cluster1`":
+
+[listing]
+----
+cluster1::> security login motd modify -message "Greetings!"
+----
+Nell'esempio seguente viene utilizzata la modalità interattiva per creare un MOTD per la SVM "`svm1`"che utilizza sequenze di escape per visualizzare il contenuto generato dinamicamente:
+
+[listing]
+----
+cluster1::> security login motd modify -vserver svm1
+
+Enter the message of the day for Vserver "svm1".
+Max size: 2048. Enter a blank line to terminate input. Press Ctrl-C to abort.
+0        1         2         3         4         5         6         7         8
+12345678901234567890123456789012345678901234567890123456789012345678901234567890
+Welcome to the \n SVM.  Your user ID is '\N'. Your last successful login was \L.
+----
+Nell'esempio seguente vengono visualizzati i MOTD creati:
+
+[listing]
+----
+cluster1::> security login motd show
+Vserver: cluster1
+Is the Cluster MOTD Displayed?: true
+Message
+-----------------------------------------------------------------------------
+Greetings!
+
+Vserver: svm1
+Is the Cluster MOTD Displayed?: true
+Message
+-----------------------------------------------------------------------------
+Welcome to the \n SVM.  Your user ID is '\N'. Your last successful login was \L.
+
+2 entries were displayed.
+----

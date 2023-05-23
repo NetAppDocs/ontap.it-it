@@ -1,0 +1,60 @@
+---
+permalink: fabricpool/setup-azure-blob-storage-cloud-tier-task.html 
+sidebar: sidebar 
+keywords: setting up, azure blob storage, cloud, cloud tier 
+summary: Se utilizzi ONTAP 9.4 o versioni successive, puoi configurare Azure Blob Storage per il cloud come Tier cloud per FabricPool. 
+---
+= Configura Azure Blob Storage per il cloud come Tier cloud
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se utilizzi ONTAP 9.4 o versioni successive, puoi configurare Azure Blob Storage per il cloud come Tier cloud per FabricPool.
+
+.Considerazioni sull'utilizzo dello storage Blob di Microsoft Azure con FabricPool
+* Potrebbe essere necessaria una licenza FabricPool.
++
+I nuovi sistemi AFF ordinati sono dotati di 10 TB di capacità libera per l'utilizzo di FabricPool. Se si necessita di capacità aggiuntiva su un sistema AFF, se si utilizza lo storage Azure Blob su un sistema non AFF o se si esegue l'aggiornamento da un cluster esistente, è necessaria una licenza FabricPool.
+
++
+Se si ordina FabricPool per la prima volta per un cluster esistente, è disponibile una licenza FabricPool con 10 TB di capacità libera.
+
+* Non è richiesta una licenza FabricPool se si utilizza Azure Blob Storage con Cloud Volumes ONTAP.
+* Si consiglia di utilizzare la LIF utilizzata da ONTAP per la connessione al server a oggetti dello storage Blob Azure su una porta a 10 Gbps.
+* FabricPool attualmente non supporta Azure Stack, ovvero servizi Azure on-premise.
+* A livello di account in Microsoft Azure Blob Storage, FabricPool supporta solo livelli di storage hot e cool.
++
+FabricPool non supporta il tiering a livello di blob. Inoltre, non supporta il tiering del Tier di storage di archivio di Azure.
+
+
+
+.A proposito di questa attività
+FabricPool attualmente non supporta Azure Stack, ovvero servizi Azure on-premise.
+
+.Fasi
+. Specificare le informazioni di configurazione di Azure Blob Storage utilizzando `storage aggregate object-store config create` con il `-provider-type` `Azure_Cloud` parametro.
++
+** Il `storage aggregate object-store config create` Il comando non riesce se ONTAP non riesce ad accedere all'archivio Azure Blob con le informazioni fornite.
+** Si utilizza `-azure-account` Parametro per specificare l'account Azure Blob Storage.
+** Si utilizza `-azure-private-key` Parametro per specificare la chiave di accesso per l'autenticazione delle richieste a Azure Blob Storage.
+** Se la password di Azure Blob Storage viene modificata, è necessario aggiornare immediatamente la password corrispondente memorizzata in ONTAP.
++
+In questo modo, ONTAP può accedere ai dati nello storage di Azure Blob senza interruzioni.
+
+
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store config create
+-object-store-name MyAzure -provider-type Azure_Cloud
+-server blob.core.windows.net -container-name myAzureContainer
+-azure-account myAzureAcct -azure-private-key myAzureKey
+----
+. Visualizzare e verificare le informazioni di configurazione di Azure Blob Storage utilizzando `storage aggregate object-store config show` comando.
++
+Il `storage aggregate object-store config modify` Il comando consente di modificare le informazioni di configurazione dello storage di Azure Blob per FabricPool.
+
+

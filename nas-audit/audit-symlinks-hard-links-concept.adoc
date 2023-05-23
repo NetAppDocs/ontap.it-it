@@ -1,0 +1,38 @@
+---
+permalink: nas-audit/audit-symlinks-hard-links-concept.html 
+sidebar: sidebar 
+keywords: considerations, audit, symlinks, hard links 
+summary: Ci sono alcune considerazioni da tenere a mente quando si esegue il controllo dei collegamenti simbolici e dei collegamenti rigidi. 
+---
+= Considerazioni per il controllo di collegamenti simbolici e hard link
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ci sono alcune considerazioni da tenere a mente quando si esegue il controllo dei collegamenti simbolici e dei collegamenti rigidi.
+
+Un record di audit contiene informazioni sull'oggetto sottoposto a audit, incluso il percorso dell'oggetto sottoposto a audit, identificato in `ObjectName` tag. È necessario conoscere come vengono registrati i percorsi per i collegamenti simbolici e gli hard link in `ObjectName` tag.
+
+
+
+== Link simbolici
+
+Un collegamento simbolico è un file con un inode separato che contiene un puntatore alla posizione di un oggetto di destinazione, noto come destinazione. Quando si accede a un oggetto tramite un collegamento simbolico, ONTAP interpreta automaticamente il collegamento simbolico e segue il percorso indipendente dal protocollo canonico effettivo verso l'oggetto di destinazione nel volume.
+
+Nell'output dell'esempio seguente, sono presenti due collegamenti simbolici, entrambi rivolti a un file denominato `target.txt`. Uno dei link simbolici è un link simbolico relativo e uno è un link simbolico assoluto. Se uno dei collegamenti simbolici viene controllato, il `ObjectName` tag nell'evento di audit contiene il percorso del file `target.txt`:
+
+[listing]
+----
+[root@host1 audit]# ls -l
+total 0
+lrwxrwxrwx 1 user1 group1 37 Apr  2 10:09 softlink_fullpath.txt -> /data/audit/target.txt
+lrwxrwxrwx 1 user1 group1 10 Apr  2 09:54 softlink.txt -> target.txt
+-rwxrwxrwx 1 user1 group1 16 Apr  2 10:05 target.txt
+----
+
+
+== Collegamenti hardware
+
+Un hard link è una voce di directory che associa un nome a un file esistente su un file system. L'hard link punta alla posizione inode del file originale. Analogamente a quanto ONTAP interpreta i collegamenti simbolici, ONTAP interpreta il collegamento rigido e segue il percorso canonico effettivo dell'oggetto di destinazione nel volume. Quando viene verificato l'accesso a un oggetto hard link, l'evento di audit registra questo percorso canonico assoluto in `ObjectName` piuttosto che il percorso hard link.

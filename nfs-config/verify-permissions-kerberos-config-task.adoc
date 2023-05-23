@@ -1,0 +1,120 @@
+---
+permalink: nfs-config/verify-permissions-kerberos-config-task.html 
+sidebar: sidebar 
+keywords: verify, permissions, kerberos, configuration 
+summary: 'Kerberos richiede l"impostazione di determinate autorizzazioni UNIX per il volume root SVM e per utenti e gruppi locali.' 
+---
+= Verificare le autorizzazioni per la configurazione Kerberos
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Kerberos richiede l'impostazione di determinate autorizzazioni UNIX per il volume root SVM e per utenti e gruppi locali.
+
+.Fasi
+. Visualizzare le autorizzazioni pertinenti sul volume root SVM:
++
+`volume show -volume _root_vol_name_-fields user,group,unix-permissions`
+
++
+Il volume root di SVM deve avere la seguente configurazione:
+
++
+|===
+| Nome... | Impostazione in corso... 
+
+
+ a| 
+UID
+ a| 
+Root o ID 0
+
+
+
+ a| 
+GID
+ a| 
+Root o ID 0
+
+
+
+ a| 
+Autorizzazioni UNIX
+ a| 
+755
+
+|===
++
+Se questi valori non vengono visualizzati, utilizzare `volume modify` per aggiornarli.
+
+. Visualizzare gli utenti UNIX locali:
++
+`vserver services name-service unix-user show -vserver _vserver_name_`
+
++
+La SVM deve avere i seguenti utenti UNIX configurati:
+
++
+|===
+| Nome utente | ID utente | ID gruppo primario | Commento 
+
+
+ a| 
+nfs
+ a| 
+500
+ a| 
+0
+ a| 
+Necessario per la fase DI INIT GSS.
+
+Il primo componente dell'SPN dell'utente client NFS viene utilizzato come utente.
+
+L'utente nfs non è richiesto se esiste una mappatura dei nomi Kerberos-UNIX per l'SPN dell'utente client NFS.
+
+
+
+ a| 
+root
+ a| 
+0
+ a| 
+0
+ a| 
+Necessario per il montaggio.
+
+|===
++
+Se questi valori non vengono visualizzati, è possibile utilizzare `vserver services name-service unix-user modify` per aggiornarli.
+
+. Visualizzare i gruppi UNIX locali:
++
+`vserver services name-service unix-group show -vserver _vserver_ _name`
+
++
+La SVM deve avere i seguenti gruppi UNIX configurati:
+
++
+|===
+| Nome del gruppo | ID gruppo 
+
+
+ a| 
+daemon
+ a| 
+1
+
+
+
+ a| 
+root
+ a| 
+0
+
+|===
++
+Se questi valori non vengono visualizzati, è possibile utilizzare `vserver services name-service unix-group modify` per aggiornarli.
+
+

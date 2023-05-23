@@ -1,0 +1,77 @@
+---
+permalink: system-admin/free-space-node-root-volume-task.html 
+sidebar: sidebar 
+keywords: free, space, node, root, volume, full, delete, file, core, dump 
+summary: Quando il volume root di un nodo è pieno o quasi pieno, viene visualizzato un messaggio di avviso. Il nodo non può funzionare correttamente quando il volume root è pieno. È possibile liberare spazio sul volume root di un nodo eliminando i file core dump, i file di traccia dei pacchetti e le copie Snapshot del volume root. 
+---
+= Liberare spazio sul volume root di un nodo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando il volume root di un nodo è pieno o quasi pieno, viene visualizzato un messaggio di avviso. Il nodo non può funzionare correttamente quando il volume root è pieno. È possibile liberare spazio sul volume root di un nodo eliminando i file core dump, i file di traccia dei pacchetti e le copie Snapshot del volume root.
+
+.Fasi
+. Visualizzare i file core dump del nodo e i relativi nomi utilizzando `system node coredump show` comando.
+. Eliminare i file core dump indesiderati dal nodo utilizzando `system node coredump delete` comando.
+. Accedi al nodeshell:
++
+`*system node run -node _nodename_*`
+
++
+`_nodename_` è il nome del nodo di cui si desidera liberare spazio nel volume root.
+
+. Passa al livello di privilegio avanzato più incondiscendente dal nodeshell:
++
+`*priv set advanced*`
+
+. Visualizzare ed eliminare i file di traccia dei pacchetti del nodo attraverso il nodeshell:
++
+.. Visualizza tutti i file nel volume root del nodo:
++
+`*ls /etc*`
+
+.. Se vi sono file di traccia dei pacchetti (`*.trc`) si trovano nel volume root del nodo, eliminarli singolarmente:
++
+`*rm /etc/log/packet_traces/_file_name.trc_*`
+
+
+
+. Identificare ed eliminare le copie Snapshot del volume root del nodo attraverso il nodeshell:
++
+.. Identificare il nome del volume root:
++
+`*vol status*`
+
++
+Il volume root è indicato dalla parola "`root`" nella colonna "`Options`" di `vol status` output del comando.
+
++
+Nell'esempio seguente, il volume root è `vol0`:
+
++
+[listing]
+----
+node1*> vol status
+
+         Volume State           Status            Options
+           vol0 online          raid_dp, flex     root, nvfail=on
+                                64-bit
+----
+.. Visualizza copie Snapshot del volume root:
++
+`*snap list root_vol_name*`
+
+.. Eliminare le copie Snapshot del volume root indesiderate:
++
+`*snap delete root_vol_namesnapshot_name*`
+
+
+
+. Uscire dal nodeshell e tornare alla shell di clustershell:
++
+`*exit*`
+
+

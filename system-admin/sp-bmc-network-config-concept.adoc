@@ -1,0 +1,58 @@
+---
+permalink: system-admin/sp-bmc-network-config-concept.html 
+sidebar: sidebar 
+keywords: consideration, sp, bmc, network, configuration, cluster, level, disable, configuration 
+summary: 'È possibile attivare la configurazione di rete automatica a livello di cluster per l"SP (consigliato). È inoltre possibile lasciare disattivata la configurazione di rete automatica SP (impostazione predefinita) e gestire la configurazione di rete SP manualmente a livello di nodo. Esistono alcune considerazioni per ciascun caso.' 
+---
+= Considerazioni per la configurazione di rete SP/BMC
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile attivare la configurazione di rete automatica a livello di cluster per l'SP (consigliato). È inoltre possibile lasciare disattivata la configurazione di rete automatica SP (impostazione predefinita) e gestire la configurazione di rete SP manualmente a livello di nodo. Esistono alcune considerazioni per ciascun caso.
+
+[NOTE]
+====
+Questo argomento si applica sia all'SP che al BMC.
+
+====
+La configurazione automatica della rete SP consente all'SP di utilizzare le risorse di indirizzo (inclusi l'indirizzo IP, la subnet mask e l'indirizzo del gateway) della subnet specificata per configurare automaticamente la rete. Con la configurazione automatica della rete SP, non è necessario assegnare manualmente gli indirizzi IP per l'SP di ciascun nodo. Per impostazione predefinita, la configurazione di rete automatica SP è disattivata, poiché l'abilitazione della configurazione richiede che la subnet venga utilizzata per la configurazione sia definita nel cluster.
+
+Se si attiva la configurazione di rete automatica SP, si applicano le seguenti considerazioni e scenari:
+
+* Se l'SP non è mai stato configurato, la rete SP viene configurata automaticamente in base alla subnet specificata per la configurazione automatica della rete SP.
+* Se l'SP è stato precedentemente configurato manualmente o se la configurazione di rete SP esistente si basa su una subnet diversa, la rete SP di tutti i nodi del cluster viene riconfigurata in base alla subnet specificata nella configurazione di rete automatica dell'SP.
++
+La riconfigurazione potrebbe comportare l'assegnazione di un indirizzo diverso al SP, che potrebbe avere un impatto sulla configurazione DNS e sulla capacità di risolvere i nomi host SP. Di conseguenza, potrebbe essere necessario aggiornare la configurazione DNS.
+
+* Un nodo che si unisce al cluster utilizza la subnet specificata per configurare automaticamente la propria rete SP.
+* Il `system service-processor network modify` Il comando non consente di modificare l'indirizzo IP SP.
++
+Quando la configurazione di rete automatica SP è attivata, il comando consente solo di attivare o disattivare l'interfaccia di rete SP.
+
++
+** Se la configurazione di rete automatica SP era precedentemente abilitata, disattivando l'interfaccia di rete SP la risorsa di indirizzo assegnata viene rilasciata e restituita alla subnet.
+** Se si disattiva e si riattiva l'interfaccia di rete SP, quest'ultima potrebbe essere riconfigurata con un indirizzo diverso.
+
+
+
+
+Se la configurazione di rete automatica SP è disattivata (impostazione predefinita), si applicano le seguenti situazioni e considerazioni:
+
+* Se l'SP non è mai stato configurato, per impostazione predefinita la configurazione di rete IPv4 SP utilizza DHCP IPv4 e IPv6 è disattivato.
++
+Un nodo che si unisce al cluster utilizza anche IPv4 DHCP per la configurazione di rete SP per impostazione predefinita.
+
+* Il `system service-processor network modify` Il comando consente di configurare l'indirizzo IP SP di un nodo.
++
+Quando si tenta di configurare manualmente la rete SP con gli indirizzi assegnati a una subnet, viene visualizzato un messaggio di avviso. Ignorare l'avviso e procedere con l'assegnazione manuale dell'indirizzo potrebbe comportare uno scenario con indirizzi duplicati.
+
+
+
+Se la configurazione di rete automatica SP viene disattivata dopo essere stata attivata in precedenza, si applicano le seguenti situazioni e considerazioni:
+
+* Se la configurazione di rete automatica SP ha la famiglia di indirizzi IPv4 disattivata, la rete SP IPv4 utilizza per impostazione predefinita DHCP e il `system service-processor network modify` Il comando consente di modificare la configurazione SP IPv4 per i singoli nodi.
+* Se la configurazione di rete automatica SP ha la famiglia di indirizzi IPv6 disattivata, anche la rete IPv6 SP viene disattivata e l' `system service-processor network modify` Il comando consente di attivare e modificare la configurazione di IPv6 SP per i singoli nodi.
+

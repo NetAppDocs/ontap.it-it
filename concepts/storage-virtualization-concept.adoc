@@ -1,0 +1,42 @@
+---
+permalink: concepts/storage-virtualization-concept.html 
+sidebar: sidebar 
+keywords: storage virtualization 
+summary: 'Utilizzate le macchine virtuali di storage (SVM) per fornire dati a client e host. Come una macchina virtuale in esecuzione su un hypervisor, una SVM è un"entità logica che astratta le risorse fisiche. I dati a cui si accede tramite SVM non sono legati a una posizione nello storage. L"accesso di rete alla SVM non è vincolato a una porta fisica.' 
+---
+= Panoramica sulla virtualizzazione dello storage
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Utilizzate _macchine virtuali storage (SVM)_ per fornire dati a client e host. Come una macchina virtuale in esecuzione su un hypervisor, una SVM è un'entità logica che astratta le risorse fisiche. I dati a cui si accede tramite SVM non sono legati a una posizione nello storage. L'accesso di rete alla SVM non è vincolato a una porta fisica.
+
+
+NOTE: In precedenza, le SVM erano chiamate "vserver". L'interfaccia della riga di comando di ONTAP utilizza ancora il termine "vserver".
+
+Una SVM fornisce i dati a client e host da uno o più volumi, attraverso una o più _interfacce logiche (LIF)_ di rete. I volumi possono essere assegnati a qualsiasi aggregato di dati nel cluster. Le LIF possono essere ospitate da qualsiasi porta fisica o logica. Sia i volumi che le LIF possono essere spostati senza interrompere il servizio dati, sia che tu stia eseguendo aggiornamenti hardware, aggiungendo nodi, bilanciando le performance o ottimizzando la capacità tra gli aggregati.
+
+La stessa SVM può avere una LIF per il traffico NAS e una LIF per il traffico SAN. Per accedere a SVM, i client e gli host necessitano solo dell'indirizzo LIF (indirizzo IP per NFS, SMB o iSCSI; WWPN per FC). I LIF mantengono i propri indirizzi mentre si spostano. Le porte possono ospitare più LIF. Ogni SVM dispone di sicurezza, amministrazione e spazio dei nomi propri.
+
+Oltre alle SVM dei dati, ONTAP implementa speciali SVM per l'amministrazione:
+
+* Una _SVM amministrativa_ viene creata quando il cluster viene configurato.
+* Un _nodo SVM_ viene creato quando un nodo si unisce a un cluster nuovo o esistente.
+* Viene creata automaticamente una _SVM di sistema_ per le comunicazioni a livello di cluster in un IPSpace.
+
+
+Non è possibile utilizzare queste SVM per la distribuzione dei dati. Esistono inoltre LIF speciali per il traffico all'interno e tra i cluster e per la gestione di cluster e nodi.
+
+image::../media/volume-move.gif[Diagramma che mostra un volume spostato attraverso una SVM sul nodo 2.]
+
+|===
+
+
+ a| 
+*_perché ONTAP è come il middleware_*
+
+Gli oggetti logici utilizzati da ONTAP per le attività di gestione dello storage soddisfano gli obiettivi familiari di un pacchetto middleware ben progettato: Proteggere l'amministratore dai dettagli di implementazione di basso livello e isolare la configurazione dalle modifiche delle caratteristiche fisiche come nodi e porte. L'idea di base è che l'amministratore dovrebbe essere in grado di spostare facilmente volumi e LIF, riconfigurando alcuni campi piuttosto che l'intera infrastruttura di storage.
+
+|===

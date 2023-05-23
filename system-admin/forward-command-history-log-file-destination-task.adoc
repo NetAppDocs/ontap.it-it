@@ -1,0 +1,72 @@
+---
+permalink: system-admin/forward-command-history-log-file-destination-task.html 
+sidebar: sidebar 
+keywords: forward, audit, log, destination, cluster, forwarding, splunk 
+summary: È possibile inoltrare il registro di controllo a un massimo di 10 destinazioni. Ad esempio, è possibile inoltrare il log a un server Splunk o syslog per scopi di monitoraggio, analisi o backup. 
+---
+= Gestire le destinazioni del registro di controllo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile inoltrare il registro di controllo a un massimo di 10 destinazioni. Ad esempio, è possibile inoltrare il log a un server Splunk o syslog per scopi di monitoraggio, analisi o backup.
+
+.A proposito di questa attività
+Per configurare l'inoltro, è necessario fornire l'indirizzo IP dell'host syslog o Splunk, il relativo numero di porta, un protocollo di trasmissione e la funzione syslog da utilizzare per i registri inoltrati. https://datatracker.ietf.org/doc/html/rfc5424["Scopri le funzionalità di syslog"^].
+
+È possibile selezionare uno dei seguenti valori di trasmissione:
+
+UDP non crittografato:: User Datagram Protocol senza sicurezza (impostazione predefinita)
+TCP non crittografato:: Transmission Control Protocol senza sicurezza
+Crittografia TCP:: Transmission Control Protocol with Transport Layer Security (TLS) + Un'opzione *verify server* è disponibile quando si seleziona il protocollo crittografato TCP.
+
+
+È possibile inoltrare i registri di controllo dall'interfaccia utente di ONTAP e, a partire da ONTAP 9.11.1, da Gestore di sistema.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+* Per visualizzare le destinazioni del registro di controllo, selezionare *Cluster > Impostazioni*. + Un numero di destinazioni del registro viene visualizzato nel riquadro *Gestione notifiche*. Fare clic su image:../media/icon_kabob.gif["icona del kebab"] per visualizzare i dettagli.
+* Per aggiungere, modificare o eliminare le destinazioni del registro di controllo, selezionare *Eventi e processi > registri di controllo*, quindi fare clic su *Gestisci destinazioni di controllo* nella parte superiore destra della schermata. + clic image:icon_add.gif["icona add (aggiungi)"]oppure fare clic su image:../media/icon_kabob.gif["icona del kebab"] Nella colonna *Indirizzo host* per modificare o eliminare le voci.
+
+
+--
+.CLI
+--
+. Per ciascuna destinazione a cui si desidera inoltrare il registro di controllo, specificare l'indirizzo IP o il nome host di destinazione e le opzioni di sicurezza.
++
+[listing]
+----
+cluster1::> cluster log-forwarding create -destination 192.168.123.96
+-port 514 -facility user
+
+cluster1::> cluster log-forwarding create -destination 192.168.123.98
+-port 514 -protocol tcp-encrypted -facility user
+----
++
+** Se il `cluster log-forwarding create` impossibile eseguire il ping dell'host di destinazione per verificare la connettività, il comando non riesce e viene visualizzato un errore. Anche se non consigliato, utilizzare `-force` il parametro con il comando ignora la verifica della connettività.
+** Quando si imposta `-verify-server` parametro a. `true`, l'identità della destinazione di inoltro del log viene verificata convalidando il relativo certificato. È possibile impostare il valore su `true` solo quando si seleziona `tcp-encrypted` valore in `-protocol` campo.
+
+
+. Verificare che i record di destinazione siano corretti utilizzando `cluster log-forwarding show` comando.
++
+[listing]
+----
+cluster1::> cluster log-forwarding show
+
+                                                 Verify Syslog
+Destination Host          Port   Protocol        Server Facility
+------------------------- ------ --------        ------ --------
+192.168.123.96            514    udp-unencrypted false  user
+192.168.123.98            514    tcp-encrypted   true   user
+2 entries were displayed.
+----
+
+
+Per ulteriori informazioni, consulta le pagine man.
+
+--
+====

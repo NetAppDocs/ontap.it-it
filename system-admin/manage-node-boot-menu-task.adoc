@@ -1,0 +1,143 @@
+---
+permalink: system-admin/manage-node-boot-menu-task.html 
+sidebar: sidebar 
+keywords: system, manager, manage, node, boot, menu, configuration, problems, password, reset, initialize, disks, restore, device 
+summary: È possibile utilizzare il menu di avvio per correggere i problemi di configurazione su un nodo, reimpostare la password di amministratore, inizializzare i dischi, ripristinare la configurazione del nodo e ripristinare le informazioni di configurazione del nodo sul dispositivo di avvio. 
+---
+= Gestire un nodo utilizzando il menu di boot
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare il menu di avvio per correggere i problemi di configurazione su un nodo, reimpostare la password di amministratore, inizializzare i dischi, ripristinare la configurazione del nodo e ripristinare le informazioni di configurazione del nodo sul dispositivo di avvio.
+
+
+NOTE: Se è in uso una coppia ha link:https://docs.netapp.com/us-en/ontap/encryption-at-rest/support-storage-encryption-concept.html["Crittografia dei dischi SAS o NVMe (SED, NSE, FIPS)"], è necessario seguire le istruzioni riportate nell'argomento link:https://docs.netapp.com/us-en/ontap/encryption-at-rest/return-seds-unprotected-mode-task.html["Ripristino di un'unità FIPS o SED in modalità non protetta"] Per tutti i dischi all'interno della coppia ha prima dell'inizializzazione del sistema (opzioni di avvio 4 o 9). Il mancato rispetto di questa procedura potrebbe causare la perdita di dati in futuro se i dischi vengono riutilizzati.
+
+.Fasi
+. Riavviare il nodo per accedere al menu di avvio utilizzando `system node reboot` al prompt del sistema.
++
+Il nodo avvia il processo di riavvio.
+
+. Durante il processo di riavvio, premere Ctrl-C per visualizzare il menu di avvio quando richiesto.
++
+Il nodo visualizza le seguenti opzioni per il menu di boot:
+
++
+[listing]
+----
+(1) Normal Boot.
+(2) Boot without /etc/rc.
+(3) Change password.
+(4) Clean configuration and initialize all disks.
+(5) Maintenance mode boot.
+(6) Update flash from backup config.
+(7) Install new software first.
+(8) Reboot node.
+(9) Configure Advanced Drive Partitioning
+Selection (1-9)?
+----
++
+[NOTE]
+====
+Opzione del menu di boot (2) l'avvio senza /etc/rc è obsoleto e non ha alcun effetto sul sistema.
+
+====
+. Selezionare una delle seguenti opzioni immettendo il numero corrispondente:
++
+[cols="35,65"]
+|===
+| Per... | Selezionare... 
+
+
+ a| 
+Continuare ad avviare il nodo in modalità normale
+ a| 
+1) Avvio normale
+
+
+
+ a| 
+Modificare la password del nodo, che è anche la password dell'account "`admin`"
+ a| 
+3) modificare la password
+
+
+
+ a| 
+Inizializzare i dischi del nodo e creare un volume root per il nodo
+ a| 
+4) pulire la configurazione e inizializzare tutti i dischi
+
+[NOTE]
+====
+Questa opzione di menu cancella tutti i dati presenti sui dischi del nodo e ripristina la configurazione del nodo alle impostazioni predefinite.
+
+====
+Selezionare questa voce di menu solo dopo che il nodo è stato rimosso da un cluster (non Unito) e non è stato Unito a un altro cluster.
+
+Per un nodo con shelf di dischi interni o esterni, viene inizializzato il volume root sui dischi interni. Se non sono presenti shelf di dischi interni, viene inizializzato il volume root sui dischi esterni.
+
+Per un sistema che esegue la virtualizzazione FlexArray con shelf di dischi interni o esterni, le LUN degli array non vengono inizializzate. Tutti i dischi nativi sugli shelf interni o esterni vengono inizializzati.
+
+Per un sistema che esegue la virtualizzazione FlexArray con solo LUN di array e senza shelf di dischi interni o esterni, il volume root sulle LUN degli array di storage viene inizializzato, vedere link:https://docs.netapp.com/us-en/ontap-flexarray/pdfs/sidebar/Installing_FlexArray.pdf["Installazione di FlexArray"].
+
+Se il nodo che si desidera inizializzare dispone di dischi partizionati per la partizione dei dati root, i dischi devono essere dispartizionati prima che il nodo possa essere inizializzato, vedere *9) Configurazione della partizione avanzata dei dischi* e. link:../disks-aggregates/index.html["Gestione di dischi e aggregati"].
+
+
+
+ a| 
+Eseguire operazioni di manutenzione di aggregati e dischi e ottenere informazioni dettagliate su aggregati e dischi.
+ a| 
+5) Avvio in modalità di manutenzione
+
+Per uscire dalla modalità di manutenzione, utilizzare `halt` comando.
+
+
+
+ a| 
+Ripristinare le informazioni di configurazione dal volume root del nodo al dispositivo di avvio, ad esempio una scheda PC CompactFlash
+ a| 
+6) aggiornare la flash dalla configurazione di backup
+
+ONTAP memorizza alcune informazioni di configurazione del nodo sul dispositivo di avvio. Quando il nodo viene riavviato, viene eseguito automaticamente il backup delle informazioni sul dispositivo di avvio sul volume root del nodo. Se il dispositivo di boot risulta corrotto o deve essere sostituito, utilizzare questa opzione di menu per ripristinare le informazioni di configurazione dal volume root del nodo al dispositivo di boot.
+
+
+
+ a| 
+Installare il nuovo software sul nodo
+ a| 
+7) installare prima il nuovo software
+
+Se il software ONTAP sul dispositivo di boot non include il supporto per lo storage array che si desidera utilizzare per il volume root, è possibile utilizzare questa opzione di menu per ottenere una versione del software che supporti lo storage array e installarla sul nodo.
+
+Questa opzione di menu consente di installare una versione più recente del software ONTAP su un nodo che non dispone di un volume root installato. Non utilizzare questa opzione di menu per aggiornare ONTAP.
+
+
+
+ a| 
+Riavviare il nodo
+ a| 
+8) riavviare il nodo
+
+
+
+ a| 
+Dispartizionare tutti i dischi e rimuovere le informazioni di proprietà o pulire la configurazione e inizializzare il sistema con dischi interi o partizionati
+ a| 
+9) configurare la partizione avanzata dei dischi
+
+A partire da ONTAP 9.2, l'opzione di partizione avanzata dei dischi offre funzionalità di gestione aggiuntive per i dischi configurati per la partizione root-data o root-data-data. Le seguenti opzioni sono disponibili dall'opzione di avvio 9:
+
+[listing]
+----
+(9a) Unpartition all disks and remove their ownership information.
+(9b) Clean configuration and initialize system with partitioned disks.
+(9c) Clean configuration and initialize system with whole disks.
+(9d) Reboot the node.
+(9e) Return to main boot menu.
+----
+|===
+

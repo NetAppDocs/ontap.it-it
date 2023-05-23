@@ -1,0 +1,52 @@
+---
+permalink: smb-hyper-v-sql/verify-security-style-svm-root-volume-ntfs-task.html 
+sidebar: sidebar 
+keywords: verify, security, style, svm, root, volume, ntfs, storage, virtual, machine 
+summary: 'Per garantire il successo delle operazioni senza interruzioni per Hyper-V e SQL Server su SMB, i volumi devono essere creati con lo stile di sicurezza NTFS. Poiché lo stile di sicurezza del volume root viene applicato per impostazione predefinita ai volumi creati sulla macchina virtuale di storage (SVM), lo stile di sicurezza del volume root deve essere impostato su NTFS.' 
+---
+= Verificare che lo stile di protezione del volume root SVM sia impostato su NTFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per garantire il successo delle operazioni senza interruzioni per Hyper-V e SQL Server su SMB, i volumi devono essere creati con lo stile di sicurezza NTFS. Poiché lo stile di sicurezza del volume root viene applicato per impostazione predefinita ai volumi creati sulla macchina virtuale di storage (SVM), lo stile di sicurezza del volume root deve essere impostato su NTFS.
+
+.A proposito di questa attività
+* È possibile specificare lo stile di sicurezza del volume root al momento della creazione di SVM.
+* Se SVM non viene creato con il volume root impostato sullo stile di protezione NTFS, è possibile modificare lo stile di protezione in un secondo momento utilizzando `volume modify` comando.
+
+
+.Fasi
+. Determinare lo stile di sicurezza corrente del volume root SVM:
++
+`*volume show -vserver _vserver_name_ -fields vserver,volume,security-style*`
+
+. Se il volume root non è un volume di sicurezza NTFS, impostare lo stile di protezione su NTFS:
++
+`*volume modify -vserver _vserver_name_ -volume root_volume_name -security-style ntfs*`
+
+. Verificare che il volume root SVM sia impostato sullo stile di protezione NTFS:
++
+`*volume show -vserver _vserver_name_ -fields vserver,volume,security-style*`
+
+
+
+.Esempio
+I seguenti comandi verificano che lo stile di protezione del volume root sia NTFS su SVM vs1:
+
+[listing]
+----
+cluster1::> volume show -vserver vs1 -fields vserver,volume,security-style
+vserver  volume     security-style
+-------- ---------- --------------
+vs1      vs1_root   unix
+
+cluster1::> volume modify -vserver vs1 -volume vs1_root -security-style ntfs
+
+cluster1::> volume show -vserver vs1 -fields vserver,volume,security-style
+vserver  volume     security-style
+-------- ---------- --------------
+vs1      vs1_root   ntfs
+----

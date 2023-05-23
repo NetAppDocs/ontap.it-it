@@ -1,0 +1,138 @@
+---
+permalink: flexcache/create-volume-task.html 
+sidebar: sidebar 
+keywords: creating, flexcache, volume, flex cache, performance, remote cluster, data access, tls encryption, peer permission, 
+summary: 'È possibile creare un volume FlexCache nello stesso cluster per migliorare le prestazioni quando si accede a un oggetto hot. Se i data center si trovano in posizioni diverse, è possibile creare volumi FlexCache su cluster remoti per accelerare l"accesso ai dati.' 
+---
+= Creare un volume FlexCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare un volume FlexCache nello stesso cluster per migliorare le prestazioni quando si accede a un oggetto hot. Se i data center si trovano in posizioni diverse, è possibile creare volumi FlexCache su cluster remoti per accelerare l'accesso ai dati.
+
+.A proposito di questa attività
+Il volume FlexCache è sempre un volume FlexGroup e non un volume FlexVol.
+
+A partire da ONTAP 9.7, i volumi FlexGroup sono supportati anche all'origine della relazione FlexCache.
+
+.Fasi
+. Se il volume FlexCache da creare si trova in un cluster diverso, creare una relazione peer del cluster:
++
+.. Sul cluster di destinazione, creare una relazione peer con il cluster di origine per la protezione dei dati: +
+`cluster peer create -generate-passphrase -offer-expiration MM/DD/YYYY HH:MM:SS|1...7days|1...168hours -peer-addrs _peer_LIF_IPs_ -initial-allowed-vserver-peers _svm_name_,..|* -ipspace _ipspace_name_`
++
+A partire da ONTAP 9.6, la crittografia TLS viene attivata per impostazione predefinita quando si crea una relazione peer del cluster. La crittografia TLS è supportata per la comunicazione tra i cluster tra i volumi di origine e FlexCache. Se necessario, è anche possibile disattivare la crittografia TLS per la relazione peer del cluster.
+
++
+[listing]
+----
+cluster02::> cluster peer create -generate-passphrase -offer-expiration 2days -initial-allowed-vserver-peers *
+
+                     Passphrase: UCa+6lRVICXeL/gq1WrK7ShR
+                Expiration Time: 6/7/2017 08:16:10 EST
+  Initial Allowed Vserver Peers: *
+            Intercluster LIF IP: 192.140.112.101
+              Peer Cluster Name: Clus_7ShR (temporary generated)
+
+Warning: make a note of the passphrase - it cannot be displayed again.
+----
+.. Nel cluster di origine, autenticare il cluster di origine nel cluster di destinazione: +
+`cluster peer create -peer-addrs _peer_LIF_IPs_ -ipspace _ipspace_`
++
+[listing]
+----
+cluster01::> cluster peer create -peer-addrs 192.140.112.101,192.140.112.102
+
+Notice: Use a generated passphrase or choose a passphrase of 8 or more characters.
+        To ensure the authenticity of the peering relationship, use a phrase or sequence of characters that would be hard to guess.
+
+Enter the passphrase:
+Confirm the passphrase:
+
+Clusters cluster02 and cluster01 are peered.
+----
+
+
+. Se il volume FlexCache si trova in una SVM diversa da quella del volume di origine, creare una relazione peer SVM con `flexcache` come applicazione:
++
+.. Se SVM si trova in un cluster diverso, creare un'autorizzazione SVM per le SVM di peering: +
+`vserver peer permission create -peer-cluster _cluster_name_ -vserver _svm-name_ -applications flexcache`
++
+Nell'esempio seguente viene illustrato come creare un'autorizzazione peer SVM applicabile a tutte le SVM locali:
+
++
+[listing]
+----
+cluster1::> vserver peer permission create -peer-cluster cluster2 -vserver "*" -applications flexcache
+
+Warning: This Vserver peer permission applies to all local Vservers. After that no explict
+"vserver peer accept" command required for Vserver peer relationship creation request
+from peer cluster "cluster2" with any of the local Vservers. Do you want to continue? {y|n}: y
+----
+.. Creare la relazione peer SVM: +
+`vserver peer create -vserver local_SVM -peer-vserver _remote_SVM_ -peer-cluster _cluster_name_ -applications flexcache`
+
+
+. Creare un volume FlexCache:
++
+`volume flexcache create -vserver _cache_svm_ -volume _cache_vol_name_ -auto-provision-as flexgroup -size _vol_size_ -origin-vserver _origin_svm_ -origin-volume _origin_vol_name_`
+
++
+Nell'esempio seguente viene creato un volume FlexCache e vengono selezionati automaticamente gli aggregati esistenti per il provisioning:
+
++
+[listing]
+----
+cluster1::> volume flexcache create -vserver vs_1 -volume fc1 -auto-provision-as flexgroup -origin-volume vol_1 -size 160MB -origin-vserver vs_1
+[Job 443] Job succeeded: Successful
+----
++
+Nell'esempio seguente viene creato un volume FlexCache e impostato il percorso di giunzione:
+
++
+[listing]
+----
+cluster1::> flexcache create -vserver vs34 -volume fc4 -aggr-list aggr34,aggr43 -origin-volume origin1 -size 400m -junction-path /fc4
+[Job 903] Job succeeded: Successful
+----
+. Verificare la relazione FlexCache dal volume FlexCache e dal volume di origine.
++
+.. Visualizzare la relazione FlexCache nel cluster: +
+`volume flexcache show`
++
+[listing]
+----
+cluster1::> volume flexcache show
+Vserver Volume      Size       Origin-Vserver Origin-Volume Origin-Cluster
+------- ----------- ---------- -------------- ------------- --------------
+vs_1    fc1         160MB      vs_1           vol_1           cluster1
+----
+.. Visualizzare tutte le relazioni FlexCache nel cluster di origine: +
+`volume flexcache origin show-caches`
++
+[listing]
+----
+cluster::> volume flexcache origin show-caches
+Origin-Vserver Origin-Volume   Cache-Vserver    Cache-Volume   Cache-Cluster
+-------------- --------------- ---------------  -------------- ---------------
+vs0            ovol1           vs1              cfg1           clusA
+vs0            ovol1           vs2              cfg2           clusB
+vs_1           vol_1           vs_1             fc1            cluster1
+----
+
+
+
+
+
+
+== Risultato
+
+Il volume FlexCache è stato creato correttamente. I client possono montare il volume utilizzando il percorso di giunzione del volume FlexCache.
+
+.Informazioni correlate
+link:../peering/index.html["Peering di cluster e SVM"]
+
+http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^]

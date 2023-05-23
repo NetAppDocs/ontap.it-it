@@ -1,0 +1,33 @@
+---
+permalink: smb-admin/disable-reenable-branchcache-server-concept.html 
+sidebar: sidebar 
+keywords: previous, configure, branchcache, branch, office, client, cache, content, disable, what happens when you disable or reenable branchcache on the cifs server 
+summary: Se in precedenza è stato configurato BranchCache ma non si desidera che i client delle filiali utilizzino il contenuto memorizzato nella cache, è possibile disattivare il caching sul server CIFS. Devi essere consapevole di ciò che accade quando disattivi BranchCache. 
+---
+= Cosa accade quando si disattiva o si riattiva BranchCache sul server CIFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se in precedenza è stato configurato BranchCache ma non si desidera che i client delle filiali utilizzino il contenuto memorizzato nella cache, è possibile disattivare il caching sul server CIFS. Devi essere consapevole di ciò che accade quando disattivi BranchCache.
+
+Quando disattivi BranchCache, ONTAP non calcola più gli hash o invia i metadati al client richiedente. Tuttavia, non si verifica alcuna interruzione nell'accesso ai file. In seguito, quando i client abilitati a BranchCache richiedono informazioni sui metadati per il contenuto a cui desiderano accedere, ONTAP risponde con un errore definito da Microsoft, che fa in modo che il client invii una seconda richiesta, richiedendo il contenuto effettivo. In risposta alla richiesta di contenuto, il server CIFS invia il contenuto effettivo memorizzato sulla macchina virtuale di storage (SVM).
+
+Una volta disattivato BranchCache sul server CIFS, le condivisioni SMB non pubblicizzano le funzionalità di BranchCache. Per accedere ai dati sulle nuove connessioni SMB, i client eseguono le normali richieste SMB in lettura.
+
+Puoi riabilitare BranchCache sul server CIFS in qualsiasi momento.
+
+* Poiché l'archivio hash non viene cancellato quando disattivi BranchCache, ONTAP può utilizzare gli hash memorizzati quando risponde alle richieste hash dopo la riabilitazione di BranchCache, a condizione che l'hash richiesto sia ancora valido.
+* Tutti i client che hanno effettuato connessioni SMB alle condivisioni abilitate a BranchCache durante il periodo in cui BranchCache è stato disattivato non ottengono il supporto BranchCache se BranchCache viene successivamente riabilitato.
++
+Questo perché ONTAP pubblicizza il supporto di BranchCache per una condivisione al momento della configurazione della sessione SMB. I client che hanno stabilito sessioni per le condivisioni abilitate a BranchCache mentre BranchCache è stato disattivato devono disconnettersi e riconnettersi per utilizzare il contenuto memorizzato nella cache per questa condivisione.
+
+
+
+[NOTE]
+====
+Se non si desidera salvare l'archivio hash dopo la disattivazione di BranchCache su un server CIFS, è possibile eliminarlo manualmente. Se riabiliti BranchCache, devi assicurarti che la directory dell'archivio hash esista. Una volta riabilitato BranchCache, le condivisioni abilitate a BranchCache pubblicizzano le funzionalità di BranchCache. ONTAP crea nuovi hash man mano che le nuove richieste vengono effettuate dai client abilitati a BranchCache.
+
+====

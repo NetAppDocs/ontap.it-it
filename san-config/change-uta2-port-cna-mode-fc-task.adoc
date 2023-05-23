@@ -1,0 +1,111 @@
+---
+permalink: san-config/change-uta2-port-cna-mode-fc-task.html 
+sidebar: sidebar 
+keywords: change, uta2, port, cna mode, fc mode 
+summary: 'Modificare la porta UTA2 dalla modalità Converged Network Adapter (CNA) alla modalità Fibre Channel (FC) per supportare la modalità FC Initiator e FC target. È necessario modificare la personalità dalla modalità CNA alla modalità FC quando si desidera modificare il supporto fisico che collega la porta alla rete.' 
+---
+= Modificare la porta UTA2 dalla modalità CNA alla modalità FC
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Modificare la porta UTA2 dalla modalità Converged Network Adapter (CNA) alla modalità Fibre Channel (FC) per supportare la modalità FC Initiator e FC target. È necessario modificare la personalità dalla modalità CNA alla modalità FC quando si desidera modificare il supporto fisico che collega la porta alla rete.
+
+.Fasi
+. Portare l'adattatore offline:
++
+`network fcp adapter modify -node node_name -adapter adapter_name -status-admin down`
+
+. Modificare la modalità della porta:
++
+`ucadmin modify -node node_name -adapter adapter_name -mode fcp`
+
+. Riavviare il nodo, quindi portare l'adattatore in linea:
++
+`network fcp adapter modify -node node_name -adapter adapter_name -status-admin up`
+
+. Avvisare l'amministratore o il gestore VIF di eliminare o rimuovere la porta, a seconda dei casi:
++
+** Se la porta viene utilizzata come porta principale di una LIF, fa parte di un gruppo di interfacce (ifgrp) o ospita VLAN, un amministratore deve eseguire le seguenti operazioni:
++
+... Spostare le LIF, rimuovere la porta da ifgrp o eliminare le VLAN, rispettivamente.
+... Eliminare manualmente la porta eseguendo `network port delete` comando.
++
+Se il `network port delete` il comando non riesce, l'amministratore dovrebbe risolvere gli errori ed eseguire di nuovo il comando.
+
+
+
+** Se la porta non viene utilizzata come porta home di un LIF, non è membro di un ifgrp e non ospita VLAN, il gestore VIF deve rimuovere la porta dai record al momento del riavvio.
++
+Se il gestore VIF non rimuove la porta, l'amministratore deve rimuoverla manualmente dopo il riavvio utilizzando `network port delete` comando.
+
+
+
++
+[listing]
+----
+net-f8040-34::> network port show
+
+    Node: net-f8040-34-01
+                                                      Speed(Mbps) Health
+    Port      IPspace      Broadcast Domain Link MTU  Admin/Oper  Status
+    --------- ------------ ---------------- ---- ---- ----------- --------
+    ...
+    e0i       Default      Default          down 1500  auto/10    -
+    e0f       Default      Default          down 1500  auto/10    -
+    ...
+
+    net-f8040-34::> ucadmin show
+                           Current  Current    Pending  Pending    Admin
+    Node          Adapter  Mode     Type       Mode     Type       Status
+    ------------  -------  -------  ---------  -------  ---------  -----------
+    net-f8040-34-01
+                  0e       cna      target     -        -          offline
+    net-f8040-34-01
+                  0f       cna      target     -        -          offline
+    ...
+
+    net-f8040-34::> network interface create -vs net-f8040-34 -lif m -role
+node-mgmt-home-node net-f8040-34-01 -home-port e0e -address 10.1.1.1
+-netmask 255.255.255.0
+
+
+    net-f8040-34::> network interface show -fields home-port, curr-port
+
+    vserver lif                   home-port curr-port
+    ------- --------------------- --------- ---------
+    Cluster net-f8040-34-01_clus1 e0a       e0a
+    Cluster net-f8040-34-01_clus2 e0b       e0b
+    Cluster net-f8040-34-01_clus3 e0c       e0c
+    Cluster net-f8040-34-01_clus4 e0d       e0d
+    net-f8040-34
+            cluster_mgmt          e0M       e0M
+    net-f8040-34
+            m                     e0e       e0i
+    net-f8040-34
+            net-f8040-34-01_mgmt1 e0M       e0M
+    7 entries were displayed.
+
+    net-f8040-34::> ucadmin modify local 0e fc
+
+    Warning: Mode on adapter 0e and also adapter 0f will be changed to fc.
+    Do you want to continue? {y|n}: y
+    Any changes will take effect after rebooting the system. Use the
+"system node reboot" command to reboot.
+
+    net-f8040-34::> reboot local
+      (system node reboot)
+
+    Warning: Are you sure you want to reboot node "net-f8040-34-01"?
+    {y|n}: y
+----
+. Verificare di avere installato il modulo SFP+ corretto:
++
+`network fcp adapter show -instance -node -adapter`
+
++
+Per CNA, è necessario utilizzare un SFP Ethernet da 10 GB. Per FC, è necessario utilizzare un SFP da 8 GB o un SFP da 16 GB, prima di modificare la configurazione sul nodo.
+
+

@@ -1,0 +1,127 @@
+---
+permalink: data-protection/define-rule-policy-task.html 
+sidebar: sidebar 
+keywords: define, rule, policy 
+summary: 'Per i criteri personalizzati con il tipo di policy "vault" o "mirror-vault", è necessario definire almeno una regola che determina quali copie Snapshot vengono trasferite durante l"inizializzazione e l"aggiornamento. È inoltre possibile definire le regole per i criteri di default con il tipo di policy "vault" o "mirror-vault".' 
+---
+= Definire una regola per un criterio
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per le policy personalizzate con il tipo di policy "`vault`" o "`mirror-vault`", è necessario definire almeno una regola che determina quali copie Snapshot vengono trasferite durante l'inizializzazione e l'aggiornamento. È inoltre possibile definire le regole per i criteri di default con il tipo di policy "`vault`" o "`mirror-vault`".
+
+.A proposito di questa attività
+Ogni policy con il tipo di policy "`vault`" o "`mirror-vault`" deve avere una regola che specifica quali copie Snapshot replicare. La regola "`bimestrale`", ad esempio, indica che devono essere replicate solo le copie Snapshot assegnate all'etichetta SnapMirror "`bimestrale`". Specificare l'etichetta SnapMirror quando si configura il criterio Snapshot sull'origine.
+
+Ogni tipo di policy è associato a una o più regole definite dal sistema. Queste regole vengono assegnate automaticamente a un criterio quando si specifica il relativo tipo di criterio. La tabella seguente mostra le regole definite dal sistema.
+
+[cols="3*"]
+|===
+
+
+| Regola definita dal sistema | Utilizzato nei tipi di policy | Risultato 
+
+
+ a| 
+sm_created
+ a| 
+async-mirror, mirror-vault, Sync, StrictSync
+ a| 
+Una copia Snapshot creata da SnapMirror viene trasferita all'inizializzazione e all'aggiornamento.
+
+
+
+ a| 
+all_source_snapshot
+ a| 
+mirror asincrono
+ a| 
+Le nuove copie Snapshot sull'origine vengono trasferite all'inizializzazione e all'aggiornamento.
+
+
+
+ a| 
+ogni giorno
+ a| 
+vault, vault mirror
+ a| 
+Le nuove copie Snapshot sull'origine con l'etichetta SnapMirror "`daily`" vengono trasferite all'inizializzazione e all'aggiornamento.
+
+
+
+ a| 
+settimanale
+ a| 
+vault, vault mirror
+ a| 
+Le nuove copie Snapshot sull'origine con l'etichetta SnapMirror "`settimanale`" vengono trasferite all'inizializzazione e all'aggiornamento.
+
+
+
+ a| 
+mensile
+ a| 
+vault mirror
+ a| 
+Le nuove copie Snapshot sull'origine con l'etichetta SnapMirror "`mOnhly`" vengono trasferite all'inizializzazione e all'aggiornamento.
+
+
+
+ a| 
+coerente con l'applicazione
+ a| 
+Sync, StrictSync
+ a| 
+Le copie Snapshot con l'etichetta SnapMirror "`app_coerente`" sull'origine vengono replicate in modo sincrono sulla destinazione. Supportato a partire da ONTAP 9.7.
+
+|===
+Ad eccezione del tipo di policy "`async-mirror`", è possibile specificare regole aggiuntive in base alle esigenze, per i criteri predefiniti o personalizzati. Ad esempio:
+
+* Per impostazione predefinita `MirrorAndVault` Policy, è possibile creare una regola chiamata "`bimestrale`" per associare le copie Snapshot sull'origine con l'etichetta "`bimestrale`" SnapMirror.
+* Per una policy personalizzata con il tipo di policy "`mirror-vault`", è possibile creare una regola chiamata "`bisettimanale`" per far corrispondere le copie Snapshot sull'origine con l'etichetta "`bisettimanale`" SnapMirror.
+
+
+.Fase
+. Definire una regola per un criterio:
++
+`snapmirror policy add-rule -vserver _SVM_ -policy _policy_for_rule_ -snapmirror-label _snapmirror-label_ -keep _retention_count_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene aggiunta una regola con l'etichetta SnapMirror `bi-monthly` al valore predefinito `MirrorAndVault` policy:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy add-rule -vserver svm1 -policy MirrorAndVault -snapmirror-label bi-monthly -keep 6
+----
++
+Nell'esempio seguente viene aggiunta una regola con l'etichetta SnapMirror `bi-weekly` al personalizzato `my_snapvault` policy:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy add-rule -vserver svm1 -policy my_snapvault -snapmirror-label bi-weekly -keep 26
+----
++
+Nell'esempio seguente viene aggiunta una regola con l'etichetta SnapMirror `app_consistent` al personalizzato `Sync` policy:
+
++
+[listing]
+----
+cluster_dst::> snapmirror policy add-rule -vserver svm1 -policy Sync -snapmirror-label app_consistent -keep 1
+----
++
+È quindi possibile replicare le copie Snapshot dal cluster di origine che corrispondono a questa etichetta SnapMirror:
+
++
+[listing]
+----
+cluster_src::> snapshot create -vserver vs1 -volume vol1 -snapshot snapshot1 -snapmirror-label app_consistent
+----
+

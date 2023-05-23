@@ -1,0 +1,73 @@
+---
+permalink: s3-config/assess-networking-requirements-task.html 
+sidebar: sidebar 
+keywords: assess, networking, requirements 
+summary: Prima di fornire storage S3 ai client, è necessario verificare che la rete sia configurata correttamente per soddisfare i requisiti di provisioning S3. 
+---
+= Valutare i requisiti di rete
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di fornire storage S3 ai client, è necessario verificare che la rete sia configurata correttamente per soddisfare i requisiti di provisioning S3.
+
+.Di cosa hai bisogno
+È necessario configurare i seguenti oggetti di rete del cluster:
+
+* Porte fisiche e logiche
+* Domini di broadcast
+* Subnet (se richieste)
+* IPspaces (come richiesto, oltre all'IPSpace predefinito)
+* Gruppi di failover (secondo necessità, oltre al gruppo di failover predefinito per ciascun dominio di broadcast)
+* Firewall esterni
+
+
+.A proposito di questa attività
+Per i Tier di capacità FabricPool (cloud) remoti e i client S3 remoti, è necessario utilizzare una SVM di dati e configurare le LIF di dati. Per i livelli cloud FabricPool, è necessario configurare anche le LIF tra cluster; il peering dei cluster non è richiesto.
+
+Per i Tier di capacità FabricPool locali, è necessario utilizzare la SVM di sistema (chiamata "`Cluster`"), ma sono disponibili due opzioni per la configurazione LIF:
+
+* È possibile utilizzare le LIF del cluster.
++
+In questa opzione, non è richiesta alcuna ulteriore configurazione LIF, ma il traffico sulle LIF del cluster aumenterà. Inoltre, il Tier locale non sarà accessibile ad altri cluster.
+
+* È possibile utilizzare le LIF di dati e intercluster.
++
+Questa opzione richiede un'ulteriore configurazione, inclusa l'abilitazione delle LIF per il protocollo S3, ma il Tier locale sarà accessibile anche come Tier cloud FabricPool remoto ad altri cluster.
+
+
+
+.Fasi
+. Visualizzare le porte fisiche e virtuali disponibili:
++
+`network port show`
+
++
+** Quando possibile, utilizzare la porta con la velocità massima per la rete dati.
+** Per ottenere le migliori prestazioni, tutti i componenti della rete dati devono avere la stessa impostazione MTU.
+
+
+. Se si intende utilizzare un nome di sottorete per assegnare l'indirizzo IP e il valore della maschera di rete per una LIF, verificare che la subnet esista e che gli indirizzi disponibili siano sufficienti:
++
+`network subnet show`
+
++
+Le subnet contengono un pool di indirizzi IP appartenenti alla stessa subnet Layer 3. Le subnet vengono create utilizzando `network subnet create` comando.
+
+. Visualizzare gli spazi IP disponibili:
++
+`network ipspace show`
+
++
+È possibile utilizzare l'IPSpace predefinito o un IPSpace personalizzato.
+
+. Se si desidera utilizzare gli indirizzi IPv6, verificare che IPv6 sia attivato sul cluster:
++
+`network options ipv6 show`
+
++
+Se necessario, è possibile attivare IPv6 utilizzando `network options ipv6 modify` comando.
+
+

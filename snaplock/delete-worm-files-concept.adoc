@@ -1,0 +1,98 @@
+---
+permalink: snaplock/delete-worm-files-concept.html 
+sidebar: sidebar 
+keywords: delete, worm, file, privileged, delete, enterprise, mode, retention, period, overview 
+summary: 'È possibile eliminare i file WORM in modalità Enterprise durante il periodo di conservazione utilizzando la funzione di eliminazione con privilegi. Prima di poter utilizzare questa funzione, è necessario creare un account amministratore di SnapLock e, utilizzando l"account, attivare la funzione.' 
+---
+= Panoramica sull'eliminazione dei file WORM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile eliminare i file WORM in modalità Enterprise durante il periodo di conservazione utilizzando la funzione di eliminazione con privilegi. Prima di poter utilizzare questa funzione, è necessario creare un account amministratore di SnapLock e, utilizzando l'account, attivare la funzione.
+
+
+
+== Creare un account amministratore di SnapLock
+
+Per eseguire un'eliminazione con privilegi, è necessario disporre dei privilegi di amministratore di SnapLock. Questi privilegi sono definiti nel ruolo vsadmin-snaplock. Se non è stato ancora assegnato tale ruolo, è possibile chiedere all'amministratore del cluster di creare un account amministratore SVM con il ruolo di amministratore di SnapLock.
+
+.Di cosa hai bisogno
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+* È necessario aver effettuato l'accesso con una connessione sicura (SSH, console o ZAPI).
+
+
+.Fasi
+. Creare un account amministratore SVM con il ruolo di amministratore di SnapLock:
++
+`*security login create -vserver _SVM_name_ -user-or-group-name _user_or_group_name_ -application _application_ -authmethod _authentication_method_ -role _role_ -comment _comment_*`
+
++
+Il seguente comando attiva l'account amministratore SVM `SnapLockAdmin` con il predefinito `vsadmin-snaplock` ruolo di accesso `SVM1` utilizzo di una password:
+
++
+[listing]
+----
+cluster1::> security login create -vserver SVM1 -user-or-group-name SnapLockAdmin -application ssh -authmethod password -role vsadmin-snaplock
+----
+
+
+
+
+== Attivare la funzione di eliminazione con privilegi
+
+È necessario attivare esplicitamente la funzionalità di eliminazione con privilegi sul volume Enterprise che contiene i file WORM che si desidera eliminare.
+
+.A proposito di questa attività
+Il valore di `-privileged-delete` l'opzione determina se l'eliminazione con privilegi è attivata. I valori possibili sono `enabled`, `disabled`, e. `permanently-disabled`.
+
+[NOTE]
+====
+ `permanently-disabled` è lo stato del terminale. Non è possibile attivare l'eliminazione con privilegi sul volume dopo aver impostato lo stato su `permanently-disabled`.
+
+====
+.Fasi
+. Abilitare l'eliminazione con privilegi per un volume aziendale SnapLock:
++
+`*volume snaplock modify -vserver _SVM_name_ -volume _volume_name_ -privileged-delete disabled|enabled|permanently-disabled*`
+
++
+Il comando seguente attiva la funzione di eliminazione con privilegi per il volume Enterprise `dataVol` acceso `SVM1`:
+
++
+[listing]
+----
+SVM1::> volume snaplock modify -vserver SVM1 -volume dataVol -privileged-delete enabled
+----
+
+
+
+
+== Eliminare i file WORM in modalità Enterprise
+
+È possibile utilizzare la funzione di eliminazione con privilegi per eliminare i file WORM in modalità Enterprise durante il periodo di conservazione.
+
+.Di cosa hai bisogno
+* Per eseguire questa attività, è necessario essere un amministratore di SnapLock.
+* È necessario aver creato un registro di controllo di SnapLock e attivato la funzione di eliminazione con privilegi sul volume aziendale.
+
+
+.A proposito di questa attività
+Non è possibile utilizzare un'operazione di eliminazione con privilegi per eliminare un file WORM scaduto. È possibile utilizzare `volume file retention show` Per visualizzare il tempo di conservazione del file WORM che si desidera eliminare. Per ulteriori informazioni, vedere la pagina man del comando.
+
+.Fase
+. Eliminare un file WORM su un volume Enterprise:
++
+`*volume file privileged-delete -vserver _SVM_name_ -file _file_path_*`
+
++
+Il seguente comando elimina il file `/vol/dataVol/f1` Su SVM``SVM1``:
+
++
+[listing]
+----
+SVM1::> volume file privileged-delete -file /vol/dataVol/f1
+----
+

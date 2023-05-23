@@ -1,0 +1,47 @@
+---
+permalink: smb-hyper-v-sql/add-sesecurityprivilege-user-account-task.html 
+sidebar: sidebar 
+keywords: add, sesecurityprivilege, privilege, user, aacount, sql, server, smb, share 
+summary: 'All"account utente di dominio utilizzato per l"installazione di SQL Server deve essere assegnato il privilegio "SeSecurityPrivilege" per eseguire determinate azioni sul server CIFS che richiedono privilegi non assegnati per impostazione predefinita agli utenti di dominio.' 
+---
+= Aggiungere il privilegio SeSecurityPrivilege all'account utente (per SQL Server delle condivisioni SMB)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+All'account utente di dominio utilizzato per l'installazione del server SQL deve essere assegnato il privilegio "`SeSecurityPrivilege`" per eseguire determinate azioni sul server CIFS che richiedono privilegi non assegnati per impostazione predefinita agli utenti di dominio.
+
+.Di cosa hai bisogno
+L'account di dominio utilizzato per l'installazione di SQL Server deve già esistere.
+
+.A proposito di questa attività
+Quando si aggiunge il privilegio all'account del programma di installazione di SQL Server, ONTAP potrebbe validare l'account contattando il controller di dominio. Il comando potrebbe non riuscire se ONTAP non riesce a contattare il controller di dominio.
+
+.Fasi
+. Aggiungere il privilegio "`SeSecurityPrivilege`":
++
+`*vserver cifs users-and-groups privilege add-privilege -vserver _vserver_name_ -user-or-group-name _account_name_ -privileges SeSecurityPrivilege*`
+
++
+Il valore di `-user-or-group-name` Parameter è il nome dell'account utente di dominio utilizzato per l'installazione di SQL Server.
+
+. Verificare che il privilegio sia applicato all'account:
++
+`*vserver cifs users-and-groups privilege show -vserver _vserver_name_ ‑user-or-group-name _account_name_*`
+
+
+
+.Esempio
+Il seguente comando aggiunge il privilegio "`SeSecurityPrivilege`" all'account del programma di installazione di SQL Server nel dominio DI ESEMPIO per la macchina virtuale di storage (SVM) vs1:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege add-privilege -vserver vs1 -user-or-group-name EXAMPLE\SQLinstaller -privileges SeSecurityPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name          Privileges
+--------- ---------------------       ---------------
+vs1       EXAMPLE\SQLinstaller        SeSecurityPrivilege
+----

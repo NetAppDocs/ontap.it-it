@@ -1,0 +1,218 @@
+---
+permalink: data-protection/reactivate-original-source-volume-task.html 
+sidebar: sidebar 
+keywords: reactivate, original, source, volume 
+summary: È possibile ristabilire la relazione di protezione dei dati originale tra i volumi di origine e di destinazione quando non è più necessario fornire dati dalla destinazione. 
+---
+= Riattivare il volume di origine originale
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile ristabilire la relazione di protezione dei dati originale tra i volumi di origine e di destinazione quando non è più necessario fornire dati dalla destinazione.
+
+.A proposito di questa attività
+* La procedura riportata di seguito presuppone che la linea di base nel volume di origine originale sia intatta. Se la linea di base non è intatta, è necessario creare e inizializzare la relazione tra il volume da cui si stanno fornendo i dati e il volume di origine originale prima di eseguire la procedura.
+* La preparazione in background e la fase di data warehousing di una relazione SnapMirror XDP possono richiedere molto tempo. Non è raro che la relazione di SnapMirror riporti lo stato di "preparazione" per un periodo di tempo prolungato.
+
+
+.Fasi
+. Eliminare la relazione di protezione dei dati originale:
++
+`snapmirror delete -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+È necessario eseguire questo comando dalla SVM di destinazione o dal cluster di destinazione.
+
++
+Nell'esempio seguente viene eliminata la relazione tra il volume di origine originale, `volA` acceso `svm1`e il volume da cui vengono forniti i dati, `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror delete -source-path svm1:volA -destination-path svm_backup:volA_dst
+----
+. Invertire la relazione di protezione dei dati originale:
++
+`snapmirror resync -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di origine originale o dal cluster di origine. Sebbene la risincronizzazione non richieda un trasferimento di riferimento, può richiedere molto tempo. È possibile eseguire la risincronizzazione in ore non di punta. Il comando non riesce se non esiste una copia Snapshot comune sull'origine e sulla destinazione. Utilizzare `snapmirror initialize` per reinizializzare la relazione.
+
+====
++
+Nell'esempio seguente viene invertita la relazione tra il volume di origine originale, `volA` acceso `svm1`e il volume da cui vengono forniti i dati, `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_src::> snapmirror resync -source-path svm_backup:volA_dst -destination-path svm1:volA
+----
+. Quando si è pronti a ristabilire l'accesso ai dati all'origine originale, interrompere l'accesso al volume di destinazione originale. Un modo per farlo è arrestare la SVM di destinazione originale:
++
+`vserver stop -vserver _SVM_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione originale o dal cluster di destinazione originale. Questo comando interrompe l'accesso dell'utente all'intera SVM di destinazione originale. È possibile interrompere l'accesso al volume di destinazione originale utilizzando altri metodi.
+
+====
++
+Nell'esempio seguente viene interrotta la SVM di destinazione originale:
+
++
+[listing]
+----
+cluster_dst::> vserver stop svm_backup
+----
+. Aggiornare la relazione inversa:
++
+`snapmirror update -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di origine originale o dal cluster di origine.
+
+====
++
+Nell'esempio riportato di seguito viene aggiornata la relazione tra il volume da cui si stanno fornendo i dati, `volA_dst` acceso `svm_backup`e il volume di origine originale, `volA` acceso `svm1`:
+
++
+[listing]
+----
+cluster_src::> snapmirror update -source-path svm_backup:volA_dst -destination-path svm1:volA
+----
+. Dalla SVM di origine originale o dal cluster di origine originale, interrompere i trasferimenti pianificati per la relazione invertita:
++
+`snapmirror quiesce -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di origine originale o dal cluster di origine.
+
+====
++
+Nell'esempio seguente vengono interrompiti i trasferimenti pianificati tra il volume di destinazione originale, `volA_dst` acceso `svm_backup`e il volume di origine originale, `volA` acceso `svm1`:
+
++
+[listing]
+----
+cluster_src::> snapmirror quiesce -source-path svm_backup:volA_dst -destination-path svm1:volA
+----
+. Quando l'aggiornamento finale è completo e la relazione indica "Quiesced" per lo stato della relazione, eseguire il seguente comando dalla SVM di origine o dal cluster di origine originale per interrompere la relazione invertita:
++
+`snapmirror break -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+Eseguire questo comando dalla SVM di origine o dal cluster di origine.
+
+====
++
+L'esempio seguente interrompe la relazione tra il volume di destinazione originale, `volA_dst` acceso `svm_backup`e il volume di origine originale, `volA` acceso `svm1`:
+
++
+[listing]
+----
+cluster_scr::> snapmirror break -source-path svm_backup:volA_dst -destination-path svm1:volA
+----
+. Dalla SVM di origine originale o dal cluster di origine originale, eliminare la relazione di protezione dei dati invertita:
++
+`snapmirror delete -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di origine originale o dal cluster di origine.
+
+====
++
+Nell'esempio seguente viene eliminata la relazione inversa tra il volume di origine originale, `volA` acceso `svm1`e il volume da cui vengono forniti i dati, `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_src::> snapmirror delete -source-path svm_backup:volA_dst -destination-path svm1:volA
+----
+. Rilasciare la relazione invertita dalla SVM di destinazione originale o dal cluster di destinazione originale.
++
+`snapmirror release -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione originale o dal cluster di destinazione originale.
+
+====
++
+Nell'esempio seguente viene rilasciata la relazione inversa tra il volume di destinazione originale, `volA_dst` acceso `svm_backup`e il volume di origine originale, `volA` acceso `svm1`:
+
+
+
+[listing]
+----
+cluster_dst::> snapmirror release -source-path svm_backup:volA_dst -destination-path svm1:volA
+----
+. Se necessario, avviare la SVM di destinazione originale:
++
+`vserver start -vserver _SVM_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene avviata la SVM di destinazione originale:
+
++
+[listing]
+----
+cluster_dst::> vserver start svm_backup
+----
+. Ristabilire la relazione di protezione dei dati originale dalla destinazione originale:
++
+`snapmirror resync -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene ristabilita la relazione tra il volume di origine originale, `volA` acceso `svm1`e il volume di destinazione originale, `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror resync -source-path svm1:volA -destination-path svm_backup:volA_dst
+----
+
+
+.Al termine
+Utilizzare `snapmirror show` Per verificare che sia stata creata la relazione SnapMirror. Per la sintassi completa dei comandi, vedere la pagina man.

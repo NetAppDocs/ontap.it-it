@@ -1,0 +1,316 @@
+---
+permalink: snaplock/set-retention-period-task.html 
+sidebar: sidebar 
+keywords: snaplock, set, retention, time, default, explicit, file, modify, volume, period, ebr, event, based 
+summary: È possibile impostare il tempo di conservazione per un file in modo esplicito oppure utilizzare il periodo di conservazione predefinito per il volume per derivare il tempo di conservazione. A meno che non si definisca esplicitamente il tempo di conservazione, SnapLock utilizza il periodo di conservazione predefinito per calcolare il tempo di conservazione. È inoltre possibile impostare la conservazione dei file dopo un evento. 
+---
+= Impostare il tempo di conservazione
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile impostare il tempo di conservazione per un file in modo esplicito oppure utilizzare il periodo di conservazione predefinito per il volume per derivare il tempo di conservazione. A meno che non si definisca esplicitamente il tempo di conservazione, SnapLock utilizza il periodo di conservazione predefinito per calcolare il tempo di conservazione. È inoltre possibile impostare la conservazione dei file dopo un evento.
+
+.Informazioni sul periodo di conservazione e sul tempo di conservazione
+Il _periodo di conservazione_ per un file WORM specifica il periodo di tempo in cui il file deve essere conservato dopo il commit allo stato WORM. Il _tempo di conservazione_ per un file WORM è il tempo dopo il quale il file non deve più essere conservato. Un periodo di conservazione di 20 anni per un file impegnato nello stato WORM il 10 novembre 2020 alle 6:00, ad esempio, avrebbe un tempo di conservazione del 10 novembre 2040 alle 6:00
+
+image::../media/retention.gif[conservazione]
+
+[NOTE]
+====
+A partire da ONTAP 9.10.1, è possibile impostare un periodo di conservazione fino al 26 ottobre 3058 e un periodo di conservazione fino a 100 anni. Quando estendi le date di conservazione, le policy precedenti vengono convertite automaticamente. In ONTAP 9.9.1 e versioni precedenti, a meno che il periodo di conservazione predefinito non sia impostato su infinito, il tempo di conservazione massimo supportato è gennaio 19 2071 (GMT).
+
+====
+.Considerazioni importanti sulla replica
+Quando si stabilisce una relazione di SnapMirror con un volume di origine SnapLock utilizzando una data di conservazione successiva al 19 gennaio 2071 (GMT), il cluster di destinazione deve eseguire ONTAP 9.10.1 o versione successiva, altrimenti il trasferimento di SnapMirror avrà esito negativo.
+
+.Considerazioni importanti sul revert
+ONTAP impedisce di ripristinare un cluster da ONTAP 9.10.1 a una versione precedente di ONTAP quando sono presenti file con un periodo di conservazione successivo a "19 gennaio 2071 8:44:07".
+
+.Informazioni sui periodi di conservazione predefiniti
+Un volume aziendale o di conformità SnapLock prevede quattro periodi di conservazione:
+
+* Periodo minimo di conservazione (`min`), con un valore predefinito pari a 0
+* Periodo di conservazione massimo (`max`), con un valore predefinito di 30 anni
+* Periodo di conservazione predefinito, con un valore predefinito pari a. `min` Sia per la modalità Compliance che per la modalità Enterprise a partire da ONTAP 9.10.1. Nelle versioni di ONTAP precedenti a ONTAP 9.10.1, il periodo di conservazione predefinito dipende dalla modalità:
++
+** Per la modalità Compliance, l'impostazione predefinita è uguale a. `max`.
+** Per la modalità Enterprise, il valore predefinito è uguale a. `min`.
+
+
+* Periodo di conservazione non specificato.
++
+A partire da ONTAP 9.8, è possibile impostare il periodo di conservazione dei file in un volume su `unspecified`, per consentire la conservazione del file fino a quando non si imposta un tempo di conservazione assoluto. È possibile impostare un file con tempo di conservazione assoluto su conservazione non specificata e su conservazione assoluta, a condizione che il nuovo tempo di conservazione assoluto sia successivo al tempo assoluto impostato in precedenza.
+
++
+A partire da ONTAP 9.12.1, i file WORM con il periodo di conservazione impostato su `unspecified` È garantito che un periodo di conservazione sia impostato sul periodo di conservazione minimo configurato per il volume SnapLock. Quando si modifica il periodo di conservazione del file da `unspecified` per un tempo di conservazione assoluto, il nuovo tempo di conservazione specificato deve essere maggiore del tempo di conservazione minimo già impostato nel file.
+
+
+
+Pertanto, se non si imposta esplicitamente il tempo di conservazione prima di impostare un file in modalità Compliance allo stato WORM e non si modificano le impostazioni predefinite, il file verrà conservato per 30 anni. Allo stesso modo, se non si imposta esplicitamente il tempo di conservazione prima di eseguire il commit di un file in modalità Enterprise allo stato WORM e non si modificano le impostazioni predefinite, il file verrà conservato per 0 anni o, effettivamente, per niente.
+
+
+
+== Impostare il periodo di conservazione predefinito
+
+È possibile utilizzare `volume snaplock modify` Per impostare il periodo di conservazione predefinito per i file su un volume SnapLock.
+
+.Di cosa hai bisogno
+Il volume SnapLock deve essere online.
+
+.A proposito di questa attività
+La tabella seguente mostra i valori possibili per l'opzione periodo di conservazione predefinito:
+
+[NOTE]
+====
+Il periodo di conservazione predefinito deve essere maggiore o uguale al (>=) periodo di conservazione minimo e minore o uguale al (<=) periodo di conservazione massimo.
+
+====
+|===
+| Valore | Unità | Note 
+
+
+ a| 
+0 - 65535
+ a| 
+secondi
+ a| 
+
+
+
+ a| 
+0 - 24
+ a| 
+ore
+ a| 
+
+
+
+ a| 
+0 - 365
+ a| 
+giorni
+ a| 
+
+
+
+ a| 
+0 - 12
+ a| 
+mesi
+ a| 
+
+
+
+ a| 
+0 - 100
+ a| 
+anni
+ a| 
+A partire da ONTAP 9.10.1. Per le release precedenti di ONTAP, il valore è 0 - 70.
+
+
+
+ a| 
+max
+ a| 
+-
+ a| 
+Utilizzare il periodo di conservazione massimo.
+
+
+
+ a| 
+min
+ a| 
+-
+ a| 
+Utilizzare il periodo di conservazione minimo.
+
+
+
+ a| 
+infinito
+ a| 
+-
+ a| 
+Conserva i file per sempre.
+
+
+
+ a| 
+non specificato
+ a| 
+-
+ a| 
+Conservare i file fino a quando non viene impostato un periodo di conservazione assoluto.
+
+|===
+I valori e gli intervalli dei periodi di conservazione massimo e minimo sono identici, ad eccezione di `max` e. `min`, che non sono applicabili. Per ulteriori informazioni su questa attività, vedere link:set-retention-period-task.html["Imposta la panoramica del tempo di conservazione"].
+
+È possibile utilizzare `volume snaplock show` per visualizzare le impostazioni del periodo di conservazione per il volume. Per ulteriori informazioni, vedere la pagina man del comando.
+
+[NOTE]
+====
+Una volta che un file è stato impegnato nello stato WORM, è possibile estendere ma non ridurre il periodo di conservazione.
+
+====
+.Fasi
+. Impostare il periodo di conservazione predefinito per i file su un volume SnapLock:
++
+`*volume snaplock modify -vserver _SVM_name_ -volume _volume_name_ -default-retention-period _default_retention_period_ -minimum-retention-period _min_retention_period_ -maximum-retention-period _max_retention_period_*`
+
++
+Per un elenco completo delle opzioni, vedere la pagina man del comando.
+
++
+[NOTE]
+====
+Gli esempi seguenti presuppongono che i periodi di conservazione minimo e massimo non siano stati modificati in precedenza.
+
+====
++
+Il comando seguente imposta il periodo di conservazione predefinito per un volume Compliance o Enterprise su 20 giorni:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period 20days
+----
++
+Il seguente comando imposta il periodo di conservazione predefinito per un volume Compliance su 70 anni:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -maximum-retention-period 70years
+----
++
+Il seguente comando imposta il periodo di conservazione predefinito per un volume Enterprise su 10 anni:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period max -maximum-retention-period 10years
+----
++
+I seguenti comandi impostano il periodo di conservazione predefinito per un volume Enterprise su 10 giorni:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -minimum-retention-period 10days
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period min
+----
++
+Il comando seguente imposta il periodo di conservazione predefinito per un volume Compliance su infinito:
+
++
+[listing]
+----
+cluster1::> volume snaplock modify -vserver vs1 -volume vol1 -default-retention-period infinite -maximum-retention-period infinite
+----
+
+
+
+
+== Impostare il tempo di conservazione per un file in modo esplicito
+
+È possibile impostare il tempo di conservazione di un file in modo esplicito modificando l'ultimo tempo di accesso. È possibile utilizzare qualsiasi comando o programma adatto su NFS o CIFS per modificare l'ultimo tempo di accesso.
+
+.A proposito di questa attività
+Dopo che un file è stato eseguito il commit su WORM, è possibile estendere ma non ridurre il tempo di conservazione. Il tempo di conservazione viene memorizzato in `atime` per il file.
+
+[NOTE]
+====
+Non è possibile impostare esplicitamente il tempo di conservazione di un file su `infinite`. Tale valore è disponibile solo quando si utilizza il periodo di conservazione predefinito per calcolare il tempo di conservazione.
+
+====
+.Fasi
+. Utilizzare un comando o un programma adatto per modificare l'ultimo orario di accesso al file di cui si desidera impostare il tempo di conservazione.
++
+In una shell UNIX, utilizzare il seguente comando per impostare un tempo di conservazione del 21 novembre 2020 alle 6:00 su un file denominato `document.txt`:
+
++
+[listing]
+----
+touch -a -t 202011210600 document.txt
+----
++
+[NOTE]
+====
+È possibile utilizzare qualsiasi comando o programma adatto per modificare l'ultimo orario di accesso in Windows.
+
+====
+
+
+
+
+== Impostare il periodo di conservazione del file dopo un evento
+
+A partire da ONTAP 9.3, è possibile definire per quanto tempo un file viene conservato dopo un evento utilizzando la funzione di conservazione basata su eventi (EBR)_ di SnapLock.
+
+.Di cosa hai bisogno
+* Per eseguire questa attività, è necessario essere un amministratore di SnapLock.
++
+link:create-compliance-administrator-account-task.html["Creare un account amministratore di SnapLock"]
+
+* È necessario aver effettuato l'accesso con una connessione sicura (SSH, console o ZAPI).
+
+
+.A proposito di questa attività
+Il _criterio di conservazione degli eventi_ definisce il periodo di conservazione del file dopo il verificarsi dell'evento. Il criterio può essere applicato a un singolo file o a tutti i file di una directory.
+
+* Se un file non è UN file WORM, viene impegnato nello stato WORM per il periodo di conservazione definito nella policy.
+* Se un file è UN file WORM o un file WORM appendibile, il suo periodo di conservazione verrà esteso dal periodo di conservazione definito nella policy.
+
+
+È possibile utilizzare un volume Compliance-mode o Enterprise-mode.
+
+[NOTE]
+====
+I criteri EBR non possono essere applicati ai file in stato di conservazione a scopo legale.
+
+====
+Per informazioni sull'utilizzo avanzato, vedere link:https://www.netapp.com/us/media/tr-4526.pdf["Storage WORM conforme con NetApp SnapLock"].
+
+|===
+
+
+| *_utilizzo di EBR per estendere il periodo di conservazione dei file WORM già esistenti_* 
+
+
+ a| 
+EBR è utile quando si desidera estendere il periodo di conservazione dei file WORM già esistenti. Ad esempio, la politica della tua azienda potrebbe essere quella di conservare i record W-4 del dipendente in forma non modificata per tre anni dopo che il dipendente ha modificato un'elezione di ritenuta. Un'altra policy aziendale potrebbe richiedere la conservazione dei record W-4 per cinque anni dopo la cessazione del dipendente.
+
+In questa situazione, è possibile creare una policy EBR con un periodo di conservazione di cinque anni. Una volta terminato il dipendente (il "`evento`"), applicherai la policy EBR al record W-4 del dipendente, prolungandone il periodo di conservazione. In genere, questo sarà più semplice dell'estensione manuale del periodo di conservazione, in particolare quando si tratta di un numero elevato di file.
+
+|===
+.Fasi
+. Creare un criterio EBR:
++
+`*snaplock event-retention policy create -vserver _SVM_name_ -name _policy_name_ -retention-period _retention_period_*`
+
++
+Il seguente comando crea il criterio EBR `employee_exit` acceso `vs1` con un periodo di conservazione di dieci anni:
+
++
+[listing]
+----
+cluster1::>snaplock event-retention policy create -vserver vs1 -name employee_exit -retention-period 10years
+----
+. Applicare un criterio EBR:
++
+`*snaplock event-retention apply -vserver _SVM_name_ -name _policy_name_ -volume _volume_name_ -path _path_name_*`
+
++
+Il seguente comando applica il criterio EBR `employee_exit` acceso `vs1` a tutti i file nella directory `d1`:
+
++
+[listing]
+----
+cluster1::>snaplock event-retention apply -vserver vs1 -name employee_exit -volume vol1 -path /d1
+----
+

@@ -1,0 +1,64 @@
+---
+permalink: data-protection/vault-archive-snapmirror-technology-concept.html 
+sidebar: sidebar 
+keywords: vault, archiving, snapmirror, technology 
+summary: I criteri di vault di SnapMirror sostituiscono la tecnologia SnapVault in ONTAP 9.3 e versioni successive. Si utilizza un criterio di vault SnapMirror per la replica delle copie Snapshot disk-to-disk per la conformità agli standard e altri scopi correlati alla governance. A differenza di una relazione SnapMirror, in cui la destinazione contiene di solito solo le copie Snapshot attualmente nel volume di origine, una destinazione del vault conserva in genere le copie Snapshot point-in-time create in un periodo molto più lungo. 
+---
+= Archiviazione del vault con la tecnologia SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+I criteri di vault di SnapMirror sostituiscono la tecnologia SnapVault in ONTAP 9.3 e versioni successive. Si utilizza un criterio di vault SnapMirror per la replica delle copie Snapshot disk-to-disk per la conformità agli standard e altri scopi correlati alla governance. A differenza di una relazione SnapMirror, in cui la destinazione contiene di solito solo le copie Snapshot attualmente nel volume di origine, una destinazione del vault conserva in genere le copie Snapshot point-in-time create in un periodo molto più lungo.
+
+È possibile conservare copie Snapshot mensili dei dati per un periodo di 20 anni, ad esempio per rispettare le normative contabili governative per la propria azienda. Poiché non è necessario fornire dati dallo storage del vault, è possibile utilizzare dischi più lenti e meno costosi sul sistema di destinazione.
+
+La figura seguente illustra le relazioni di protezione dei dati del vault SnapMirror.
+
+image::../media/snapvault-data-protection.gif[protezione dei dati SnapVault]
+
+
+
+== Come vengono inizializzate le relazioni di protezione dei dati del vault
+
+Il criterio SnapMirror per la relazione definisce il contenuto della linea di base e gli eventuali aggiornamenti.
+
+Un trasferimento di riferimento con la policy di default del vault `XDPDefault` Esegue una copia Snapshot del volume di origine, quindi trasferisce la copia e i blocchi di dati a cui fa riferimento al volume di destinazione. A differenza delle relazioni SnapMirror, un backup del vault non include copie Snapshot precedenti nella linea di base.
+
+
+
+== Come vengono aggiornate le relazioni di protezione dei dati del vault
+
+Gli aggiornamenti sono asincroni, in base alla pianificazione configurata. Le regole definite nella policy per la relazione identificano quali nuove copie Snapshot includere negli aggiornamenti e quante copie conservare. Le etichette definite nella policy ("`monhly,`" ad esempio) devono corrispondere a una o più etichette definite nella policy Snapshot sull'origine. In caso contrario, la replica non riesce.
+
+Ad ogni aggiornamento in `XDPDefault` SnapMirror trasferisce le copie Snapshot eseguite dall'ultimo aggiornamento, a condizione che le etichette corrispondano alle etichette definite nelle regole dei criteri. Nel seguente output da `snapmirror policy show` comando per `XDPDefault` policy, tenere presente quanto segue:
+
+* `Create Snapshot` è "`false`", a indicare che `XDPDefault` Non crea una copia Snapshot quando SnapMirror aggiorna la relazione.
+* `XDPDefault` Dispone di regole "`daily`" e "`settimanale`", che indicano che tutte le copie Snapshot con etichette corrispondenti sull'origine vengono trasferite quando SnapMirror aggiorna la relazione.
+
+
+[listing]
+----
+cluster_dst::> snapmirror policy show -policy XDPDefault -instance
+
+                     Vserver: vs0
+      SnapMirror Policy Name: XDPDefault
+      SnapMirror Policy Type: vault
+                Policy Owner: cluster-admin
+                 Tries Limit: 8
+           Transfer Priority: normal
+   Ignore accesstime Enabled: false
+     Transfer Restartability: always
+ Network Compression Enabled: false
+             Create Snapshot: false
+                     Comment: Default policy for XDP relationships with daily and weekly
+                              rules.
+       Total Number of Rules: 2
+                  Total Keep: 59
+                       Rules: SnapMirror Label     Keep  Preserve Warn Schedule Prefix
+                              ----------------     ----  -------- ---- -------- ------
+                              daily                   7  false       0 -        -
+                              weekly                 52  false       0 -        -
+----

@@ -1,0 +1,174 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_manual_giveback.html 
+keywords: ontap, high, availability, ha, pair, manual, giveback, interrupted, vetoed, veto, commands, performing, perform 
+summary: È possibile eseguire un giveback normale, un giveback in cui si terminano i processi sul nodo partner o un giveback forzato. 
+---
+= Comandi manuali di giveback
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+È possibile eseguire un giveback normale, un giveback in cui si terminano i processi sul nodo partner o un giveback forzato.
+
+
+NOTE: Prima di eseguire un giveback, è necessario rimuovere i dischi guasti nel sistema preso in consegna come descritto in link:../disks-aggregates/index.html["Gestione di dischi e aggregati"].
+
+
+
+== In caso di interruzione del giveback
+
+Se durante il processo di giveback si verifica un guasto o un'interruzione dell'alimentazione del nodo di Takeover, tale processo si interrompe e il nodo di Takeover torna in modalità Takeover fino a quando l'errore non viene riparato o l'alimentazione non viene ripristinata.
+
+Tuttavia, ciò dipende dalla fase di giveback in cui si è verificato il guasto. Se il nodo ha riscontrato un guasto o un'interruzione dell'alimentazione durante lo stato di giveback parziale (dopo aver restituito l'aggregato root), non tornerà alla modalità Takeover. Il nodo torna invece alla modalità di parziale giveback. In tal caso, completare il processo ripetendo l'operazione di giveback.
+
+
+
+== Se il giveback è veto
+
+Se il giveback è vetoed, è necessario controllare i messaggi EMS per determinare la causa. A seconda del motivo o dei motivi, è possibile decidere se è possibile eseguire l'override dei veti in modo sicuro.
+
+Il `storage failover show-giveback` il comando visualizza l'avanzamento del giveback e indica quale sottosistema ha posto il veto del giveback, se presente. I veti morbidi possono essere ignorati, mentre i veti difficili non possono essere, anche se forzati. Le seguenti tabelle riepilogano i file soft vetoes che non devono essere sovrascritti, insieme alle soluzioni consigliate.
+
+È possibile rivedere i dettagli EMS per qualsiasi veto di giveback utilizzando il seguente comando:
+
+`event log show -node * -event gb*`
+
+
+
+== Giveback dell'aggregato root
+
+Questi veti non si applicano alle operazioni di trasferimento degli aggregati:
+
+[cols="35,65"]
+|===
+
+
+| Modulo del sottosistema di vetoing | Soluzione alternativa 
+
+
+ a| 
+vfiler_low_level
+ a| 
+Terminare le sessioni SMB che causano il veto o chiudere l'applicazione SMB che ha stabilito le sessioni aperte.
+
+L'override di questo veto potrebbe causare la disconnessione improvvisa dell'applicazione che utilizza SMB e la perdita di dati.
+
+
+
+ a| 
+Controllo disco
+ a| 
+Tutti i dischi guasti o bypassati devono essere rimossi prima di tentare il giveback. Se i dischi vengono disinfettati, attendere il completamento dell'operazione.
+
+L'override di questo veto potrebbe causare un'interruzione causata da aggregati o volumi che vanno fuori linea a causa di conflitti di prenotazione o dischi inaccessibili.
+
+|===
+
+
+== Giveback degli aggregati SFO
+
+Questi veti non si applicano alle operazioni di trasferimento degli aggregati:
+
+[cols="35,65"]
+|===
+
+
+| Modulo del sottosistema di vetoing | Soluzione alternativa 
+
+
+ a| 
+Gestione blocchi
+ a| 
+Arrestare correttamente le applicazioni SMB che hanno file aperti o spostare tali volumi in un aggregato diverso.
+
+L'override di questo veto comporta la perdita dello stato di blocco SMB, causando interruzioni e perdita di dati.
+
+
+
+ a| 
+Gestione blocchi NDO
+ a| 
+Attendere il mirroring dei blocchi.
+
+L'override di questo veto causa interruzioni alle macchine virtuali Microsoft Hyper-V.
+
+
+
+| RAID  a| 
+Controllare i messaggi EMS per determinare la causa del veto:
+
+Se il veto è dovuto a nvfile, portare online i volumi offline e gli aggregati.
+
+Se sono in corso operazioni di aggiunta o riassegnazione della proprietà del disco, attendere il completamento.
+
+Se il veto è dovuto a un conflitto di nome aggregato o UUID, risolvere il problema.
+
+Se il veto è dovuto alla risincronizzazione del mirror, alla verifica del mirror o ai dischi offline, il veto può essere ignorato e l'operazione viene riavviata dopo il giveback.
+
+
+
+| Inventario dei dischi  a| 
+Risolvere i problemi per identificare e risolvere la causa del problema.
+
+Il nodo di destinazione potrebbe non essere in grado di visualizzare i dischi appartenenti a un aggregato in fase di migrazione.
+
+I dischi inaccessibili possono causare aggregati o volumi inaccessibili.
+
+
+
+| Operazione di spostamento del volume  a| 
+Risolvere i problemi per identificare e risolvere la causa del problema.
+
+Questo veto impedisce l'interruzione dell'operazione di spostamento del volume durante l'importante fase di cutover. Se il lavoro viene interrotto durante il cutover, il volume potrebbe diventare inaccessibile.
+
+|===
+
+
+=== Comandi per l'esecuzione di un giveback manuale
+
+È possibile avviare manualmente un giveback su un nodo di una coppia ha per restituire lo storage al proprietario originale dopo aver completato la manutenzione o aver risolto eventuali problemi che hanno causato il takeover.
+
+|===
+
+
+| Se si desidera... | Utilizzare questo comando... 
+
+
+ a| 
+Restituire lo storage a un nodo partner
+| `storage failover giveback ‑ofnode _nodename_` 
+
+
+ a| 
+Restituire lo storage anche se il partner non è in attesa della modalità di giveback
+ a| 
+`storage failover giveback ‑ofnode _nodename_`
+`‑require‑partner‑waiting false`
+
+Non utilizzare questa opzione a meno che non sia accettabile un'interruzione più lunga del client.
+
+
+
+| Restituire lo storage anche se i processi stanno vetoing l'operazione di giveback (forzare il giveback)  a| 
+`storage failover giveback ‑ofnode _nodename_`
+`‑override‑vetoes true`
+
+L'utilizzo di questa opzione può potenzialmente causare un'interruzione più lunga del servizio client o la mancata disponibilità di aggregati e volumi dopo il giveback.
+
+
+
+| Restituire solo gli aggregati CFO (l'aggregato root)  a| 
+`storage failover giveback ‑ofnode _nodename_`
+
+`‑only‑cfo‑aggregates true`
+
+
+
+| Monitorare l'avanzamento del giveback dopo aver eseguito il comando giveback | `storage failover show‑giveback` 
+|===

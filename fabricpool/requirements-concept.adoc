@@ -1,0 +1,182 @@
+---
+permalink: fabricpool/requirements-concept.html 
+sidebar: sidebar 
+keywords: considerations, requirements, using, fabricpool 
+summary: 'È necessario acquisire familiarità con alcune considerazioni e requisiti relativi all"utilizzo di FabricPool.' 
+---
+= Considerazioni e requisiti per l'utilizzo di FabricPool
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario acquisire familiarità con alcune considerazioni e requisiti relativi all'utilizzo di FabricPool.
+
+
+
+== Considerazioni e requisiti generali
+
+* Per utilizzare FabricPool, è necessario che ONTAP 9.2 sia in esecuzione almeno.
+* È necessario eseguire ONTAP 9.4 o versioni successive per le seguenti funzionalità di FabricPool:
++
+** Il `auto` policy di tiering
++
+link:tiering-policies-concept.html#types-of-fabricpool-tiering-policies["Tipi di policy di tiering FabricPool"]
+
+** Specifica del periodo di raffreddamento minimo di tiering
+** Report dei dati inattivi (IDR)
+** Utilizzo dello storage blob Microsoft Azure per il cloud come Tier cloud per FabricPool
+** Utilizzo di FabricPool con ONTAP Select
+
+
+* È necessario eseguire ONTAP 9.5 o versioni successive per le seguenti funzionalità di FabricPool:
++
+** Specifica della soglia di tiering fullness
+** Utilizzo dello storage a oggetti cloud IBM come Tier cloud per FabricPool
+** NetApp Volume Encryption (NVE) del livello cloud, attivato per impostazione predefinita.
+
+
+* È necessario eseguire ONTAP 9.6 o versioni successive per le seguenti funzionalità di FabricPool:
++
+** Il `all` policy di tiering
+** Report dei dati inattivi attivati manualmente sugli aggregati HDD
+** Report dei dati inattivi attivati automaticamente per gli aggregati SSD quando si esegue l'aggiornamento a ONTAP 9.6 e al momento della creazione dell'aggregato, ad eccezione dei sistemi di fascia bassa con meno di 4 CPU, meno di 6 GB di RAM o quando la dimensione della cache del buffer WAFL è inferiore a 3 GB.
++
+ONTAP monitora il carico del sistema e, se il carico rimane elevato per 4 minuti continui, l'IDR viene disattivato e non viene attivato automaticamente. È possibile riabilitare l'IDR manualmente, tuttavia l'IDR abilitato manualmente non viene disattivato automaticamente.
+
+** Utilizzo dello storage a oggetti cloud di Alibaba come livello cloud per FabricPool
+** Utilizzo della piattaforma cloud di Google come Tier cloud per FabricPool
+** Spostamento del volume senza copia dei dati del Tier cloud
+
+
+* È necessario eseguire ONTAP 9.7 o versioni successive per le seguenti funzionalità di FabricPool:
++
+** Proxy HTTP e HTTPS non trasparente per fornire l'accesso solo ai punti di accesso whitelist e per fornire funzionalità di auditing e reporting.
+** Mirroring FabricPool per il tiering dei dati cold in due archivi di oggetti contemporaneamente
+** Mirroring di FabricPool sulle configurazioni MetroCluster
+** Dump e ripristino NDMP attivati per impostazione predefinita negli aggregati FabricPool Attached.
++
+[NOTE]
+====
+Se l'applicazione di backup utilizza un protocollo diverso da NDMP, come NFS o SMB, tutti i dati di cui viene eseguito il backup nel Tier di performance diventano hot e possono influire sul tiering di tali dati nel Tier cloud. Le letture non NDMP possono causare la migrazione dei dati dal livello cloud al livello di performance.
+
+====
++
+https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/NDMP_Backup_and_Restore_supported_for_FabricPool%3F["Supporto backup e ripristino NDMP per FabricPool"]
+
+
+
+* È necessario eseguire ONTAP 9.8 o versione successiva per le seguenti funzionalità di FabricPool:
++
+** Controllo della migrazione nel cloud per consentire l'override della policy di tiering predefinita
+** Promozione dei dati al Tier di performance
+** FabricPool con SnapLock Enterprise
+** Periodo minimo di raffreddamento massimo di 183 giorni
+** Tagging degli oggetti mediante tag personalizzati creati dall'utente
+** FabricPools su piattaforme HDD e aggregati
++
+I dischi HDD FabricPool sono supportati con dischi SAS, FSAS, BSAS e MSATA solo su sistemi con 6 o più core CPU, inclusi i seguenti modelli:
+
++
+*** FAS9000
+*** FAS8700
+*** FAS8300
+*** FAS8200
+*** FAS8080
+*** FAS8060
+*** FAS8040
+*** FAS2750
+*** FAS2720
+*** FAS2650
+*** FAS2620
++
+Controllare https://hwu.netapp.com/Home/Index["Hardware Universe"^] per i modelli più recenti supportati.
+
+
+
+
+
+* FabricPool è supportato su tutte le piattaforme in grado di eseguire ONTAP 9.2, ad eccezione di:
++
+** FAS8020
+** FAS2554
+** FAS2552
+** FAS2520
+
+
+* FabricPool supporta i seguenti tipi di aggregato:
++
+** Sui sistemi AFF, è possibile utilizzare solo tutti gli aggregati flash (tutti gli SSD) per FabricPool.
++
+Non è possibile utilizzare gli aggregati di Flash Pool, che contengono sia SSD che HDD.
+
+** Sui sistemi FAS, è possibile utilizzare aggregati all-flash (all-SSD) o HDD per FabricPool.
+** Su Cloud Volumes ONTAP e ONTAP Select, è possibile utilizzare aggregati SSD o HDD per FabricPool.
++
+Tuttavia, si consiglia di utilizzare aggregati SSD.
+
+
+
+* FabricPool supporta l'utilizzo dei seguenti archivi di oggetti come livello cloud:
++
+** NetApp StorageGRID 10.3 o versione successiva
+** NetApp ONTAP S3 (ONTAP 9.8 e versioni successive)
+** Alibaba Cloud Object Storage
+** Amazon Web Services Simple Storage Service (AWS S3)
+** Storage Google Cloud
+** Storage a oggetti IBM Cloud
+** Microsoft Azure Blob Storage per il cloud
+
+
+* L'archivio di oggetti "`bucket`" (container) che intendi utilizzare deve essere già stato configurato, avere almeno 10 GB di spazio di storage e non deve essere rinominato.
+* Le coppie HA che utilizzano FabricPool richiedono le LIF intercluster per comunicare con l'archivio di oggetti.
+* Non è possibile scollegare un bucket dello store di oggetti dalla configurazione di FabricPool dopo che è stato collegato.
+* Se si utilizza il throughput floors (QoS min), la policy di tiering sui volumi deve essere impostata su `none` Prima che l'aggregato possa essere collegato a FabricPool.
++
+Altri criteri di tiering impediscono l'associazione dell'aggregato a FabricPool.
+
+* Seguire le linee guida delle Best practice per l'utilizzo di FabricPool in scenari specifici.
++
+http://www.netapp.com/us/media/tr-4598.pdf["Report tecnico di NetApp 4598: Best Practice FabricPool in ONTAP 9"^]
+
+
+
+
+
+== Considerazioni aggiuntive sull'utilizzo di Cloud Volumes ONTAP
+
+Cloud Volumes ONTAP non richiede una licenza FabricPool, indipendentemente dal provider dell'archivio di oggetti in uso.
+
+
+
+== Considerazioni aggiuntive per il tiering dei dati a cui accedono i protocolli SAN
+
+Quando si esegue il tiering dei dati a cui accedono i protocolli SAN, NetApp consiglia di utilizzare cloud privati, come StorageGRID, a causa di considerazioni sulla connettività.
+
+*Importante*
+
+Inoltre, se si utilizza FabricPool in un ambiente SAN con un host Windows, se lo storage a oggetti non è più disponibile per un periodo di tempo prolungato durante il tiering dei dati nel cloud, i file sul LUN NetApp sull'host Windows potrebbero diventare inaccessibili o scomparire. Consultare l'articolo della Knowledge base link:https://kb.netapp.com/onprem/ontap/os/During_FabricPool_S3_object_store_unavailable_Windows_SAN_host_reported_filesystem_corruption["Durante l'archiviazione di oggetti FabricPool S3 non disponibile, l'host SAN di Windows ha segnalato un danneggiamento del file system"^].
+
+
+
+== Funzionalità o funzionalità non supportate da FabricPool
+
+* Archivi di oggetti con WORM abilitato e versione degli oggetti abilitata.
+* Policy ILM (Information Lifecycle Management) applicate ai bucket degli archivi di oggetti
++
+ILM include in genere varie policy di spostamento ed eliminazione. Queste policy possono interrompere i dati nel livello cloud di FabricPool. L'utilizzo di FabricPool con policy ILM configurate sugli archivi di oggetti può causare la perdita di dati.
+
+* Transizione dei dati in 7 modalità utilizzando i comandi CLI di ONTAP o lo strumento di transizione in 7 modalità
+* Virtualizzazione FlexArray
+* RAID SyncMirror, tranne in una configurazione MetroCluster
+* Volumi SnapLock quando si utilizza ONTAP 9.7 e versioni precedenti
+* Backup su nastro con SMTape per aggregati abilitati FabricPool
+* La funzionalità di bilanciamento automatico
+* Volumi che utilizzano una garanzia di spazio diversa da `none`
++
+Ad eccezione dei volumi SVM root e dei volumi di staging dell'audit CIFS, FabricPool non supporta l'associazione di un Tier cloud a un aggregato che contiene volumi che utilizzano una garanzia di spazio diversa da `none`. Ad esempio, un volume che utilizza una garanzia di spazio di `volume` (`-space-guarantee` `volume`) non è supportato.
+
+* Cluster con licenza DP_Optimized
+* Aggregati di Flash Pool
+

@@ -1,0 +1,78 @@
+---
+permalink: smb-admin/determine-sessions-signed-task.html 
+sidebar: sidebar 
+keywords: display, information, connect, smb, session, cifs, server, sign, helpful, determining, determine, smb, client, security, setting, determine whether smb sessions are signed 
+summary: È possibile visualizzare le informazioni sulle sessioni SMB connesse sul server CIFS. È possibile utilizzare queste informazioni per determinare se le sessioni SMB sono firmate. Questo può essere utile per determinare se le sessioni del client SMB si connettono con le impostazioni di sicurezza desiderate. 
+---
+= Determinare se le sessioni SMB sono firmate
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile visualizzare le informazioni sulle sessioni SMB connesse sul server CIFS. È possibile utilizzare queste informazioni per determinare se le sessioni SMB sono firmate. Questo può essere utile per determinare se le sessioni del client SMB si connettono con le impostazioni di sicurezza desiderate.
+
+.Fasi
+. Eseguire una delle seguenti operazioni:
++
+|===
+| Se si desidera visualizzare informazioni su... | Immettere il comando... 
+
+
+ a| 
+Tutte le sessioni firmate su una specifica macchina virtuale di storage (SVM)
+ a| 
+`vserver cifs session show -vserver _vserver_name_ -is-session-signed true`
+
+
+
+ a| 
+Dettagli di una sessione firmata con un ID di sessione specifico sulla SVM
+ a| 
+`vserver cifs session show -vserver _vserver_name_ -session-id integer -instance`
+
+|===
+
+
+.Esempi
+Il seguente comando visualizza le informazioni sulla sessione relative alle sessioni firmate su SVM vs1. L'output di riepilogo predefinito non visualizza il campo di output "`is Session Signed`":
+
+[listing]
+----
+cluster1::> vserver cifs session show -vserver vs1 -is-session-signed true
+Node:    node1
+Vserver: vs1
+Connection Session                                    Open         Idle
+ID          ID      Workstation      Windows User    Files         Time
+----------  ------- ---------------- ------------- ------- ------------
+3151272279  1       10.1.1.1         DOMAIN\joe          2          23s
+----
+Il seguente comando visualizza informazioni dettagliate sulla sessione, incluso se la sessione è firmata, in una sessione SMB con un ID sessione 2:
+
+[listing]
+----
+cluster1::> vserver cifs session show -vserver vs1 -session-id 2 -instance
+                        Node: node1
+                     Vserver: vs1
+                  Session ID: 2
+               Connection ID: 3151274158
+Incoming Data LIF IP Address: 10.2.1.1
+                 Workstation: 10.1.1.2
+    Authentication Mechanism: Kerberos
+                Windows User: DOMAIN\joe
+                   UNIX User: pcuser
+                 Open Shares: 1
+                  Open Files: 1
+                  Open Other: 0
+              Connected Time: 10m 43s
+                   Idle Time: 1m 19s
+            Protocol Version: SMB3
+      Continuously Available: No
+           Is Session Signed: true
+       User Authenticated as: domain-user
+                NetBIOS Name: CIFS_ALIAS1
+       SMB Encryption Status: Unencrypted
+----
+.Informazioni correlate
+xref:monitor-signed-session-statistics-task.adoc[Monitoraggio delle statistiche delle sessioni firmate SMB]

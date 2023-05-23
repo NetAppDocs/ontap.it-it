@@ -1,0 +1,117 @@
+---
+permalink: nfs-admin/manage-nfsv4-storepool-controls-task.html 
+sidebar: sidebar 
+keywords: enable, disable, nfsv4, storepool, controls, limit, client, resource, blocked, 
+summary: A partire da ONTAP 9.13, gli amministratori possono consentire ai server NFS di negare le risorse ai client NFS quando raggiungono i limiti di risorse per ogni client storepool. 
+---
+= Gestire i limiti dello storepool di NFSv4
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.13, gli amministratori possono consentire ai server NFSv4 di negare le risorse ai client NFSv4 quando raggiungono i limiti di risorse dello storepool per client. Quando i client consumano troppe risorse dello storepool NFSv4, questo può causare il blocco di altri client NFSv4 a causa della mancata disponibilità delle risorse dello storepool NFSv4.
+
+L'attivazione di questa funzionalità consente inoltre ai clienti di visualizzare il consumo attivo delle risorse dello storepool da parte di ciascun client. Ciò semplifica l'identificazione dei client che esauriscono le risorse di sistema e consente di imporre limiti di risorse per client.
+
+
+
+== Visualizza le risorse dello storepool consumate
+
+Il `vserver nfs storepool show` il comando mostra il numero di risorse dello storepool utilizzate. Uno storepool è un pool di risorse utilizzate dai client NFSv4.
+
+.Fase
+. In qualità di amministratore, eseguire `vserver nfs storepool show` Per visualizzare le informazioni sullo storepool dei client NFSv4.
+
+
+.Esempio
+In questo esempio vengono visualizzate le informazioni sullo storepool dei client NFSv4.
+
+[listing]
+----
+cluster1::*> vserver nfs storepool show
+
+Node: node1
+
+Vserver: vs1
+
+Data-Ip: 10.0.1.1
+
+Client-Ip Protocol IsTrunked OwnerCount OpenCount DelegCount LockCount
+
+-------------- --------- --------- ---------- ---------- ---------- ---------
+
+10.0.2.1          nfs4.1     true    2 1 0 4
+
+10.0.2.2          nfs4.2     true    2 1 0 4
+
+2 entries were displayed.
+----
+
+
+== Attiva o disattiva i controlli dei limiti dello storepool
+
+Gli amministratori possono utilizzare i seguenti comandi per attivare o disattivare i controlli dei limiti dello storepool.
+
+.Fase
+. In qualità di amministratore, eseguire una delle seguenti operazioni:
++
+[cols="2*"]
+|===
+| Se si desidera... | Immettere il seguente comando... 
+
+
+ a| 
+Abilitare i controlli dei limiti dello storepool
+ a| 
+`vserver nfs storepool config modify -limit-enforce enabled`
+
+
+
+ a| 
+Disattiva i controlli dei limiti di storepool
+ a| 
+`vserver nfs storepool config modify -limit-enforce disabled`
+
+|===
+
+
+
+
+== Visualizzare un elenco di client bloccati
+
+Se il limite di storepool è attivato, gli amministratori possono vedere quali client sono stati bloccati al raggiungimento della soglia di risorse per client. Gli amministratori possono utilizzare il seguente comando per vedere quali client sono stati contrassegnati come client bloccati.
+
+.Fasi
+. Utilizzare `vserver nfs storepool blocked-client show` Per visualizzare l'elenco dei client NFSv4 bloccati.
+
+
+
+
+== Rimuovere un client dall'elenco dei client bloccati
+
+I client che raggiungono la soglia per client verranno disconnessi e aggiunti alla cache del client a blocchi. Gli amministratori possono utilizzare il seguente comando per rimuovere il client dalla cache del client a blocchi. In questo modo, il client potrà connettersi al server NFSV4 di ONTAP.
+
+.Fasi
+. Utilizzare `vserver nfs storepool blocked-client flush -client-ip <ip address>` comando per svuotare la cache del client bloccato nello storepool.
+. Utilizzare `vserver nfs storepool blocked-client show` comando per verificare che il client sia stato rimosso dalla cache del client a blocchi.
+
+
+.Esempio
+In questo esempio viene visualizzato un client bloccato con l'indirizzo IP "10.2.1.1" che viene liberato da tutti i nodi.
+
+[listing]
+----
+cluster1::*>vserver nfs storepool blocked-client flush -client-ip 10.2.1.1
+
+cluster1::*>vserver nfs storepool blocked-client show
+
+Node: node1
+
+Client IP
+----------
+10.1.1.1
+
+1 entries were displayed.
+----

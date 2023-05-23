@@ -1,0 +1,34 @@
+---
+permalink: flexgroup/disable-svm-protection-task.html 
+sidebar: sidebar 
+keywords: disable, SVM, protection, flexgroup, volume 
+summary: 'Quando il flag DR SVM è impostato su Protected (protetto) su un volume FlexGroup, è possibile impostare il flag su UnProtected (non protetto) per disattivare la protezione DR SVM su un volume FlexGroup.' 
+---
+= Disattiva la protezione SVM su un volume FlexGroup
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando il flag DR SVM è impostato su `protected` Su un volume FlexGroup, è possibile impostare il flag su UnProtected (non protetto) per disattivare il DR SVM `protection` Su un volume FlexGroup.
+
+.Di cosa hai bisogno
+* La relazione di DR SVM tra primario e secondario è buona.
+* Il parametro di protezione DR SVM è impostato su `protected`.
+
+
+.Fasi
+. Disattivare la protezione utilizzando `volume modify` per modificare il comando `vserver-dr-protection` Parametro per il volume FlexGroup a. `unprotected`.
++
+[listing]
+----
+cluster2::> volume modify -vserver vs1 -volume fg_src -vserver-dr-protection unprotected
+[Job 5384] Job is queued: Modify fg_src.
+[Job 5384] Steps completed: 4 of 4.
+cluster2::>
+----
+. Aggiornare la SVM nel sito secondario: `snapmirror update -destination-path destination_svm_name: -source-path Source_svm_name:`
+. Verificare che la relazione di SnapMirror sia corretta: `snapmirror show`
+. Verificare che la relazione di FlexGroup SnapMirror sia stata rimossa: `snapmirror show -expand`
+

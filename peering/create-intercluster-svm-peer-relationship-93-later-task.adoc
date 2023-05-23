@@ -1,0 +1,71 @@
+---
+permalink: peering/create-intercluster-svm-peer-relationship-93-later-task.html 
+sidebar: sidebar 
+keywords: create, intercluster, svm, peer, relationship 
+summary: È possibile utilizzare il comando vserver peer create per creare una relazione peer tra le SVM su cluster locali e remoti. 
+---
+= Creare una relazione peer SVM tra cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `vserver peer create` Per creare una relazione peer tra SVM su cluster locali e remoti.
+
+.Prima di iniziare
+* I cluster di origine e di destinazione devono essere peering.
+* I cluster devono eseguire ONTAP 9.3. Se i cluster eseguono ONTAP 9.2 o versioni precedenti, fare riferimento alle procedure descritte in link:https://library.netapp.com/ecm/ecm_download_file/ECMLP2494079["documento archiviato"^].)
+* È necessario disporre di relazioni peer "pre-autorizzate" per le SVM sul cluster remoto.
++
+Per ulteriori informazioni, vedere link:create-cluster-relationship-93-later-task.html["Creazione di una relazione peer del cluster"].
+
+
+
+.A proposito di questa attività
+Le versioni precedenti di ONTAP consentono di autorizzare una relazione peer per una sola SVM alla volta. Era necessario eseguire `vserver peer accept` Ogni volta che hai autorizzato una relazione peer SVM in sospeso.
+
+A partire da ONTAP 9.3, è possibile "pre-autorizzare" le relazioni peer per più SVM elencando le SVM in `-initial-allowed-vserver` quando si crea una relazione peer del cluster. Per ulteriori informazioni, vedere link:create-cluster-relationship-93-later-task.html["Creazione di una relazione peer del cluster"].
+
+.Fasi
+. Nel cluster di destinazione per la protezione dei dati, visualizzare le SVM pre-autorizzate per il peering:
++
+`vserver peer permission show`
+
++
+[listing]
+----
+cluster02::> vserver peer permission show
+Peer Cluster         Vserver               Applications
+-------------------  --------------------  --------------------
+cluster02            vs1,vs2               snapmirror
+----
+. Sul cluster di origine per la protezione dei dati, creare una relazione peer con una SVM pre-autorizzata sul cluster di destinazione per la protezione dei dati:
++
+`vserver peer create -vserver _local_SVM_ -peer-vserver _remote_SVM_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene creata una relazione peer tra la SVM locale `pvs1` E la SVM remota pre-autorizzata `vs1`:
+
++
+[listing]
+----
+cluster01::> vserver peer create -vserver pvs1 -peer-vserver vs1
+----
+. Verificare la relazione peer SVM:
++
+`vserver peer show`
+
++
+[listing]
+----
+cluster01::> vserver peer show
+            Peer        Peer                           Peering        Remote
+Vserver     Vserver     State        Peer Cluster      Applications   Vserver
+----------- ----------- ------------ ----------------- -------------- ---------
+pvs1        vs1         peered       cluster02         snapmirror     vs1
+----
+

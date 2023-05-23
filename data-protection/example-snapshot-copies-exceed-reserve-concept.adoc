@@ -1,0 +1,36 @@
+---
+permalink: data-protection/example-snapshot-copies-exceed-reserve-concept.html 
+sidebar: sidebar 
+keywords: delete, protected, files, less file space 
+summary: 'Una copia Snapshot punta a un blocco anche dopo aver eliminato il file che ha utilizzato il blocco. Questo spiega perché una riserva di copia Snapshot esaurita potrebbe portare a un risultato controintuitivo in cui l"eliminazione di un intero file system comporta una quantità di spazio disponibile inferiore a quella occupata dal file system.' 
+---
+= In che modo l'eliminazione dei file protetti può ridurre lo spazio dei file rispetto al previsto
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Una copia Snapshot punta a un blocco anche dopo aver eliminato il file che ha utilizzato il blocco. Questo spiega perché una riserva di copia Snapshot esaurita potrebbe portare a un risultato controintuitivo in cui l'eliminazione di un intero file system comporta una quantità di spazio disponibile inferiore a quella occupata dal file system.
+
+Si consideri il seguente esempio. Prima di eliminare qualsiasi file, il `df` l'output del comando è il seguente:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 3000000 0       100%
+/vol/vol0/.snapshot 1000000 500000  500000   50%
+----
+Dopo aver eliminato l'intero file system ed eseguito una copia Snapshot del volume, il `df` il comando genera il seguente output:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 2500000 500000   83%
+/vol/vol0/.snapshot 1000000 3500000 0       350%
+----
+Come mostra l'output, l'intero 3 GB utilizzato in precedenza dal file system attivo viene ora utilizzato dalle copie Snapshot, oltre ai 0.5 GB utilizzati prima dell'eliminazione.
+
+Poiché lo spazio su disco utilizzato dalle copie Snapshot ora supera la riserva di copia Snapshot, l'overflow di 2.5 GB di "`spills`" nello spazio riservato ai file attivi, lasciando 0.5 GB di spazio libero per i file in cui si potrebbero ragionevolmente prevedere 3 GB.

@@ -1,0 +1,122 @@
+---
+permalink: s3-config/create-modifyi-object-store-server-policy-task.html 
+sidebar: sidebar 
+keywords: create, modify, object, store, server, policy 
+summary: 'È possibile creare policy applicabili a uno o più bucket in un archivio di oggetti. È possibile collegare le policy del server dell"archivio di oggetti a gruppi di utenti, semplificando in tal modo la gestione dell"accesso alle risorse in più bucket.' 
+---
+= Creare o modificare un criterio del server di archiviazione oggetti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare policy applicabili a uno o più bucket in un archivio di oggetti. È possibile collegare le policy del server dell'archivio di oggetti a gruppi di utenti, semplificando in tal modo la gestione dell'accesso alle risorse in più bucket.
+
+.Prima di iniziare
+Una SVM abilitata per S3 contenente un server S3 e un bucket deve già esistere.
+
+.A proposito di questa attività
+È possibile attivare i criteri di accesso a livello di SVM specificando un criterio predefinito o personalizzato in un gruppo di server di storage a oggetti. I criteri non hanno effetto fino a quando non vengono specificati nella definizione di gruppo.
+
+
+NOTE: Quando si utilizzano i criteri del server di storage a oggetti, si specificano le entità (ovvero utenti e gruppi) nella definizione di gruppo, non nel criterio stesso.
+
+Esistono tre criteri predefiniti di sola lettura per l'accesso alle risorse di ONTAP S3:
+
+* Accesso completo
+* NoS3Accesso
+* ReadOnlyAccess
+
+
+È inoltre possibile creare nuovi criteri personalizzati, quindi aggiungere nuove istruzioni per nuovi utenti e gruppi oppure modificare gli attributi delle istruzioni esistenti. Per ulteriori opzioni, vedere `vserver object-store-server policy` link:https://docs.netapp.com/us-en/ontap-cli-9131/index.html["riferimento al comando"^].
+
+A partire da ONTAP 9.9.1 e versioni successive, se si intende supportare la funzionalità di tag degli oggetti client AWS con il server ONTAP S3, le azioni vengono eseguite `GetObjectTagging`, `PutObjectTagging`, e. `DeleteObjectTagging` devono essere consentite utilizzando le policy di gruppo o bucket.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per creare o modificare un criterio del server archivio oggetti*
+
+.Fasi
+. Modificare la VM di storage: Fare clic su *Storage > Storage VM*, fare clic sulla VM di storage, fare clic su *Settings* (Impostazioni), quindi su image:icon_pencil.gif["icona a forma di matita"] Sotto S3.
+. Aggiungere un utente: Fare clic su *Policies*, quindi su *Add*.
++
+.. Inserire un nome di policy e selezionarlo da un elenco di gruppi.
+.. Selezionare un criterio predefinito esistente o aggiungerne uno nuovo.
++
+Quando si aggiunge o si modifica un criterio di gruppo, è possibile specificare i seguenti parametri:
+
++
+*** Group (Gruppo): I gruppi ai quali viene concesso l'accesso.
+*** Effetto: Consente o nega l'accesso a uno o più gruppi.
+*** Azioni: Azioni consentite in uno o più bucket per un dato gruppo.
+*** Resources (risorse): Percorsi e nomi di oggetti all'interno di uno o più bucket per i quali l'accesso viene concesso o negato. Ad esempio:
++
+**** *** Garantisce l'accesso a tutti i bucket nella VM di storage.
+**** *bucketname* e *bucketname/** concedono l'accesso a tutti gli oggetti in un bucket specifico.
+**** *bucketname/readme.txt* concede l'accesso a un oggetto in un bucket specifico.
+
+
+
+
+.. Se lo si desidera, aggiungere le istruzioni ai criteri esistenti.
+
+
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per creare o modificare un criterio del server archivio oggetti*
+
+.Fasi
+. Creare un criterio del server di storage a oggetti:
++
+`vserver object-store-server policy create -vserver _svm_name_ -policy _policy_name_ [-comment _text_]`
+
+. Creare un'istruzione per la policy:
++
+`vserver object-store-server policy statement create -vserver _svm_name_ -policy _policy_name_ -effect {allow|deny} -action _object_store_actions_ -resource _object_store_resources_ [-sid text]`
+
++
+I seguenti parametri definiscono le autorizzazioni di accesso:
+
++
+[cols="2*"]
+|===
+
+
+ a| 
+`-effect`
+ a| 
+L'istruzione può consentire o negare l'accesso
+
+
+
+ a| 
+`-action`
+ a| 
+È possibile specificare `*` per tutte le azioni o un elenco di una o più delle seguenti azioni: `GetObject, PutObject, DeleteObject, ListBucket,GetBucketAcl, GetObjectAcl, ListAllMyBuckets, ListBucketMultipartUploads,` e. `ListMultipartUploadParts`.
+
+
+
+ a| 
+`-resource`
+ a| 
+Il bucket e qualsiasi oggetto in esso contenuto. I caratteri jolly `*` e. `?` può essere utilizzato per formare un'espressione regolare per specificare una risorsa.
+
+|===
++
+È possibile specificare una stringa di testo come commento con `-sid` opzione.
+
++
+Per impostazione predefinita, le nuove dichiarazioni vengono aggiunte alla fine dell'elenco delle dichiarazioni, che vengono elaborate in ordine. Quando si aggiungono o modificano le dichiarazioni in un secondo momento, è possibile modificarle `-index` impostazione per modificare l'ordine di elaborazione.
+
+
+
+--
+====

@@ -1,0 +1,75 @@
+---
+permalink: fabricpool/attach-cloud-tier-aggregate-task.html 
+sidebar: sidebar 
+keywords: attaching, cloud, tier, aggregate 
+summary: 'Dopo aver configurato un archivio di oggetti come Tier cloud, specificare l"aggregato da utilizzare allegandolo a FabricPool. In ONTAP 9.5 e versioni successive, è anche possibile collegare aggregati che contengono componenti del volume FlexGroup qualificati.' 
+---
+= Collegare il Tier cloud a un Tier locale (aggregato)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dopo aver configurato un archivio di oggetti come Tier cloud, specificare il Tier locale (aggregato) da utilizzare allegandolo a FabricPool. In ONTAP 9.5 e versioni successive, è anche possibile collegare Tier locali (aggregati) che contengono componenti di volume FlexGroup qualificati.
+
+.Di cosa hai bisogno
+Quando si utilizza l'interfaccia utente di ONTAP per impostare un aggregato per FabricPool, l'aggregato deve già esistere.
+
+[NOTE]
+====
+Quando si utilizza Gestione sistema per impostare un livello locale per FabricPool, è possibile creare il livello locale e configurarlo per l'utilizzo di FabricPool contemporaneamente.
+
+====
+
+
+== Procedure
+
+È possibile collegare un Tier locale (aggregato) a un archivio di oggetti FabricPool con Gestione di sistema di ONTAP o l'interfaccia utente di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Accedere a *Storage > Tier*, selezionare un livello cloud, quindi fare clic su image:icon_kabob.gif["icona kabob"].
+. Selezionare *Allega livelli locali*.
+. In *Add as Primary* (Aggiungi come principale), verificare che i volumi siano idonei per il collegamento.
+. Se necessario, selezionare *Converti volumi in thin provisioning*.
+. Fare clic su *Save* (Salva).
+
+
+--
+.CLI
+--
+.Per associare un archivio di oggetti a un aggregato con la CLI:
+. *Opzionale*: Per verificare la quantità di dati inattivi in un volume, seguire la procedura descritta in link:determine-data-inactive-reporting-task.html["Determinare la quantità di dati inattivi in un volume utilizzando il reporting dei dati inattivi"].
++
+La visualizzazione della quantità di dati inattivi in un volume può aiutare a decidere quale aggregato utilizzare per FabricPool.
+
+. Collegare l'archivio di oggetti a un aggregato utilizzando `storage aggregate object-store attach` comando.
++
+Se l'aggregato non è mai stato utilizzato con FabricPool e contiene volumi esistenti, ai volumi viene assegnato il valore predefinito `snapshot-only` policy di tiering.
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store attach -aggregate myaggr
+-object-store-name Amazon01B1
+----
++
+È possibile utilizzare `allow-flexgroup` `true` Possibilità di collegare aggregati che contengono componenti del volume FlexGroup.
+
+. Visualizzare le informazioni sull'archivio di oggetti e verificare che l'archivio di oggetti collegato sia disponibile utilizzando `storage aggregate object-store show` comando.
++
+[listing]
+----
+cluster1::> storage aggregate object-store show
+
+Aggregate    Object Store Name    Availability State
+---------    -----------------    ------------------
+myaggr       Amazon01B1           available
+----
+
+
+--
+====

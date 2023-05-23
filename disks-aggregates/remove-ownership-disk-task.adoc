@@ -1,0 +1,78 @@
+---
+permalink: disks-aggregates/remove-ownership-disk-task.html 
+sidebar: sidebar 
+keywords: remove, ownership, disk 
+summary: ONTAP scrive le informazioni sulla proprietà del disco sul disco. Prima di rimuovere un disco spare o il relativo shelf da un nodo, è necessario rimuovere le relative informazioni di proprietà in modo che possano essere correttamente integrate in un altro nodo. 
+---
+= Rimuovere la proprietà da un disco
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP scrive le informazioni sulla proprietà del disco sul disco. Prima di rimuovere un disco spare o il relativo shelf da un nodo, è necessario rimuovere le relative informazioni di proprietà in modo che possano essere correttamente integrate in un altro nodo.
+
+.Di cosa hai bisogno
+Il disco da cui si desidera rimuovere la proprietà deve soddisfare i seguenti requisiti:
+
+* Deve essere un disco spare.
++
+Non è possibile rimuovere la proprietà da un disco utilizzato in un Tier locale (aggregato).
+
+* Non può trovarsi nel centro di manutenzione.
+* Non può essere sottoposto a sanificazione.
+* Non è possibile eseguire il guasto.
++
+Non è necessario rimuovere la proprietà da un disco guasto.
+
+
+
+.A proposito di questa attività
+Se l'assegnazione automatica dei dischi è attivata, ONTAP potrebbe riassegnare automaticamente la proprietà prima di rimuovere il disco dal nodo. Per questo motivo, si disattiva l'assegnazione automatica della proprietà fino a quando il disco non viene rimosso, quindi si riattiva.
+
+.Fasi
+. Se l'assegnazione automatica della proprietà del disco è attivata, utilizzare la CLI per disattivarla:
++
+`storage disk option modify -node _node_name_ -autoassign off`
+
+. Se necessario, ripetere il passaggio precedente per il partner ha del nodo.
+. Rimuovere le informazioni di proprietà del software dal disco:
++
+`storage disk removeowner _disk_name_`
+
++
+Per rimuovere le informazioni di proprietà da più dischi, utilizzare un elenco separato da virgole.
+
++
+Esempio:
+
++
+....
+storage disk removeowner sys1:0a.23,sys1:0a.24,sys1:0a.25
+....
+. Se il disco viene partizionato per la partizione dei dati root, rimuovere la proprietà dalle partizioni:
++
+--
+.. Per ONTAP 9.10.1 e versioni successive, immettere:
++
+`storage disk removeowner -disk _disk_name_`
+
+.. Per ONTAP 9.9.1 e versioni precedenti, immettere entrambi i comandi:
++
+`storage disk removeowner -disk _disk_name_ -root true`
+
++
+`storage disk removeowner -disk _disk_name_ -data true`
+
+
+
+Entrambe le partizioni non sono più di proprietà di alcun nodo.
+
+--
+. Se in precedenza è stata disattivata l'assegnazione automatica della proprietà del disco, attivarla dopo la rimozione o la riassegnazione del disco:
++
+`storage disk option modify -node _node_name_ -autoassign on`
+
+. Se necessario, ripetere il passaggio precedente per il partner ha del nodo.
+

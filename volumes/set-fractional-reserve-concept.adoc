@@ -1,0 +1,66 @@
+---
+permalink: volumes/set-fractional-reserve-concept.html 
+sidebar: sidebar 
+keywords: considerations, setting, fractional, reserve 
+summary: 'La riserva frazionale, detta anche riserva di sovrascrittura LUN, consente di disattivare la riserva di sovrascrittura per LUN e file con spazio riservato in un volume FlexVol. In questo modo è possibile massimizzare l"utilizzo dello storage, ma se l"ambiente viene influenzato negativamente da operazioni di scrittura non riuscite a causa della mancanza di spazio, è necessario comprendere i requisiti imposti da questa configurazione.' 
+---
+= Considerazioni per l'impostazione della riserva frazionale
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La riserva frazionale, detta anche _riserva di sovrascrittura LUN_, consente di disattivare la riserva di sovrascrittura per i LUN e i file con spazio riservato in un volume FlexVol. In questo modo è possibile massimizzare l'utilizzo dello storage, ma se l'ambiente viene influenzato negativamente da operazioni di scrittura non riuscite a causa della mancanza di spazio, è necessario comprendere i requisiti imposti da questa configurazione.
+
+L'impostazione della riserva frazionale viene espressa in percentuale; gli unici valori validi sono `0` e. `100` percentuale. L'impostazione della riserva frazionale è un attributo del volume.
+
+Impostazione della riserva frazionale a. `0` aumenta l'utilizzo dello storage. Tuttavia, un'applicazione che accede ai dati che risiedono nel volume potrebbe riscontrare un'interruzione dei dati se il volume non dispone di spazio libero, anche se la garanzia del volume è impostata su `volume`. Tuttavia, con una configurazione e un utilizzo corretti del volume, è possibile ridurre al minimo il rischio di errori di scrittura. ONTAP offre una garanzia di scrittura "`Best effort`" per i volumi con riserva frazionale impostata su `0` quando _tutti_ i seguenti requisiti sono soddisfatti:
+
+* La deduplica non è in uso
+* La compressione non è in uso
+* I file secondari FlexClone non sono in uso
+* Tutti i file FlexClone e i LUN FlexClone sono abilitati per l'eliminazione automatica
++
+Questa non è l'impostazione predefinita. È necessario attivare esplicitamente l'eliminazione automatica, al momento della creazione o modificando il file FlexClone o il LUN FlexClone dopo la creazione.
+
+* L'offload delle copie di ODX e FlexClone non è in uso
+* La garanzia del volume è impostata su `volume`
+* La prenotazione dello spazio del file o del LUN è `enabled`
+* Volume Snapshot Reserve (Riserva snapshot volume) è impostato su `0`
+* L'eliminazione automatica della copia Snapshot del volume è `enabled` con un livello di impegno di `destroy`, un elenco di destroy di `lun_clone,vol_clone,cifs_share,file_clone,sfsr`e un trigger di `volume`
++
+Questa impostazione garantisce inoltre che i file FlexClone e le LUN FlexClone vengano cancellati quando necessario.
+
+
+
+Si noti che se il tasso di cambiamento è elevato, in rari casi l'eliminazione automatica della copia Snapshot potrebbe restare indietro, con conseguente esaurimento dello spazio del volume, anche con tutte le impostazioni di configurazione richieste in precedenza in uso.
+
+Inoltre, è possibile utilizzare la funzione di crescita automatica del volume per ridurre la probabilità che le copie Snapshot del volume debbano essere eliminate automaticamente. Se si attiva la funzione di crescita automatica, è necessario monitorare lo spazio libero nell'aggregato associato. Se l'aggregato diventa sufficientemente pieno da impedire la crescita del volume, è probabile che vengano eliminate più copie Snapshot man mano che lo spazio libero nel volume si esaurisce.
+
+Se non si riesce a soddisfare tutti i requisiti di configurazione sopra indicati ed è necessario assicurarsi che il volume non esaurisca lo spazio, è necessario impostare la riserva frazionale del volume su `100`. Ciò richiede più spazio libero in anticipo, ma garantisce che le operazioni di modifica dei dati avranno successo anche quando le tecnologie sopra elencate sono in uso.
+
+Il valore predefinito e i valori consentiti per l'impostazione della riserva frazionale dipendono dalla garanzia del volume:
+
+[cols="3*"]
+|===
+| Garanzia di volume | Riserva frazionaria predefinita | Valori consentiti 
+
+
+ a| 
+Volume
+ a| 
+100
+ a| 
+0, 100
+
+
+
+ a| 
+Nessuno
+ a| 
+0
+ a| 
+0, 100
+
+|===

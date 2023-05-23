@@ -1,0 +1,474 @@
+---
+permalink: flexgroup/quota-reporting-task.html 
+sidebar: sidebar 
+keywords: quota, flexgroup, volume, flex group, limit, snap mirror, snapmirror, qtree, user, group 
+summary: 'In ONTAP 9.4 e versioni precedenti, è possibile applicare le regole delle quote ai volumi FlexGroup solo a scopo di reporting, ma non per l"applicazione dei limiti di quota. A partire da ONTAP 9.5, è possibile applicare limiti alle regole di quota applicate ai volumi FlexGroup.' 
+---
+= Utilizzare le quote per i volumi FlexGroup
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+In ONTAP 9.4 e versioni precedenti, è possibile applicare le regole delle quote ai volumi FlexGroup solo a scopo di reporting, ma non per l'applicazione dei limiti di quota. A partire da ONTAP 9.5, è possibile applicare limiti alle regole di quota applicate ai volumi FlexGroup.
+
+.A proposito di questa attività
+* A partire da ONTAP 9.5, è possibile specificare le quote limite hard, soft e threshold per i volumi FlexGroup.
++
+È possibile specificare questi limiti per limitare la quantità di spazio, il numero di file che un utente, un gruppo o un qtree specifico può creare o entrambi. I limiti di quota generano messaggi di avviso nei seguenti scenari:
+
++
+** Quando l'utilizzo supera un limite minimo configurato, ONTAP emette un messaggio di avviso, ma è ancora consentito ulteriore traffico.
++
+Se in seguito l'utilizzo scende di nuovo al di sotto del limite di tolleranza configurato, viene visualizzato un messaggio di cancellazione completa.
+
+** Quando l'utilizzo supera un limite di soglia configurato, ONTAP emette un secondo messaggio di avviso.
++
+Non viene emesso alcun messaggio amministrativo completo quando l'utilizzo in seguito scende al di sotto di un limite di soglia configurato.
+
+** Se l'utilizzo raggiunge un limite massimo configurato, ONTAP impedisce un ulteriore consumo di risorse rifiutando il traffico.
+
+
+* In ONTAP 9.5, le regole di quota non possono essere create o attivate sul volume FlexGroup di destinazione di una relazione SnapMirror.
+* Durante l'inizializzazione della quota, le quote non vengono applicate e non vengono notificate le violazioni delle quote in seguito all'inizializzazione della quota.
++
+Per controllare se le quote sono state violate durante l'inizializzazione delle quote, è possibile utilizzare `volume quota report` comando.
+
+
+
+
+
+== Destinazioni e tipi di quota
+
+Le quote hanno un tipo: Possono essere utente, gruppo o albero. Le destinazioni di quota specificano l'utente, il gruppo o il qtree per cui vengono applicati i limiti di quota.
+
+La tabella seguente elenca i tipi di target di quota, i tipi di quote a cui ciascun target di quota è associato e il modo in cui ciascun target di quota è rappresentato:
+
+|===
+
+
+| Destinazione della quota | Tipo di quota | Come viene rappresentato il target | Note 
+
+
+ a| 
+utente
+ a| 
+quota utente
+ a| 
+Nome utente UNIX UID UNIX
+
+Nome utente Windows in formato precedente a Windows 2000
+
+SID di Windows
+ a| 
+Le quote utente possono essere applicate a un volume o qtree specifico.
+
+
+
+ a| 
+gruppo
+ a| 
+quota di gruppo
+ a| 
+Nome del gruppo UNIX GID
+ a| 
+Le quote di gruppo possono essere applicate a un volume o qtree specifico.
+
+
+NOTE: ONTAP non applica quote di gruppo basate sugli ID Windows.
+
+
+
+ a| 
+qtree
+ a| 
+quota ad albero
+ a| 
+nome del qtree
+ a| 
+Le quote ad albero vengono applicate a un particolare volume e non influiscono sui qtree di altri volumi.
+
+
+
+ a| 
+`""`
+ a| 
+quota di preventivi utente
+
+quota ad albero
+ a| 
+Virgolette doppie ("")
+ a| 
+Una destinazione di quota di "" indica una _quota predefinita_. Per le quote predefinite, il tipo di quota è determinato dal valore del campo tipo.
+
+|===
+
+
+== Comportamento dei volumi FlexGroup quando vengono superati i limiti di quota
+
+A partire da ONTAP 9.5, i limiti di quota sono supportati sui volumi FlexGroup. Esistono alcune differenze nel modo in cui i limiti di quota vengono applicati a un volume FlexGroup rispetto a un volume FlexVol.
+
+Quando si superano i limiti di quota, i volumi FlexGroup potrebbero mostrare i seguenti comportamenti:
+
+* L'utilizzo di spazio e file in un volume FlexGroup potrebbe superare fino al 5% il limite massimo configurato prima che venga applicato il limite di quota rifiutando ulteriore traffico.
++
+Per ottenere le migliori prestazioni, ONTAP potrebbe consentire al consumo di spazio di superare il limite massimo configurato di un piccolo margine prima dell'inizio dell'applicazione delle quote. Questo consumo di spazio aggiuntivo non supera il 5% dei limiti rigidi configurati, 1 GB o 65536 file, a seconda del valore più basso.
+
+* Una volta raggiunto il limite di quota, se un utente o un amministratore elimina alcuni file o directory in modo tale che l'utilizzo della quota sia ora inferiore al limite, la successiva operazione di file che consuma quote potrebbe riprendere con un ritardo (potrebbe richiedere fino a 5 secondi per la ripresa).
+* Quando lo spazio totale e l'utilizzo di file di un volume FlexGroup superano i limiti di quota configurati, potrebbe verificarsi un leggero ritardo nella registrazione di un messaggio del registro eventi.
+* Se alcuni componenti del volume FlexGroup si esaurono, ma non vengono raggiunti i limiti di quota, potrebbero verificarsi errori "`no space`".
+* Le operazioni, come la ridenominazione di un file o di una directory o lo spostamento di file tra qtree, sulle destinazioni di quota per le quali sono configurati limiti rigidi di quota, potrebbero richiedere più tempo rispetto a operazioni simili sui volumi FlexVol.
+
+
+
+
+== Esempi di applicazione delle quote per i volumi FlexGroup
+
+È possibile utilizzare gli esempi per comprendere come configurare le quote con limiti in ONTAP 9.5 e versioni successive.
+
+.Esempio 1: Applicazione di una regola di quota con limiti di disco
+. È necessario creare una regola di tipo del criterio di quota `user` con un limite di dischi soft e un limite di dischi rigidi raggiungibili.
++
+[listing]
+----
+cluster1::> volume quota policy rule create -vserver vs0 -policy-name default -volume FG -type user -target "" -qtree "" -disk-limit 1T -soft-disk-limit 800G
+----
+. È possibile visualizzare la regola dei criteri di quota:
++
+[listing]
+----
+cluster1::> volume quota policy rule show -vserver vs0 -policy-name default -volume FG
+
+Vserver: vs0               Policy: default           Volume: FG
+
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+user   ""        ""      off           1TB    800GB       -        -          -
+----
+. Per attivare la nuova regola di quota, inizializza le quote sul volume:
++
+[listing]
+----
+cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
+[Job 49] Job succeeded: Successful
+----
+. È possibile visualizzare le informazioni sull'utilizzo del disco e del file del volume FlexGroup utilizzando il report delle quote.
++
+[listing]
+----
+cluster1::> volume quota report -vserver vs0 -volume FG
+Vserver: vs0
+
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+FG                 user    root      50GB      -       1       -
+FG                 user    *         800GB    1TB      0       -   *
+2 entries were displayed.
+----
+
+
+Una volta raggiunto il limite del disco rigido, la destinazione della regola del criterio di quota (in questo caso l'utente) non può scrivere più dati nei file.
+
+.Esempio 2: Applicazione di una regola di quota per più utenti
+. È necessario creare una regola di tipo del criterio di quota `user`, In cui più utenti sono specificati nella destinazione della quota (utenti UNIX, utenti SMB o una combinazione di entrambi) e in cui la regola ha un limite di dischi rigidi e un limite di dischi rigidi raggiungibili.
++
+[listing]
+----
+cluster1::> quota policy rule create -vserver vs0 -policy-name default -volume FG -type user -target "rdavis,ABCCORP\RobertDavis" -qtree "" -disk-limit 1TB -soft-disk-limit  800GB
+----
+. È possibile visualizzare la regola dei criteri di quota:
++
+[listing]
+----
+cluster1::> quota policy rule show -vserver vs0 -policy-name default -volume FG
+
+Vserver: vs0               Policy: default           Volume: FG
+
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+user   "rdavis,ABCCORP\RobertDavis"  "" off  1TB  800GB  -  -
+----
+. Per attivare la nuova regola di quota, inizializza le quote sul volume:
++
+[listing]
+----
+cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
+[Job 49] Job succeeded: Successful
+----
+. È possibile verificare che lo stato della quota sia attivo:
++
+[listing]
+----
+cluster1::> volume quota show -vserver vs0 -volume FG
+              Vserver Name: vs0
+               Volume Name: FG
+               Quota State: on
+               Scan Status: -
+          Logging Messages: on
+          Logging Interval: 1h
+          Sub Quota Status: none
+  Last Quota Error Message: -
+Collection of Quota Errors: -
+----
+. È possibile visualizzare le informazioni sull'utilizzo del disco e del file del volume FlexGroup utilizzando il report delle quote.
++
+[listing]
+----
+cluster1::> quota report -vserver vs0 -volume FG
+Vserver: vs0
+
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+FG                 user    rdavis,ABCCORP\RobertDavis  0B  1TB  0  -   rdavis,ABCCORP\RobertDavis
+----
++
+Il limite di quota viene condiviso tra tutti gli utenti elencati nella destinazione della quota.
+
+
+
+Una volta raggiunto il limite del disco rigido, gli utenti elencati nella destinazione della quota non possono scrivere più dati nei file.
+
+.Esempio 3: Applicazione della quota con mappatura utente attivata
+. È necessario creare una regola di tipo del criterio di quota `user`, Specificare un utente UNIX o Windows come destinazione della quota con `user-mapping` impostare su `on`e creare la regola con un limite di dischi rigidi e un limite di dischi rigidi raggiungibili.
++
+La mappatura tra utenti UNIX e Windows deve essere configurata in precedenza utilizzando `vserver name-mapping create` comando.
+
++
+[listing]
+----
+cluster1::> quota policy rule create -vserver vs0 -policy-name default -volume FG -type user -target rdavis -qtree "" -disk-limit 1TB -soft-disk-limit  800GB -user-mapping on
+----
+. È possibile visualizzare la regola dei criteri di quota:
++
+[listing]
+----
+cluster1::> quota policy rule show -vserver vs0 -policy-name default -volume FG
+
+Vserver: vs0               Policy: default           Volume: FG
+
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+user   rdavis    ""      on           1TB    800GB       -        -          -
+----
+. Per attivare la nuova regola di quota, inizializza le quote sul volume:
++
+[listing]
+----
+cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
+[Job 49] Job succeeded: Successful
+----
+. È possibile verificare che lo stato della quota sia attivo:
++
+[listing]
+----
+cluster1::> volume quota show -vserver vs0 -volume FG
+              Vserver Name: vs0
+               Volume Name: FG
+               Quota State: on
+               Scan Status: -
+          Logging Messages: on
+          Logging Interval: 1h
+          Sub Quota Status: none
+  Last Quota Error Message: -
+Collection of Quota Errors: -
+----
+. È possibile visualizzare le informazioni sull'utilizzo del disco e del file del volume FlexGroup utilizzando il report delle quote.
++
+[listing]
+----
+cluster1::> quota report -vserver vs0 -volume FG
+Vserver: vs0
+
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+FG                 user    rdavis,ABCCORP\RobertDavis  0B  1TB  0  -   rdavis
+----
++
+Il limite di quota viene condiviso tra l'utente elencato nella destinazione di quota e il corrispondente utente Windows o UNIX.
+
+
+
+Una volta raggiunto il limite del disco rigido, sia l'utente elencato nella destinazione della quota che l'utente Windows o UNIX corrispondente non possono scrivere più dati nei file.
+
+.Esempio 4: Verifica della dimensione del qtree quando la quota è attivata
+. È necessario creare una regola di tipo del criterio di quota `tree` e dove la regola ha sia un limite di dischi fissi che un limite di dischi fissi.
++
+[listing]
+----
+cluster1::> quota policy rule create -vserver vs0 -policy-name default -volume FG -type tree -target tree_4118314302 -qtree "" -disk-limit 48GB -soft-disk-limit 30GB
+----
+. È possibile visualizzare la regola dei criteri di quota:
++
+[listing]
+----
+cluster1::> quota policy rule show -vserver vs0
+
+Vserver: vs0               Policy: default           Volume: FG
+
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+tree   tree_4118314302  "" -          48GB        -      20        -
+----
+. Per attivare la nuova regola di quota, inizializza le quote sul volume:
++
+[listing]
+----
+cluster1::> volume quota on -vserver vs0 -volume FG -foreground true
+[Job 49] Job succeeded: Successful
+----
++
+.. È possibile visualizzare le informazioni sull'utilizzo del disco e del file del volume FlexGroup utilizzando il report delle quote.
++
+....
+cluster1::> quota report -vserver vs0
+Vserver: vs0
+----Disk---- ----Files----- Quota
+Volume Tree Type ID Used Limit Used Limit Specifier
+------- -------- ------ ------- ----- ----- ------ ------ ---------
+FG tree_4118314302 tree 1 30.35GB 48GB 14 20 tree_4118314302
+....
++
+Il limite di quota viene condiviso tra l'utente elencato nella destinazione di quota e il corrispondente utente Windows o UNIX.
+
+
+
+. Da un client NFS, utilizzare `df` per visualizzare l'utilizzo totale dello spazio, lo spazio disponibile e lo spazio utilizzato.
++
+[listing]
+----
+scsps0472342001# df -m /t/10.53.2.189/FG-3/tree_4118314302
+Filesystem 1M-blocks Used Available Use% Mounted on
+10.53.2.189/FG-3 49152 31078 18074 63% /t/10.53.2.189/FG-3
+----
++
+Con limite massimo, l'utilizzo dello spazio viene calcolato da un client NFS come segue:
+
++
+** Utilizzo totale dello spazio = limite massimo per l'albero
+** Spazio libero = limite massimo meno utilizzo dello spazio qtree senza limite massimo, l'utilizzo dello spazio viene calcolato da un client NFS come segue:
+** Utilizzo dello spazio = utilizzo della quota
+** Spazio totale = somma dell'utilizzo della quota e dello spazio fisico libero nel volume
+
+
+. Dalla condivisione SMB, utilizzare Esplora risorse per visualizzare l'utilizzo totale dello spazio, lo spazio disponibile e lo spazio utilizzato.
++
+Da una condivisione SMB, è necessario tenere presenti le seguenti considerazioni per il calcolo dell'utilizzo dello spazio:
+
++
+** Per il calcolo dello spazio totale disponibile viene preso in considerazione il limite massimo di quota utente per l'utente e il gruppo.
+** Il valore minimo tra lo spazio libero della regola di quota albero, la regola di quota utente e la regola di quota gruppo viene considerato come spazio libero per la condivisione SMB.
+** L'utilizzo dello spazio totale è variabile per SMB e dipende dal limite massimo che corrisponde allo spazio libero minimo tra struttura, utente e gruppo.
+
+
+
+
+
+
+== Applicare regole e limiti al volume FlexGroups
+
+.Fasi
+. Creare regole di quota per gli obiettivi : `volume quota policy rule create -vserver vs0 -policy-name quota_policy_of_the_rule -volume flexgroup_vol -type {tree|user|group} -target target_for_rule -qtree qtree_name [-disk-limit hard_disk_limit_size] [-file-limit hard_limit_number_of_files] [-threshold threshold_disk_limit_size] [-soft-disk-limit soft_disk_limit_size] [-soft-file-limit soft_limit_number_of_files]`
++
+** In ONTAP 9.2 e ONTAP 9.1, il tipo di destinazione della quota può essere solo `user` oppure `group` Per volumi FlexGroup.
++
+Il tipo di quota ad albero non è supportato per i volumi FlexGroup in ONTAP 9.2 e ONTAP 9.1.
+
+** In ONTAP 9.3 e versioni successive, il tipo di destinazione della quota può essere `user`, `group`, o. `tree` Per volumi FlexGroup.
+** Un percorso non è supportato come destinazione quando si creano regole di quota per i volumi FlexGroup.
+** A partire da ONTAP 9.5, è possibile specificare il limite del disco rigido, il limite del disco rigido, il limite del disco virtuale, il limite del file soft e le quote del limite di soglia per i volumi FlexGroup.
++
+In ONTAP 9.4 e versioni precedenti, non è possibile specificare il limite del disco, il limite del file, la soglia per il limite del disco, il limite del disco virtuale o il limite del file soft quando si creano regole di quota per i volumi FlexGroup.
+
+
+
+
+
+Nell'esempio seguente viene illustrata la creazione di una regola di quota predefinita per il tipo di destinazione dell'utente:
+
+[listing]
+----
+cluster1::> volume quota policy rule create -vserver vs0 -policy-name quota_policy_vs0_1 -volume fg1 -type user -target "" -qtree ""
+----
+Nell'esempio seguente viene illustrata la creazione di una regola di quota tree per il qtree denominato qtree1:
+
+[listing]
+----
+cluster1::> volume quota policy rule create -policy-name default -vserver vs0 -volume fg1 -type tree -target "qtree1"
+----
+. Attivare le quote per il volume FlexGroup specificato: `volume quota on -vserver svm_name -volume flexgroup_vol -foreground true`
+
+
+[listing]
+----
+cluster1::> volume quota on -vserver vs0 -volume fg1 -foreground true
+----
+. Monitorare lo stato di inizializzazione della quota: `volume quota show -vserver svm_name`
+
+
+I volumi FlexGroup potrebbero visualizzare `mixed` stato, che indica che tutti i volumi costituenti non sono ancora nello stesso stato.
+
+[listing]
+----
+cluster1::> volume quota show -vserver vs0
+                                          Scan
+Vserver    Volume        State            Status
+---------  ------------  ---------------  ------
+vs0        fg1           initializing         95%
+vs0        vol1          off                   -
+2 entries were displayed.
+----
+. Visualizzare il report delle quote per il volume FlexGroup con le quote attive: `volume quota report -vserver svm_name -volume flexgroup_vol`
++
+Non è possibile specificare un percorso con `volume quota report` Comando per volumi FlexGroup.
+
++
+L'esempio seguente mostra la quota utente per il volume FlexGroup fg1:
+
++
+....
+cluster1::> volume quota report -vserver vs0 -volume fg1
+  Vserver: vs0
+                                      ----Disk----  ----Files-----   Quota
+  Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+  -------  --------  ------  -------  -----  -----  ------  ------   ---------
+  fg1                user    *           0B      -       0       -   *
+  fg1                user    root       1GB      -       1       -   *
+  2 entries were displayed.
+....
++
+Nell'esempio seguente viene illustrata la quota ad albero per il volume FlexGroup fg1:
+
++
+[listing]
+----
+cluster1::> volume quota report -vserver vs0 -volume fg1
+Vserver: vs0
+
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+fg1      qtree1  tree      1         68KB      -      18       -   qtree1
+fg1              tree      *           0B      -       0       -   *
+2 entries were displayed.
+----
+
+
+.Risultati
+Le regole e i limiti di quota vengono applicati al volume FlexGroups.
+
+L'utilizzo potrebbe superare fino al 5% il limite massimo configurato prima che ONTAP imprima la quota rifiutando ulteriore traffico.
+
+.Informazioni correlate
+http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^]

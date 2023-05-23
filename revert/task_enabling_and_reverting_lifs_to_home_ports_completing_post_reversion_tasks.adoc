@@ -1,0 +1,82 @@
+---
+permalink: revert/task_enabling_and_reverting_lifs_to_home_ports_completing_post_reversion_tasks.html 
+sidebar: sidebar 
+keywords: ontap, revert, reverting, reversion, downgrade, downgrading, enable, enabling, lifs, home, ports 
+summary: Durante un riavvio, alcune LIF potrebbero essere state migrate alle porte di failover assegnate. Dopo aver ripristinato un cluster, è necessario abilitare e ripristinare le LIF non presenti nelle porte domestiche. 
+---
+= Abilitare e ripristinare le LIF alle porte home dopo un revert
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Durante un riavvio, alcune LIF potrebbero essere state migrate alle porte di failover assegnate. Dopo aver ripristinato un cluster, è necessario abilitare e ripristinare le LIF non presenti nelle porte domestiche.
+
+Il comando di revert dell'interfaccia di rete riporta un LIF che non si trova attualmente sulla porta home alla porta home, a condizione che la porta home sia operativa. Quando viene creata la LIF, viene specificata la porta home di LIF; è possibile determinare la porta home di una LIF utilizzando il comando show dell'interfaccia di rete.
+
+. Visualizzare lo stato di tutti i LIF: `network interface show`
++
+Questo esempio mostra lo stato di tutte le LIF per una macchina virtuale di storage (SVM).
+
++
+[listing]
+----
+cluster1::> network interface show -vserver vs0
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+vs0
+            data001    down/down  192.0.2.120/24     node0         e0e     true
+            data002    down/down  192.0.2.121/24     node0         e0f     true
+            data003    down/down  192.0.2.122/24     node0         e2a     true
+            data004    down/down  192.0.2.123/24     node0         e2b     true
+            data005    down/down  192.0.2.124/24     node0         e0e     false
+            data006    down/down  192.0.2.125/24     node0         e0f     false
+            data007    down/down  192.0.2.126/24     node0         e2a     false
+            data008    down/down  192.0.2.127/24     node0         e2b     false
+8 entries were displayed.
+----
++
+Se viene visualizzato un LIF con lo stato Status Admin (Amministratore stato) su Down (inattivo) o con lo stato is home (iniziale) su false, passare alla fase successiva.
+
+. Abilitare le LIF dei dati: `network interface modify {-role data} -status-admin up`
++
+[listing]
+----
+cluster1::> network interface modify {-role data} -status-admin up
+8 entries were modified.
+----
+. Ripristinare le LIF alle porte home: `network interface revert *`
++
+Questo comando ripristina tutte le LIF alle porte home.
+
++
+[listing]
+----
+cluster1::> network interface revert *
+8 entries were acted on.
+----
+. Verificare che tutte le LIF si trovino nelle porte home: `network interface show`
++
+Questo esempio mostra che tutte le LIF per SVM vs0 si trovano sulle porte home.
+
++
+[listing]
+----
+cluster1::> network interface show -vserver vs0
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+vs0
+            data001      up/up    192.0.2.120/24     node0         e0e     true
+            data002      up/up    192.0.2.121/24     node0         e0f     true
+            data003      up/up    192.0.2.122/24     node0         e2a     true
+            data004      up/up    192.0.2.123/24     node0         e2b     true
+            data005      up/up    192.0.2.124/24     node1         e0e     true
+            data006      up/up    192.0.2.125/24     node1         e0f     true
+            data007      up/up    192.0.2.126/24     node1         e2a     true
+            data008      up/up    192.0.2.127/24     node1         e2b     true
+8 entries were displayed.
+----
+

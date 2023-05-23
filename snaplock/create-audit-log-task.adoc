@@ -1,0 +1,71 @@
+---
+permalink: snaplock/create-audit-log-task.html 
+sidebar: sidebar 
+keywords: create, audit, log, snaplock, protected, administrator, accounts 
+summary: 'È necessario creare un registro di controllo protetto da SnapLock prima di eseguire un"eliminazione con privilegi o uno spostamento del volume SnapLock. Il registro di controllo registra la creazione e l"eliminazione degli account amministratore di SnapLock, le modifiche al volume di log, l"eventuale attivazione dell"eliminazione con privilegi, le operazioni di eliminazione con privilegi e le operazioni di spostamento del volume SnapLock.' 
+---
+= Creare un registro di controllo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario creare un registro di controllo protetto da SnapLock prima di eseguire un'eliminazione con privilegi o uno spostamento del volume SnapLock. Il registro di controllo registra la creazione e l'eliminazione degli account amministratore di SnapLock, le modifiche al volume di log, l'eventuale attivazione dell'eliminazione con privilegi, le operazioni di eliminazione con privilegi e le operazioni di spostamento del volume SnapLock.
+
+.Di cosa hai bisogno
+Per creare un aggregato SnapLock, è necessario essere un amministratore del cluster.
+
+.A proposito di questa attività
+Non è possibile eliminare un registro di controllo fino a quando non è trascorso il periodo di conservazione del file di registro. Non è possibile modificare un registro di controllo anche dopo che è trascorso il periodo di conservazione. Ciò vale sia per la conformità SnapLock che per le modalità aziendali.
+
+[NOTE]
+====
+In ONTAP 9.4 e versioni precedenti, non è possibile utilizzare un volume aziendale SnapLock per la registrazione dell'audit. È necessario utilizzare un volume di conformità SnapLock. In ONTAP 9.5 e versioni successive, è possibile utilizzare un volume aziendale SnapLock o un volume di conformità SnapLock per la registrazione dell'audit. In tutti i casi, il volume del log di audit deve essere montato sul percorso di giunzione `/snaplock_audit_log`. Nessun altro volume può utilizzare questo percorso di giunzione.
+
+====
+I registri di controllo di SnapLock sono disponibili in `/snaplock_log` directory sotto la directory principale del volume del registro di controllo, in sottodirectory denominate `privdel_log` (operazioni di eliminazione con privilegi) e. `system_log` (tutto il resto). I nomi dei file di log di audit contengono l'indicazione dell'ora della prima operazione registrata, semplificando la ricerca dei record in base all'ora approssimativa in cui sono state eseguite le operazioni.
+
+* È possibile utilizzare `snaplock log file show` per visualizzare i file di log sul volume del registro di controllo.
+* È possibile utilizzare `snaplock log file archive` comando per archiviare il file di log corrente e crearne uno nuovo, utile nei casi in cui è necessario registrare le informazioni del log di audit in un file separato.
+
+
+Per ulteriori informazioni, consulta le pagine man dei comandi.
+
+[NOTE]
+====
+Un volume di protezione dei dati non può essere utilizzato come volume del registro di controllo di SnapLock.
+
+====
+.Fasi
+. Creare un aggregato SnapLock.
++
+xref:create-snaplock-aggregate-task.adoc[Creare un aggregato SnapLock]
+
+. Sulla SVM che si desidera configurare per la registrazione dell'audit, creare un volume SnapLock.
++
+xref:create-snaplock-volume-task.adoc[Creare un volume SnapLock]
+
+. Configurare la SVM per la registrazione dell'audit:
++
+`*snaplock log create -vserver _SVM_name_ -volume _snaplock_volume_name_ -max-file-size _size_ -retention-period _default_retention_period_*`
+
++
+[NOTE]
+====
+Il periodo minimo di conservazione predefinito per i file di log di controllo è di sei mesi. Se il periodo di conservazione di un file interessato supera il periodo di conservazione del log di controllo, il periodo di conservazione del log eredita il periodo di conservazione del file. Pertanto, se il periodo di conservazione di un file cancellato mediante eliminazione con privilegi è di 10 mesi e il periodo di conservazione del registro di controllo è di 8 mesi, il periodo di conservazione del registro viene esteso a 10 mesi. Per ulteriori informazioni sul tempo di conservazione e sul periodo di conservazione predefinito, vedere link:https://docs.netapp.com/us-en/ontap/snaplock/set-retention-period-task.html["Impostare il tempo di conservazione"].
+
+====
++
+Il seguente comando viene configurato `SVM1` Per la registrazione dell'audit utilizzando il volume SnapLock `logVol`. Il registro di controllo ha una dimensione massima di 20 GB e viene conservato per otto mesi.
+
++
+[listing]
+----
+SVM1::> snaplock log create -vserver SVM1 -volume logVol -max-file-size 20GB -retention-period 8months
+----
+. Sulla SVM configurata per la registrazione dell'audit, montare il volume SnapLock nel percorso di giunzione `/snaplock_audit_log`.
++
+xref:mount-snaplock-volume-task.adoc[Montare un volume SnapLock]
+
+

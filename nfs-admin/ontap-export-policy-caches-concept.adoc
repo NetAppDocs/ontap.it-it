@@ -1,0 +1,70 @@
+---
+permalink: nfs-admin/ontap-export-policy-caches-concept.html 
+sidebar: sidebar 
+keywords: ontap, use, export, policy, cache 
+summary: Per migliorare le performance del sistema, ONTAP utilizza cache locali per memorizzare informazioni come nomi host e netgroup. Ciò consente a ONTAP di elaborare le regole delle policy di esportazione più rapidamente rispetto al recupero delle informazioni da fonti esterne. La comprensione delle cache e delle relative funzioni può aiutare a risolvere i problemi di accesso dei client. 
+---
+= Modalità di utilizzo delle cache delle policy di esportazione da parte di ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per migliorare le performance del sistema, ONTAP utilizza cache locali per memorizzare informazioni come nomi host e netgroup. Ciò consente a ONTAP di elaborare le regole delle policy di esportazione più rapidamente rispetto al recupero delle informazioni da fonti esterne. La comprensione delle cache e delle relative funzioni può aiutare a risolvere i problemi di accesso dei client.
+
+I criteri di esportazione vengono configurati per controllare l'accesso dei client alle esportazioni NFS. Ogni policy di esportazione contiene regole e ogni regola contiene parametri che consentono di associare la regola ai client che richiedono l'accesso. Alcuni di questi parametri richiedono che ONTAP contatti un'origine esterna, ad esempio server DNS o NIS, per risolvere oggetti come nomi di dominio, nomi host o netgroup.
+
+Queste comunicazioni con le fonti esterne richiedono una piccola quantità di tempo. Per aumentare le performance, ONTAP riduce il tempo necessario per risolvere gli oggetti delle regole dei criteri di esportazione memorizzando le informazioni in locale su ciascun nodo in diverse cache.
+
+[cols="2*"]
+|===
+| Nome della cache | Tipo di informazioni memorizzate 
+
+
+ a| 
+Accesso
+ a| 
+Mappature dei client ai criteri di esportazione corrispondenti
+
+
+
+ a| 
+Nome
+ a| 
+Mapping dei nomi utente UNIX agli ID utente UNIX corrispondenti
+
+
+
+ a| 
+ID
+ a| 
+Mapping degli ID utente UNIX agli ID utente UNIX corrispondenti e agli ID gruppo UNIX estesi
+
+
+
+ a| 
+Host
+ a| 
+Mapping dei nomi host agli indirizzi IP corrispondenti
+
+
+
+ a| 
+Netgroup
+ a| 
+Mapping dei netgroup agli indirizzi IP corrispondenti dei membri
+
+
+
+ a| 
+Showmount
+ a| 
+Elenco delle directory esportate dallo spazio dei nomi SVM
+
+|===
+Se si modificano le informazioni sui server dei nomi esterni dell'ambiente dopo il recupero e l'archiviazione in locale da parte di ONTAP, le cache potrebbero ora contenere informazioni obsolete. Sebbene ONTAP aggiorni automaticamente le cache dopo determinati periodi di tempo, diverse cache hanno tempi di scadenza e refresh e algoritmi diversi.
+
+Un'altra possibile ragione per cui le cache contengono informazioni obsolete è quando ONTAP tenta di aggiornare le informazioni memorizzate nella cache ma incontra un errore quando tenta di comunicare con i server dei nomi. In questo caso, ONTAP continua a utilizzare le informazioni attualmente memorizzate nelle cache locali per evitare interruzioni del client.
+
+Di conseguenza, le richieste di accesso client che dovrebbero avere esito positivo potrebbero non riuscire e le richieste di accesso client che dovrebbero fallire potrebbero avere esito positivo. È possibile visualizzare e svuotare manualmente alcune cache delle policy di esportazione durante la risoluzione di tali problemi di accesso client.

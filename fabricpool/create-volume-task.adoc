@@ -1,0 +1,91 @@
+---
+permalink: fabricpool/create-volume-task.html 
+sidebar: sidebar 
+keywords: creating, volume, fabricpool, tiering, policy, policies, create, snap shot, snapshot, aggregate, flexgroup, cloud retrieval 
+summary: Quando si crea un volume per FabricPool, è possibile specificare un criterio di tiering. Se non viene specificato alcun criterio di tiering, il volume creato utilizza il criterio di tiering predefinito di solo snapshot. Per un volume con policy di solo snapshot o di tiering automatico, è anche possibile specificare il periodo minimo di raffreddamento del tiering. 
+---
+= Creare un volume per FabricPool
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile aggiungere volumi a FabricPool creando nuovi volumi direttamente nell'aggregato abilitato a FabricPool o spostando i volumi esistenti da un altro aggregato all'aggregato abilitato a FabricPool.
+
+Quando si crea un volume per FabricPool, è possibile specificare un criterio di tiering. Se non viene specificato alcun criterio di tiering, il volume creato utilizza l'impostazione predefinita `snapshot-only` policy di tiering. Per un volume con `snapshot-only` oppure `auto` policy di tiering, è anche possibile specificare il periodo minimo di raffreddamento del tiering.
+
+.Di cosa hai bisogno
+* Impostazione di un volume per l'utilizzo di `auto` La policy di tiering o la specifica del periodo di raffreddamento minimo di tiering richiede ONTAP 9.4 o versione successiva.
+* L'utilizzo di FlexGroup Volumes richiede ONTAP 9.5 o versione successiva.
+* Impostazione di un volume per l'utilizzo di `all` I criteri di tiering richiedono ONTAP 9.6 o versione successiva.
+* Impostazione di un volume per l'utilizzo di `-cloud-retrieval-policy` Il parametro richiede ONTAP 9.8 o versione successiva.
+
+
+.Fasi
+. Creare un nuovo volume per FabricPool utilizzando `volume create` comando.
++
+** Il `-tiering-policy` il parametro opzionale consente di specificare il criterio di tiering per il volume.
++
+È possibile specificare uno dei seguenti criteri di tiering:
+
++
+*** `snapshot-only` (impostazione predefinita)
+*** `auto`
+*** `all`
+*** `backup` (obsoleto)
+*** `none`
++
+link:tiering-policies-concept.html#types-of-fabricpool-tiering-policies["Tipi di policy di tiering FabricPool"]
+
+
+
+** Il `-cloud-retrieval-policy` il parametro opzionale consente agli amministratori del cluster con il livello di privilegio avanzato di eseguire l'override del comportamento predefinito di recupero o migrazione del cloud controllato dalla policy di tiering.
++
+È possibile specificare una delle seguenti policy di recupero del cloud:
+
++
+*** `default`
++
+La policy di tiering determina quali dati vengono recuperati, quindi non vi è alcuna modifica al recupero dei dati nel cloud `default` policy-recupero-cloud. Questo significa che il comportamento è lo stesso delle release precedenti a ONTAP 9.8:
+
++
+**** Se la policy di tiering è `none` oppure `snapshot-only`, quindi "`default`" significa che qualsiasi lettura dei dati basata su client viene estratta dal tier cloud al tier di performance.
+**** Se la policy di tiering è `auto`, quindi viene estratta qualsiasi lettura casuale basata su client, ma non letture sequenziali.
+**** Se la policy di tiering è `all` quindi, nessun dato client-driven viene estratto dal tier cloud.
+
+
+*** `on-read`
++
+Tutte le letture dei dati basate su client vengono estratte dal Tier cloud al Tier di performance.
+
+*** `never`
++
+Nessun dato client-driven viene estratto dal Tier cloud al Tier di performance
+
+*** `promote`
++
+**** Per la policy di tiering `none`, tutti i dati del cloud vengono estratti dal livello cloud al livello di performance
+**** Per la policy di tiering `snapshot-only`, tutti i dati del file system attivi vengono estratti dal livello cloud al livello di performance.
+
+
+
+
+** Il `-tiering-minimum-cooling-days` il parametro opzionale nel livello di privilegio avanzato consente di specificare il periodo minimo di raffreddamento del tiering per un volume che utilizza `snapshot-only` oppure `auto` policy di tiering.
++
+A partire da ONTAP 9.8, è possibile specificare un valore compreso tra 2 e 183 per i giorni di raffreddamento minimi di tiering. Se si utilizza una versione di ONTAP precedente alla 9.8, è possibile specificare un valore compreso tra 2 e 63 per i giorni di raffreddamento minimi di tiering.
+
+
+
+
+
+.Esempio di creazione di un volume per FabricPool
+Nell'esempio seguente viene creato un volume denominato "`myvol1`" nell'aggregato abilitato a FabricPool "`myFabricPool`". La policy di tiering è impostata su `auto` e il periodo minimo di raffreddamento del tiering è impostato su 45 giorni:
+
+[listing]
+----
+cluster1::*> volume create -vserver myVS -aggregate myFabricPool
+-volume myvol1 -tiering-policy auto -tiering-minimum-cooling-days 45
+----
+.Informazioni correlate
+link:../flexgroup/index.html["Gestione dei volumi FlexGroup"]

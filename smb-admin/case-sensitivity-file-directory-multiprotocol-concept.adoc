@@ -1,0 +1,45 @@
+---
+permalink: smb-admin/case-sensitivity-file-directory-multiprotocol-concept.html 
+sidebar: sidebar 
+keywords: file, directory, name, case-sensitive, nfs, client, case-preserving, preserve, implication, multiprotocol, environment, action, case-sensitivity of file and directory names in a multiprotocol environment 
+summary: 'I nomi di file e directory sono sensibili al maiuscolo/minuscolo per i client NFS e non al maiuscolo/minuscolo ma conservano il maiuscolo/minuscolo per i client SMB. È necessario comprendere le implicazioni di un ambiente multiprotocollo e le azioni da intraprendere quando si specifica il percorso durante la creazione di condivisioni SMB e quando si accede ai dati all"interno delle condivisioni.' 
+---
+= Distinzione tra maiuscole e minuscole dei nomi di file e directory in un ambiente multiprotocollo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+I nomi di file e directory sono sensibili al maiuscolo/minuscolo per i client NFS e non al maiuscolo/minuscolo ma conservano il maiuscolo/minuscolo per i client SMB. È necessario comprendere le implicazioni di un ambiente multiprotocollo e le azioni da intraprendere quando si specifica il percorso durante la creazione di condivisioni SMB e quando si accede ai dati all'interno delle condivisioni.
+
+Se un client SMB crea una directory denominata `testdir`, Sia i client SMB che NFS visualizzano il nome del file come `testdir`. Tuttavia, se un utente SMB tenta in seguito di creare un nome di directory `TESTDIR`, Il nome non è consentito perché, per il client SMB, tale nome esiste attualmente. Se un utente NFS successivamente crea una directory denominata `TESTDIR`I client , NFS e SMB visualizzano il nome della directory in modo diverso, come segue:
+
+* Sui client NFS, ad esempio, vengono visualizzati entrambi i nomi di directory così come sono stati creati `testdir` e. `TESTDIR`, perché i nomi delle directory sono sensibili al maiuscolo/minuscolo.
+* I client SMB utilizzano i nomi 8.3 per distinguere le due directory. Una directory ha il nome del file di base. Alle directory aggiuntive viene assegnato un nome file 8.3.
++
+** Sui client SMB, viene visualizzato `testdir` e. `TESTDI~1`.
+** ONTAP crea il `TESTDI~1` nome della directory per differenziare le due directory.
++
+In questo caso, è necessario utilizzare il nome 8.3 quando si specifica un percorso di condivisione durante la creazione o la modifica di una condivisione su una macchina virtuale di storage (SVM).
+
+
+
+
+
+Analogamente per i file, se viene creato un client SMB `test.txt`, Sia i client SMB che NFS visualizzano il nome del file come `text.txt`. Tuttavia, se un utente SMB tenta di creare in un secondo momento `Test.txt`, Il nome non è consentito perché, per il client SMB, tale nome esiste attualmente. Se un utente NFS successivamente crea un file denominato `Test.txt`I client , NFS e SMB visualizzano il nome del file in modo diverso, come segue:
+
+* Sui client NFS, vengono visualizzati entrambi i nomi dei file così come sono stati creati, `test.txt` e. `Test.txt`, perché i nomi dei file sono sensibili al maiuscolo/minuscolo.
+* I client SMB utilizzano i nomi 8.3 per distinguere i due file. Un file ha il nome del file di base. Ai file aggiuntivi viene assegnato un nome file 8.3.
++
+** Sui client SMB, viene visualizzato `test.txt` e. `TEST~1.TXT`.
+** ONTAP crea il `TEST~1.TXT` nome del file per differenziare i due file.
+
+
+
+
+[NOTE]
+====
+Se è stata attivata o modificata la mappatura dei caratteri utilizzando i comandi di mappatura dei caratteri CIFS di Vserver, una ricerca di Windows normalmente non sensibile al maiuscolo/minuscolo diventa sensibile al maiuscolo/minuscolo.
+
+====

@@ -1,0 +1,112 @@
+---
+sidebar: sidebar 
+permalink: networking/monitor_the_reachability_of_network_ports.html 
+keywords: monitor, monitoring, manage, managing, automatic, reachability, port, network, identify, determine, monitor the reachability of network ports in ontap 9.8 and later, ontap 9.8 and later, determine if the physical network topology does not match the ontap configuration 
+summary: ONTAP 9.8 e versioni successive determinano se la topologia fisica della rete non corrisponde alla configurazione ONTAP 
+---
+= Monitorare la raggiungibilità delle porte di rete in ONTAP 9.8 e versioni successive
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Il monitoraggio della raggiungibilità è integrato in ONTAP 9.8 e versioni successive. Utilizzare questo monitoraggio per identificare quando la topologia fisica della rete non corrisponde alla configurazione ONTAP. In alcuni casi, ONTAP può riparare la raggiungibilità delle porte. In altri casi, sono necessari ulteriori passaggi.
+
+.A proposito di questa attività
+Utilizzare questi comandi per verificare, diagnosticare e riparare le configurazioni errate della rete derivanti dalla configurazione ONTAP che non corrisponde al cablaggio fisico o alla configurazione dello switch di rete.
+
+.Fase
+. Visualizzazione della raggiungibilità delle porte:
++
+....
+network port reachability show
+....
+. Utilizzare la seguente struttura decisionale e la seguente tabella per determinare la fase successiva, se presente.
+
+
+image:ontap_nm_image1.png["Riparare l'albero decisionale sulla raggiungibilità"]
+
+[cols="20,80"]
+|===
+
+
+| Stato di raggiungibilità | Descrizione 
+
+
+ a| 
+ok
+ a| 
+La porta ha una capacità di livello 2 rispetto al dominio di trasmissione assegnato. Se lo stato di raggiungibilità è "ok", ma ci sono "porte impreviste", considerare la possibilità di unire uno o più domini di broadcast. Per ulteriori informazioni, consulta la seguente riga _Unexpected ports_.
+
+Se lo stato di raggiungibilità è "ok", ma ci sono "porte irraggiungibili", considerare la possibilità di suddividere uno o più domini di broadcast. Per ulteriori informazioni, consultare la riga _Unreachable ports_ riportata di seguito.
+
+Se lo stato di raggiungibilità è "ok" e non ci sono porte impreviste o irraggiungibili, la configurazione è corretta.
+
+
+
+ a| 
+Porte impreviste
+ a| 
+La porta ha una raggiungibilità di livello 2 per il dominio di broadcast assegnato; tuttavia, ha anche una raggiungibilità di livello 2 per almeno un altro dominio di broadcast.
+
+Esaminare la connettività fisica e la configurazione dello switch per determinare se non è corretta o se il dominio di trasmissione assegnato alla porta deve essere Unito a uno o più domini di trasmissione.
+
+Per ulteriori informazioni, vedere link:merge_broadcast_domains.html["Unire i domini di broadcast"].
+
+
+
+ a| 
+Porte non raggiungibili
+ a| 
+Se un singolo dominio di broadcast è stato suddiviso in due diversi set di raggiungibilità, è possibile suddividere un dominio di broadcast per sincronizzare la configurazione ONTAP con la topologia fisica della rete.
+
+In genere, l'elenco delle porte irraggiungibili definisce il set di porte che devono essere suddivise in un altro dominio di trasmissione dopo aver verificato che la configurazione fisica e quella dello switch sono accurate.
+
+Per ulteriori informazioni, vedere link:split_broadcast_domains.html["Suddividere i domini di broadcast"].
+
+
+
+ a| 
+riconfigurazione non corretta
+ a| 
+La porta non dispone di capacità di livello 2 rispetto al dominio di trasmissione assegnato; tuttavia, la porta dispone di capacità di livello 2 rispetto a un dominio di trasmissione diverso.
+
+È possibile riparare la raggiungibilità delle porte. Quando si esegue il seguente comando, il sistema assegna la porta al dominio di trasmissione a cui è possibile accedere:
+
+`network port reachability repair -node -port`Per ulteriori informazioni, vedere link:repair_port_reachability.html["Riparare la raggiungibilità delle porte"].
+
+
+
+ a| 
+nessuna raggiungibilità
+ a| 
+La porta non dispone di capacità di livello 2 per nessun dominio di trasmissione esistente.
+
+È possibile riparare la raggiungibilità delle porte. Quando si esegue il seguente comando, il sistema assegna la porta a un nuovo dominio di trasmissione creato automaticamente in IPSpace predefinito:
+
+`network port reachability repair -node -port`Per ulteriori informazioni, vedere link:repair_port_reachability.html["Riparare la raggiungibilità delle porte"].
+
+
+
+ a| 
+raggiungibilità multi-dominio
+ a| 
+La porta ha una raggiungibilità di livello 2 per il dominio di broadcast assegnato; tuttavia, ha anche una raggiungibilità di livello 2 per almeno un altro dominio di broadcast.
+
+Esaminare la connettività fisica e la configurazione dello switch per determinare se non è corretta o se il dominio di trasmissione assegnato alla porta deve essere Unito a uno o più domini di trasmissione.
+
+Per ulteriori informazioni, vedere link:merge_broadcast_domains.html["Unire i domini di broadcast"] oppure link:repair_port_reachability.html["Riparare la raggiungibilità delle porte"].
+
+
+
+ a| 
+sconosciuto
+ a| 
+Se lo stato di raggiungibilità è "sconosciuto", attendere alcuni minuti e provare a eseguire nuovamente il comando.
+
+|===
+Dopo aver riparato una porta, è necessario controllare e risolvere le LIF e le VLAN spostate. Se la porta faceva parte di un gruppo di interfacce, è necessario comprendere anche cosa è successo a quel gruppo di interfacce. Per ulteriori informazioni, vedere link:repair_port_reachability.html["Riparare la raggiungibilità delle porte"].

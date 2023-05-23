@@ -1,0 +1,54 @@
+---
+permalink: nas-audit/auditing-limitations-size-audit-records-concept.html 
+sidebar: sidebar 
+keywords: limitations, size, audit records, stage files 
+summary: La dimensione di un record di audit in un file di staging non può essere superiore a 32 KB. 
+---
+= Limiti per la dimensione dei record di audit sui file di staging
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La dimensione di un record di audit in un file di staging non può essere superiore a 32 KB.
+
+
+
+== Quando possono verificarsi record di audit di grandi dimensioni
+
+Durante il controllo della gestione potrebbero verificarsi record di audit di grandi dimensioni in uno dei seguenti scenari:
+
+* Aggiunta o eliminazione di utenti a o da gruppi con un elevato numero di utenti.
+* Aggiunta o eliminazione di un elenco di controllo di accesso (ACL) per la condivisione di file con un gran numero di utenti per la condivisione di file.
+* Altri scenari.
+
+
+Disattivare il controllo di gestione per evitare questo problema. A tale scopo, modificare la configurazione dell'audit e rimuovere quanto segue dall'elenco dei tipi di eventi di audit:
+
+* condivisione file
+* account utente
+* security-group
+* authorization-policy-change
++
+Dopo la rimozione, non verranno controllati dal sottosistema di controllo dei file Services.
+
+
+
+
+
+== Gli effetti di record di audit troppo grandi
+
+* Se la dimensione di un record di audit è troppo grande (oltre 32 KB), il record di audit non viene creato e il sottosistema di audit genera un messaggio EMS (Event Management System) simile a quanto segue:
++
+`File Services Auditing subsystem failed the operation or truncated an audit record because it was greater than max_audit_record_size value. Vserver UUID=%s, event_id=%u, size=%u`
+
++
+Se il controllo è garantito, l'operazione del file non riesce perché non è possibile creare il relativo record di audit.
+
+* Se la dimensione del record di audit è superiore a 9,999 byte, viene visualizzato lo stesso messaggio EMS riportato sopra. Viene creato un record di audit parziale con il valore chiave più grande mancante.
+* Se il record di audit supera i 2,000 caratteri, viene visualizzato il seguente messaggio di errore anziché il valore effettivo:
++
+`The value of this field was too long to display.`
+
+

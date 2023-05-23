@@ -1,0 +1,93 @@
+---
+permalink: svm-migrate/migrate-svm-task.html 
+sidebar: sidebar 
+keywords: svm, migrate, defaults, cutover, cleanup 
+summary: Al termine di una migrazione SVM, i client vengono tagliati automaticamente nel cluster di destinazione e la SVM non necessaria viene rimossa dal cluster di origine. Il cutover automatico e il cleanup automatico della sorgente sono attivati per impostazione predefinita. Se necessario, è possibile disattivare il cutover automatico del client per sospendere la migrazione prima che si verifichi il cutover ed è anche possibile disattivare il cleanup SVM di origine automatico. 
+---
+= Migrare una SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Al termine di una migrazione SVM, i client vengono tagliati automaticamente nel cluster di destinazione e la SVM non necessaria viene rimossa dal cluster di origine. Il cutover automatico e il cleanup automatico della sorgente sono attivati per impostazione predefinita. Se necessario, è possibile disattivare il cutover automatico del client per sospendere la migrazione prima che si verifichi il cutover ed è anche possibile disattivare il cleanup SVM di origine automatico.
+
+* È possibile utilizzare `-auto-cutover false` opzione per sospendere la migrazione quando normalmente si verifica il cutover automatico del client e quindi eseguire manualmente il cutover in un secondo momento.
++
+xref:manual-client-cutover-task.adoc[Cutover manuale dei client dopo la migrazione SVM]
+
+* È possibile utilizzare il privilegio Advance `-auto-source-cleanup false` Opzione per disattivare la rimozione della SVM di origine dopo il cutover e quindi attivare manualmente la pulitura della sorgente in un secondo momento, dopo il cutover.
++
+xref:manual-source-removal-task.adoc[Rimuovere manualmente la SVM di origine dopo il cutover]
+
+
+
+
+
+== Migrare una SVM con il cutover automatico attivato
+
+Per impostazione predefinita, i client vengono tagliati automaticamente nel cluster di destinazione al termine della migrazione e la SVM non necessaria viene rimossa dal cluster di origine.
+
+.Fasi
+. Dal cluster di destinazione, eseguire i controlli preliminari per la migrazione:
++
+`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -check-only true`
+
+. Dal cluster di destinazione, avviare la migrazione SVM:
++
+`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_`
+
+. Controllare lo stato della migrazione:
++
+`dest_cluster> vserver migrate show`
+
++
+Lo stato visualizza Migrate-complete (migrazione completata) al termine della migrazione SVM.
+
+
+
+
+
+== Migrare una SVM con il cutover automatico del client disattivato
+
+È possibile utilizzare l'opzione -auto-cutover false per sospendere la migrazione quando si verifica normalmente un cutover automatico del client e quindi eseguire manualmente il cutover in un secondo momento. Vedere "Cut over manuale dei client dopo la migrazione SVM".
+
+.Fasi
+. Dal cluster di destinazione, eseguire i controlli preliminari per la migrazione:
++
+`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -check-only true`
+
+. Dal cluster di destinazione, avviare la migrazione SVM:
++
+`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -auto-cutover false`
+
+. Controllare lo stato della migrazione:
++
+`dest_cluster> vserver migrate show`Lo stato visualizza Ready-for-cutover quando la migrazione SVM completa i trasferimenti di dati asincroni ed è pronta per l'operazione di cutover.
+
+
+
+
+
+== Migrazione di una SVM con pulitura origine disattivata
+
+È possibile utilizzare l'opzione Advance Privilege -auto-source-cleanup false per disattivare la rimozione della SVM di origine dopo il cutover e quindi attivare manualmente la pulitura della sorgente in un secondo momento, dopo il cutover. Vedere "pulizia manuale della sorgente dopo il cutover".
+
+.Fasi
+. Dal cluster di destinazione, eseguire i controlli preliminari per la migrazione:
++
+`dest_cluster*> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -check-only true`
+
+. Dal cluster di destinazione, avviare la migrazione SVM:
++
+`dest_cluster*> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -auto-source-cleanup false`
+
+. Controllare lo stato della migrazione:
++
+`dest_cluster*> vserver migrate show`
+
++
+Lo stato visualizza Ready-for-source-cleanup quando la migrazione SVM è completa ed è pronto per rimuovere SVM sul cluster di origine.
+
+

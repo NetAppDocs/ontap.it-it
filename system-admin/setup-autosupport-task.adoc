@@ -1,0 +1,171 @@
+---
+permalink: system-admin/setup-autosupport-task.html 
+sidebar: sidebar 
+keywords: set, up, autosupport, technical, support, organization, internal, configuration, test 
+summary: 'È possibile controllare se e come le informazioni AutoSupport vengono inviate al supporto tecnico e all"organizzazione di supporto interna, quindi verificare che la configurazione sia corretta.' 
+---
+= Configurare AutoSupport
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile controllare se e come le informazioni AutoSupport vengono inviate al supporto tecnico e all'organizzazione di supporto interna, quindi verificare che la configurazione sia corretta.
+
+.A proposito di questa attività
+In ONTAP 9.5 e versioni successive, è possibile attivare AutoSupport e modificarne la configurazione su tutti i nodi del cluster contemporaneamente. Quando un nuovo nodo si unisce al cluster, il nodo eredita automaticamente la configurazione del cluster AutoSupport. Non è necessario aggiornare la configurazione su ciascun nodo separatamente.
+
+[NOTE]
+====
+A partire da ONTAP 9.5, lo scopo di `system node autosupport modify` il comando è esteso a tutto il cluster. La configurazione AutoSupport viene modificata su tutti i nodi del cluster, anche quando `-node` opzione specificata. L'opzione viene ignorata, ma è stata mantenuta per la compatibilità con le versioni precedenti di CLI.
+
+In ONTAP 9.4 e versioni precedenti, l'ambito del comando "system node AutoSupport modify" è specifico per il nodo. La configurazione AutoSupport deve essere modificata su ciascun nodo del cluster.
+
+====
+Per impostazione predefinita, AutoSupport è attivato su ciascun nodo per inviare messaggi al supporto tecnico utilizzando il protocollo di trasporto HTTPS.
+
+.Fasi
+. Assicurarsi che AutoSupport sia attivato:
++
+[listing]
+----
+system node autosupport modify -state enable
+----
+. Se si desidera che il supporto tecnico riceva messaggi AutoSupport, utilizzare il seguente comando:
++
+[listing]
+----
+system node autosupport modify -support enable
+----
++
+È necessario attivare questa opzione se si desidera attivare AutoSupport per lavorare con AutoSupport OnDemand o se si desidera caricare file di grandi dimensioni, come i file di archiviazione delle performance e dei core dump, sul supporto tecnico o su un URL specificato.
+
+. Se il supporto tecnico è abilitato a ricevere messaggi AutoSupport, specificare il protocollo di trasporto da utilizzare per i messaggi.
++
+È possibile scegliere tra le seguenti opzioni:
+
++
+|===
+
+
+| Se si desidera... | Quindi, impostare i seguenti parametri di `system node autosupport modify` comando... 
+
+
+ a| 
+Utilizzare il protocollo HTTPS predefinito
+ a| 
+.. Impostare `-transport` a. `https`.
+.. Se si utilizza un proxy, impostare `-proxy-url` All'URL del proxy. Questa configurazione supporta la comunicazione con AutoSupport OnDemand e il caricamento di file di grandi dimensioni.
+
+
+
+
+ a| 
+Utilizza HTTP preferito rispetto a SMTP
+ a| 
+.. Impostare `-transport` a. `http`.
+.. Se si utilizza un proxy, impostare `-proxy-url` All'URL del proxy. Questa configurazione supporta il caricamento di file di grandi dimensioni, ma non AutoSupport OnDemand.
+
+
+
+
+ a| 
+USA SMTP
+ a| 
+Impostare `-transport` a. `smtp`.
+
+Questa configurazione non supporta AutoSupport OnDemand o upload di file di grandi dimensioni.
+
+|===
+. Se si desidera che l'organizzazione di supporto interna o un partner di supporto riceva messaggi AutoSupport, eseguire le seguenti operazioni:
++
+.. Identificare i destinatari dell'organizzazione impostando i seguenti parametri di `system node autosupport modify` comando:
++
+|===
+
+
+| Imposta questo parametro... | A questo... 
+
+
+ a| 
+`-to`
+ a| 
+Fino a cinque indirizzi e-mail o liste di distribuzione separati da virgole nell'organizzazione di supporto interna che riceveranno messaggi AutoSupport chiave
+
+
+
+ a| 
+`-noteto`
+ a| 
+Fino a cinque indirizzi e-mail o liste di distribuzione separati da virgole nell'organizzazione di supporto interna che riceveranno una versione abbreviata dei messaggi AutoSupport chiave progettati per telefoni cellulari e altri dispositivi mobili
+
+
+
+ a| 
+`-partner-address`
+ a| 
+Fino a cinque indirizzi e-mail o liste di distribuzione separati da virgole nell'organizzazione del partner di supporto che riceveranno tutti i messaggi AutoSupport
+
+|===
+.. Verificare che gli indirizzi siano configurati correttamente elencando le destinazioni utilizzando `system node autosupport destinations show` comando.
+
+
+. Se si inviano messaggi all'organizzazione di supporto interna o si sceglie il trasporto SMTP per i messaggi all'assistenza tecnica, configurare SMTP impostando i seguenti parametri di `system node autosupport modify` comando:
++
+** Impostare `-mail-hosts` a uno o più mail host, separati da virgole.
++
+È possibile impostare un massimo di cinque.
+
++
+È possibile configurare un valore di porta per ciascun host di posta specificando i due punti e il numero di porta dopo il nome host della posta: Ad esempio, `mymailhost.example.com:5678`, dove 5678 è la porta per l'host di posta.
+
+** Impostare `-from` All'indirizzo e-mail che invia il messaggio AutoSupport.
+
+
+. Configurare il DNS.
+. (Facoltativo) Aggiungi opzioni di comando se si desidera modificare impostazioni specifiche:
++
+|===
+
+
+| Se si desidera eseguire questa operazione... | Quindi, impostare i seguenti parametri di `system node autosupport modify` comando... 
+
+
+ a| 
+Nascondere i dati privati rimuovendo, mascherando o codificando i dati sensibili nei messaggi
+ a| 
+Impostare `-remove-private-data` a. `true`. Se si cambia da `false` a. `true`, Vengono cancellati tutti i file della cronologia AutoSupport e tutti i file associati.
+
+
+
+ a| 
+Interrompere l'invio dei dati relativi alle prestazioni nei messaggi AutoSupport periodici
+ a| 
+Impostare `-perf` a. `false`.
+
+|===
+. Controllare la configurazione generale utilizzando `system node autosupport show` con il `-node` parametro.
+. Verificare il funzionamento di AutoSupport utilizzando `system node autosupport check show` comando.
++
+Se vengono segnalati problemi, utilizzare `system node autosupport check show-details` per visualizzare ulteriori informazioni.
+
+. Verifica dell'invio e della ricezione dei messaggi AutoSupport:
++
+.. Utilizzare `system node autosupport invoke` con il `-type` parametro impostato su `test`.
++
+[listing]
+----
+cluster1::> system node autosupport invoke -type test -node node1
+----
+.. Conferma che NetApp sta ricevendo i tuoi messaggi AutoSupport:
++
+la cronologia AutoSupport del nodo di sistema mostra -node local
+
++
+Lo stato dell'ultimo messaggio AutoSupport in uscita dovrebbe cambiare in `sent-successful` per tutte le destinazioni del protocollo appropriate.
+
+.. (Facoltativo) verificare che il messaggio AutoSupport venga inviato all'organizzazione di supporto interna o al partner di supporto controllando l'indirizzo e-mail di qualsiasi indirizzo configurato per `-to`, `-noteto`, o. `-partner-address` parametri di `system node autosupport modify` comando.
+
+
+

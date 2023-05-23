@@ -1,0 +1,76 @@
+---
+permalink: upgrade/task_preparing_snapmirror_relationships_for_a_nondisruptive_upgrade_or_downgrade.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, snapmirror, operations, quisce 
+summary: Si consiglia di interrompere le operazioni di SnapMirror prima di eseguire un aggiornamento senza interruzioni di ONTAP. 
+---
+= Preparare le relazioni di SnapMirror per un aggiornamento senza interruzioni
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Si consiglia di interrompere le operazioni di SnapMirror prima di eseguire un aggiornamento senza interruzioni di ONTAP.
+
+.Fasi
+. Utilizzare `snapmirror show` Per determinare il percorso di destinazione per ciascuna relazione SnapMirror.
+. Per ogni volume di destinazione, sospendere i trasferimenti futuri di SnapMirror:
++
+`snapmirror quiesce -destination-path destination`
+
++
+Se non ci sono trasferimenti attivi per la relazione SnapMirror, questo comando imposta il suo stato su "Quiesced". Se la relazione ha trasferimenti attivi, lo stato viene impostato su "Quiescing" (Quiescing) fino al completamento del trasferimento, quindi lo stato diventa "Quiesced" (Quiesced).
+
++
+Questo esempio mette in pausa i trasferimenti che coinvolgono il volume di destinazione "vol1" da "SVMvs0.example.com":
+
++
+[listing]
+----
+cluster1::> snapmirror quiesce -destination-path vs0.example.com:vol1
+----
+. Verificare che tutte le relazioni di SnapMirror siano state rinunciate:
++
+`snapmirror show -status !Quiesced`
+
++
+Questo comando visualizza tutte le relazioni SnapMirror _non_ rinunciate.
+
++
+Questo esempio mostra che tutte le relazioni di SnapMirror sono state rinunciate:
+
++
+[listing]
+----
+cluster1::> snapmirror show -status !Quiesced
+There are no entries matching your query.
+----
+. Se le relazioni SnapMirror sono attualmente in fase di trasferimento, eseguire una delle seguenti operazioni:
++
+[cols="2*"]
+|===
+| Opzione | Descrizione 
+
+
+ a| 
+Attendere il completamento dei trasferimenti prima di eseguire l'aggiornamento del ONTAP.
+ a| 
+Al termine di ogni trasferimento, la relazione passa allo stato "Quiesced".
+
+
+
+ a| 
+Interrompere i trasferimenti:
+
+`snapmirror abort -destination-path destination -h`
+
+*Nota:* è necessario utilizzare `-foreground true` parametro se si desidera interrompere i trasferimenti mirror di load-sharing.
+ a| 
+Questo comando interrompe il trasferimento di SnapMirror e ripristina il volume di destinazione sull'ultima copia Snapshot trasferita correttamente. La relazione viene impostata sullo stato "Quiesced" (Quiesced).
+
+|===
+
+
+.Informazioni correlate
+xref:concept_upgrade_requirements_for_snapmirror.adoc[Requisiti di aggiornamento per SnapMirror]

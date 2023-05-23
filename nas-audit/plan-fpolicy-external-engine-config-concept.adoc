@@ -1,0 +1,321 @@
+---
+permalink: nas-audit/plan-fpolicy-external-engine-config-concept.html 
+sidebar: sidebar 
+keywords: plan, fpolicy, external engine, configuration 
+summary: 'Prima di configurare il motore esterno FPolicy (motore esterno), è necessario comprendere il significato della creazione di un motore esterno e quali parametri di configurazione sono disponibili. Queste informazioni consentono di determinare i valori da impostare per ciascun parametro.' 
+---
+= Pianificare la configurazione del motore esterno FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di configurare il motore esterno FPolicy (motore esterno), è necessario comprendere il significato della creazione di un motore esterno e quali parametri di configurazione sono disponibili. Queste informazioni consentono di determinare i valori da impostare per ciascun parametro.
+
+
+
+== Informazioni definite durante la creazione del motore esterno FPolicy
+
+La configurazione del motore esterno definisce le informazioni necessarie a FPolicy per effettuare e gestire le connessioni ai server FPolicy esterni (server FPolicy), incluse le seguenti informazioni:
+
+* Nome SVM
+* Nome del motore
+* Gli indirizzi IP dei server FPolicy primario e secondario e il numero di porta TCP da utilizzare per la connessione ai server FPolicy
+* Se il tipo di motore è asincrono o sincrono
+* Come autenticare la connessione tra il nodo e il server FPolicy
++
+Se si sceglie di configurare l'autenticazione SSL reciproca, è necessario configurare anche i parametri che forniscono le informazioni del certificato SSL.
+
+* Come gestire la connessione utilizzando diverse impostazioni avanzate dei privilegi
++
+Sono inclusi parametri che definiscono valori di timeout, valori di tentativi, valori di mantenimento, valori di richiesta massimi, valori di dimensione buffer inviati e ricevuti e valori di timeout della sessione.
+
+
+
+Il `vserver fpolicy policy external-engine create` Il comando viene utilizzato per creare un motore esterno FPolicy.
+
+
+
+== Quali sono i parametri esterni di base del motore
+
+È possibile utilizzare la seguente tabella dei parametri di configurazione di base di FPolicy per pianificare la configurazione:
+
+[cols="70,30"]
+|===
+
+
+| Tipo di informazione | Opzione 
+
+
+ a| 
+_SVM_
+
+Specifica il nome SVM che si desidera associare a questo motore esterno.
+
+Ogni configurazione FPolicy viene definita all'interno di una singola SVM. Il motore esterno, l'evento del criterio, l'ambito del criterio e il criterio che si combinano insieme per creare una configurazione del criterio FPolicy devono essere tutti associati alla stessa SVM.
+ a| 
+`-vserver` `vserver_name`
+
+
+
+ a| 
+_Nome motore_
+
+Specifica il nome da assegnare alla configurazione esterna del motore. È necessario specificare il nome del motore esterno in un secondo momento quando si crea il criterio FPolicy. In questo modo, il motore esterno viene associato alla policy.
+
+Il nome può contenere fino a 256 caratteri.
+
+[NOTE]
+====
+Se si configura il nome del motore esterno in una configurazione di disaster recovery MetroCluster o SVM, il nome deve essere composto da un massimo di 200 caratteri.
+
+====
+Il nome può contenere qualsiasi combinazione dei seguenti caratteri ASCII:
+
+* `a` attraverso `z`
+* `A` attraverso `Z`
+* `0` attraverso `9`
+* "`_`", "`-`", and "``"
+
+ a| 
+`-engine-name` `engine_name`
+
+
+
+ a| 
+_Server FPolicy primari_
+
+Specifica i server FPolicy primari a cui il nodo invia le notifiche per un dato criterio FPolicy. Il valore viene specificato come elenco di indirizzi IP delimitato da virgole.
+
+Se viene specificato più di un indirizzo IP del server primario, ogni nodo a cui partecipa SVM crea una connessione di controllo a ogni server FPolicy primario specificato al momento dell'attivazione del criterio. Se si configurano più server FPolicy primari, le notifiche vengono inviate ai server FPolicy in modo round-robin.
+
+Se il motore esterno viene utilizzato in una configurazione di disaster recovery MetroCluster o SVM, è necessario specificare gli indirizzi IP dei server FPolicy nel sito di origine come server primari. Gli indirizzi IP dei server FPolicy nel sito di destinazione devono essere specificati come server secondari.
+ a| 
+`-primary-servers` `IP_address`,...
+
+
+
+ a| 
+_Numero porta_
+
+Specifica il numero di porta del servizio FPolicy.
+ a| 
+`-port` `integer`
+
+
+
+ a| 
+_Server FPolicy secondari_
+
+Specifica i server FPolicy secondari a cui inviare gli eventi di accesso ai file per un determinato criterio FPolicy. Il valore viene specificato come elenco di indirizzi IP delimitato da virgole.
+
+I server secondari vengono utilizzati solo quando nessuno dei server primari è raggiungibile. Le connessioni ai server secondari vengono stabilite quando il criterio è attivato, ma le notifiche vengono inviate ai server secondari solo se nessuno dei server primari è raggiungibile. Se si configurano più server secondari, le notifiche vengono inviate ai server FPolicy in modo round-robin.
+ a| 
+`-secondary-servers` `IP_address`,...
+
+
+
+ a| 
+_Tipo di motore esterno_
+
+Specifica se il motore esterno funziona in modalità sincrona o asincrona. Per impostazione predefinita, FPolicy opera in modalità sincrona.
+
+Quando è impostato su `synchronous`, L'elaborazione della richiesta di file invia una notifica al server FPolicy, ma non continua fino a quando non riceve una risposta dal server FPolicy. A questo punto, il flusso della richiesta continua o l'elaborazione comporta un rifiuto, a seconda che la risposta dal server FPolicy consenta l'azione richiesta.
+
+Quando è impostato su `asynchronous`, L'elaborazione della richiesta di file invia una notifica al server FPolicy, quindi continua.
+ a| 
+`-extern-engine-type` `external_engine_type` Il valore di questo parametro può essere uno dei seguenti:
+
+* `synchronous`
+* `asynchronous`
+
+
+
+
+ a| 
+_Opzione SSL per la comunicazione con il server FPolicy_
+
+Specifica l'opzione SSL per la comunicazione con il server FPolicy. Questo è un parametro obbligatorio. È possibile scegliere una delle opzioni in base alle seguenti informazioni:
+
+* Quando è impostato su `no-auth`, non viene eseguita alcuna autenticazione.
++
+Il collegamento di comunicazione viene stabilito tramite TCP.
+
+* Quando è impostato su `server-auth`, SVM autentica il server FPolicy utilizzando l'autenticazione del server SSL.
+* Quando è impostato su `mutual-auth`, L'autenticazione reciproca avviene tra SVM e il server FPolicy; SVM autentica il server FPolicy e il server FPolicy autentica SVM.
++
+Se si sceglie di configurare l'autenticazione SSL reciproca, è necessario configurare anche `-certificate-common-name`, `-certificate-serial`, e. `-certifcate-ca` parametri.
+
+
+ a| 
+`-ssl-option` {`no-auth`|`server-auth`|`mutual-auth`}
+
+
+
+ a| 
+_FQDN certificato o nome comune personalizzato_
+
+Specifica il nome del certificato utilizzato se è configurata l'autenticazione SSL tra SVM e il server FPolicy. È possibile specificare il nome del certificato come FQDN o come nome comune personalizzato.
+
+Se si specifica `mutual-auth` per `-ssl-option` specificare un valore per `-certificate-common-name` parametro.
+ a| 
+`-certificate-common-name` `text`
+
+
+
+ a| 
+_Numero di serie del certificato_
+
+Specifica il numero di serie del certificato utilizzato per l'autenticazione se è configurata l'autenticazione SSL tra SVM e il server FPolicy.
+
+Se si specifica `mutual-auth` per `-ssl-option` specificare un valore per `-certificate-serial` parametro.
+ a| 
+`-certificate-serial` `text`
+
+
+
+ a| 
+_Autorità di certificazione_
+
+Specifica il nome della CA del certificato utilizzato per l'autenticazione se è configurata l'autenticazione SSL tra SVM e il server FPolicy.
+
+Se si specifica `mutual-auth` per `-ssl-option` specificare un valore per `-certificate-ca` parametro.
+ a| 
+`-certificate-ca` `text`
+
+|===
+
+
+== Quali sono le opzioni avanzate dei motori esterni
+
+È possibile utilizzare la seguente tabella di parametri di configurazione FPolicy avanzati quando si prevede di personalizzare la configurazione con parametri avanzati. Questi parametri vengono utilizzati per modificare il comportamento delle comunicazioni tra i nodi del cluster e i server FPolicy:
+
+[cols="70,30"]
+|===
+
+
+| Tipo di informazione | Opzione 
+
+
+ a| 
+_Timeout per l'annullamento di una richiesta_
+
+Specifica l'intervallo di tempo in ore (`h`), minuti (`m`), o secondi (`s`) Che il nodo attende una risposta dal server FPolicy.
+
+Se l'intervallo di timeout viene superato, il nodo invia una richiesta di annullamento al server FPolicy. Il nodo invia quindi la notifica a un server FPolicy alternativo. Questo timeout consente di gestire un server FPolicy che non risponde, migliorando la risposta del client SMB/NFS. Inoltre, l'annullamento delle richieste dopo un periodo di timeout può aiutare a rilasciare le risorse di sistema perché la richiesta di notifica viene spostata da un server FPolicy inattivo/non funzionante a un server FPolicy alternativo.
+
+L'intervallo per questo valore è `0` attraverso `100`. Se il valore è impostato su `0`, L'opzione è disattivata e i messaggi di richiesta di annullamento non vengono inviati al server FPolicy. L'impostazione predefinita è `20s`.
+ a| 
+`-reqs-cancel-timeout` `integer`[h|m|s]
+
+
+
+ a| 
+_Timeout per l'interruzione di una richiesta_
+
+Specifica il timeout in ore (`h`), minuti (`m`), o secondi (`s`) per interrompere una richiesta.
+
+L'intervallo per questo valore è `0` attraverso `200`.
+ a| 
+`-reqs-abort-timeout` `` `integer`[h|m|s]
+
+
+
+ a| 
+_Intervallo per l'invio delle richieste di stato_
+
+Specifica l'intervallo in ore (`h`), minuti (`m`), o secondi (`s`) Dopo di che viene inviata una richiesta di stato al server FPolicy.
+
+L'intervallo per questo valore è `0` attraverso `50`. Se il valore è impostato su `0`, L'opzione è disattivata e i messaggi di richiesta di stato non vengono inviati al server FPolicy. L'impostazione predefinita è `10s`.
+ a| 
+`-status-req-interval` `integer`[h|m|s]
+
+
+
+ a| 
+_Numero massimo di richieste in sospeso sul server FPolicy_
+
+Specifica il numero massimo di richieste in sospeso che è possibile mettere in coda sul server FPolicy.
+
+L'intervallo per questo valore è `1` attraverso `10000`. L'impostazione predefinita è `500`.
+ a| 
+`-max-server-reqs` `integer`
+
+
+
+ a| 
+_Timeout per la disconnessione di un server FPolicy che non risponde_
+
+Specifica l'intervallo di tempo in ore (`h`), minuti (`m`), o secondi (`s`) Dopo di che la connessione al server FPolicy viene interrotta.
+
+La connessione viene interrotta dopo il periodo di timeout solo se la coda del server FPolicy contiene il numero massimo consentito di richieste e non viene ricevuta alcuna risposta entro il periodo di timeout. Il numero massimo consentito di richieste è `50` (impostazione predefinita) o il numero specificato da `max-server-reqs-` parametro.
+
+L'intervallo per questo valore è `1` attraverso `100`. L'impostazione predefinita è `60s`.
+ a| 
+`-server-progress-timeout` `integer`[h|m|s]
+
+
+
+ a| 
+_Intervallo per l'invio di messaggi keep-alive al server FPolicy_
+
+Specifica l'intervallo di tempo in ore (`h`), minuti (`m`), o secondi (`s`) In cui i messaggi keep-alive vengono inviati al server FPolicy.
+
+I messaggi keep-alive rilevano connessioni half-open.
+
+L'intervallo per questo valore è `10` attraverso `600`. Se il valore è impostato su `0`, L'opzione è disattivata e non è possibile inviare messaggi keep-alive ai server FPolicy. L'impostazione predefinita è `120s`.
+ a| 
+`-keep-alive-interval-` `integer`[h|m|s]
+
+
+
+ a| 
+_Numero massimo di tentativi di riconnessione_
+
+Specifica il numero massimo di tentativi di riconnessione da parte di SVM al server FPolicy dopo l'interruzione della connessione.
+
+L'intervallo per questo valore è `0` attraverso `20`. L'impostazione predefinita è `5`.
+ a| 
+`-max-connection-retries` `integer`
+
+
+
+ a| 
+_Dimensione buffer di ricezione_
+
+Specifica la dimensione del buffer di ricezione del socket connesso per il server FPolicy.
+
+Il valore predefinito è 256 kilobyte (Kb). Quando il valore è impostato su 0, la dimensione del buffer di ricezione viene impostata su un valore definito dal sistema.
+
+Ad esempio, se la dimensione predefinita del buffer di ricezione del socket è 65536 byte, impostando il valore sintonizzabile su 0, la dimensione del buffer del socket viene impostata su 65536 byte. È possibile utilizzare qualsiasi valore non predefinito per impostare la dimensione (in byte) del buffer di ricezione.
+ a| 
+`-recv-buffer-size` `integer`
+
+
+
+ a| 
+_Invia dimensione buffer_
+
+Specifica la dimensione del buffer di invio del socket connesso per il server FPolicy.
+
+Il valore predefinito è 256 kilobyte (Kb). Quando il valore è impostato su 0, la dimensione del buffer di invio viene impostata su un valore definito dal sistema.
+
+Ad esempio, se la dimensione predefinita del buffer di invio del socket è impostata su 65536 byte, impostando il valore sintonizzabile su 0, la dimensione del buffer del socket viene impostata su 65536 byte. È possibile utilizzare qualsiasi valore non predefinito per impostare la dimensione (in byte) del buffer di invio.
+ a| 
+`-send-buffer-size` `integer`
+
+
+
+ a| 
+_Timeout per l'eliminazione di un ID sessione durante la riconnessione_
+
+Specifica l'intervallo in ore (`h`), minuti (`m`), o secondi (`s`) Dopo di che viene inviato un nuovo ID di sessione al server FPolicy durante i tentativi di riconnessione.
+
+Se la connessione tra il controller di storage e il server FPolicy viene interrotta e la riconnessione viene effettuata all'interno di `-session-timeout` Intervallo, il vecchio ID sessione viene inviato al server FPolicy in modo che possa inviare le risposte per le vecchie notifiche.
+
+Il valore predefinito è impostato su 10 secondi.
+ a| 
+`-session-timeout` [.``integer``h][``integer``m][``integer``s]
+
+|===

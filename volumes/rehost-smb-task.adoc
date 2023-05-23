@@ -1,0 +1,84 @@
+---
+permalink: volumes/rehost-smb-task.html 
+sidebar: sidebar 
+keywords: rehost, cifs volumes 
+summary: È possibile eseguire il rehosting dei volumi che servono i dati tramite il protocollo SMB. Dopo aver eseguito il rehosting del volume CIFS, per continuare ad accedere ai dati tramite il protocollo SMB, è necessario configurare manualmente i criteri e le regole associate. 
+---
+= Eseguire nuovamente l'hosting dei volumi CIFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile eseguire il rehosting dei volumi che servono i dati tramite il protocollo SMB. Dopo aver eseguito il rehosting del volume CIFS, per continuare ad accedere ai dati tramite il protocollo SMB, è necessario configurare manualmente i criteri e le regole associate.
+
+.Di cosa hai bisogno
+* Il volume deve essere online.
+* Le operazioni di gestione dei volumi, ad esempio lo spostamento del volume o del LUN, non devono essere in esecuzione.
+* L'accesso ai dati al volume che viene reospitato deve essere interrotto.
+* La configurazione ns-switch e name Services della SVM di destinazione deve essere configurata per supportare l'accesso ai dati del volume di re-hosting.
+* La SVM di origine e la SVM di destinazione devono avere lo stesso dominio Active Directory e realmDNS.
+* L'ID utente e l'ID gruppo del volume devono essere disponibili nella SVM di destinazione o modificati nel volume di hosting.
++
+[NOTE]
+====
+Se sono configurati utenti e gruppi locali e se sono presenti file e directory su quel volume con autorizzazioni impostate per tali utenti o gruppi, queste autorizzazioni non sono più effettive.
+
+====
+
+
+.A proposito di questa attività
+* Il rehosting è un'operazione che interrompe.
+* Se l'operazione di rehosting non riesce, potrebbe essere necessario riconfigurare i criteri del volume e le regole associate sul volume di origine.
+* Se i domini Active Directory SVM di origine e SVM di destinazione differiscono, l'accesso agli oggetti sul volume potrebbe essere perso.
+* Quando la SVM di origine dispone di utenti e gruppi locali, le autorizzazioni per i file e le directory (ACL) impostati non sono più effettive dopo l'operazione di rehosting del volume.
++
+Lo stesso vale per gli ACL di controllo (SACL)
+
+* Dopo l'operazione di rehosting, le seguenti policy, regole dei criteri e configurazioni del volume vengono perse dal volume di origine e devono essere riconfigurate manualmente sul volume rehosted:
++
+** Policy di esportazione di volumi e qtree
+** Policy antivirus
+** Policy di efficienza dei volumi
+** Policy sulla qualità del servizio (QoS)
+** Policy di Snapshot
+** Regole di quota
+** criteri e regole di esportazione della configurazione di ns-switch e name services
+** ID utente e gruppo
+
+
+
+
+.Fasi
+. Registrare le informazioni sulle condivisioni CIFS per evitare di perdere le informazioni sulle condivisioni CIFS in caso di errore dell'operazione di rehost del volume.
+. Smontare il volume dal volume padre:
++
+`volume unmount`
+
+. Passare al livello di privilegio avanzato:
++
+`set -privilege advanced`
+
+. Eseguire nuovamente l'hosting del volume sulla SVM di destinazione:
++
+`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+
+. Montare il volume sotto il percorso di giunzione appropriato nella SVM di destinazione:
++
+`volume mount`
+
+. Creare condivisioni CIFS per il volume rehosted:
++
+`vserver cifs share create`
+
+. Se i domini DNS differiscono tra SVM di origine e SVM di destinazione, creare nuovi utenti e gruppi.
+. Aggiornare il client CIFS con i nuovi LIF SVM di destinazione e il percorso di giunzione per il volume rehosted.
+
+
+.Al termine
+È necessario riconfigurare manualmente i criteri e le regole associate sul volume rehosted.
+
+https://docs.netapp.com/us-en/ontap-sm-classic/smb-config/index.html["Configurazione SMB"]
+
+https://docs.netapp.com/us-en/ontap-sm-classic/nas-multiprotocol-config/index.html["Configurazione multiprotocollo SMB e NFS"]

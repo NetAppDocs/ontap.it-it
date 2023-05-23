@@ -1,0 +1,79 @@
+---
+permalink: smb-hyper-v-sql/verify-continuously-available-share-config-task.html 
+sidebar: sidebar 
+keywords: verify, continuously, available, smb, share, configuration, hyper, v, sql, server, nondisruptive, application 
+summary: Per supportare operazioni senza interruzioni, le condivisioni SMB di Hyper-V e SQL Server devono essere configurate come condivisioni a disponibilità continua. Inoltre, è necessario controllare alcune altre impostazioni di condivisione. È necessario verificare che le condivisioni siano configurate correttamente per fornire operazioni senza interruzioni per i server di applicazioni in caso di eventi di interruzione pianificati o non pianificati. 
+---
+= Verificare la configurazione della condivisione SMB continuamente disponibile
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per supportare operazioni senza interruzioni, le condivisioni SMB di Hyper-V e SQL Server devono essere configurate come condivisioni a disponibilità continua. Inoltre, è necessario controllare alcune altre impostazioni di condivisione. È necessario verificare che le condivisioni siano configurate correttamente per fornire operazioni senza interruzioni per i server di applicazioni in caso di eventi di interruzione pianificati o non pianificati.
+
+.A proposito di questa attività
+Verificare che i due seguenti parametri di condivisione siano impostati correttamente:
+
+* Il `-offline-files` il parametro è impostato su uno dei due `manual` (impostazione predefinita) o. `none`.
+* I link simbolici devono essere disattivati.
+
+
+Per operazioni corrette senza interruzioni, è necessario impostare le seguenti proprietà di condivisione:
+
+* `continuously-available`
+* `oplocks`
+
+
+Le seguenti proprietà di condivisione non devono essere impostate:
+
+* `homedirectory`
+* `attributecache`
+* `branchcache`
+* `access-based-enumeration`
+
+
+.Fasi
+. Verificare che i file offline siano impostati su `manual` oppure `disabled` e che i link simbolici sono disabilitati:
++
+`*vserver cifs shares show -vserver _vserver_name_*`
+
+. Verificare che le condivisioni SMB siano configurate per la disponibilità continua:
++
+`*vserver cifs shares properties show -vserver _vserver_name_*`
+
+
+
+.Esempi
+Nell'esempio seguente viene visualizzata l'impostazione di condivisione per una condivisione denominata "`share1`" su una macchina virtuale di storage (SVM, precedentemente nota come Vserver) vs1. I file offline sono impostati su `manual` i collegamenti simbolici e sono disattivati (indicati da un trattino in `Symlink Properties` output di campo):
+
+[listing]
+----
+cluster1::> vserver cifs share show -vserver vs1 -share-name share1
+                      Vserver: vs1
+                        Share: share1
+     CIFS Server NetBIOS Name: VS1
+                         Path: /data/share1
+             Share Properties: oplocks
+                               continuously-available
+           Symlink Properties: -
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+----
+Nell'esempio seguente vengono visualizzate le proprietà di condivisione di una condivisione denominata "`share1`" su SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs share properties show -vserver vs1 -share-name share1
+Vserver    Share   Properties
+---------  ------  ----------
+vs1        share1  oplocks
+                   continuously-available
+----

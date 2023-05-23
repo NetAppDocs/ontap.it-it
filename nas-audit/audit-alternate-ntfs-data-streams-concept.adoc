@@ -1,0 +1,91 @@
+---
+permalink: nas-audit/audit-alternate-ntfs-data-streams-concept.html 
+sidebar: sidebar 
+keywords: considerations, audit, alternate, ntfs data streams 
+summary: È necessario tenere presente alcune considerazioni durante il controllo dei file con flussi di dati alternativi NTFS. 
+---
+= Considerazioni per il controllo di flussi di dati NTFS alternativi
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario tenere presente alcune considerazioni durante il controllo dei file con flussi di dati alternativi NTFS.
+
+La posizione di un oggetto sottoposto a audit viene registrata in un record di evento utilizzando due tag, l' `ObjectName` tag (il percorso) e il `HandleID` tag (l'impugnatura). Per identificare correttamente le richieste di flusso registrate, è necessario conoscere i record ONTAP presenti in questi campi per i flussi di dati alternativi NTFS:
+
+* ID EVTX: 4656 eventi (aprire e creare eventi di audit)
++
+** Il percorso del flusso di dati alternativo viene registrato in `ObjectName` tag.
+** L'handle del flusso di dati alternativo viene registrato in `HandleID` tag.
+
+
+* ID EVTX: 4663 eventi (tutti gli altri eventi di audit, come lettura, scrittura, getattr e così via)
++
+** Il percorso del file di base, non del flusso di dati alternativo, viene registrato in `ObjectName` tag.
+** L'handle del flusso di dati alternativo viene registrato in `HandleID` tag.
+
+
+
+
+.Esempio
+Nell'esempio seguente viene illustrato come identificare L'ID EVTX: 4663 eventi per flussi di dati alternativi che utilizzano `HandleID` tag. Anche se il `ObjectName` il tag (percorso) registrato nell'evento di controllo in lettura si trova nel percorso del file di base, il `HandleID` il tag può essere utilizzato per identificare l'evento come record di audit per il flusso di dati alternativo.
+
+I nomi dei file di streaming hanno la forma `base_file_name:stream_name`. In questo esempio, il `dir1` la directory contiene un file di base con un flusso di dati alternativo con i seguenti percorsi:
+
+[listing]
+----
+
+/dir1/file1.txt
+/dir1/file1.txt:stream1
+----
+[NOTE]
+====
+L'output nel seguente esempio di evento viene troncato come indicato; l'output non visualizza tutti i tag di output disponibili per gli eventi.
+
+====
+Per un ID EVTX 4656 (evento di audit aperto), l'output del record di audit per il flusso di dati alternativo registra il nome del flusso di dati alternativo in `ObjectName` tag:
+
+[listing]
+----
+
+- <Event>
+- <System>
+  <Provider Name="Netapp-Security-Auditing" />
+  <EventID>4656</EventID>
+  <EventName>Open Object</EventName>
+  [...]
+  </System>
+- <EventData>
+  [...]
+  **<Data Name="ObjectType"\>Stream</Data\>
+  <Data Name="HandleID"\>00000000000401;00;000001e4;00176767</Data\>
+  <Data Name="ObjectName"\>\(data1\);/dir1/file1.txt:stream1</Data\>          **
+  [...]
+  </EventData>
+  </Event>
+- <Event>
+----
+Per un ID EVTX 4663 (evento di audit in lettura), l'output del record di audit per lo stesso flusso di dati alternativo registra il nome del file di base in `ObjectName` tag; tuttavia, l'handle in `HandleID` tag è l'handle alternativo del flusso di dati e può essere utilizzato per correlare questo evento con il flusso di dati alternativo:
+
+[listing]
+----
+
+- <Event>
+- <System>
+  <Provider Name="Netapp-Security-Auditing" />
+  <EventID>4663</EventID>
+  <EventName>Read Object</EventName>
+  [...]
+  </System>
+- <EventData>
+  [...]
+  **<Data Name="ObjectType"\>Stream</Data\>
+  <Data Name="HandleID"\>00000000000401;00;000001e4;00176767</Data\>
+  <Data Name="ObjectName"\>\(data1\);/dir1/file1.txt</Data\> **
+  [...]
+  </EventData>
+  </Event>
+- <Event>
+----

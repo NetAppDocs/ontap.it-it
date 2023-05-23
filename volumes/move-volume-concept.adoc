@@ -1,0 +1,34 @@
+---
+permalink: volumes/move-volume-concept.html 
+sidebar: sidebar 
+keywords: how, move, flexvol, volume, works 
+summary: Conoscere il funzionamento dello spostamento di un volume FlexVol consente di determinare se lo spostamento del volume soddisfa gli accordi sui livelli di servizio e di capire dove si trova lo spostamento di un volume nel processo di spostamento del volume. 
+---
+= Spostare una panoramica del volume FlexVol
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile spostare o copiare volumi per l'utilizzo della capacità, migliorare le performance e soddisfare i service level agreement.
+
+Conoscere il funzionamento dello spostamento di un volume FlexVol consente di determinare se lo spostamento del volume soddisfa gli accordi sui livelli di servizio e di capire dove si trova lo spostamento di un volume nel processo di spostamento del volume.
+
+I volumi FlexVol vengono spostati da un aggregato o nodo a un altro all'interno della stessa macchina virtuale di storage (SVM). Lo spostamento di un volume non interrompe l'accesso del client durante lo spostamento.
+
+Lo spostamento di un volume avviene in più fasi:
+
+* Viene creato un nuovo volume sull'aggregato di destinazione.
+* I dati del volume originale vengono copiati nel nuovo volume.
++
+Durante questo periodo di tempo, il volume originale è intatto e disponibile per l'accesso dei client.
+
+* Al termine del processo di spostamento, l'accesso client viene temporaneamente bloccato.
++
+Durante questo periodo, il sistema esegue una replica finale dal volume di origine al volume di destinazione, scambia le identità dei volumi di origine e di destinazione e modifica il volume di destinazione nel volume di origine.
+
+* Una volta completato lo spostamento, il sistema instrada il traffico client al nuovo volume di origine e ripristina l'accesso al client.
+
+
+Lo spostamento non comporta interruzioni per l'accesso al client, in quanto il tempo in cui l'accesso al client viene bloccato termina prima che i client notino un'interruzione e un timeout. Per impostazione predefinita, l'accesso al client viene bloccato per 35 secondi. Se l'operazione di spostamento del volume non riesce a terminare nel momento in cui l'accesso viene negato, il sistema interrompe questa fase finale dell'operazione di spostamento del volume e consente l'accesso del client. Per impostazione predefinita, il sistema tenta la fase finale tre volte. Dopo il terzo tentativo, il sistema attende un'ora prima di tentare nuovamente la sequenza di fase finale. Il sistema esegue la fase finale dell'operazione di spostamento del volume fino al completamento dello spostamento del volume.

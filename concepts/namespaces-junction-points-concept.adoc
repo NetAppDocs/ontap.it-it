@@ -1,0 +1,36 @@
+---
+permalink: concepts/namespaces-junction-points-concept.html 
+sidebar: sidebar 
+keywords: namespaces, junction points 
+summary: Uno spazio dei nomi NAS è un raggruppamento logico di volumi Uniti in punti di giunzione per creare una singola gerarchia di file system. Un client con autorizzazioni sufficienti può accedere ai file nello spazio dei nomi senza specificare la posizione dei file nello storage. I volumi Junctioned possono risiedere in qualsiasi punto del cluster. 
+---
+= Spazi dei nomi e punti di giunzione
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un _namespace_ NAS è un raggruppamento logico di volumi Uniti in _punti di giunzione_ per creare una singola gerarchia di file system. Un client con autorizzazioni sufficienti può accedere ai file nello spazio dei nomi senza specificare la posizione dei file nello storage. I volumi Junctioned possono risiedere in qualsiasi punto del cluster.
+
+Invece di montare ogni volume contenente un file di interesse, i client NAS montano un NFS _export_ o accedono a una _share._ SMB. L'esportazione o la condivisione rappresenta l'intero namespace o una posizione intermedia all'interno dello spazio dei nomi. Il client accede solo ai volumi montati sotto il proprio access point.
+
+È possibile aggiungere volumi allo spazio dei nomi in base alle esigenze. È possibile creare punti di giunzione direttamente sotto una giunzione di un volume padre o in una directory all'interno di un volume. Il percorso di una giunzione di volume per un volume denominato "`vol3`" potrebbe essere `/vol1/vol2/vol3`, o. `/vol1/dir2/vol3`, o persino `/dir1/dir2/vol3`. Il percorso è chiamato _percorso di giunzione._
+
+Ogni SVM dispone di uno spazio dei nomi univoco. Il volume root SVM è il punto di ingresso della gerarchia dello spazio dei nomi.
+
+[NOTE]
+====
+Per garantire che i dati rimangano disponibili in caso di interruzione o failover di un nodo, è necessario creare una copia _mirror per la condivisione del carico_ per il volume root SVM.
+
+====
+image::../media/namespace-concepts.gif[concetti dello spazio dei nomi]
+
+.Esempio
+Nell'esempio riportato di seguito viene creato un volume denominato "`home4`" situato su SVM vs1 con un percorso di giunzione `/eng/home`:
+
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume home4 -aggregate aggr1 -size 1g -junction-path /eng/home
+[Job 1642] Job succeeded: Successful
+----

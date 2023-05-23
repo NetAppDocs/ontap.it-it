@@ -1,0 +1,53 @@
+---
+permalink: smb-admin/access-snapshot-directories-clients-smb2-concept.html 
+sidebar: sidebar 
+keywords: method, access, snapshot, directory, windows, client, smb, data, store, copies, copy, how to access the snapshot directory from windows clients using smb 2.x 
+summary: Il metodo utilizzato per accedere alla directory ~snapshot dai client Windows che utilizzano SMB 2.x differisce dal metodo utilizzato per SMB 1.0. È necessario comprendere come accedere alla directory ~snapshot quando si utilizzano connessioni SMB 2.x per accedere correttamente ai dati memorizzati nelle copie Snapshot. 
+---
+= Accedere alla directory ~snapshot dai client Windows utilizzando SMB 2.x.
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il metodo utilizzato per accedere a. `~snapshot` La directory dei client Windows che utilizzano SMB 2.x differisce dal metodo utilizzato per SMB 1.0. È necessario conoscere le modalità di accesso a `~snapshot` Directory quando si utilizzano connessioni SMB 2.x per accedere correttamente ai dati memorizzati nelle copie Snapshot.
+
+L'amministratore di SVM controlla se gli utenti sui client Windows possono visualizzare e accedere a. `~snapshot` directory su una condivisione attivando o disattivando `showsnapshot` condividere la proprietà utilizzando i comandi delle famiglie di proprietà di condivisione di vserver cifs.
+
+Quando il `showsnapshot` La proprietà Share è disattivata, un utente su un client Windows che utilizza SMB 2.x non può visualizzare `~snapshot` E non possono accedere alle copie Snapshot in `~snapshot` directory, anche quando si immette manualmente il percorso di `~snapshot` Directory o a copie Snapshot specifiche all'interno della directory.
+
+Quando il `showsnapshot` La proprietà Share è attivata, un utente su un client Windows che utilizza SMB 2.x non può ancora visualizzare `~snapshot` directory nella directory principale della condivisione o all'interno di qualsiasi giunzione o directory sotto la directory principale della condivisione. Tuttavia, dopo la connessione a una condivisione, l'utente può accedere a nascosto `~snapshot` directory aggiungendo manualmente `\~snapshot` alla fine del percorso di condivisione. Il nascosto `~snapshot` la directory è accessibile da due punti di ingresso:
+
+* Alla radice della condivisione
+* In ogni punto di giunzione nello spazio di condivisione
+
+
+Il nascosto `~snapshot` la directory non è accessibile dalle sottodirectory non di giunzione all'interno della condivisione.
+
+.Esempio
+Con la configurazione illustrata nell'esempio seguente, un utente su un client Windows con una connessione SMB 2.x alla condivisione "`eng`" può accedere a. `~snapshot` directory aggiungendo manualmente `\~snapshot` al percorso di condivisione alla radice della condivisione e in ogni punto di giunzione del percorso. Il nascosto `~snapshot` la directory è accessibile dai tre percorsi seguenti:
+
+* `\\vs1\eng\~snapshot`
+* `\\vs1\eng\projects1\~snapshot`
+* `\\vs1\eng\projects2\~snapshot`
+
+
+[listing]
+----
+cluster1::> volume show -vserver vs1 -fields volume,junction-path
+vserver volume       junction-path
+------- ------------ ----------------------------------------
+vs1     vs1_root      /
+vs1     vs1_vol1      /eng
+vs1     vs1_vol2      /eng/projects1
+vs1     vs1_vol3      /eng/projects2
+
+cluster1::> vserver cifs share show
+Vserver  Share   Path     Properties    Comment  ACL
+-------- ------  -------  ----------    -------- ----------
+vs1      eng     /eng     oplocks       -        Everyone / Full Control
+                          changenotify
+                          browsable
+                          showsnapshot
+----

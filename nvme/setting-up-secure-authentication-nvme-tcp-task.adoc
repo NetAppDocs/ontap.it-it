@@ -1,0 +1,52 @@
+---
+permalink: nvme/setting-up-secure-authentication-nvme-tcp-task.html 
+sidebar: sidebar 
+keywords: manage, nvme, secure, authentication, tcp, dh-hmac-hcap, chap, setting up, set up 
+summary: 'A partire da ONTAP 9.12.1, l"autenticazione sicura e bidirezionale tra un host NVMe e un controller è supportata su NVME-TCP utilizzando il protocollo di autenticazione DH-HMAC-CHAP.' 
+---
+= Impostare l'autenticazione sicura su NVMe/TCP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.12.1, l'autenticazione sicura, bidirezionale e unidirezionale tra un host NVMe e un controller è supportata su NVME/TCP utilizzando il protocollo di autenticazione DH-HMAC-CHAP.
+
+Per impostare l'autenticazione sicura, ciascun host o controller deve essere associato a una chiave DH-HMAC-CHAP, che è una combinazione dell'NQN dell'host o del controller NVMe e di un segreto di autenticazione configurato dall'amministratore. Affinché un host o un controller NVMe possa autenticare il proprio peer, deve conoscere la chiave associata al peer. SHA-256 è la funzione hash predefinita e 2048 bit è il gruppo DH predefinito.
+
+.Fasi
+. Aggiungere l'autenticazione DH-HMAC-CHAP al sottosistema NVMe:
++
+`vserver nvme subsystem host add -vserver _svm_name_ -subsystem _subsystem_ -host-nqn _host_nqn_ -dhchap-host-secret _authentication_host_secret_ -dhchap-controller-secret _authentication_controller_secret_ -dhchap-hash-function {sha-256|sha-512} -dhchap-group {none|2048-bit|3072-bit|4096-bit|6144-bit|8192-bit}`
+
+. Verificare che il protocollo di autenticazione DH-HMAC CHAP sia stato aggiunto all'host:
++
+`vserver nvme subsystem host show`
+
++
+[listing]
+----
+  [ -dhchap-hash-function {sha-256|sha-512} ]  Authentication Hash Function
+  [ -dhchap-group {none|2048-bit|3072-bit|4096-bit|6144-bit|8192-bit} ]
+                                               Authentication Diffie-Hellman
+                                               Group
+  [ -dhchap-mode {none|unidirectional|bidirectional} ]
+                                               Authentication Mode
+
+----
+. Verificare che l'autenticazione CHAP DH-HMAC sia stata eseguita durante la creazione del controller NVMe:
++
+`vserver nvme subsystem controller show`
+
++
+[listing]
+----
+ [ -dhchap-hash-function {sha-256|sha-512} ]  Authentication Hash Function
+ [ -dhchap-group {none|2048-bit|3072-bit|4096-bit|6144-bit|8192-bit} ]
+                                               Authentication Diffie-Hellman
+                                               Group
+ [ -dhchap-mode {none|unidirectional|bidirectional} ]
+                                               Authentication Mode
+----
+

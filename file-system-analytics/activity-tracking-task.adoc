@@ -1,0 +1,116 @@
+---
+permalink: file-system-analytics/activity-tracking-task.html 
+sidebar: sidebar 
+keywords: monitor, volume, ontap, FSA, File System Analytics, 
+summary: Funzione di monitoraggio delle attività che consente di identificare gli oggetti hot e di scaricarli come file CSV. 
+---
+= Attiva monitoraggio attività
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.10.1, l'analisi del file system include una funzione di monitoraggio delle attività che consente di identificare gli oggetti hot e scaricare i dati come file CSV. A partire da ONTAP 9.11.1, il monitoraggio delle attività viene esteso all'ambito SVM. Inoltre, a partire da ONTAP 9.11.1, System Manager dispone di una timeline per il monitoraggio delle attività, che consente di esaminare fino a cinque minuti di dati di monitoraggio delle attività.
+
+Il monitoraggio delle attività consente il monitoraggio in quattro categorie:
+
+* Directory
+* File
+* Client
+* Utenti
+
+
+Per ciascuna categoria monitorata, Activity Tracking visualizza IOPS di lettura, IOPS di scrittura, risultati di lettura e risultati di scrittura. Le query su Activity Tracking si aggiornano ogni 10 - 15 secondi relativi agli hot spot rilevati nel sistema nell'intervallo di cinque secondi precedente.
+
+Le informazioni di monitoraggio dell'attività sono approssimative e la precisione dei dati dipende dalla distribuzione del traffico i/o in entrata.
+
+Quando si visualizza Activity Tracking in System Manager a livello di volume, viene aggiornato attivamente solo il menu del volume espanso. Se la vista di qualsiasi volume viene compressa, non si aggiornerà fino a quando la visualizzazione del volume non viene espansa. È possibile interrompere gli aggiornamenti con il pulsante *Pause Refresh* (Pausa aggiornamento*). I dati delle attività possono essere scaricati in formato CSV che visualizza tutti i dati point-in-time acquisiti per il volume selezionato.
+
+Con la funzione timeline disponibile a partire da ONTAP 9.11.1, è possibile registrare l'attività dell'hotspot su un volume o una SVM, aggiornando continuamente circa ogni cinque secondi e mantenendo i cinque minuti precedenti di dati. I dati della timeline vengono conservati solo per i campi che sono aree visibili della pagina. Se si comprime una categoria di rilevamento o si scorre in modo che la timeline non sia visualizzata, la timeline interrompe la raccolta dei dati. Per impostazione predefinita, le tempistiche sono disattivate e vengono disattivate automaticamente quando ci si allontana dalla scheda Activity (attività).
+
+
+
+== Attiva monitoraggio attività per un singolo volume
+
+È possibile attivare il monitoraggio delle attività con Gestore di sistema di ONTAP o l'interfaccia CLI.
+
+.A proposito di questa attività
+Se si utilizza RBAC con l'API REST di ONTAP o Gestione sistema, sarà necessario creare ruoli personalizzati per gestire l'accesso al monitoraggio delle attività. Vedere xref:role-based-access-control-task.html[Controllo degli accessi in base al ruolo] per questo processo.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Selezionare *Storage > Volumes* (Storage > volumi). Selezionare il volume desiderato. Dal menu dei singoli volumi, selezionare file System (file system), quindi selezionare la scheda Activity (attività).
+. Assicurarsi che l'opzione *Activity Tracking* sia attivata per visualizzare i singoli report su directory, file, client e utenti principali.
+. Per analizzare i dati in modo più approfondito senza aggiornamenti, selezionare *Pause Refresh* (Pausa aggiornamento*). È possibile scaricare i dati per ottenere anche un record CSV del report.
+
+
+--
+.CLI
+--
+.Fasi
+. Attiva monitoraggio attività:
++
+`volume activity-tracking on -vsverver _svm_name_ -volume _volume_name_`
+
+. Controllare se lo stato di monitoraggio attività di un volume è attivato o disattivato con il comando:
++
+`volume activity-tracking show -vsverver _svm_name_ -volume _volume_name_ -state`
+
+. Una volta attivata, utilizzare Gestione di sistema ONTAP o l'API REST ONTAP per visualizzare i dati di monitoraggio delle attività.
+
+
+--
+====
+
+
+== Attiva monitoraggio attività per più volumi
+
+Con System Manager è possibile attivare il monitoraggio delle attività per più volumi contemporaneamente.
+
+.A proposito di questa attività
+Se si utilizza RBAC con l'API REST di ONTAP o Gestione sistema, sarà necessario creare ruoli personalizzati per gestire l'accesso al monitoraggio delle attività. Vedere xref:role-based-access-control-task.html[Controllo degli accessi in base al ruolo] per questo processo.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Abilitare per volumi specifici
+. Selezionare *Storage > Volumes* (Storage > volumi). Selezionare il volume desiderato. Dal menu dei singoli volumi, selezionare file System (file system), quindi selezionare la scheda Activity (attività).
+. Selezionare i volumi su cui si desidera attivare il monitoraggio attività. Nella parte superiore dell'elenco dei volumi, selezionare il pulsante *altre opzioni*. Selezionare *Enable Activity Tracking* (attiva monitoraggio attività).
+. Per visualizzare Activity Tracking a livello di SVM, selezionare la SVM specifica che si desidera visualizzare da *Storage > Volumes*. Accedere alla scheda file System (file system), quindi Activity (attività) per visualizzare i dati dei volumi per i quali è stata attivata l'opzione Activity Tracking (tracciamento attività).
+
+
+.Abilitare per tutti i volumi
+. Selezionare *Storage > Volumes* (Storage > volumi). Selezionare una SVM dal menu.
+. Accedere alla scheda *file System* e scegliere la scheda *More* per attivare il monitoraggio delle attività su tutti i volumi nella SVM.
+
+
+--
+.CLI
+--
+A partire da ONTAP 9.13.1, è possibile attivare il monitoraggio delle attività per più volumi utilizzando l'interfaccia utente di ONTAP.
+
+.Fasi
+. Attiva monitoraggio attività:
++
+`volume activity-tracking on -vserver _svm_name_ -volume [*|!_volume_names_]`
+
++
+Utilizzare `*` Per attivare il monitoraggio delle attività per tutti i volumi sulla VM di storage specificata.
+
++
+Utilizzare `!` Seguito dai nomi dei volumi per abilitare il monitoraggio delle attività per tutti i volumi su SVM, ad eccezione dei volumi denominati.
+
+. Confermare che l'operazione è riuscita:
++
+`volume show -fields activity-tracking-state`
+
+. Una volta attivata, utilizzare Gestione di sistema ONTAP o l'API REST ONTAP per visualizzare i dati di monitoraggio delle attività.
+
+
+--
+====

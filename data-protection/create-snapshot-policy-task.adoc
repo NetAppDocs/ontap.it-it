@@ -1,0 +1,42 @@
+---
+permalink: data-protection/create-snapshot-policy-task.html 
+sidebar: sidebar 
+keywords: create, snapshot, policy 
+summary: 'Un criterio Snapshot specifica quando creare copie Snapshot, quante copie conservare e come assegnarle un nome. Ad esempio, un sistema potrebbe creare una copia Snapshot ogni giorno alle 12:10, conservare le due copie più recenti e chiamarle "daily.timestamp". Una policy Snapshot può contenere fino a cinque pianificazioni di lavori.' 
+---
+= Creare una policy Snapshot
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un criterio Snapshot specifica quando creare copie Snapshot, quante copie conservare e come assegnarle un nome. Ad esempio, un sistema potrebbe creare una copia Snapshot ogni giorno alle 12:10, conservare le due copie più recenti e chiamarle "`daily.`_timestamp_``" Una policy Snapshot può contenere fino a cinque pianificazioni di lavori.
+
+.A proposito di questa attività
+Per impostazione predefinita, ONTAP crea i nomi delle copie Snapshot aggiungendo un indicatore data e ora al nome della pianificazione del processo:
+
+[listing]
+----
+daily.2017-05-14_0013/              hourly.2017-05-15_1106/
+daily.2017-05-15_0012/              hourly.2017-05-15_1206/
+hourly.2017-05-15_1006/             hourly.2017-05-15_1306/
+----
+Se si preferisce, è possibile sostituire un prefisso con il nome della pianificazione del lavoro.
+
+Il `snapmirror-label` Opzione per la replica di SnapMirror. Per ulteriori informazioni, vedere link:define-rule-policy-task.html["Definizione di una regola per un criterio"].
+
+.Fase
+. Creare una policy Snapshot:
++
+`volume snapshot policy create -vserver _SVM_ -policy _policy_name_ -enabled true|false -schedule1 _schedule1_name_ -count1 _copies_to_retain_ -prefix1 _snapshot_prefix_ -snapmirror-label1 _snapshot_label_ ... -schedule1 _schedule5_name_ -count5 _copies_to_retain_-prefix5 _snapshot_prefix_ -snapmirror-label5 _snapshot_label_`
+
++
+Nell'esempio seguente viene creata una policy Snapshot denominata `snap_policy_daily` che funziona su `daily` pianificazione. Il criterio dispone di un massimo di cinque copie Snapshot, ciascuna con il nome `daily`.`_timestamp_` E l'etichetta SnapMirror `daily`:
+
++
+[listing]
+----
+cluster1::> volume snapshot policy create -vserver vs0 -policy snap_policy_daily -schedule1 daily -count1 5 -snapmirror-label1 daily
+----
+

@@ -1,0 +1,59 @@
+---
+permalink: tape-backup/ndmp-concept.html 
+sidebar: sidebar 
+keywords: ncmp, considerations, using, service, storage, system 
+summary: Quando si avvia il servizio NDMP sul sistema storage, è necessario tenere conto di una serie di considerazioni. 
+---
+= Considerazioni sull'utilizzo di NDMP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si avvia il servizio NDMP sul sistema storage, è necessario tenere conto di una serie di considerazioni.
+
+* Ogni nodo supporta un massimo di 16 backup, ripristini o combinazioni simultanei dei due utilizzando le unità a nastro collegate.
+* I servizi NDMP possono generare dati di cronologia dei file su richiesta delle applicazioni di backup NDMP.
++
+La cronologia dei file viene utilizzata dalle applicazioni di backup per consentire il ripristino ottimizzato di set secondari selezionati di dati da un'immagine di backup. La generazione e l'elaborazione della cronologia dei file potrebbero richiedere molto tempo e richiedere un'elevata quantità di CPU sia per il sistema di storage che per l'applicazione di backup.
+
++
+[NOTE]
+====
+SMTape non supporta la cronologia dei file.
+
+====
++
+Se la protezione dei dati è configurata per il disaster recovery, dove verrà ripristinata l'intera immagine di backup, è possibile disattivare la generazione della cronologia dei file per ridurre i tempi di backup. Consultare la documentazione dell'applicazione di backup per determinare se è possibile disattivare la generazione della cronologia dei file NDMP.
+
+* Il criterio firewall per NDMP è attivato per impostazione predefinita su tutti i tipi di LIF.
+* In modalità NDMP con ambito nodo, il backup di un volume FlexVol richiede l'utilizzo dell'applicazione di backup per avviare un backup su un nodo proprietario del volume.
++
+Tuttavia, non è possibile eseguire il backup di un volume root del nodo.
+
+* È possibile eseguire il backup NDMP da qualsiasi LIF consentito dalle policy firewall.
++
+Se si utilizza una LIF dati, è necessario selezionare una LIF non configurata per il failover. Se si verifica un errore di LIF dei dati durante un'operazione NDMP, l'operazione NDMP non riesce e deve essere rieseguita.
+
+* Nella modalità NDMP con ambito nodo e nella modalità NDMP con ambito SVM (Storage Virtual Machine) senza supporto DELL'estensione CAB, la connessione dati NDMP utilizza lo stesso LIF della connessione di controllo NDMP.
+* Durante la migrazione LIF, le operazioni di backup e ripristino in corso vengono interrotte.
++
+È necessario avviare le operazioni di backup e ripristino dopo la migrazione LIF.
+
+* Il percorso di backup NDMP è del formato `_/vserver_name/volume_name/path_name_`.
++
+`_path_name_` È opzionale e specifica il percorso della directory, del file o della copia Snapshot.
+
+* Quando si esegue il backup su nastro di una destinazione SnapMirror utilizzando il motore di dump, viene eseguito il backup solo dei dati nel volume.
++
+Tuttavia, se viene eseguito il backup su nastro di una destinazione SnapMirror utilizzando SMTape, viene eseguito anche il backup dei metadati. Il backup delle relazioni SnapMirror e dei metadati associati non viene eseguito su nastro. Pertanto, durante il ripristino, vengono ripristinati solo i dati su quel volume, ma le relazioni SnapMirror associate non vengono ripristinate.
+
+
+
+.Informazioni correlate
+xref:cluster-aware-backup-extension-concept.adoc[Qual è la funzione di Cluster Aware Backup Extension]
+
+link:../concepts/index.html["Concetti di ONTAP"]
+
+link:../system-admin/index.html["Amministrazione del sistema"]

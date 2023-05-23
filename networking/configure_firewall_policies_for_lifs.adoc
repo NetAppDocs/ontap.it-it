@@ -1,0 +1,247 @@
+---
+sidebar: sidebar 
+permalink: networking/configure_firewall_policies_for_lifs.html 
+keywords: firewall, policy, policies, security, cluster, unauthorized, access, storage, system, service, enable, enabling, disable, disabling, apply, applying, create, creating, add, adding, lif, protocols, nfs, smb, cifs, svm, firewall policies enhance the security of the cluster, configure firewall policies for lifs, firewall policies and lifs, network interface create, network interface modify, firewall-policy, portmap service configuration, what behavior you can expect portmap service, how to add or remove the portmap service, create a firewall policy and assigning it to a lif, example of creating a firewall policy and applying it to a lif 
+summary: Le policy firewall migliorano la sicurezza del cluster 
+---
+= Configurare le policy firewall per le LIF
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+La configurazione di un firewall migliora la sicurezza del cluster e impedisce l'accesso non autorizzato al sistema di storage. Per impostazione predefinita, il firewall integrato è configurato in modo da consentire l'accesso remoto a un set specifico di servizi IP per le LIF di dati, gestione e intercluster.
+
+A partire da ONTAP 9.10.1:
+
+* Le policy firewall sono obsolete e vengono sostituite dalle policy di servizio LIF. In precedenza, il firewall integrato era gestito tramite policy firewall. Questa funzionalità viene ora eseguita utilizzando una policy di servizio LIF.
+* Tutti i criteri firewall sono vuoti e non aprono porte nel firewall sottostante. Tutte le porte devono invece essere aperte utilizzando una policy di servizio LIF.
+* Non è richiesta alcuna azione dopo un aggiornamento alla versione 9.10.1 o successiva per passare dalle policy firewall alle policy di servizio LIF. Il sistema crea automaticamente policy di servizio LIF coerenti con le policy firewall in uso nella release precedente di ONTAP. Se si utilizzano script o altri strumenti che creano e gestiscono policy firewall personalizzate, potrebbe essere necessario aggiornare tali script per creare policy di servizio personalizzate.
+
+
+Per ulteriori informazioni, vedere link:lifs_and_service_policies96.html["LIF e policy di servizio in ONTAP 9.6 e versioni successive"].
+
+Le policy firewall possono essere utilizzate per controllare l'accesso ai protocolli dei servizi di gestione come SSH, HTTP, HTTPS, Telnet, NTP, NDMP, NDMPS, RSH, DNS O SNMP. Non è possibile impostare policy firewall per protocolli dati come NFS o SMB.
+
+È possibile gestire il servizio firewall e le policy nei seguenti modi:
+
+* Attivazione o disattivazione del servizio firewall
+* Visualizzazione della configurazione corrente del servizio firewall
+* Creazione di un nuovo criterio firewall con il nome del criterio e i servizi di rete specificati
+* Applicazione di un criterio firewall a un'interfaccia logica
+* Creazione di una nuova policy firewall che sia una copia esatta di una policy esistente
++
+È possibile utilizzare questa opzione per creare una policy con caratteristiche simili all'interno della stessa SVM o per copiare la policy su una SVM diversa.
+
+* Visualizzazione di informazioni sui criteri firewall
+* Modifica degli indirizzi IP e delle netmask utilizzati da una policy firewall
+* Eliminazione di una policy firewall non utilizzata da una LIF
+
+
+
+
+== Policy firewall e LIF
+
+I criteri firewall LIF vengono utilizzati per limitare l'accesso al cluster su ogni LIF. È necessario comprendere in che modo la policy firewall predefinita influenza l'accesso al sistema su ciascun tipo di LIF e come è possibile personalizzare una policy firewall per aumentare o ridurre la sicurezza su una LIF.
+
+Durante la configurazione di un LIF utilizzando `network interface create` oppure `network interface modify` il valore specificato per `-firewall-policy` Il parametro determina i protocolli di servizio e gli indirizzi IP ai quali è consentito l'accesso a LIF.
+
+In molti casi è possibile accettare il valore predefinito del criterio firewall. In altri casi, potrebbe essere necessario limitare l'accesso a determinati indirizzi IP e a determinati protocolli dei servizi di gestione. I protocolli dei servizi di gestione disponibili includono SSH, HTTP, HTTPS, Telnet, NTP, NDMP, NDMPS, RSH, DNS E SNMP.
+
+Per impostazione predefinita, il criterio firewall per tutte le LIF del cluster è `""` e non possono essere modificati.
+
+La tabella seguente descrive i criteri firewall predefiniti assegnati a ciascun LIF, in base al ruolo (ONTAP 9.5 e versioni precedenti) o ai criteri di servizio (ONTAP 9.6 e versioni successive), quando si crea il LIF:
+
+|===
+
+
+| Policy del firewall | Protocolli di servizio predefiniti | Accesso predefinito | LIF applicati a. 
+
+
+ a| 
+gestione
+ a| 
+dns, http, https, ndmp, ndmps, ntp, snmp, ssh
+ a| 
+Qualsiasi indirizzo (0.0.0.0/0)
+ a| 
+Gestione del cluster, gestione SVM e LIF di gestione dei nodi
+
+
+
+ a| 
+mgmt-nfs
+ a| 
+dns, http, https, ndmp, ndmps, ntp, portmap, snmp, ssh
+ a| 
+Qualsiasi indirizzo (0.0.0.0/0)
+ a| 
+Le LIF dei dati che supportano anche l'accesso alla gestione SVM
+
+
+
+ a| 
+intercluster
+ a| 
+https, ndmp, ndmps
+ a| 
+Qualsiasi indirizzo (0.0.0.0/0)
+ a| 
+Tutti i LIF intercluster
+
+
+
+ a| 
+dati
+ a| 
+dns, ndmp, ndmps, portmap
+ a| 
+Qualsiasi indirizzo (0.0.0.0/0)
+ a| 
+Tutti i dati LIF
+
+|===
+
+
+== Configurazione del servizio portmap
+
+Il servizio portmap associa i servizi RPC alle porte su cui sono in ascolto.
+
+Il servizio portmap era sempre accessibile in ONTAP 9.3 e versioni precedenti, è diventato configurabile in ONTAP 9.4 fino a ONTAP 9.6 e viene gestito automaticamente a partire da ONTAP 9.7.
+
+* In ONTAP 9.3 e versioni precedenti, il servizio portmap (rpcbind) era sempre accessibile sulla porta 111 nelle configurazioni di rete che si basavano sul firewall ONTAP integrato anziché su un firewall di terze parti.
+* Da ONTAP 9.4 a ONTAP 9.6, è possibile modificare i criteri del firewall per controllare se il servizio portmap è accessibile su specifiche LIF.
+* A partire da ONTAP 9.7, il servizio firewall portmap viene eliminato. La porta portmap viene invece aperta automaticamente per tutti i LIF che supportano il servizio NFS.
+
+
+*Il servizio Portmap è configurabile nel firewall in ONTAP 9.4 fino a ONTAP 9.6.*
+
+Il resto di questo argomento illustra come configurare il servizio firewall portmap per le versioni da ONTAP 9.4 a ONTAP 9.6.
+
+A seconda della configurazione, potrebbe essere possibile non consentire l'accesso al servizio su specifici tipi di LIF, in genere LIF di gestione e di intercluster. In alcuni casi, potresti persino essere in grado di impedire l'accesso alle LIF dei dati.
+
+.Quale comportamento ci si può aspettare
+Il comportamento da ONTAP 9.4 a ONTAP 9.6 è progettato per fornire una transizione perfetta all'aggiornamento. Se si accede già al servizio portmap su specifici tipi di LIF, questo continuerà ad essere accessibile attraverso questi tipi di LIF. Come nelle versioni precedenti di ONTAP, è possibile specificare i servizi accessibili all'interno del firewall nel criterio del firewall per il tipo di LIF.
+
+Tutti i nodi del cluster devono eseguire ONTAP 9.4 fino a ONTAP 9.6 per rendere effettivo il comportamento. Viene influenzato solo il traffico in entrata.
+
+Le nuove regole sono le seguenti:
+
+* All'aggiornamento alla versione 9.4 fino alla 9.6, ONTAP aggiunge il servizio portmap a tutte le policy firewall esistenti, predefinite o personalizzate.
+* Quando si crea un nuovo cluster o un nuovo IPSpace, ONTAP aggiunge il servizio portmap solo al criterio dati predefinito, non ai criteri di gestione predefiniti o di intercluster.
+* È possibile aggiungere il servizio portmap alle policy predefinite o personalizzate in base alle necessità e rimuovere il servizio in base alle necessità.
+
+
+.Come aggiungere o rimuovere il servizio portmap
+Per aggiungere il servizio portmap a una policy SVM o del firewall del cluster (renderlo accessibile all'interno del firewall), immettere:
+
+`system services firewall policy create -vserver SVM -policy mgmt|intercluster|data|custom -service portmap`
+
+Per rimuovere il servizio portmap da una policy SVM o del firewall del cluster (rendendolo inaccessibile all'interno del firewall), immettere:
+
+`system services firewall policy delete -vserver SVM -policy mgmt|intercluster|data|custom -service portmap`
+
+È possibile utilizzare il comando di modifica dell'interfaccia di rete per applicare il criterio firewall a una LIF esistente. Per la sintassi completa dei comandi, vedere link:http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^].
+
+
+
+== Creare una policy firewall e assegnarla a una LIF
+
+I criteri firewall predefiniti vengono assegnati a ciascun LIF quando si crea il LIF. In molti casi, le impostazioni predefinite del firewall funzionano correttamente e non è necessario modificarle. Se si desidera modificare i servizi di rete o gli indirizzi IP che possono accedere a una LIF, è possibile creare una policy firewall personalizzata e assegnarla alla LIF.
+
+.A proposito di questa attività
+* Non è possibile creare un criterio firewall con `policy` nome `data`,  `intercluster`,  `cluster`, o. `mgmt`.
++
+Questi valori sono riservati ai criteri firewall definiti dal sistema.
+
+* Non è possibile impostare o modificare un criterio firewall per le LIF del cluster.
++
+Il criterio del firewall per le LIF del cluster è impostato su 0.0.0.0/0 per tutti i tipi di servizi.
+
+* Se è necessario rimuovere un servizio da un criterio, è necessario eliminare il criterio firewall esistente e crearne uno nuovo.
+* Se IPv6 è attivato nel cluster, è possibile creare policy firewall con indirizzi IPv6.
++
+Dopo aver attivato IPv6,  `data`, `intercluster`, e. `mgmt` I criteri firewall includono ::/0, il carattere jolly IPv6, nell'elenco degli indirizzi accettati.
+
+* Quando si utilizza System Manager per configurare la funzionalità di protezione dei dati tra cluster, è necessario assicurarsi che gli indirizzi IP LIF tra cluster siano inclusi nell'elenco consentito e che il servizio HTTPS sia consentito sia per le LIF tra cluster che per i firewall di proprietà dell'azienda.
++
+Per impostazione predefinita, il `intercluster` La policy firewall consente l'accesso da tutti gli indirizzi IP (0.0.0.0/0, o ::/0 per IPv6) e abilita i servizi HTTPS, NDMP e NDMPS. Se si modifica questo criterio predefinito o si crea un criterio firewall personalizzato per le LIF tra cluster, è necessario aggiungere ciascun indirizzo IP LIF tra cluster all'elenco consentito e attivare il servizio HTTPS.
+
+* A partire da ONTAP 9.6, i servizi firewall HTTPS e SSH non sono supportati.
++
+In ONTAP 9.6, il `management-https` e. `management-ssh` I servizi LIF sono disponibili per l'accesso alla gestione HTTPS e SSH.
+
+
+
+.Fasi
+. Creare una policy firewall che sarà disponibile per i LIF su una SVM specifica:
++
+`system services firewall policy create -vserver _vserver_name_ -policy _policy_name_ -service _network_service_ -allow-list _ip_address/mask_`
+
++
+È possibile utilizzare questo comando più volte per aggiungere più di un servizio di rete e un elenco di indirizzi IP consentiti per ciascun servizio nella policy del firewall.
+
+. Verificare che il criterio sia stato aggiunto correttamente utilizzando `system services firewall policy show` comando.
+. Applicare il criterio firewall a una LIF:
++
+`network interface modify -vserver _vserver_name_ -lif _lif_name_ -firewall-policy _policy_name_`
+
+. Verificare che il criterio sia stato aggiunto correttamente alla LIF utilizzando `network interface show -fields firewall-policy` comando.
+
+
+.Esempio di creazione e applicazione di un criterio firewall a una LIF
+Il seguente comando crea una policy firewall denominata data_http che abilita l'accesso ai protocolli HTTP e HTTPS dagli indirizzi IP sulla subnet 10.10, applica tale policy alla LIF denominata data1 su SVM vs1, quindi mostra tutte le policy firewall sul cluster:
+
+....
+system services firewall policy create -vserver vs1 -policy data_http -service http - allow-list 10.10.0.0/16
+....
+....
+system services firewall policy show
+
+Vserver Policy       Service    Allowed
+------- ------------ ---------- -------------------
+cluster-1
+        data
+                     dns        0.0.0.0/0
+                     ndmp       0.0.0.0/0
+                     ndmps      0.0.0.0/0
+cluster-1
+        intercluster
+                     https      0.0.0.0/0
+                     ndmp       0.0.0.0/0
+                     ndmps      0.0.0.0/0
+cluster-1
+        mgmt
+                     dns        0.0.0.0/0
+                     http       0.0.0.0/0
+                     https      0.0.0.0/0
+                     ndmp       0.0.0.0/0
+                     ndmps      0.0.0.0/0
+                     ntp        0.0.0.0/0
+                     snmp       0.0.0.0/0
+                     ssh        0.0.0.0/0
+vs1
+        data_http
+                     http       10.10.0.0/16
+                     https      10.10.0.0/16
+
+network interface modify -vserver vs1 -lif data1 -firewall-policy data_http
+
+network interface show -fields firewall-policy
+
+vserver  lif                  firewall-policy
+-------  -------------------- ---------------
+Cluster  node1_clus_1
+Cluster  node1_clus_2
+Cluster  node2_clus_1
+Cluster  node2_clus_2
+cluster-1 cluster_mgmt         mgmt
+cluster-1 node1_mgmt1          mgmt
+cluster-1 node2_mgmt1          mgmt
+vs1      data1                data_http
+vs3      data2                data
+....

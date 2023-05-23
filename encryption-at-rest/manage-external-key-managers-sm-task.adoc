@@ -1,0 +1,176 @@
+---
+permalink: encryption-at-rest/manage-external-key-managers-sm-task.html 
+sidebar: sidebar 
+keywords: system manager, external key manager, configure external key manager, migrate keys, store keys, authentication keys, encryption keys 
+summary: A partire da ONTAP 9.13.1, è possibile utilizzare Gestione sistema per gestire i gestori delle chiavi esterni per memorizzare e gestire le chiavi di autenticazione e crittografia. 
+---
+= Gestire i key manager esterni
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.13.1, è possibile utilizzare Gestione sistema per gestire i gestori delle chiavi esterni per memorizzare e gestire le chiavi di autenticazione e crittografia.
+
+A partire da ONTAP 9.7, è possibile memorizzare e gestire le chiavi di autenticazione e crittografia con Onboard Key Manager. A partire da ONTAP 9.13.1, è possibile utilizzare sia il gestore delle chiavi integrato che quello esterno per memorizzare e gestire le chiavi di autenticazione e crittografia.
+
+Onboard Key Manager viene utilizzato per memorizzare e gestire le chiavi in un database sicuro interno al cluster. Un gestore di chiavi esterno memorizza e gestisce le chiavi, ma è esterno al cluster. È possibile utilizzare uno o più gestori di chiavi esterni per memorizzare e gestire le chiavi.
+
+L'ambito di Onboard Key Manager è a livello di cluster; tuttavia, l'ambito dei Key Manager esterni può essere a livello di cluster o di storage VM.
+
+Se Onboard Key Manager è attivato, non è possibile attivare un gestore di chiavi esterno a livello di cluster, ma può essere attivato a livello di storage VM. Al contrario, se un gestore di chiavi esterno è abilitato a livello di cluster, non è possibile attivare Onboard Key Manager.
+
+Quando si utilizzano key manager esterni, è possibile registrare fino a quattro key server primari per storage VM e cluster. Ogni server principale delle chiavi può essere cluster con un massimo di tre server secondari delle chiavi.
+
+
+
+== Configurare un gestore di chiavi esterno
+
+.Prima di iniziare
+Per aggiungere un gestore di chiavi esterno per una VM di storage, è necessario aggiungere un gateway opzionale quando si configura l'interfaccia di rete per la VM di storage. Se la VM di storage è stata creata senza il percorso di rete, sarà necessario creare il percorso in modo esplicito per il gestore delle chiavi esterno. Vedere link:../networking/create_a_lif.html["Creazione di una LIF (interfaccia di rete)"].
+
+.Fasi
+È possibile configurare un gestore di chiavi esterno partendo da posizioni diverse in System Manager.
+
+. Per configurare un gestore di chiavi esterno, eseguire una delle seguenti operazioni iniziali.
++
+[cols="25,25,50"]
+|===
+
+
+| Workflow | Navigazione | Fase di avvio 
+
+
+ a| 
+Configurare Key Manager
+ a| 
+*Cluster* > *Impostazioni*
+ a| 
+Scorrere fino alla sezione *sicurezza*. In *Encryption*, selezionare image:icon_gear.gif["icona delle impostazioni"]. Selezionare *External Key Manager*.
+
+
+
+ a| 
+Aggiungi Tier locale
+ a| 
+*Storage* > *Tier*
+ a| 
+Fare clic su *+ Add Local Tier* (Aggiungi livello locale). Selezionare la casella di controllo "Configure Key Manager" (Configura gestore chiavi). Selezionare *External Key Manager*.
+
+
+
+ a| 
+Preparare lo storage
+ a| 
+*Dashboard*
+ a| 
+Nella sezione *capacità*, selezionare *Prepare Storage* (prepara storage). Quindi, selezionare "Configure Key Manager" (Configura gestore chiavi). Selezionare *External Key Manager*.
+
+
+
+ a| 
+Configurare la crittografia (solo gestore delle chiavi nell'ambito delle macchine virtuali di storage)
+ a| 
+*Storage* > *Storage VM*
+ a| 
+Selezionare la VM di storage. Fare clic sulla scheda *Impostazioni*. Nella sezione *Encryption* sotto *Security*, selezionare image:icon_gear_blue_bg.png["icona delle impostazioni"].
+
+|===
+. Per aggiungere un server principale delle chiavi, fare clic su image:icon_add.gif["+Aggiungi"]E compilare i campi *IP Address (Indirizzo IP) o host Name (Nome host)* e *Port* (porta).
+. I certificati esistenti installati sono elencati nei campi *certificati CA del server KMIP* e *certificato client KMIP*. È possibile eseguire una delle seguenti operazioni:
++
+** Fare clic su image:icon_dropdown_arrow.gif["freccia verso il basso"] per selezionare i certificati installati che si desidera mappare al gestore delle chiavi. (È possibile selezionare più certificati CA di servizio, ma è possibile selezionare un solo certificato client).
+** Selezionare *Aggiungi nuovo certificato* per aggiungere un certificato non ancora installato e associarlo al gestore delle chiavi esterno.
+** Fare clic su image:icon-x-close.gif["X"] accanto al nome del certificato per eliminare i certificati installati che non si desidera mappare al gestore delle chiavi esterno.
+
+
+. Per aggiungere un server di chiavi secondario, fare clic su *Add* (Aggiungi) nella colonna *Secondary Key Servers* (Server di chiavi secondarie) e fornire i relativi dettagli.
+. Fare clic su *Save* (Salva) per completare la configurazione.
+
+
+
+
+== Modificare un gestore di chiavi esterno esistente
+
+Se lo hai già fatto <<config-ekm-steps,configurato un gestore di chiavi esterno>>, è possibile modificarne le impostazioni.
+
+.Fasi
+. Per modificare la configurazione di un gestore di chiavi esterno, eseguire una delle seguenti operazioni iniziali.
++
+[cols="25,25,50"]
+|===
+
+
+| Scopo | Navigazione | Fase di avvio 
+
+
+ a| 
+Gestore delle chiavi esterne dell'ambito del cluster
+ a| 
+*Cluster* > *Impostazioni*
+ a| 
+Scorrere fino alla sezione *sicurezza*. In *Encryption*, selezionare image:icon_kabob.gif["icona del kebab"], Quindi selezionare *Edit External Key Manager* (Modifica gestore chiavi esterno).
+
+
+
+ a| 
+Storage VM Scope External Key Manager
+ a| 
+*Storage* > *Storage VM*
+ a| 
+Selezionare la VM di storage. Fare clic sulla scheda *Impostazioni*. Nella sezione *Encryption* sotto *Security*, selezionare image:icon_kabob.gif["icona del kebab"], Quindi selezionare *Edit External Key Manager* (Modifica gestore chiavi esterno).
+
+|===
+. I server delle chiavi esistenti sono elencati nella tabella *Server delle chiavi*. È possibile eseguire le seguenti operazioni:
++
+** Aggiungere un nuovo server chiavi facendo clic su image:icon_add.gif["+Aggiungi"].
+** Eliminare un server chiavi facendo clic su image:icon_kabob.gif["icona del kebab"] alla fine della cella della tabella che contiene il nome del server delle chiavi. Anche i server di chiavi secondari associati a quel server di chiavi primario vengono rimossi dalla configurazione.
+
+
+
+
+
+
+== Eliminare un gestore di chiavi esterno
+
+Se i volumi non sono crittografati, è possibile eliminare un gestore di chiavi esterno.
+
+.Fasi
+. Per eliminare un gestore di chiavi esterno, eseguire una delle seguenti operazioni.
++
+[cols="25,25,50"]
+|===
+
+
+| Scopo | Navigazione | Fase di avvio 
+
+
+ a| 
+Gestore delle chiavi esterne dell'ambito del cluster
+ a| 
+*Cluster* > *Impostazioni*
+ a| 
+Scorrere fino alla sezione *sicurezza*. In *Encryption*, selezionare image:icon_kabob.gif["icona del kebab"], Quindi selezionare *Delete External Key Manager* (Elimina gestore chiavi esterne).
+
+
+
+ a| 
+Storage VM Scope External Key Manager
+ a| 
+*Storage* > *Storage VM*
+ a| 
+Selezionare la VM di storage. Fare clic sulla scheda *Impostazioni*. Nella sezione *Encryption* sotto *Security*, selezionare image:icon_kabob.gif["icona del kebab"], Quindi selezionare *Delete External Key Manager* (Elimina gestore chiavi esterne).
+
+|===
+
+
+
+
+== Migrare le chiavi tra i principali manager
+
+Quando su un cluster sono attivati più gestori di chiavi, è necessario migrare le chiavi da un gestore di chiavi a un altro. Questo processo viene completato automaticamente con System Manager.
+
+* Se Onboard Key Manager o un gestore di chiavi esterno è abilitato a livello di cluster e alcuni volumi sono crittografati, Quindi, quando si configura un gestore di chiavi esterno a livello di storage VM, le chiavi devono essere migrate da Onboard Key Manager o da un gestore di chiavi esterno a livello di cluster a un gestore di chiavi esterno a livello di storage VM. Questo processo viene completato automaticamente da System Manager.
+* Se i volumi sono stati creati senza crittografia su una VM di storage, non è necessario migrare le chiavi.
+

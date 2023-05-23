@@ -1,0 +1,74 @@
+---
+permalink: software_setup/convert-ipv4-to-ipv6-task.html 
+sidebar: sidebar 
+keywords: software, setup, ontap, covert, converting, ipv4, ipv6 
+summary: A partire da ONTAP 9.13.1, è possibile assegnare indirizzi IPv6 per le LIF di gestione sulle piattaforme A800 e FAS8700. Per le versioni di ONTAP precedenti alla 9.13.1, per la versione 9.13.1 e successive su altre piattaforme, è necessario assegnare indirizzi IPv4 per le LIF di gestione, quindi convertire gli indirizzi IPv6 dopo aver completato la configurazione del cluster. 
+---
+= Converti i LIF di gestione da IPv4 a IPv6
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.13.1, è possibile assegnare gli indirizzi IPv6 alle LIF di gestione sulle piattaforme A800 e FAS8700 durante la configurazione iniziale del cluster. Per le versioni di ONTAP precedenti alla 9.13.1 o per la versione 9.13.1 e successive su altre piattaforme, è necessario assegnare gli indirizzi IPv4 alle LIF di gestione, quindi convertire in indirizzi IPv6 dopo aver completato la configurazione del cluster.
+
+.Fasi
+. Abilitare IPv6 per il cluster:
++
+[source, cli]
+----
+network options ipv6 modify -enable true
+----
+. Impostare il privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set priv advanced
+----
+. Visualizzare l'elenco dei prefissi RA appresi sulle varie interfacce:
++
+[source, cli]
+----
+network ndp prefix show
+----
+. Creare una LIF di gestione IPv6:
++
+Utilizzare il formato `prefix::id` Nel parametro address per costruire manualmente l'indirizzo IPv6.
+
++
+[source, cli]
+----
+network interface create -vserver <svm_name> -lif <LIF> -home-node <home_node> -home-port <home_port> -address <IPv6prefix::id> -netmask-length <netmask_length> -failover-policy <policy> -service-policy <service_policy> -auto-revert true
+----
+. Verificare che la LIF sia stata creata:
++
+[source, cli]
+----
+network interface show
+----
+. Verificare che l'indirizzo IP configurato sia raggiungibile:
++
+[source, cli]
+----
+network ping6
+----
+. Contrassegna LIF IPv4 come amministrativamente inattivo:
++
+[source, cli]
+----
+network interface modify -vserver <svm_name> -lif <lif_name> -status-admin down
+----
+. Eliminare la LIF di gestione IPv4:
++
+[source, cli]
+----
+network interface delete -vserver <svm_name> -lif <lif_name>
+----
+. Verificare che la LIF di gestione IPv4 sia stata eliminata:
++
+[source, cli]
+----
+network interface show
+----
+

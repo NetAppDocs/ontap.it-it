@@ -1,0 +1,42 @@
+---
+permalink: smb-admin/map-administrators-group-root-task.html 
+sidebar: sidebar 
+keywords: cifs, client, environment, storage, virtual, machine, svm, multiprotocol, storage, system, windows, account, root, privilege, svm, sufficient, user, right, map the administrators group to root 
+summary: 'Se nell"ambiente sono presenti solo client CIFS e la macchina virtuale di storage (SVM) è stata impostata come sistema di storage multiprotocollo, è necessario disporre di almeno un account Windows con privilegi root per accedere ai file sulla SVM; In caso contrario, non è possibile gestire SVM perché non si dispone di diritti utente sufficienti.' 
+---
+= Mappare il gruppo di amministratori alla directory principale
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se nell'ambiente sono presenti solo client CIFS e la macchina virtuale di storage (SVM) è stata impostata come sistema di storage multiprotocollo, è necessario disporre di almeno un account Windows con privilegi root per accedere ai file sulla SVM; In caso contrario, non è possibile gestire SVM perché non si dispone di diritti utente sufficienti.
+
+.A proposito di questa attività
+Tuttavia, se il sistema storage è stato configurato come solo NTFS, il `/etc` La directory dispone di un ACL a livello di file che consente al gruppo di amministratori di accedere ai file di configurazione di ONTAP.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
+. Configurare l'opzione del server CIFS che associa il gruppo di amministratori alla directory principale in base alle esigenze:
++
+|===
+| Se si desidera... | Quindi... 
+
+
+ a| 
+Associare i membri del gruppo di amministratori alla directory principale
+ a| 
+`vserver cifs options modify -vserver _vserver_name_ -is-admin-users-mapped-to-root-enabled true` Tutti gli account del gruppo di amministratori sono considerati root, anche se non si dispone di un `/etc/usermap.cfg` voce che esegue il mapping degli account alla directory principale. Se si crea un file utilizzando un account che appartiene al gruppo di amministratori, il file è di proprietà di root quando si visualizza il file da un client UNIX.
+
+
+
+ a| 
+Disattiva il mapping dei membri del gruppo di amministratori alla directory principale
+ a| 
+`vserver cifs options modify -vserver _vserver_name_ -is-admin-users-mapped-to-root-enabled false` Gli account nel gruppo di amministratori non vengono più mappati alla directory principale. È possibile mappare esplicitamente solo un singolo utente a root.
+
+|===
+. Verificare che l'opzione sia impostata sul valore desiderato: `vserver cifs options show -vserver _vserver_name_`
+. Tornare al livello di privilegio admin: `set -privilege admin`
+

@@ -1,0 +1,66 @@
+---
+permalink: nas-audit/manage-user-account-event-concept.html 
+sidebar: sidebar 
+keywords: manage, user-account, event 
+summary: 'Quando viene configurato un evento account utente per una macchina virtuale di storage (SVM) e viene attivato un audit, vengono generati eventi di audit.' 
+---
+= Gestire l'evento dell'account utente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando viene configurato un evento account utente per una macchina virtuale di storage (SVM) e viene attivato un audit, vengono generati eventi di audit.
+
+Gli eventi dell'account utente con id evento 4720, 4722, 4724, 4725, 4726, 4738 e 4781 vengono generati quando un utente SMB o NFS locale viene creato o cancellato dal sistema, l'account utente locale viene attivato, disattivato o modificato e la password utente SMB locale viene reimpostata o modificata. Gli eventi dell'account utente vengono generati quando un account utente viene modificato utilizzando `vserver cifs users-and-groups _<local user>_` e. `vserver services name-service _<unix user>_` comandi.
+
+Nell'esempio seguente viene visualizzato un evento dell'account utente con l'ID 4720 generato, quando viene creato un utente SMB locale:
+
+[listing]
+----
+netapp-clus1::*> vserver cifs users-and-groups local-user create -user-name testuser -is-account-disabled false -vserver vserver_1
+Enter the password:
+Confirm the password:
+
+- System
+  - Provider
+   [ Name]  NetApp-Security-Auditing
+   [ Guid]  {3CB2A168-FE19-4A4E-BDAD-DCF422F13473}
+   EventID 4720
+   EventName Local Cifs User Created
+   ...
+   ...
+  TargetUserName testuser
+  TargetDomainName NETAPP-CLUS1
+  TargetSid S-1-5-21-2447422786-1297661003-4197201688-1003
+  TargetType CIFS
+  DisplayName testuser
+  PasswordLastSet 1472662216
+  AccountExpires NO
+  PrimaryGroupId 513
+  UserAccountControl %%0200
+  SidHistory ~
+  PrivilegeList ~
+----
+Nell'esempio seguente viene visualizzato un evento dell'account utente con l'ID 4781 generato, quando l'utente SMB locale creato nell'esempio precedente viene rinominato:
+
+[listing]
+----
+ netapp-clus1::*> vserver cifs users-and-groups local-user rename -user-name testuser -new-user-name testuser1
+- System
+  - Provider
+   [ Name]  NetApp-Security-Auditing
+   [ Guid]  {3CB2A168-FE19-4A4E-BDAD-DCF422F13473}
+   EventID 4781
+   EventName Local Cifs User Renamed
+   ...
+   ...
+  OldTargetUserName testuser
+  NewTargetUserName testuser1
+  TargetDomainName NETAPP-CLUS1
+  TargetSid S-1-5-21-2447422786-1297661003-4197201688-1000
+  TargetType CIFS
+  SidHistory ~
+  PrivilegeList ~
+----

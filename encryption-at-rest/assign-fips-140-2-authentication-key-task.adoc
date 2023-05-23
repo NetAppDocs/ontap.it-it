@@ -1,0 +1,57 @@
+---
+permalink: encryption-at-rest/assign-fips-140-2-authentication-key-task.html 
+sidebar: sidebar 
+keywords: assigning, fips 140-2, authentication key, fips drive 
+summary: 'È possibile utilizzare il comando di modifica del disco di crittografia dello storage con l"opzione -fips-key-id per assegnare una chiave di autenticazione FIPS 140-2 a un disco FIPS. I nodi del cluster utilizzano questa chiave per operazioni di guida diverse dall"accesso ai dati, come la prevenzione di attacchi di tipo Denial-of-service sul disco.' 
+---
+= Assegnare una chiave di autenticazione FIPS 140-2 a un disco FIPS
+:allow-uri-read: 
+
+
+[role="lead"]
+È possibile utilizzare `storage encryption disk modify` con il `-fips-key-id` Opzione per assegnare una chiave di autenticazione FIPS 140-2 a un disco FIPS. I nodi del cluster utilizzano questa chiave per operazioni di guida diverse dall'accesso ai dati, come la prevenzione di attacchi di tipo Denial-of-service sul disco.
+
+.A proposito di questa attività
+La configurazione della sicurezza potrebbe richiedere l'utilizzo di chiavi diverse per l'autenticazione dei dati e l'autenticazione FIPS 140-2. In caso contrario, è possibile utilizzare la stessa chiave di autenticazione per la conformità FIPS utilizzata per l'accesso ai dati.
+
+Questa procedura non comporta interruzioni.
+
+.Prima di iniziare
+Il firmware del disco deve supportare la conformità FIPS 140-2. Il link:https://mysupport.netapp.com/matrix["Tool di matrice di interoperabilità NetApp"^] contiene informazioni sulle versioni del firmware del disco supportate.
+
+.Fasi
+. Assicurarsi di aver assegnato una chiave di autenticazione dei dati. Questa operazione può essere eseguita utilizzando un xref:assign-authentication-keys-seds-external-task.html[gestore delle chiavi esterno] o un xref:assign-authentication-keys-seds-onboard-task.html[gestore delle chiavi integrato]. Verificare che il tasto sia assegnato con il comando `storage encryption disk show`.
+. Assegnare una chiave di autenticazione FIPS 140-2 ai SED:
++
+`storage encryption disk modify -disk _disk_id_ -fips-key-id _fips_authentication_key_id_`
+
++
+È possibile utilizzare `security key-manager query` Per visualizzare gli ID chiave.
+
++
+[source]
+----
+cluster1::> storage encryption disk modify -disk 2.10.* -fips-key-id 6A1E21D80000000001000000000000005A1FB4EE8F62FD6D8AE6754C9019F35A
+
+Info: Starting modify on 14 disks.
+      View the status of the operation by using the
+      storage encryption disk show-status command.
+----
+. Verificare che la chiave di autenticazione sia stata assegnata:
++
+`storage encryption disk show -fips`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[listing]
+----
+cluster1::> storage encryption disk show -fips
+Disk    Mode FIPS-Compliance Key ID
+------  ---- ----------------------------------------------------------------
+2.10.0  full 6A1E21D80000000001000000000000005A1FB4EE8F62FD6D8AE6754C9019F35A
+2.10.1  full 6A1E21D80000000001000000000000005A1FB4EE8F62FD6D8AE6754C9019F35A
+[...]
+----
+

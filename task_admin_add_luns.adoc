@@ -1,0 +1,135 @@
+---
+sidebar: sidebar 
+permalink: task_admin_add_luns.html 
+keywords: volume, storage, add, increase storage, create, add lun, create lun, lun format, group related luns, add to storage VM, manual placement, Ansible Playbook, initiator, initiator group, protection, QoS policy, performance service level policy, 
+summary: È possibile creare LUN e aggiungerli a una VM di storage esistente configurata con il protocollo SAN. 
+---
+= Aggiungere LUN
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+È possibile creare LUN e aggiungerli a una VM di storage esistente configurata con il protocollo SAN.
+
+image:workflow_admin_add_LUNs.gif["Diagramma del flusso di lavoro dell'attività ADD LUN"]
+
+.Prima di iniziare
+Nel cluster dovrebbe essere presente una VM di storage configurata per il servizio SAN.
+
+.Fasi
+. Accedere a *Storage > LUN*.
+. Fare clic su image:icon_add.gif["Icona Add (Aggiungi)"].
+. Specificare un prefisso da utilizzare all'inizio di ogni nome LUN. Se si crea un solo LUN, immettere il nome del LUN.
+. Selezionare una VM di storage dall'elenco a discesa.
++
+Vengono elencate solo le VM di storage configurate per il protocollo SAN. Se è disponibile una sola VM di storage configurata per il protocollo SAN, il campo *Storage VM* non viene visualizzato.
+
+. Indicare il numero di LUN che si desidera creare e le dimensioni di ogni LUN.
+. Selezionare il sistema operativo host e il formato LUN dagli elenchi a discesa.
+. Inserire gli iniziatori host e separarli con virgole.
+. Eseguire una delle seguenti operazioni:
++
+[cols="30,70"]
+|===
+
+
+| Fare clic su questo pulsante... | Per eseguire questa azione... 
+
+
+| *Salva* | I LUN vengono creati con le specifiche inserite. Le impostazioni predefinite del sistema vengono utilizzate per altre specifiche. Non sono necessari passaggi aggiuntivi. 
+
+
+| *Altre opzioni* | Passare a. <<step9-define-add-specs>> Per definire specifiche aggiuntive per i LUN. 
+|===
+. [[fase 9-define-add-specs,fase 9]] il prefisso LUN è già visualizzato se è stato immesso in precedenza, ma è possibile modificarlo. In caso contrario, inserire il prefisso.
+. Selezionare una VM di storage dall'elenco a discesa.
++
+Vengono elencate solo le VM di storage configurate per il protocollo SAN. Se è disponibile una sola VM di storage configurata per il protocollo SAN, il campo *Storage VM* non viene visualizzato.
+
+. Determinare come si desidera raggruppare le LUN:
++
+[cols="40,60"]
+|===
+
+
+| Quando fai questa scelta... | Ciò si verifica... 
+
+
+| *Gruppo con LUN correlate* | Le LUN verranno raggruppate insieme alle LUN correlate su un volume esistente nella VM di storage. 
+
+
+| Nessuna selezione | Le LUN verranno raggruppate su un volume chiamato "container". 
+|===
+. Nella sezione *Storage and Optimization*, specificare i seguenti valori:
++
+.. Il numero e la capacità dei LUN sono già visualizzati se precedentemente inseriti, ma è possibile modificarli. In caso contrario, inserire i valori.
+.. Nel campo *Performance Service Level*, selezionare un livello di servizio:
++
+[cols="55,45"]
+|===
+
+
+| Quando si seleziona questo livello di servizio... | Ciò si verifica... 
+
+
+ a| 
+Un livello di servizio esistente, ad esempio "Extreme", "Performance" o "Value".
+
+Vengono visualizzati solo i livelli di servizio validi per la piattaforma di sistema (AFF, FAS o altri).
+| Viene selezionato automaticamente un Tier locale. Passare a. <<step13>>. 
+
+
+| Personalizzato | Passare a. <<step12c>> per definire un nuovo livello di servizio. 
+|===
+.. [[fase 12c, fase 12c]] a partire da ONTAP 9.9.1, è possibile utilizzare Gestione sistema per selezionare manualmente il livello locale su cui si desidera inserire le LUN che si desidera creare (se è stato selezionato il livello di servizio "personalizzato").
++
+[cols="55,45"]
+|===
+
+
+| Quando fai questa scelta... | Eseguire questi passaggi... 
+
+
+| *Posizionamento manuale* | Il posizionamento manuale è attivato. Passare a. <<step12d>> per completare il processo. 
+
+
+| Nessuna selezione | La selezione manuale non è abilitata. Il Tier locale viene selezionato automaticamente. Passare a. <<step13>>. 
+|===
+.. [[fase 12d, fase 12d]]selezionare un livello locale dal menu a discesa.
+.. Selezionare un criterio QoS.
++
+Selezionare "esistente" per scegliere da un elenco di policy esistenti oppure selezionare "nuovo" per inserire le specifiche di una nuova policy.
+
+
+
+. [[step13,fase 13]] nella sezione *informazioni host*, il sistema operativo host e il formato LUN sono già visualizzati, ma è possibile modificarli.
+. In *host Mapping*, selezionare il tipo di iniziatori per i LUN:
++
+** *Existing Initiator group* (Gruppo iniziatore esistente): Selezionare un gruppo iniziatore per l'elenco visualizzato.
+** *Nuovo gruppo iniziatore che utilizza gruppi iniziatore esistenti*: Specificare il nome del nuovo gruppo e selezionare il gruppo o i gruppi che si desidera utilizzare per creare il nuovo gruppo.
+** *Host initiator*: Specificare un nome dal nuovo gruppo di iniziatori e fare clic su *+Add Initiator* per aggiungere gli iniziatori al gruppo.
+
+
+. Nella sezione *protezione*, specificare le protezioni per i LUN.
++
+Se si seleziona *Enable SnapMirror (Local or Remote)* (attiva SnapMirror (locale o remoto)), specificare il criterio di protezione e le impostazioni per il cluster di destinazione dagli elenchi a discesa.
+
+. Fare clic su *Save* (Salva).
++
+Le LUN vengono create e aggiunte alla VM del cluster e dello storage.
+
++
+
+NOTE: Puoi anche salvare le specifiche di questi LUN in un Ansible Playbook. Per ulteriori informazioni, visitare il sito Web all'indirizzo link:https://docs.netapp.com/us-en/ontap/task_use_ansible_playbooks_add_edit_volumes_luns.html["Utilizza i Playbook Ansible per aggiungere o modificare volumi o LUN"].
+
+

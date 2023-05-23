@@ -1,0 +1,65 @@
+---
+permalink: smb-hyper-v-sql/odx-copy-offload-concept.html 
+sidebar: sidebar 
+keywords: offload, data, transfer, odx, copy, application, server, copy, operation 
+summary: 'Offloaded Data Transfer (ODX), noto anche come offload delle copie, consente il trasferimento diretto dei dati all"interno o tra dispositivi di storage compatibili senza trasferire i dati attraverso il computer host. L"offload delle copie ODX di ONTAP offre vantaggi in termini di performance quando si eseguono operazioni di copia sul server applicativo rispetto all"installazione SMB.' 
+---
+= Come viene utilizzato l'offload delle copie ODX con Hyper-V e SQL Server su condivisioni SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Offloaded Data Transfer (ODX), noto anche come _copy offload_, consente il trasferimento diretto dei dati all'interno o tra dispositivi di storage compatibili senza trasferire i dati attraverso il computer host. L'offload delle copie ODX di ONTAP offre vantaggi in termini di performance quando si eseguono operazioni di copia sul server applicativo rispetto all'installazione SMB.
+
+Nei trasferimenti di file non ODX, i dati vengono letti dal server CIFS di origine e trasferiti attraverso la rete al computer client. Il computer client trasferisce di nuovo i dati sulla rete al server CIFS di destinazione. In sintesi, il computer client legge i dati dall'origine e li scrive nella destinazione. Con i trasferimenti di file ODX, i dati vengono copiati direttamente dall'origine alla destinazione.
+
+Poiché le copie ODX offloaded vengono eseguite direttamente tra lo storage di origine e di destinazione, le performance sono notevolmente migliorate. I benefici delle performance ottenuti includono tempi di copia più rapidi tra origine e destinazione, utilizzo ridotto delle risorse (CPU, memoria) sul client e utilizzo ridotto della larghezza di banda i/o di rete.
+
+Questa funzionalità è disponibile sui server Windows Server 2012. L'offload delle copie ODX di ONTAP è supportato sia sulle LUN SAN che sulle connessioni SMB 3.0 a disponibilità continua.
+
+I seguenti casi di utilizzo supportano l'utilizzo di copie e spostamenti ODX:
+
+* Intra-volume
++
+I file di origine e di destinazione o LUN si trovano all'interno dello stesso volume.
+
+* Tra volumi, stesso nodo, stessa SVM (Storage Virtual Machine)
++
+I file di origine e di destinazione o LUN si trovano su volumi diversi che si trovano sullo stesso nodo. I dati sono di proprietà della stessa SVM.
+
+* Intervolume, nodi diversi, stessa SVM
++
+I file di origine e di destinazione o LUN si trovano su volumi diversi che si trovano su nodi diversi. I dati sono di proprietà della stessa SVM.
+
+* Inter-SVM, stesso nodo
++
+I file di origine e di destinazione o LUN si trovano su volumi diversi che si trovano sullo stesso nodo. I dati sono di proprietà di diverse SVM.
+
+* Inter-SVM, nodi diversi
++
+I file di origine e di destinazione o LUN si trovano su volumi diversi che si trovano su nodi diversi. I dati sono di proprietà di diverse SVM.
+
+
+
+I casi di utilizzo specifici per l'offload delle copie ODX con le soluzioni Hyper-V includono:
+
+* È possibile utilizzare il pass-through di offload delle copie ODX con Hyper-V per copiare i dati all'interno o tra file di dischi rigidi virtuali (VHD) o per copiare i dati tra le condivisioni SMB mappate e le LUN iSCSI connesse all'interno dello stesso cluster.
++
+Ciò consente il passaggio delle copie dai sistemi operativi guest allo storage sottostante.
+
+* Quando si creano VHD di dimensioni fisse, ODX viene utilizzato per inizializzare il disco con zero, utilizzando un token azzerato ben noto.
+* L'offload delle copie ODX viene utilizzato per la migrazione dello storage delle macchine virtuali se lo storage di origine e di destinazione si trova sullo stesso cluster.
+
+
+[NOTE]
+====
+Per sfruttare i casi di utilizzo del pass-through di offload delle copie ODX con Hyper-V, il sistema operativo guest deve supportare ODX e i dischi del sistema operativo guest devono essere dischi SCSI supportati dallo storage (SMB o SAN) che supporti ODX. I dischi IDE sul sistema operativo guest non supportano il pass-through ODX.
+
+====
+I casi di utilizzo specifici per l'offload delle copie ODX con le soluzioni SQL Server includono:
+
+* È possibile utilizzare l'offload delle copie di ODX per esportare e importare i database SQL Server tra le condivisioni SMB mappate o tra le condivisioni SMB e le LUN iSCSI connesse all'interno dello stesso cluster.
+* L'offload delle copie ODX viene utilizzato per le esportazioni e le importazioni dei database se lo storage di origine e di destinazione si trova nello stesso cluster.
+

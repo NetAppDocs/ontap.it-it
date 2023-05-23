@@ -1,0 +1,112 @@
+---
+permalink: upgrade/task_verifying_the_networking_and_storage_status_for_metrocluster_cluster_is_ready.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, verifying, verify, networking, storage, status, metrocluster, mcc 
+summary: 'Prima e dopo l"esecuzione di un aggiornamento in una configurazione MetroCluster, è necessario verificare lo stato delle LIF, degli aggregati e dei volumi per ciascun cluster.' 
+---
+= Verificare lo stato dello storage e della rete per le configurazioni MetroCluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di eseguire un aggiornamento in una configurazione MetroCluster, è necessario verificare lo stato delle LIF, degli aggregati e dei volumi per ciascun cluster.
+
+. Verificare lo stato LIF: `network interface show`
++
+Durante il normale funzionamento, le LIF per le SVM di origine devono avere uno stato di amministrazione up e trovarsi sui nodi home. Non è necessario che le LIF per le SVM di destinazione siano attive o localizzate sui propri nodi domestici. Nello switchover, tutte le LIF hanno uno stato di amministrazione su, ma non devono essere collocate nei propri nodi domestici.
+
++
+[listing]
+----
+cluster1::> network interface show
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+Cluster
+            cluster1-a1_clus1
+                         up/up    192.0.2.1/24       cluster1-01
+                                                                   e2a     true
+            cluster1-a1_clus2
+                         up/up    192.0.2.2/24       cluster1-01
+                                                                   e2b     true
+
+
+cluster1-01
+            clus_mgmt    up/up    198.51.100.1/24    cluster1-01
+                                                                   e3a     true
+            cluster1-a1_inet4_intercluster1
+                         up/up    198.51.100.2/24    cluster1-01
+                                                                   e3c     true
+            ...
+
+27 entries were displayed.
+----
+. Verificare lo stato degli aggregati: `storage aggregate show -state !online`
++
+Questo comando visualizza tutti gli aggregati _non_ online. Durante il normale funzionamento, tutti gli aggregati situati nel sito locale devono essere online. Tuttavia, se la configurazione MetroCluster è in switchover, gli aggregati root del sito di disaster recovery possono essere offline.
+
++
+Questo esempio mostra un cluster in funzionamento normale:
+
++
+[listing]
+----
+cluster1::> storage aggregate show -state !online
+There are no entries matching your query.
+----
++
+Questo esempio mostra un cluster nello switchover, in cui gli aggregati root del sito di disaster recovery sono offline:
+
++
+[listing]
+----
+cluster1::> storage aggregate show -state !online
+Aggregate     Size Available Used% State   #Vols  Nodes            RAID Status
+--------- -------- --------- ----- ------- ------ ---------------- ------------
+aggr0_b1
+                0B        0B    0% offline      0 cluster2-01      raid_dp,
+                                                                   mirror
+                                                                   degraded
+aggr0_b2
+                0B        0B    0% offline      0 cluster2-02      raid_dp,
+                                                                   mirror
+                                                                   degraded
+2 entries were displayed.
+----
+. Verificare lo stato dei volumi: `volume show -state !online`
++
+Questo comando visualizza tutti i volumi _non_ online.
+
++
+Se la configurazione MetroCluster è in funzione normale (non è in stato di switchover), l'output dovrebbe mostrare tutti i volumi di proprietà delle SVM secondarie del cluster (quelli con il nome SVM aggiunto con "-mc").
+
++
+Questi volumi vengono online solo in caso di switchover.
+
++
+Questo esempio mostra un cluster in condizioni di funzionamento normale, in cui i volumi del sito di disaster recovery non sono online.
+
++
+[listing]
+----
+cluster1::> volume show -state !online
+  (volume show)
+Vserver   Volume       Aggregate    State      Type       Size  Available Used%
+--------- ------------ ------------ ---------- ---- ---------- ---------- -----
+vs2-mc    vol1         aggr1_b1     -          RW            -          -     -
+vs2-mc    root_vs2     aggr0_b1     -          RW            -          -     -
+vs2-mc    vol2         aggr1_b1     -          RW            -          -     -
+vs2-mc    vol3         aggr1_b1     -          RW            -          -     -
+vs2-mc    vol4         aggr1_b1     -          RW            -          -     -
+5 entries were displayed.
+----
+. Verificare che non vi siano volumi incoerenti: `volume show -is-inconsistent true`
++
+Se vengono restituiti volumi incoerenti, è necessario contattare il supporto NetApp prima di procedere con l'aggiornamento.
+
+
+
+.Informazioni correlate
+xref:concept_upgrade_requirements_for_metrocluster_configurations.adoc[Requisiti di upgrade per le configurazioni MetroCluster]

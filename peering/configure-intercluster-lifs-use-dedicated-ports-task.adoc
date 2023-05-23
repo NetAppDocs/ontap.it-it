@@ -1,0 +1,231 @@
+---
+permalink: peering/configure-intercluster-lifs-use-dedicated-ports-task.html 
+sidebar: sidebar 
+keywords: configure, intercluster, lifs, dedicated, ports 
+summary: È possibile configurare le LIF tra cluster su porte dedicate. In genere, aumenta la larghezza di banda disponibile per il traffico di replica. 
+---
+= Configurare le LIF di intercluster su porte dedicate
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare le LIF tra cluster su porte dedicate. In genere, aumenta la larghezza di banda disponibile per il traffico di replica.
+
+.Fasi
+. Elencare le porte nel cluster:
++
+`network port show`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+L'esempio seguente mostra le porte di rete in `cluster01`:
+
++
+[listing]
+----
+
+cluster01::> network port show
+                                                             Speed (Mbps)
+Node   Port      IPspace      Broadcast Domain Link   MTU    Admin/Oper
+------ --------- ------------ ---------------- ----- ------- ------------
+cluster01-01
+       e0a       Cluster      Cluster          up     1500   auto/1000
+       e0b       Cluster      Cluster          up     1500   auto/1000
+       e0c       Default      Default          up     1500   auto/1000
+       e0d       Default      Default          up     1500   auto/1000
+       e0e       Default      Default          up     1500   auto/1000
+       e0f       Default      Default          up     1500   auto/1000
+cluster01-02
+       e0a       Cluster      Cluster          up     1500   auto/1000
+       e0b       Cluster      Cluster          up     1500   auto/1000
+       e0c       Default      Default          up     1500   auto/1000
+       e0d       Default      Default          up     1500   auto/1000
+       e0e       Default      Default          up     1500   auto/1000
+       e0f       Default      Default          up     1500   auto/1000
+----
+. Determinare quali porte sono disponibili per la comunicazione tra cluster:
++
+`network interface show -fields home-port,curr-port`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+L'esempio seguente mostra le porte `e0e` e. `e0f` Non sono stati assegnati LIF:
+
++
+[listing]
+----
+
+cluster01::> network interface show -fields home-port,curr-port
+vserver lif                  home-port curr-port
+------- -------------------- --------- ---------
+Cluster cluster01-01_clus1   e0a       e0a
+Cluster cluster01-01_clus2   e0b       e0b
+Cluster cluster01-02_clus1   e0a       e0a
+Cluster cluster01-02_clus2   e0b       e0b
+cluster01
+        cluster_mgmt         e0c       e0c
+cluster01
+        cluster01-01_mgmt1   e0c       e0c
+cluster01
+        cluster01-02_mgmt1   e0c       e0c
+----
+. Creare un gruppo di failover per le porte dedicate:
++
+`network interface failover-groups create -vserver _system_SVM_ -failover-group _failover_group_ -targets _physical _or_logical_ports_`
+
++
+Nell'esempio seguente vengono assegnati i port `e0e` e. `e0f` al gruppo di failover `intercluster01` Sul sistema SVM `cluster01`:
+
++
+[listing]
+----
+cluster01::> network interface failover-groups create -vserver cluster01 -failover-group
+intercluster01 -targets
+cluster01-01:e0e,cluster01-01:e0f,cluster01-02:e0e,cluster01-02:e0f
+----
+. Verificare che il gruppo di failover sia stato creato:
++
+`network interface failover-groups show`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[listing]
+----
+cluster01::> network interface failover-groups show
+                                  Failover
+Vserver          Group            Targets
+---------------- ---------------- --------------------------------------------
+Cluster
+                 Cluster
+                                  cluster01-01:e0a, cluster01-01:e0b,
+                                  cluster01-02:e0a, cluster01-02:e0b
+cluster01
+                 Default
+                                  cluster01-01:e0c, cluster01-01:e0d,
+                                  cluster01-02:e0c, cluster01-02:e0d,
+                                  cluster01-01:e0e, cluster01-01:e0f
+                                  cluster01-02:e0e, cluster01-02:e0f
+                 intercluster01
+                                  cluster01-01:e0e, cluster01-01:e0f
+                                  cluster01-02:e0e, cluster01-02:e0f
+----
+. Creare LIF intercluster sulla SVM di sistema e assegnarle al gruppo di failover.
++
+|===
+| Opzione | Descrizione 
+
+
+ a| 
+*In ONTAP 9.6 e versioni successive:*
+ a| 
+`network interface create -vserver _system_SVM_ -lif _LIF_name_ -service-policy default-intercluster -home-node _node_ -home- port _port_ -address _port_IP_ -netmask _netmask_ -failover-group _failover_group_`
+
+
+
+ a| 
+*In ONTAP 9.5 e versioni precedenti:*
+ a| 
+`network interface create -vserver _system_SVM_ -lif _LIF_name_ -role intercluster -home-node _node_ -home-port _port_ -address _port_IP_ -netmask _netmask_ -failover-group _failover_group_`
+
+|===
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente vengono create le LIF tra cluster `cluster01_icl01` e. `cluster01_icl02` nel gruppo di failover `intercluster01`:
+
++
+[listing]
+----
+cluster01::> network interface create -vserver cluster01 -lif cluster01_icl01 -service-
+policy default-intercluster -home-node cluster01-01 -home-port e0e -address 192.168.1.201
+-netmask 255.255.255.0 -failover-group intercluster01
+
+cluster01::> network interface create -vserver cluster01 -lif cluster01_icl02 -service-
+policy default-intercluster -home-node cluster01-02 -home-port e0e -address 192.168.1.202
+-netmask 255.255.255.0 -failover-group intercluster01
+----
+. Verificare che le LIF dell'intercluster siano state create:
++
+|===
+| Opzione | Descrizione 
+
+
+ a| 
+*In ONTAP 9.6 e versioni successive:*
+ a| 
+`network interface show -service-policy default-intercluster`
+
+
+
+ a| 
+*In ONTAP 9.5 e versioni precedenti:*
+ a| 
+`network interface show -role intercluster`
+
+|===
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[listing]
+----
+cluster01::> network interface show -service-policy default-intercluster
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+cluster01
+            cluster01_icl01
+                       up/up      192.168.1.201/24   cluster01-01  e0e     true
+            cluster01_icl02
+                       up/up      192.168.1.202/24   cluster01-02  e0f     true
+----
+. Verificare che le LIF dell'intercluster siano ridondanti:
++
+|===
+| Opzione | Descrizione 
+
+
+ a| 
+*In ONTAP 9.6 e versioni successive:*
+ a| 
+`network interface show -service-policy default-intercluster -failover`
+
+
+
+ a| 
+*In ONTAP 9.5 e versioni precedenti:*
+ a| 
+`network interface show -role intercluster -failover`
+
+|===
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+L'esempio seguente mostra che le LIF dell'intercluster `cluster01_icl01` e. `cluster01_icl02` Su SVM``e0e`` viene eseguito il failover della porta su `e0f` porta.
+
++
+[listing]
+----
+cluster01::> network interface show -service-policy default-intercluster –failover
+         Logical         Home                  Failover        Failover
+Vserver  Interface       Node:Port             Policy          Group
+-------- --------------- --------------------- --------------- --------
+cluster01
+         cluster01_icl01 cluster01-01:e0e   local-only      intercluster01
+                            Failover Targets:  cluster01-01:e0e,
+                                               cluster01-01:e0f
+         cluster01_icl02 cluster01-02:e0e   local-only      intercluster01
+                            Failover Targets:  cluster01-02:e0e,
+                                               cluster01-02:e0f
+----
+

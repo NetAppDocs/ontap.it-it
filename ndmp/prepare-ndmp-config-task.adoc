@@ -1,0 +1,103 @@
+---
+permalink: ndmp/prepare-ndmp-config-task.html 
+sidebar: sidebar 
+keywords: prepare, ndmp, configuration 
+summary: 'Prima di configurare l"accesso al backup su nastro tramite NDMP (Network Data Management Protocol), è necessario verificare che la configurazione pianificata sia supportata, verificare che le unità a nastro siano elencate come unità qualificate su ciascun nodo, verificare che tutti i nodi dispongano di LIF intercluster, E identificare se l"applicazione di backup supporta l"estensione CAB (Cluster Aware Backup).' 
+---
+= Preparazione per la configurazione NDMP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di configurare l'accesso al backup su nastro tramite NDMP (Network Data Management Protocol), è necessario verificare che la configurazione pianificata sia supportata, verificare che le unità a nastro siano elencate come unità qualificate su ciascun nodo, verificare che tutti i nodi dispongano di LIF intercluster, E identificare se l'applicazione di backup supporta l'estensione CAB (Cluster Aware Backup).
+
+.Fasi
+. Fare riferimento alla matrice di compatibilità del provider di applicazioni di backup per il supporto ONTAP (NetApp non qualifica le applicazioni di backup di terze parti con ONTAP o NDMP).
++
+Verificare che i seguenti componenti NetApp siano compatibili:
+
++
+--
+** La versione di ONTAP 9 in esecuzione sul cluster.
+** Il vendor e la versione dell'applicazione di backup: Ad esempio, Veritas NetBackup 8.2 o CommVault.
+** I dettagli dei dispositivi a nastro, come il produttore, il modello e l'interfaccia delle unità a nastro, ad esempio IBM Ultrium 8 o HPE StoreEver Ultrium 30750 LTO-8.
+** Le piattaforme dei nodi nel cluster, ad esempio FAS8700 o A400.
+
+
+--
++
+
+NOTE: Le matrici di supporto per la compatibilità ONTAP legacy per le applicazioni di backup sono disponibili in https://mysupport.netapp.com/matrix["Tool di matrice di interoperabilità NetApp"^].
+
+. Verificare che le unità a nastro siano elencate come unità qualificate nel file di configurazione del nastro integrato di ciascun nodo:
++
+.. Nell'interfaccia della riga di comando, visualizzare il file di configurazione del nastro integrato utilizzando `storage tape show-supported-status` comando.
++
+....
+cluster1::> storage tape show-supported-status
+
+Node: cluster1-1
+                                Is
+Tape Drives                     Supported  Support Status
+------------------------------  ---------  -------------------------------
+Certance Ultrium 2              true       Dynamically Qualified
+Certance Ultrium 3              true       Dynamically Qualified
+Digital DLT2000                 true       Qualified
+....
+.. Confrontare le unità a nastro con l'elenco delle unità qualificate nell'output.
++
+[NOTE]
+====
+I nomi dei dispositivi a nastro nell'output potrebbero variare leggermente rispetto ai nomi sull'etichetta del dispositivo o nella matrice di interoperabilità. Ad esempio, Digital DLT2000 può anche essere noto come DLT2k. È possibile ignorare queste differenze di denominazione minori.
+
+====
+.. Se un dispositivo non è elencato come qualificato nell'output anche se il dispositivo è qualificato secondo la matrice di interoperabilità, scaricare e installare un file di configurazione aggiornato per il dispositivo utilizzando le istruzioni sul sito del supporto NetApp.
++
+http://mysupport.netapp.com/NOW/download/tools/tape_config["Download NetApp: File di configurazione dei dispositivi su nastro"]
+
++
+Un dispositivo qualificato potrebbe non essere elencato nel file di configurazione del nastro integrato se il dispositivo a nastro è stato qualificato dopo la spedizione del nodo.
+
+
+
+. Verificare che ogni nodo del cluster disponga di una LIF intercluster:
++
+.. Visualizzare le LIF di intercluster sui nodi utilizzando `network interface show -role intercluster` comando.
++
+[listing]
+----
+cluster1::> network interface show -role intercluster
+
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+cluster1    IC1        up/up      192.0.2.65/24      cluster1-1    e0a     true
+----
+.. Se non esiste una LIF di intercluster su un nodo, creare una LIF di intercluster utilizzando `network interface create` comando.
++
+[listing]
+----
+cluster1::> network interface create -vserver cluster1 -lif IC2 -role intercluster
+-home-node cluster1-2 -home-port e0b -address 192.0.2.68 -netmask 255.255.255.0
+-status-admin up -failover-policy local-only -firewall-policy intercluster
+
+cluster1::> network interface show -role intercluster
+
+            Logical    Status     Network            Current       Current Is
+Vserver     Interface  Admin/Oper Address/Mask       Node          Port    Home
+----------- ---------- ---------- ------------------ ------------- ------- ----
+cluster1    IC1        up/up      192.0.2.65/24      cluster1-1    e0a     true
+cluster1    IC2        up/up      192.0.2.68/24      cluster1-2    e0b     true
+----
++
+link:../networking/index.html["Gestione della rete"]
+
+
+
+. Identificare se l'applicazione di backup supporta Cluster Aware Backup (CAB) utilizzando la documentazione fornita con l'applicazione di backup.
++
+Il supporto CAB è un fattore chiave per determinare il tipo di backup che è possibile eseguire.
+
+

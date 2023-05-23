@@ -1,0 +1,139 @@
+---
+permalink: smb-admin/configure-home-directories-u-variable-task.html 
+sidebar: sidebar 
+keywords: 'create, home, directory, configuration, designate, share, name, variable, user, windows, dynamic, configure, configure home directories using the %u variable' 
+summary: 'È possibile creare una configurazione della home directory in cui si designa il nome della condivisione utilizzando la variabile %w, ma si utilizza la variabile %u per indicare il percorso relativo alla condivisione della home directory. Gli utenti possono quindi connettersi alla propria home share utilizzando condivisioni create dinamicamente utilizzando il proprio nome utente Windows senza conoscere il nome o il percorso effettivo della home directory.' 
+---
+= Configurare le home directory utilizzando la variabile %u
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare una configurazione della home directory in cui designare il nome della condivisione utilizzando `%w` variabile ma si utilizza `%u` variabile per indicare il percorso relativo alla condivisione della home directory. Gli utenti possono quindi connettersi alla propria home share utilizzando condivisioni create dinamicamente utilizzando il proprio nome utente Windows senza conoscere il nome o il percorso effettivo della home directory.
+
+.Fasi
+. Creare un qtree per contenere le home directory dell'utente: `volume qtree create -vserver vserver_name -qtree-path qtree_path`
+. Verificare che il qtree utilizzi lo stile di protezione corretto: `volume qtree show`
+. Se qtree non utilizza lo stile di protezione desiderato, modificare lo stile di protezione utilizzando `volume qtree security` comando.
+. Aggiunta di una condivisione home directory: `+vserver cifs share create -vserver vserver -share-name %w -path %u -share-properties homedirectory ,...]+`
++
+`-vserver` `vserver` Specifica la SVM (Storage Virtual Machine) abilitata per CIFS su cui aggiungere il percorso di ricerca.
+
++
+`-share-name` `%w` specifica il nome di condivisione della home directory. Il nome della condivisione viene creato in modo dinamico quando ciascun utente si connette alla propria home directory e ha la forma _Windows_User_NAME_.
+
++
+[NOTE]
+====
+È inoltre possibile utilizzare `%u` variabile per `-share-name` opzione. In questo modo viene creato un percorso di condivisione relativo che utilizza il nome utente UNIX mappato.
+
+====
++
+`-path` `%u` specifica il percorso relativo alla home directory. Il percorso relativo viene creato in modo dinamico quando ciascun utente si connette alla propria home directory ed è del tipo _mapped_UNIX_user_name_.
+
++
+[NOTE]
+====
+Il valore di questa opzione può contenere anche elementi statici. Ad esempio, `eng/%u`.
+
+====
++
+`-share-properties` `+homedirectory\[,...\]+` specifica le proprietà di condivisione per tale condivisione. Specificare `homedirectory` valore. È possibile specificare ulteriori proprietà di condivisione utilizzando un elenco delimitato da virgole.
+
+. Verificare che la condivisione abbia la configurazione desiderata utilizzando `vserver cifs share show` comando.
+. Aggiungere un percorso di ricerca della home directory: `vserver cifs home-directory search-path add -vserver vserver -path path`
++
+`-vserver` `vserver` Specifica la SVM abilitata per CIFS su cui aggiungere il percorso di ricerca.
+
++
+`-path` `path` specifica il percorso assoluto della directory per il percorso di ricerca.
+
+. Verificare di aver aggiunto correttamente il percorso di ricerca utilizzando `vserver cifs home-directory search-path show` comando.
+. Se l'utente UNIX non esiste, creare l'utente UNIX utilizzando `vserver services unix-user create` comando.
++
+[NOTE]
+====
+Il nome utente UNIX a cui si esegue il mapping del nome utente Windows deve esistere prima di eseguire il mapping dell'utente.
+
+====
+. Creare una mappatura dei nomi per l'utente Windows e l'utente UNIX utilizzando il seguente comando: `vserver name-mapping create -vserver vserver_name -direction win-unix -priority integer -pattern windows_user_name -replacement unix_user_name`
++
+[NOTE]
+====
+Se esistono già mappature dei nomi che associano gli utenti Windows agli utenti UNIX, non è necessario eseguire la procedura di mappatura.
+
+====
++
+Il nome utente di Windows viene associato al nome utente UNIX corrispondente. Quando l'utente Windows si connette alla propria home directory share, si connette a una home directory creata dinamicamente con un nome di condivisione che corrisponde al proprio nome utente Windows senza essere consapevole che il nome della directory corrisponde al nome utente UNIX.
+
+. Per gli utenti con una home directory, creare una directory corrispondente nel qtree o nel volume designato per contenere home directory.
++
+Ad esempio, se è stato creato un qtree con il percorso di `/vol/vol1/users` E il nome utente UNIX mappato dell'utente la cui directory si desidera creare è "`unixuser1`", si crea una directory con il seguente percorso: `/vol/vol1/users/unixuser1`.
+
++
+Se è stato creato un volume denominato "`home1`" montato in `/home1`, creare una directory con il seguente percorso: `/home1/unixuser1`.
+
+. Verificare che un utente possa connettersi correttamente alla home share mappando un disco o connettendosi utilizzando il percorso UNC.
++
+Ad esempio, se l'utente mydomain/user1 esegue il mapping all'utente UNIX unixuser1 e desidera connettersi alla directory creata nella fase 10 che si trova su SVM vs1, l'utente 1 si connette utilizzando il percorso UNC `\\vs1\user1`.
+
+
+
+.Esempio
+I comandi dell'esempio seguente creano una configurazione della home directory con le seguenti impostazioni:
+
+* Il nome della condivisione è %w.
+* Il percorso relativo della home directory è %u.
+* Il percorso di ricerca utilizzato per contenere le home directory, `/home1`, È un volume configurato con lo stile di sicurezza UNIX.
+* La configurazione viene creata su SVM vs1.
+
+
+È possibile utilizzare questo tipo di configurazione della home directory quando gli utenti accedono alle proprie home directory da host Windows o Windows e da host UNIX e l'amministratore del file system utilizza utenti e gruppi basati su UNIX per controllare l'accesso al file system.
+
+[listing]
+----
+cluster::> vserver cifs share create -vserver vs1 -share-name %w -path %u ‑share-properties oplocks,browsable,changenotify,homedirectory
+
+cluster::> vserver cifs share show -vserver vs1 -share-name %u
+
+                      Vserver: vs1
+                        Share: %w
+     CIFS Server NetBIOS Name: VS1
+                         Path: %u
+             Share Properties: oplocks
+                               browsable
+                               changenotify
+                               homedirectory
+           Symlink Properties: enable
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+
+cluster::> vserver cifs home-directory search-path add -vserver vs1 ‑path /home1
+
+cluster::> vserver cifs home-directory search-path show -vserver vs1
+Vserver     Position Path
+----------- -------- -----------------
+vs1         1        /home1
+
+cluster::> vserver name-mapping create -vserver vs1 -direction win-unix ‑position 5 -pattern user1 -replacement unixuser1
+
+cluster::> vserver name-mapping show -pattern user1
+Vserver        Direction Position
+-------------- --------- --------
+vs1            win-unix  5        Pattern: user1
+                              Replacement: unixuser1
+----
+.Informazioni correlate
+xref:create-home-directory-config-w-d-variables-task.adoc[Creazione di una configurazione della home directory utilizzando le variabili %w e %d.]
+
+xref:home-directory-config-concept.adoc[Configurazioni aggiuntive della home directory]
+
+xref:display-user-home-directory-path-task.adoc[Visualizzazione delle informazioni sul percorso home directory di un utente SMB]

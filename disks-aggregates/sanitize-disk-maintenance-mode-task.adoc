@@ -1,0 +1,214 @@
+---
+permalink: disks-aggregates/sanitize-disk-maintenance-mode-task.html 
+sidebar: sidebar 
+keywords: sanitize, disk, maintenance mode, nodeshell, node shell, sanitization 
+summary: A partire da ONTAP 9.6, è possibile eseguire la pulizia del disco in modalità di manutenzione. In questo modo è possibile rimuovere i dati da un disco o da un set di dischi su sistemi dismessi o non funzionanti, in modo che i dati non possano essere recuperati. 
+---
+= Igienizzare un disco
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La sanificazione di un disco consente di rimuovere i dati da un disco o da un set di dischi su sistemi decommissionati o inutilizzabili, in modo che i dati non possano mai essere ripristinati.
+
+Sono disponibili due metodi per la sanificazione dei dischi mediante l'interfaccia CLI:
+
+.Sanificazione di un disco con & 8220;modalità di manutenzione& 8221; comandi (ONTAP 9.6 e versioni successive)
+[%collapsible]
+====
+A partire da ONTAP 9.6, è possibile eseguire la pulizia del disco in modalità di manutenzione.
+
+.Prima di iniziare
+* I dischi non possono essere dischi con crittografia automatica (SED).
++
+È necessario utilizzare `storage encryption disk sanitize` Comando per sanificare un SED.
+
++
+link:../encryption-at-rest/index.html["Crittografia dei dati inattivi"]
+
+
+
+.Fasi
+. Avviare in modalità di manutenzione.
++
+.. Uscire dalla shell corrente immettendo `halt`.
++
+Viene visualizzato il prompt DEL CARICATORE.
+
+.. Accedere alla modalità di manutenzione immettendo `boot_ontap maint`.
++
+Una volta visualizzate alcune informazioni, viene visualizzato il prompt della modalità di manutenzione.
+
+
+
+. Se i dischi da sanificare sono partizionati, dispartizionare ciascun disco:
++
+
+NOTE: Il comando per dispartizionare un disco è disponibile solo a livello di DIAG e deve essere eseguito solo sotto la supervisione del supporto NetApp. Si consiglia vivamente di contattare il supporto NetApp prima di procedere. Consultare anche l'articolo della Knowledge base link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/How_to_unpartition_a_spare_drive_in_ONTAP["Come dispartizionare un disco spare in ONTAP"^]
+
++
+`disk unpartition _disk_name_`
+
+. Igienizzare i dischi specificati:
++
+`disk sanitize start [-p _pattern1_|-r [-p _pattern2_|-r [-p _pattern3_|-r]]] [-c _cycle_count_] _disk_list_`
+
++
+
+NOTE: Non spegnere il nodo, interrompere la connettività dello storage o rimuovere i dischi di destinazione durante la pulizia. Se la pulizia viene interrotta durante la fase di formattazione, la fase di formattazione deve essere riavviata e completata prima che i dischi siano stati sanitizzati e pronti per essere restituiti al pool di riserva. Se è necessario interrompere il processo di sanificazione, è possibile farlo utilizzando `disk sanitize abort` comando. Se i dischi specificati sono sottoposti alla fase di formattazione della disinfezione, l'interruzione non avviene fino al completamento della fase.
+
++
+ `-p` `_pattern1_` `-p` `_pattern2_` `-p` `_pattern3_` specifica un ciclo di uno o tre modelli di sovrascrittura di byte esadecimali definiti dall'utente che possono essere applicati in successione ai dischi da sanificare. Il modello predefinito è tre passaggi, utilizzando 0x55 per il primo passaggio, 0xaa per il secondo passaggio e 0x3c per il terzo passaggio.
+
++
+`-r` sostituisce una sovrascrittura ripetuta con una sovrascrittura casuale per uno o tutti i passaggi.
+
++
+`-c` `_cycle_count_` specifica il numero di volte in cui vengono applicati i modelli di sovrascrittura specificati. Il valore predefinito è un ciclo. Il valore massimo è di sette cicli.
+
++
+`_disk_list_` Specifica un elenco degli ID dei dischi spare da sanificare, separati da spazio.
+
+. Se lo si desidera, controllare lo stato del processo di pulizia del disco:
++
+`disk sanitize status [_disk_list_]`
+
+. Una volta completato il processo di sanificazione, riportare i dischi allo stato spare per ciascun disco:
++
+`disk sanitize release _disk_name_`
+
+. Uscire dalla modalità di manutenzione.
+
+
+====
+.Sanificazione di un disco con i comandi 8220; nodeshel 8221; (tutte le release di ONTAP 9)
+[%collapsible]
+====
+Per tutte le versioni di ONTAP 9, quando la disinfezione del disco viene attivata utilizzando comandi nodeshell, alcuni comandi ONTAP di basso livello sono disattivati. Una volta attivata la sanificazione del disco su un nodo, non è possibile disattivarla.
+
+.Prima di iniziare
+* I dischi devono essere dischi spare; devono essere di proprietà di un nodo, ma non devono essere utilizzati in un Tier locale (aggregato).
++
+Se i dischi sono partizionati, nessuna partizione può essere utilizzata in un Tier locale (aggregato).
+
+* I dischi non possono essere dischi con crittografia automatica (SED).
++
+È necessario utilizzare `storage encryption disk sanitize` Comando per sanificare un SED.
+
++
+link:../encryption-at-rest/index.html["Crittografia dei dati inattivi"]
+
+* I dischi non possono far parte di un pool di storage.
+
+
+.Fasi
+. Se i dischi da sanificare sono partizionati, dispartizionare ciascun disco:
++
+--
+
+NOTE: Il comando per dispartizionare un disco è disponibile solo a livello di DIAG e deve essere eseguito solo sotto la supervisione del supporto NetApp. **Si consiglia vivamente di contattare il supporto NetApp prima di procedere.** è inoltre possibile consultare l'articolo della Knowledge base link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/How_to_unpartition_a_spare_drive_in_ONTAP["Come dispartizionare un disco spare in ONTAP"^].
+
+--
++
+`disk unpartition _disk_name_`
+
+. Immettere il nodeshell per il nodo proprietario dei dischi che si desidera disinfettare:
++
+`system node run -node _node_name_`
+
+. Abilitare la sanificazione del disco:
++
+`options licensed_feature.disk_sanitization.enable on`
+
++
+Viene richiesto di confermare il comando perché è irreversibile.
+
+. Passa al livello avanzato di privilegi più avanzato:
++
+`priv set advanced`
+
+. Igienizzare i dischi specificati:
++
+`disk sanitize start [-p pattern1|-r [-p pattern2|-r [-p pattern3|-r]]] [-c cycle_count] disk_list`
+
++
+
+NOTE: Non spegnere il nodo, interrompere la connettività dello storage o rimuovere i dischi di destinazione durante la pulizia. Se la pulizia viene interrotta durante la fase di formattazione, la fase di formattazione deve essere riavviata e completata prima che i dischi siano stati sanitizzati e pronti per essere restituiti al pool di riserva. Se è necessario interrompere il processo di sanificazione, è possibile farlo utilizzando il comando disk sanitize abortor. Se i dischi specificati sono sottoposti alla fase di formattazione della disinfezione, l'interruzione non avviene fino al completamento della fase.
+
++
+`-p pattern1 -p pattern2 -p pattern3` specifica un ciclo di uno o tre modelli di sovrascrittura di byte esadecimali definiti dall'utente che possono essere applicati in successione ai dischi da sanificare. Il modello predefinito è tre passaggi, utilizzando 0x55 per il primo passaggio, 0xaa per il secondo passaggio e 0x3c per il terzo passaggio.
+
++
+`-r` sostituisce una sovrascrittura ripetuta con una sovrascrittura casuale per uno o tutti i passaggi.
+
++
+`-c cycle_count` specifica il numero di volte in cui vengono applicati i modelli di sovrascrittura specificati.
+
++
+Il valore predefinito è un ciclo. Il valore massimo è di sette cicli.
+
++
+`disk_list` Specifica un elenco degli ID dei dischi spare da sanificare, separati da spazio.
+
+. Se si desidera controllare lo stato del processo di pulizia del disco:
++
+`disk sanitize status [disk_list]`
+
+. Una volta completato il processo di sanificazione, riportare i dischi allo stato spare:
++
+`disk sanitize release _disk_name_`
+
+. Torna al livello di privilegio admin nodeshell:
++
+`priv set admin`
+
+. Tornare all'interfaccia utente di ONTAP:
++
+`exit`
+
+. Determinare se tutti i dischi sono stati riportati allo stato spare:
++
+`storage aggregate show-spare-disks`
+
++
+[cols="1,2"]
+|===
+
+
+| Se... | Quindi... 
+
+
+| Tutti i dischi sanitizzati sono elencati come spare | Hai finito. I dischi sono stati sanitizzati e in stato spare. 
+
+
+| Alcuni dischi sanitizzati non sono elencati come dischi di riserva  a| 
+Attenersi alla seguente procedura:
+
+.. Accedere alla modalità avanzata dei privilegi:
++
+`set -privilege advanced`
+
+.. Assegnare i dischi sanitizzati non assegnati al nodo appropriato per ciascun disco:
++
+`storage disk assign -disk _disk_name_ -owner _node_name_`
+
+.. Riportare i dischi allo stato spare per ciascun disco:
++
+`storage disk unfail -disk _disk_name_ -s -q`
+
+.. Tornare alla modalità amministrativa:
++
+`set -privilege admin`
+
+
+
+|===
+
+
+====
+.Risultato
+I dischi specificati vengono sanitizzati e designati come hot spare. I numeri di serie dei dischi sanitizzati vengono scritti in `/etc/log/sanitized_disks`.
+
+I registri di disinfezione dei dischi specificati, che mostrano quanto è stato completato su ciascun disco, vengono scritti in `/mroot/etc/log/sanitization.log`.

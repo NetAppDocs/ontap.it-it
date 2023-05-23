@@ -1,0 +1,107 @@
+---
+permalink: flexgroup/manage-client-async-dir-delete-task.html 
+sidebar: sidebar 
+keywords: perform, directory, enable, delete, files, asynchronous, client rights, SMB, NFS, share, flexvol, flex vol, flexgroup, flex group 
+summary: 'A partire da ONTAP 9.11.1, gli amministratori dello storage possono concedere diritti su un volume per consentire ai client NFS e SMB di eseguire operazioni di _eliminazione rapida delle directory_ a bassa latenza. Quando si attiva l"eliminazione asincrona, i client NFS possono utilizzare `mv` I client SMB e Command possono utilizzare `rename` comando per eliminare una directory sul volume specificato e spostarla in una directory nascosta che per impostazione predefinita è denominata .ontaptrashbin.' 
+---
+= Gestire i diritti dei client per eliminare rapidamente le directory
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.11.1, gli amministratori dello storage possono concedere diritti su un volume per consentire ai client NFS e SMB di eseguire autonomamente operazioni di _eliminazione rapida delle directory_ a bassa latenza. Quando l'eliminazione asincrona è attivata sul cluster, gli utenti del client Linux possono utilizzare `mv` Gli utenti di Command e Windows client possono utilizzare `rename` comando per eliminare rapidamente una directory sul volume specificato spostandola in una directory nascosta che per impostazione predefinita è denominata .ontaptrashbin.
+
+
+
+== Abilitare l'eliminazione asincrona della directory del client
+
+.Fasi
+. Dalla CLI del cluster, accedere alla modalità avanzata dei privilegi: `-privilege advance`
+. Abilitare l'eliminazione asincrona del client e, se lo si desidera, fornire un nome alternativo per la directory del raccoglitore:
++
+`volume file async-delete client enable volume _volname_ vserver _vserverName_ trashbinname _name_`
+
++
+Esempio di utilizzo del nome predefinito del cestino:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client enable -volume v1 -vserver  vs0
+
+Info: Async directory delete from the client has been enabled on volume "v1" in
+      Vserver "vs0".
+----
++
+Esempio di specificazione di un nome di cestino alternativo:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client enable -volume test -trashbin ntaptrash -vserver vs1
+
+Success: Async directory delete from the client is enabled on volume "v1" in
+      Vserver "vs0".
+----
+. Verificare che l'eliminazione asincrona del client sia attivata:
++
+`volume file async-delete client show`
+
++
+Esempio:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client show
+
+Vserver Volume      async-delete client TrashBinName
+------------ ------------ ----------------------- -------------
+vs1          vol1         Enabled          .ntaptrash
+vs2          vol2         Disabled          -
+
+2 entries were displayed.
+----
+
+
+
+
+== Disattivare l'eliminazione asincrona della directory del client
+
+.Fasi
+. Dalla CLI del cluster, disattivare l'eliminazione asincrona della directory del client:
++
+`volume file async-delete client disable volume _volname_ vserver _vserverName_`
+
++
+Esempio:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client disable -volume vol1 -vserver vs1
+
+       Success: Asynchronous directory delete client disabled successfully on volume.
+----
+. Verificare che l'eliminazione asincrona del client sia disattivata:
++
+`volume file async-delete client show`
+
++
+Esempio:
+
++
+[listing]
+----
+cluster1::*> volume file async-delete client show
+
+Vserver      Volume      async-delete client      TrashBinName
+------------ ------------ ----------------------- -------------
+vs1          vol1         Disabled                -
+vs2          vol2         Disabled                -
+
+2 entries were displayed.
+----
+

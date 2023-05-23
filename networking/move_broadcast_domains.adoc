@@ -1,0 +1,50 @@
+---
+sidebar: sidebar 
+permalink: networking/move_broadcast_domains.html 
+keywords: move, moving, broadcast, domain, ipspace, move broadcast domains into ipspaces, move the system created broadcast domains into the ipspaces you created 
+summary: Spostare i domini di broadcast creati dal sistema negli IPspaces creati 
+---
+= Spostare i domini di broadcast negli IPspaces
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Spostare i domini di broadcast creati dal sistema in base alla raggiungibilità del livello 2 negli IPspaces creati.
+
+Prima di spostare il dominio di trasmissione, è necessario verificare la raggiungibilità delle porte nei domini di trasmissione.
+
+La scansione automatica delle porte può determinare quali porte possono raggiungere l'una con l'altra e posizionarle nello stesso dominio di trasmissione, ma questa scansione non è in grado di determinare l'IPSpace appropriato. Se il dominio di trasmissione appartiene a un IPSpace non predefinito, è necessario spostarlo manualmente seguendo la procedura descritta in questa sezione.
+
+.Prima di iniziare
+I domini di broadcast vengono configurati automaticamente come parte delle operazioni di creazione e Unione del cluster. ONTAP definisce il dominio di broadcast "predefinito" come l'insieme di porte con connettività di livello 2 alla porta home dell'interfaccia di gestione sul primo nodo creato nel cluster. Se necessario, vengono creati altri domini di broadcast denominati *Default-1*, *Default-2* e così via.
+
+Quando un nodo si unisce a un cluster esistente, le relative porte di rete si uniscono automaticamente ai domini di broadcast esistenti in base alla raggiungibilità del livello 2. Se non sono raggiungibili in un dominio di trasmissione esistente, le porte vengono inserite in uno o più nuovi domini di trasmissione.
+
+.A proposito di questa attività
+* Le porte con LIF del cluster vengono automaticamente inserite nell'IPSpace "Cluster".
+* Le porte con raggiungibilità alla porta home della LIF di gestione dei nodi vengono inserite nel dominio broadcast "Default".
+* Gli altri domini di broadcast vengono creati automaticamente da ONTAP come parte dell'operazione di creazione o Unione del cluster.
+* Quando si aggiungono VLAN e gruppi di interfacce, queste vengono automaticamente inserite nel dominio di trasmissione appropriato circa un minuto dopo la loro creazione.
+
+
+.Fasi
+. Verificare la raggiungibilità delle porte nei domini di trasmissione. ONTAP monitora automaticamente la raggiungibilità del Layer 2. Utilizzare il seguente comando per verificare che ogni porta sia stata aggiunta a un dominio di trasmissione e che sia "ok".
++
+`network port reachability show -detail`
+
+. Se necessario, spostare i domini di broadcast in altri spazi IP:
++
+`network port broadcast-domain move`
+
++
+Ad esempio, se si desidera spostare un dominio di trasmissione da "Default" a "ips1":
+
++
+`network port broadcast-domain move -ipspace Default -broadcast-domain Default -to-ipspace ips1`
+
+

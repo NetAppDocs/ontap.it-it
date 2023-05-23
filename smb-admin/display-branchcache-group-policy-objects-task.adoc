@@ -1,0 +1,101 @@
+---
+permalink: smb-admin/display-branchcache-group-policy-objects-task.html 
+sidebar: sidebar 
+keywords: display, information, cifs, server, group, policy, object, gpo, configuration, branchcache, define, domain, server, display information about branchcache group policy objects 
+summary: 'È possibile visualizzare informazioni sulla configurazione dell"oggetto Criteri di gruppo (GPO) del server CIFS per determinare se gli oggetti Criteri di gruppo BranchCache sono definiti per il dominio a cui appartiene il server CIFS e, in caso affermativo, quali sono le impostazioni consentite. È inoltre possibile determinare se le impostazioni dell"oggetto Criteri di gruppo BranchCache sono applicate al server CIFS.' 
+---
+= Visualizza informazioni sugli oggetti Criteri di gruppo BranchCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile visualizzare informazioni sulla configurazione dell'oggetto Criteri di gruppo (GPO) del server CIFS per determinare se gli oggetti Criteri di gruppo BranchCache sono definiti per il dominio a cui appartiene il server CIFS e, in caso affermativo, quali sono le impostazioni consentite. È inoltre possibile determinare se le impostazioni dell'oggetto Criteri di gruppo BranchCache sono applicate al server CIFS.
+
+.A proposito di questa attività
+Anche se un'impostazione GPO è definita all'interno del dominio a cui appartiene il server CIFS, non viene necessariamente applicata all'unità organizzativa (OU) contenente la SVM (Storage Virtual Machine) abilitata per CIFS. Le impostazioni dell'oggetto Criteri di gruppo applicato sono il sottoinsieme di tutti gli oggetti Criteri di gruppo definiti che vengono applicati alla SVM abilitata per CIFS. Le impostazioni BranchCache applicate tramite gli oggetti GPO sovrascrivono le impostazioni applicate tramite l'interfaccia CLI.
+
+.Fasi
+. Visualizzare l'impostazione dell'oggetto Criteri di gruppo BranchCache definita per il dominio Active Directory utilizzando `vserver cifs group-policy show-defined` comando.
++
+[NOTE]
+====
+In questo esempio non vengono visualizzati tutti i campi di output disponibili per il comando. L'output viene troncato.
+
+====
++
+[listing]
+----
+cluster1::> vserver cifs group-policy show-defined -vserver vs1
+
+Vserver: vs1
+-----------------------------
+       GPO Name: Default Domain Policy
+       Level: Domain
+      Status: enabled
+  Advanced Audit Settings:
+      Object Access:
+          Central Access Policy Staging: failure
+  Registry Settings:
+      Refresh Time Interval: 22
+      Refresh Random Offset: 8
+      Hash Publication Mode for BranchCache: per-share
+      Hash Version Support for BranchCache: version1
+  [...]
+
+    GPO Name: Resultant Set of Policy
+      Status: enabled
+  Advanced Audit Settings:
+      Object Access:
+          Central Access Policy Staging: failure
+  Registry Settings:
+      Refresh Time Interval: 22
+      Refresh Random Offset: 8
+      Hash Publication for Mode BranchCache: per-share
+      Hash Version Support for BranchCache: version1
+  [...]
+----
+. Visualizzare l'impostazione dell'oggetto Criteri di gruppo BranchCache applicata al server CIFS utilizzando `vserver cifs group-policy show-applied` comando. ``
++
+[NOTE]
+====
+In questo esempio non vengono visualizzati tutti i campi di output disponibili per il comando. L'output viene troncato.
+
+====
++
+[listing]
+----
+cluster1::> vserver cifs group-policy show-applied -vserver vs1
+
+Vserver: vs1
+-----------------------------
+     GPO Name: Default Domain Policy
+       Level: Domain
+      Status: enabled
+  Advanced Audit Settings:
+      Object Access:
+          Central Access Policy Staging: failure
+  Registry Settings:
+      Refresh Time Interval: 22
+      Refresh Random Offset: 8
+      Hash Publication Mode for BranchCache: per-share
+      Hash Version Support for BranchCache: version1
+  [...]
+
+    GPO Name: Resultant Set of Policy
+       Level: RSOP
+  Advanced Audit Settings:
+      Object Access:
+          Central Access Policy Staging: failure
+  Registry Settings:
+      Refresh Time Interval: 22
+      Refresh Random Offset: 8
+      Hash Publication Mode for BranchCache: per-share
+      Hash Version Support for BranchCache: version1
+ [...]
+----
+
+
+.Informazioni correlate
+xref:enable-disable-gpo-support-task.adoc[Attivazione o disattivazione del supporto GPO su un server CIFS]

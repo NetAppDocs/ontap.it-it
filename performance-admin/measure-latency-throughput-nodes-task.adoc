@@ -1,0 +1,95 @@
+---
+permalink: performance-admin/measure-latency-throughput-nodes-task.html 
+sidebar: sidebar 
+keywords: check, throughput, latency, between, nodes 
+summary: È possibile utilizzare il comando test path di rete per identificare i colli di bottiglia della rete o per prequalificare i percorsi di rete tra i nodi. È possibile eseguire il comando tra nodi di intercluster o nodi intracluster. 
+---
+= Controllare il throughput e la latenza tra i nodi
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `network test-path` comando per identificare i colli di bottiglia della rete o per prequalificare i percorsi di rete tra i nodi. È possibile eseguire il comando tra nodi di intercluster o nodi intracluster.
+
+.Di cosa hai bisogno
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+* Per questa attività sono necessari comandi avanzati del livello di privilegio.
+* Per un percorso intercluster, è necessario eseguire il peering dei cluster di origine e di destinazione.
+
+
+.A proposito di questa attività
+Occasionalmente, le performance di rete tra i nodi potrebbero non soddisfare le aspettative per la configurazione del percorso. Una velocità di trasmissione di 1 Gbps per il tipo di trasferimenti di dati di grandi dimensioni, come ad esempio le operazioni di replica di SnapMirror, non sarebbe coerente con un collegamento a 10 GbE tra i cluster di origine e di destinazione.
+
+È possibile utilizzare `network test-path` comando per misurare il throughput e la latenza tra i nodi. È possibile eseguire il comando tra nodi di intercluster o nodi intracluster.
+
+[NOTE]
+====
+Il test satura il percorso di rete con i dati, quindi è necessario eseguire il comando quando il sistema non è occupato e quando il traffico di rete tra i nodi non è eccessivo. Il test si esaurisce dopo dieci secondi. Il comando può essere eseguito solo tra i nodi ONTAP 9.
+
+====
+Il `session-type` L'opzione identifica il tipo di operazione in esecuzione sul percorso di rete, ad esempio "AsyncMirrorRemote" per la replica di SnapMirror su una destinazione remota. Il tipo determina la quantità di dati utilizzati nel test. La seguente tabella definisce i tipi di sessione:
+
+|===
+
+
+| Tipo di sessione | Descrizione 
+
+
+ a| 
+AsyncMirrorLocal
+ a| 
+Impostazioni utilizzate da SnapMirror tra nodi nello stesso cluster
+
+
+
+ a| 
+AsyncMirrorRemote
+ a| 
+Impostazioni utilizzate da SnapMirror tra nodi in cluster diversi (tipo predefinito)
+
+
+
+ a| 
+RemoteDataTransfer
+ a| 
+Impostazioni utilizzate da ONTAP per l'accesso remoto ai dati tra nodi nello stesso cluster (ad esempio, una richiesta NFS a un nodo per un file memorizzato in un volume su un nodo diverso)
+
+|===
+.Fasi
+. Passare al livello di privilegio avanzato:
++
+`set -privilege advanced`
+
+. Misurare il throughput e la latenza tra i nodi:
++
+`network test-path -source-node _source_nodename_ |local -destination-cluster _destination_clustername_ -destination-node _destination_nodename_ -session-type Default|AsyncMirrorLocal|AsyncMirrorRemote|SyncMirrorRemote|RemoteDataTransfer`
+
++
+Il nodo di origine deve trovarsi nel cluster locale. Il nodo di destinazione può trovarsi nel cluster locale o in un cluster peered. Un valore "locale" per `-source-node` specifica il nodo su cui si esegue il comando.
+
++
+Il seguente comando misura il throughput e la latenza per le operazioni di replica di tipo SnapMirror tra `node1` sul cluster locale e. `node3` acceso `cluster2`:
+
++
+[listing]
+----
+cluster1::> network test-path -source-node node1 -destination-cluster cluster2 -destination-node node3 -session-type AsyncMirrorRemote
+Test Duration:      10.88 secs
+Send Throughput:    18.23 MB/sec
+Receive Throughput: 18.23 MB/sec
+MB sent:            198.31
+MB received:        198.31
+Avg latency in ms:  2301.47
+Min latency in ms:  61.14
+Max latency in ms:  3056.86
+----
+. Tornare al privilegio amministrativo:
++
+`set -privilege admin`
+
+
+
+.Al termine
+Se le performance non soddisfano le aspettative per la configurazione del percorso, è necessario controllare le statistiche delle performance del nodo, utilizzare gli strumenti disponibili per isolare il problema nella rete, controllare le impostazioni dello switch e così via.

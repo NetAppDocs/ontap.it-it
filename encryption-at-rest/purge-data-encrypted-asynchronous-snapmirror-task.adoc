@@ -1,0 +1,93 @@
+---
+permalink: encryption-at-rest/purge-data-encrypted-asynchronous-snapmirror-task.html 
+sidebar: sidebar 
+keywords: securely, purging, scrub, data, encrypted, volume, nve, netapp, volume encryption, snapmirror, asynchronous 
+summary: A partire da ONTAP 9.8, è possibile utilizzare la funzione di eliminazione sicura per eseguire lo scrubbing dei dati senza interruzioni su volumi abilitati per NVE con una relazione asincrona di SnapMirror. 
+---
+= Eliminare in modo sicuro i dati su un volume crittografato con una relazione asincrona SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.8, è possibile utilizzare un purge sicuro per i dati "`scrub`" senza interruzioni su volumi abilitati per NVE con una relazione asincrona SnapMirror.
+
+.Di cosa hai bisogno
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+* Per questa attività sono richiesti privilegi avanzati.
+
+
+.A proposito di questa attività
+Il completamento dell'eliminazione sicura può richiedere da diversi minuti a molte ore, a seconda della quantità di dati contenuti nei file cancellati. È possibile utilizzare `volume encryption secure-purge show` per visualizzare lo stato dell'operazione. È possibile utilizzare `volume encryption secure-purge abort` per terminare l'operazione.
+
+[NOTE]
+====
+Per eseguire un'eliminazione sicura su un host SAN, è necessario eliminare l'intero LUN contenente i file da eliminare oppure è necessario essere in grado di perforare i LUN per i blocchi che appartengono ai file che si desidera eliminare. Se non è possibile eliminare il LUN o se il sistema operativo host non supporta i fori di punzonatura nel LUN, non è possibile eseguire un'eliminazione sicura.
+
+====
+.Fasi
+. Sul sistema storage, passare al livello di privilegio avanzato:
++
+`set -privilege advanced`
+
+. Eliminare i file o il LUN che si desidera eliminare in modo sicuro.
++
+** Su un client NAS, eliminare i file che si desidera eliminare in modo sicuro.
+** Su un host SAN, eliminare il LUN che si desidera eliminare in modo sicuro o perforare i fori nel LUN per i blocchi che appartengono ai file che si desidera eliminare.
+
+
+. Preparare il volume di destinazione nella relazione asincrona per la rimozione sicura:
++
+`volume encryption secure-purge start -vserver SVM_name -volume volume_name -prepare true`
+
++
+Ripetere questo passaggio su ciascun volume nella relazione di SnapMirror asincrona.
+
+. Se i file che si desidera eliminare in modo sicuro si trovano nelle copie Snapshot, eliminare le copie Snapshot:
++
+`snapshot delete -vserver SVM_name -volume vol_name -snapshot`
+
+. Se i file che si desidera eliminare in modo sicuro si trovano nelle copie Snapshot di base, procedere come segue:
++
+.. Creare una copia Snapshot sul volume di destinazione nella relazione SnapMirror asincrona:
++
+`volume snapshot create -snapshot snapshot_name -vserver SVM_name -volume vol_name`
+
+.. Aggiornare SnapMirror per spostare in avanti la copia Snapshot di base:
++
+`snapmirror update -source-snapshot snapshot_name -destination-path destination_path`
+
++
+Ripetere questo passaggio per ogni volume nella relazione di SnapMirror asincrona.
+
+.. Ripetere i passaggi (a) e (b) pari al numero di copie Snapshot di base più una.
++
+Ad esempio, se si dispone di due copie Snapshot di base, ripetere i passaggi (a) e (b) tre volte.
+
+.. Verificare che la copia Snapshot di base sia presente: +
+`snapshot show -vserver SVM_name -volume vol_name``
+.. Eliminare la copia Snapshot di base: +
+`snapshot delete -vserver SVM_name -volume vol_name -snapshot snapshot`
+
+
+. Eliminare in modo sicuro i file cancellati:
++
+`volume encryption secure-purge start -vserver SVM_name -volume volume_name`
+
++
+Ripetere questo passaggio su ciascun volume nella relazione di SnapMirror asincrona.
+
++
+Il seguente comando elimina in modo sicuro i file cancellati su "`vol1`" su SVM "`vs1`":
+
++
+[listing]
+----
+cluster1::> volume encryption secure-purge start -vserver vs1 -volume vol1
+----
+. Verificare lo stato dell'operazione di eliminazione sicura:
++
+`volume encryption secure-purge show`
+
+

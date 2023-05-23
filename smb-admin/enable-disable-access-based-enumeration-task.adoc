@@ -1,0 +1,88 @@
+---
+permalink: smb-admin/enable-disable-access-based-enumeration-task.html 
+sidebar: sidebar 
+keywords: enable, disable, access-based, enumeration, abe, smb, allow, prevent, user, permission, access, enable or disable access-based enumeration on smb shares 
+summary: 'È possibile attivare o disattivare l"enumerazione basata sull"accesso (ABE) sulle condivisioni SMB per consentire o impedire agli utenti di visualizzare le risorse condivise a cui non dispongono dell"autorizzazione di accesso.' 
+---
+= Abilitare o disabilitare l'enumerazione basata sull'accesso sulle condivisioni SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile attivare o disattivare l'enumerazione basata sull'accesso (ABE) sulle condivisioni SMB per consentire o impedire agli utenti di visualizzare le risorse condivise a cui non dispongono dell'autorizzazione di accesso.
+
+.A proposito di questa attività
+Per impostazione predefinita, ABE è disattivato.
+
+.Fasi
+. Eseguire una delle seguenti operazioni:
++
+|===
+| Se si desidera... | Immettere il comando... 
+
+
+ a| 
+Abilitare ABE su una nuova condivisione
+ a| 
+`vserver cifs share create -vserver vserver_name -share-name share_name -path path -share-properties access-based-enumeration` Quando si crea una condivisione SMB, è possibile specificare ulteriori impostazioni di condivisione opzionali e proprietà di condivisione aggiuntive. Per ulteriori informazioni, vedere la pagina man di `vserver cifs share create` comando.
+
+
+
+ a| 
+Abilitare ABE su una condivisione esistente
+ a| 
+`vserver cifs share properties add -vserver vserver_name -share-name share_name -share-properties access-based-enumeration` Le proprietà di condivisione esistenti vengono conservate. La proprietà di condivisione ABE viene aggiunta all'elenco esistente di proprietà di condivisione.
+
+
+
+ a| 
+Disattiva ABE su una condivisione esistente
+ a| 
+`vserver cifs share properties remove -vserver vserver_name -share-name share_name -share-properties access-based-enumeration` Le altre proprietà di condivisione vengono conservate. Solo la proprietà di condivisione ABE viene rimossa dall'elenco delle proprietà di condivisione.
+
+|===
+. Verificare che la configurazione della condivisione sia corretta utilizzando `vserver cifs share show` comando.
+
+
+.Esempi
+Nell'esempio seguente viene creata una condivisione SMB ABE denominata "`sales`" con un percorso di `/sales` Su SVM vs1. La condivisione viene creata con `access-based-enumeration` come proprietà condivisa:
+
+[listing]
+----
+cluster1::> vserver cifs share create -vserver vs1 -share-name sales -path /sales  -share-properties access-based-enumeration,oplocks,browsable,changenotify
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name sales
+
+                      Vserver: vs1
+                        Share: sales
+     CIFS Server NetBIOS Name: VS1
+                         Path: /sales
+             Share Properties: access-based-enumeration
+                               oplocks
+                               browsable
+                               changenotify
+           Symlink Properties: enable
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+----
+Nell'esempio riportato di seguito viene aggiunto il `access-based-enumeration` Condividere la proprietà su una condivisione SMB denominata "`data2`":
+
+[listing]
+----
+cluster1::> vserver cifs share properties add -vserver vs1 -share-name data2 -share-properties access-based-enumeration
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name data2 -fields share-name,share-properties
+server  share-name share-properties
+------- ---------- -------------------------------------------------------
+vs1     data2      oplocks,browsable,changenotify,access-based-enumeration
+----
+.Informazioni correlate
+xref:add-remove-share-properties-eexisting-share-task.adoc[Aggiunta o rimozione delle proprietà di condivisione su una condivisione SMB esistente]

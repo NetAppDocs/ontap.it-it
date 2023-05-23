@@ -1,0 +1,58 @@
+---
+permalink: nfs-config/load-local-unix-users-uri-task.html 
+sidebar: sidebar 
+keywords: load, local, unix, users, uri 
+summary: 'In alternativa alla creazione manuale di singoli utenti UNIX locali in SVM, è possibile semplificare l"attività caricando un elenco di utenti UNIX locali in SVM da un URI (Uniform Resource Identifier) (vserver Services name-service unix-user load-from-uri).' 
+---
+= Caricare utenti UNIX locali da un URI
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+In alternativa alla creazione manuale di singoli utenti UNIX locali in SVM, è possibile semplificare l'attività caricando un elenco di utenti UNIX locali in SVM da un URI (Uniform Resource Identifier) (`vserver services name-service unix-user load-from-uri`).
+
+.Fasi
+. Creare un file contenente l'elenco degli utenti UNIX locali che si desidera caricare.
++
+Il file deve contenere informazioni sull'utente in UNIX `/etc/passwd` formato:
+
++
+`_user_name: password: user_ID: group_ID: full_name_`
+
++
+Il comando elimina il valore di `_password_` e i valori dei campi dopo `_full_name_` campo (`_home_directory_` e. `_shell_`).
+
++
+Le dimensioni massime supportate dei file sono 2.5 MB.
+
+. Verificare che l'elenco non contenga informazioni duplicate.
++
+Se l'elenco contiene voci duplicate, il caricamento dell'elenco non riesce e viene visualizzato un messaggio di errore.
+
+. Copiare il file su un server.
++
+Il server deve essere raggiungibile dal sistema di storage su HTTP, HTTPS, FTP o FTPS.
+
+. Determinare l'URI del file.
++
+L'URI è l'indirizzo fornito al sistema di storage per indicare la posizione del file.
+
+. Caricare il file contenente l'elenco degli utenti UNIX locali nelle SVM dall'URI:
++
+`vserver services name-service unix-user load-from-uri -vserver _vserver_name_ -uri {ftp|http|ftps|https}://_uri_ -overwrite {true|false}`
+
++
+`-overwrite` {`true` `false`} specifica se sovrascrivere le voci. L'impostazione predefinita è `false`.
+
+
+
+.Esempio
+Il seguente comando carica un elenco di utenti UNIX locali dall'URI `+ftp://ftp.example.com/passwd+` Nella SVM denominata vs1. Gli utenti esistenti sulla SVM non vengono sovrascritti dalle informazioni dell'URI.
+
+[listing]
+----
+node::> vserver services name-service unix-user load-from-uri -vserver vs1
+-uri ftp://ftp.example.com/passwd -overwrite false
+----

@@ -1,0 +1,70 @@
+---
+permalink: disks-aggregates/determine-flash-pool-candidacy-cache-size-task.html 
+sidebar: sidebar 
+keywords: flash pool, candidacy, optimal cache size, local tier, aggregate 
+summary: 'Prima di convertire un Tier locale (aggregato) esistente in un Tier locale di Flash Pool, è possibile determinare se il Tier locale è associato all"i/o e le migliori dimensioni della cache di Flash Pool per il carico di lavoro e il budget. È inoltre possibile controllare se la cache di un Tier locale di Flash Pool esistente è dimensionata correttamente.' 
+---
+= Determinare la candidatura di Flash Pool e le dimensioni ottimali della cache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di convertire un Tier locale (aggregato) esistente in un Tier locale di Flash Pool, è possibile determinare se il Tier locale è associato all'i/o e le migliori dimensioni della cache di Flash Pool per il carico di lavoro e il budget. È inoltre possibile controllare se la cache di un Tier locale di Flash Pool esistente è dimensionata correttamente.
+
+.Di cosa hai bisogno
+Dovresti sapere approssimativamente quando il Tier locale che stai analizzando sperimenta il suo carico di picco.
+
+.Fasi
+. Accedere alla modalità avanzata:
++
+`set advanced`
+
+. Se è necessario determinare se un Tier locale (aggregato) esistente sia un buon candidato per la conversione in un aggregato di Flash Pool, determinare la disponibilità dei dischi nell'aggregato durante un periodo di carico di picco e in che modo ciò influisce sulla latenza:
++
+`statistics show-periodic -object disk:raid_group -instance _raid_group_name_ -counter disk_busy|user_read_latency -interval 1 -iterations 60`
+
++
+Puoi decidere se ridurre la latenza aggiungendo la cache di Flash Pool è utile per questo aggregato.
+
++
+Il comando seguente mostra le statistiche per il primo gruppo RAID dell'aggregato "`aggr1`":
+
++
+`statistics show-periodic -object disk:raid_group -instance /aggr1/plex0/rg0 -counter disk_busy|user_read_latency -interval 1 -iterations 60`
+
+. Avviare Automated workload Analyzer (AWA):
++
+`storage automated-working-set-analyzer start -node _node_name_ -aggregate _aggr_name_`
+
++
+AWA inizia a raccogliere i dati del carico di lavoro per i volumi associati all'aggregato specificato.
+
+. Uscire dalla modalità avanzata:
++
+`set admin`
+
++
+Consentire l'esecuzione di AWA fino a quando non si sono verificati uno o più intervalli di carico di picco. AWA raccoglie le statistiche dei carichi di lavoro per i volumi associati all'aggregato specificato e analizza i dati per una durata massima di una settimana. L'esecuzione di AWA per più di una settimana riporta solo i dati raccolti dalla settimana più recente. Le stime delle dimensioni della cache si basano sui carichi più elevati rilevati durante il periodo di raccolta dei dati; non è necessario che il carico sia elevato per l'intero periodo di raccolta dei dati.
+
+. Accedere alla modalità avanzata:
++
+`set advanced`
+
+. Visualizzare l'analisi del carico di lavoro:
++
+`storage automated-working-set-analyzer show -node _node_name_ -instance`
+
+. Arrestare AWA:
++
+`storage automated-working-set-analyzer stop _node_name_`
+
++
+Tutti i dati dei workload vengono eliminati e non sono più disponibili per l'analisi.
+
+. Uscire dalla modalità avanzata:
++
+`set admin`
+
+

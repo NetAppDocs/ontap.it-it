@@ -1,0 +1,93 @@
+---
+permalink: system-admin/troubleshoot-autosupport-http-https-task.html 
+sidebar: sidebar 
+keywords: troubleshoot, autosupport, message, delivery, http, https, check, settings, resolve, problem 
+summary: Se il sistema non invia il messaggio AutoSupport previsto e si sta utilizzando HTTP o HTTPS, è possibile verificare diverse impostazioni per risolvere il problema. 
+---
+= Risolvere i problemi relativi all'erogazione dei messaggi AutoSupport su HTTP o HTTPS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se il sistema non invia il messaggio AutoSupport previsto e si sta utilizzando HTTP o HTTPS, oppure se la funzione di aggiornamento automatico non funziona, è possibile verificare alcune impostazioni per risolvere il problema.
+
+.Di cosa hai bisogno
+La connettività di rete di base e la ricerca DNS dovrebbero essere state confermate:
+
+* La LIF di gestione dei nodi deve essere attiva per lo stato operativo e amministrativo.
+* È necessario essere in grado di eseguire il ping di un host funzionante sulla stessa subnet dalla LIF di gestione del cluster (non una LIF su uno dei nodi).
+* È necessario essere in grado di eseguire il ping di un host funzionante al di fuori della subnet dalla LIF di gestione del cluster.
+* È necessario essere in grado di eseguire il ping di un host funzionante al di fuori della subnet dalla LIF di gestione del cluster utilizzando il nome dell'host (non l'indirizzo IP).
+
+
+.A proposito di questa attività
+Questi passaggi si riferiscono ai casi in cui si è stabilito che AutoSupport è in grado di generare il messaggio, ma non è in grado di recapitare il messaggio su HTTP o HTTPS.
+
+Se si verificano errori o non è possibile completare un passaggio di questa procedura, individuare e risolvere il problema prima di passare alla fase successiva.
+
+.Fasi
+. Visualizzare lo stato dettagliato del sottosistema AutoSupport:
++
+`system node autosupport check show-details`
+
++
+Ciò include la verifica della connettività alle destinazioni AutoSupport inviando messaggi di test e fornendo un elenco di possibili errori nelle impostazioni di configurazione di AutoSupport.
+
+. Verificare lo stato della LIF di gestione dei nodi:
++
+`network interface show -home-node local -role node-mgmt -fields vserver,lif,status-oper,status-admin,address,role`
+
++
+Il `status-oper` e. `status-admin` i campi devono restituire "`up`".
+
+. Registrare il nome SVM, il nome LIF e l'indirizzo IP LIF per un utilizzo successivo.
+. Assicurarsi che il DNS sia attivato e configurato correttamente:
++
+`vserver services name-service dns show`
+
+. Risolvere eventuali errori restituiti dal messaggio AutoSupport:
++
+`system node autosupport history show -node * -fields node,seq-num,destination,last-update,status,error`
+
++
+Per assistenza nella risoluzione di eventuali errori restituiti, consultare link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/ONTAP_AutoSupport_(Transport_HTTPS_and_HTTP)_Resolution_Guide["Guida alla risoluzione di ONTAP AutoSupport (Transport HTTPS and HTTP)"^].
+
+. Verificare che il cluster sia in grado di accedere a Internet e ai server necessari:
++
+.. `network traceroute -lif node-management_LIF -destination DNS server`
+.. `network traceroute -lif node_management_LIF -destination support.netapp.com`
++
+[NOTE]
+====
+L'indirizzo `support.netapp.com` di per sé non risponde al ping/traceroute, ma le informazioni per-hop sono preziose.
+
+====
+.. `system node autosupport show -fields proxy-url`
+.. `network traceroute -node node_management_LIF -destination proxy_url`
+
+
++
+Se uno di questi percorsi non funziona, provare lo stesso percorso da un host funzionante sulla stessa sottorete del cluster, utilizzando l'utility "`traceroute`" o "`tracert`" presente sulla maggior parte dei client di rete di terze parti. Ciò consente di determinare se il problema riguarda la configurazione di rete o la configurazione del cluster.
+
+. Se si utilizza HTTPS per il protocollo di trasporto AutoSupport, assicurarsi che il traffico HTTPS possa uscire dalla rete:
++
+.. Configurare un client Web sulla stessa subnet della LIF di gestione del cluster.
++
+Assicurarsi che tutti i parametri di configurazione siano gli stessi valori della configurazione AutoSupport, incluso l'utilizzo dello stesso server proxy, nome utente, password e porta.
+
+.. Accesso `+https://support.netapp.com+` con il client web.
++
+L'accesso dovrebbe essere riuscito. In caso contrario, assicurarsi che tutti i firewall siano configurati correttamente per consentire il traffico HTTPS e DNS e che il server proxy sia configurato correttamente. Per ulteriori informazioni sulla configurazione della risoluzione statica dei nomi per support.netapp.com, consultare l'articolo della Knowledge base https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/How_would_a_HOST_entry_be_added_in_ONTAP_for_support.netapp.com%3F["Come aggiungere una voce HOST in ONTAP per support.netapp.com?"^]
+
+
+
+. A partire da ONTAP 9.10.1, se è stata attivata la funzione di aggiornamento automatico, assicurarsi di disporre della connettività HTTPS per i seguenti URL aggiuntivi:
++
+** https://support-sg-emea.netapp.com
+** https://support-sg-naeast.netapp.com
+** https://support-sg-nawest.netapp.com
+
+
+

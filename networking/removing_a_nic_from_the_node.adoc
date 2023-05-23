@@ -1,0 +1,51 @@
+---
+sidebar: sidebar 
+permalink: networking/removing_a_nic_from_the_node.html 
+keywords: delete, deleting, remove, removing, nic, network, interface, card, slot, maintenance, faulty, error, bad, failed, fail, node, remove a faulty NIC from its slot or move the NIC to another slot for maintenance purposes, removing a nic from the node on ontap 9.8 or later, controller-replacement, network displaced-vlans, displaced-vlans show, displaced-vlans restore, 
+summary: ONTAP 9.8 e versioni successive, rimuovere una scheda di rete difettosa dal relativo slot o spostarla in un altro slot per scopi di manutenzione 
+---
+= Rimozione di una scheda di rete dal nodo su ONTAP 9.8 o versione successiva
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Questo argomento riguarda ONTAP 9.8 o versioni successive. Potrebbe essere necessario rimuovere una scheda NIC difettosa dal relativo slot o spostarla in un altro slot per scopi di manutenzione.
+
+.Fasi
+. Spegnere il nodo.
+. Rimuovere fisicamente la scheda NIC dal relativo slot.
+. Accendere il nodo.
+. Verificare che la porta sia stata eliminata:
++
+....
+network port show
+....
++
+
+NOTE: ONTAP rimuove automaticamente la porta da qualsiasi gruppo di interfacce. Se la porta era l'unico membro di un gruppo di interfacce, il gruppo di interfacce viene cancellato.
+
+. Se sulla porta sono configurate delle VLAN, queste vengono spostate. È possibile visualizzare le VLAN smontate utilizzando il seguente comando:
++
+....
+cluster controller-replacement network displaced-vlans show
+....
++
+
+NOTE: Il `displaced-interface show`, `displaced-vlans show`, e. `displaced-vlans restore` i comandi sono univoci e non richiedono il nome completo del comando, che inizia con `cluster controller-replacement network`.
+
+. Queste VLAN vengono eliminate, ma possono essere ripristinate utilizzando il seguente comando:
++
+....
+displaced-vlans restore
+....
+. Se sulla porta sono configurate delle LIF, ONTAP sceglie automaticamente nuove porte home per quelle LIF su un'altra porta nello stesso dominio di trasmissione. Se sullo stesso filer non viene trovata alcuna porta home adatta, tali LIF vengono considerati spostati. È possibile visualizzare i file LIF spostati utilizzando il seguente comando:
++
+`displaced-interface show`
+
+. Quando viene aggiunta una nuova porta al dominio di trasmissione sullo stesso nodo, le porte home per i file LIF vengono ripristinate automaticamente. In alternativa, è possibile impostare la porta home utilizzando `network interface modify -home-port -home-node or use the displaced- interface restore` comando.
+

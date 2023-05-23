@@ -1,0 +1,114 @@
+---
+permalink: peering/add-svm-intercluster-relationship-93-later-task.html 
+sidebar: sidebar 
+keywords: add, intercluster, svm, peer, vserver peer create 
+summary: Se si crea una SVM dopo aver configurato una relazione peer del cluster, sarà necessario aggiungere manualmente una relazione peer per la SVM. È possibile utilizzare il comando vserver peer create per creare una relazione peer tra le SVM. Una volta creata la relazione peer, è possibile eseguire vserver peer accept sul cluster remoto per autorizzare la relazione peer. 
+---
+= Aggiungere una relazione peer SVM tra cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se si crea una SVM dopo aver configurato una relazione peer del cluster, sarà necessario aggiungere manualmente una relazione peer per la SVM. È possibile utilizzare `vserver peer create` Per creare una relazione peer tra le SVM. Una volta creata la relazione peer, è possibile eseguire `vserver peer accept` sul cluster remoto per autorizzare la relazione peer.
+
+.Prima di iniziare
+I cluster di origine e di destinazione devono essere peering.
+
+.A proposito di questa attività
+È possibile creare relazioni peer tra le SVM nello stesso cluster per il backup dei dati locale. Per ulteriori informazioni, consultare `vserver peer create` pagina man.
+
+Gli amministratori utilizzano occasionalmente `vserver peer reject` Comando per rifiutare una relazione peer SVM proposta. Se la relazione tra le SVM si trova in `rejected` state (stato), è necessario eliminare la relazione prima di crearne una nuova. Per ulteriori informazioni, consultare `vserver peer delete` pagina man.
+
+.Fasi
+. Nel cluster di origine per la protezione dei dati, creare una relazione peer con una SVM nel cluster di destinazione per la protezione dei dati:
++
+`vserver peer create -vserver _local_SVM_ -peer-vserver _remote_SVM_ -applications snapmirror|file-copy|lun-copy -peer-cluster _remote_cluster_`
+
++
+Nell'esempio seguente viene creata una relazione peer tra la SVM locale``pvs1`` E SVM remoto``vs1``
+
++
+[listing]
+----
+cluster01::> vserver peer create -vserver pvs1 -peer-vserver vs1 -applications snapmirror -peer-cluster cluster02
+----
++
+Se le SVM locali e remote hanno gli stessi nomi, è necessario utilizzare un _nome locale_ per creare la relazione peer SVM:
+
++
+[listing]
+----
+cluster01::> vserver peer create -vserver vs1 -peer-vserver
+vs1 -applications snapmirror -peer-cluster cluster01
+-local-name cluster1vs1LocallyUniqueName
+----
+. Nel cluster di origine per la protezione dei dati, verificare che la relazione peer sia stata avviata:
++
+`vserver peer show-all`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+L'esempio seguente mostra che la relazione peer tra SVM``pvs1`` E SVM``vs1`` è stato avviato:
+
++
+[listing]
+----
+cluster01::> vserver peer show-all
+            Peer        Peer                      Peering
+Vserver     Vserver     State      Peer Cluster   Applications
+--------    --------    ---------  -------------  ------------
+pvs1        vs1         initiated   Cluster02       snapmirror
+----
+. Sul cluster di destinazione per la protezione dei dati, visualizzare la relazione peer SVM in sospeso:
++
+`vserver peer show`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio riportato di seguito sono elencate le relazioni peer in sospeso per `cluster02`:
+
++
+[listing]
+----
+cluster02::> vserver peer show
+
+                   Peer               Peer
+Vserver            Vserver            State
+-----------        -----------        ------------
+vs1                pvs1               pending
+----
+. Nel cluster di destinazione per la protezione dei dati, autorizzare la relazione peer in sospeso:
++
+`vserver peer accept -vserver _local_SVM_ -peer-vserver _remote_SVM_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio riportato di seguito viene autorizzata la relazione peer tra la SVM locale `vs1` E SVM remoto `pvs1`:
+
++
+[listing]
+----
+cluster02::> vserver peer accept -vserver vs1 -peer-vserver pvs1
+----
+. Verificare la relazione peer SVM:
++
+`vserver peer show`
+
++
+[listing]
+----
+cluster01::> vserver peer show
+            Peer        Peer                           Peering        Remote
+Vserver     Vserver     State        Peer Cluster      Applications   Vserver
+----------- ----------- ------------ ----------------- -------------- ---------
+pvs1        vs1         peered       cluster02         snapmirror     vs1
+----
+

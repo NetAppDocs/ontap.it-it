@@ -1,0 +1,129 @@
+---
+permalink: nas-audit/display-connections-external-fpolicy-servers-task.html 
+sidebar: sidebar 
+keywords: display, information, connections, external fpolicy servers 
+summary: 'È possibile visualizzare informazioni sullo stato delle connessioni a server FPolicy esterni (server FPolicy) per il cluster o per una specifica macchina virtuale di storage (SVM). Queste informazioni consentono di determinare quali server FPolicy sono connessi.' 
+---
+= Visualizza informazioni sulle connessioni a server FPolicy esterni
+:allow-uri-read: 
+
+
+[role="lead"]
+È possibile visualizzare informazioni sullo stato delle connessioni a server FPolicy esterni (server FPolicy) per il cluster o per una specifica macchina virtuale di storage (SVM). Queste informazioni consentono di determinare quali server FPolicy sono connessi.
+
+.A proposito di questa attività
+Se non si specificano parametri, il comando visualizza le seguenti informazioni:
+
+* Nome SVM
+* Nome del nodo
+* Nome del criterio FPolicy
+* Indirizzo IP del server FPolicy
+* Stato del server FPolicy
+* Tipo di server FPolicy
+
+
+Oltre a visualizzare informazioni sulle connessioni FPolicy sul cluster o su una specifica SVM, è possibile utilizzare i parametri dei comandi per filtrare l'output del comando in base ad altri criteri.
+
+È possibile specificare `-instance` parametro per visualizzare informazioni dettagliate sui criteri elencati. In alternativa, è possibile utilizzare `-fields` parametro per visualizzare solo i campi indicati nell'output del comando. È possibile immettere `?` dopo il `-fields` parametro per scoprire quali campi è possibile utilizzare.
+
+.Fase
+. Visualizzare le informazioni filtrate sullo stato della connessione tra il nodo e il server FPolicy utilizzando il comando appropriato:
++
+[cols="35,65"]
+|===
+
+
+| Se si desidera visualizzare le informazioni sullo stato della connessione relative ai server FPolicy... | Inserisci... 
+
+
+ a| 
+Specificato dall'utente
+ a| 
+`vserver fpolicy show-engine -server IP_address`
+
+
+
+ a| 
+Per una SVM specificata
+ a| 
+`vserver fpolicy show-engine -vserver vserver_name`
+
+
+
+ a| 
+Che sono associati a una policy specificata
+ a| 
+`vserver fpolicy show-engine -policy-name policy_name`
+
+
+
+ a| 
+Con lo stato del server specificato
+ a| 
+`vserver fpolicy show-engine -server-status status`
+
+Lo stato del server può essere uno dei seguenti:
+
+** `connected`
+** `disconnected`
+** `connecting`
+** `disconnecting`
+
+
+
+
+ a| 
+Con il tipo specificato
+ a| 
+`vserver fpolicy show-engine -server-type type`
+
+Il tipo di server FPolicy può essere uno dei seguenti:
+
+** `primary`
+** `secondary`
+
+
+
+
+ a| 
+Disconnessi con il motivo specificato
+ a| 
+`vserver fpolicy show-engine -disconnect-reason text`
+
+La disconnessione può essere dovuta a diversi motivi. Di seguito sono riportati i motivi più comuni per la disconnessione:
+
+** `Disconnect command received from CLI.`
+** `Error encountered while parsing notification response from FPolicy server.`
+** `FPolicy Handshake failed.`
+** `SSL handshake failed.`
+** `TCP Connection to FPolicy server failed.`
+** `The screen response message received from the FPolicy server is not valid.`
+
+
+|===
+
+
+.Esempio
+Questo esempio mostra informazioni sulle connessioni esterne del motore ai server FPolicy su SVM vs1.example.com:
+
+[listing]
+----
+cluster1::> vserver fpolicy show-engine -vserver vs1.example.com
+FPolicy                                              Server-       Server-
+Vserver         Policy    Node         Server        status        type
+--------------- --------- ------------ ------------- ------------- ---------
+vs1.example.com policy1   node1        10.1.1.2      connected     primary
+vs1.example.com policy1   node1        10.1.1.3      disconnected  primary
+vs1.example.com policy1   node2        10.1.1.2      connected     primary
+vs1.example.com policy1   node2        10.1.1.3      disconnected  primary
+----
+Nell'esempio riportato di seguito vengono visualizzate solo informazioni relative ai server FPolicy connessi:
+
+[listing]
+----
+cluster1::> vserver fpolicy show-engine -fields server -server-status connected
+node       vserver         policy-name server
+---------- --------------- ----------- -------
+node1      vs1.example.com policy1     10.1.1.2
+node2      vs1.example.com policy1     10.1.1.2
+----

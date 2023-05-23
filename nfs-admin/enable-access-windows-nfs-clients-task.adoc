@@ -1,0 +1,40 @@
+---
+permalink: nfs-admin/enable-access-windows-nfs-clients-task.html 
+sidebar: sidebar 
+keywords: enable, access, windows, nfs, clients 
+summary: 'ONTAP supporta l"accesso ai file dai client NFSv3 di Windows. Ciò significa che i client che eseguono sistemi operativi Windows con supporto NFSv3 possono ora accedere ai file sulle esportazioni NFSv3 nel cluster. Per utilizzare correttamente questa funzionalità, è necessario configurare correttamente la macchina virtuale di storage (SVM) ed essere consapevoli di determinati requisiti e limitazioni.' 
+---
+= Abilitare l'accesso per i client NFS di Windows
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP supporta l'accesso ai file dai client NFSv3 di Windows. Ciò significa che i client che eseguono sistemi operativi Windows con supporto NFSv3 possono ora accedere ai file sulle esportazioni NFSv3 nel cluster. Per utilizzare correttamente questa funzionalità, è necessario configurare correttamente la macchina virtuale di storage (SVM) ed essere consapevoli di determinati requisiti e limitazioni.
+
+.Di cosa hai bisogno
+NFSv3 deve essere attivato su SVM.
+
+.A proposito di questa attività
+Per impostazione predefinita, il supporto del client Windows NFSv3 è disattivato.
+
+I client Windows NFSv3 non supportano il protocollo NSM (Network Status Monitor). Di conseguenza, le sessioni client di Windows NFSv3 potrebbero riscontrare interruzioni durante le operazioni di failover dello storage e spostamento del volume.
+
+.Fasi
+. Abilitare il supporto del client Windows NFSv3:
++
+`vserver nfs modify -vserver vserver_name -v3-ms-dos-client enabled`
+
+. Su tutti gli SVM che supportano i client Windows NFSv3, disattivare `-enable-ejukebox` e. `-v3-connection-drop` parametri: `vserver nfs modify -vserver vserver_name -enable-ejukebox false -v3-connection-drop disabled`
++
+I client Windows NFSv3 possono ora montare le esportazioni sul sistema storage.
+
+. Assicurarsi che ogni client Windows NFSv3 utilizzi i supporti rigidi specificando `-o mtype=hard` opzione.
++
+Questo è necessario per garantire montaggi affidabili.
+
++
+`mount -o mtype=hard \\10.53.33.10\vol\vol1 z:\`
+
+

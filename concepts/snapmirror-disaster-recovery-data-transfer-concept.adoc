@@ -1,0 +1,46 @@
+---
+permalink: concepts/snapmirror-disaster-recovery-data-transfer-concept.html 
+sidebar: sidebar 
+keywords: snapmirror disaster recovery, data transfer 
+summary: SnapMirror è una tecnologia di disaster recovery progettata per il failover dallo storage primario allo storage secondario in un sito geograficamente remoto. Come suggerisce il nome, SnapMirror crea una replica, o mirror, dei dati di lavoro nello storage secondario da cui è possibile continuare a servire i dati in caso di disastro nel sito primario. 
+---
+= Disaster recovery e trasferimento dei dati SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+_SnapMirror_ è una tecnologia di disaster recovery progettata per il failover dallo storage primario allo storage secondario in un sito geograficamente remoto. Come suggerisce il nome, SnapMirror crea una replica, o _mirror_, dei dati di lavoro nello storage secondario da cui è possibile continuare a servire i dati in caso di disastro nel sito primario.
+
+I dati vengono mirrorati a livello di volume. La relazione tra il volume di origine nello storage primario e il volume di destinazione nello storage secondario viene chiamata _relazione di protezione dei dati._ i cluster in cui risiedono i volumi e le SVM che servono i dati dei volumi devono essere _peering._ Una relazione peer consente lo scambio di cluster e SVM dati in modo sicuro.
+
+[TIP]
+====
+È inoltre possibile creare una relazione di protezione dei dati tra le SVM. In questo tipo di relazione, viene replicata tutta o parte della configurazione di SVM, dalle esportazioni NFS e dalle condivisioni SMB a RBAC, nonché i dati nei volumi di proprietà di SVM.
+
+====
+A partire da ONTAP 9.10.1, è possibile creare relazioni di protezione dei dati tra i bucket S3 utilizzando S3 SnapMirror. I bucket di destinazione possono essere su sistemi ONTAP locali o remoti o su sistemi non ONTAP come StorageGRID e AWS.
+
+La prima volta che si richiama SnapMirror, esegue un _trasferimento baseline_ dal volume di origine al volume di destinazione. Il trasferimento della linea di base in genere prevede i seguenti passaggi:
+
+* Creare una copia Snapshot del volume di origine.
+* Trasferire la copia Snapshot e tutti i blocchi di dati a cui fa riferimento al volume di destinazione.
+* Trasferire le copie Snapshot rimanenti, meno recenti, sul volume di origine al volume di destinazione per l'utilizzo in caso di danneggiamento del mirror "`Active`".
+
+
+Una volta completato il trasferimento di riferimento, SnapMirror trasferisce solo le nuove copie Snapshot nel mirror. Gli aggiornamenti sono asincroni, in base alla pianificazione configurata. La conservazione rispecchia la policy Snapshot sull'origine. È possibile attivare il volume di destinazione con interruzioni minime in caso di disastro nel sito primario e riattivare il volume di origine quando il servizio viene ripristinato.
+
+Poiché SnapMirror trasferisce solo le copie Snapshot dopo la creazione della linea di base, la replica è rapida e senza interruzioni. Come implica il caso di utilizzo del failover, i controller sul sistema secondario devono essere equivalenti o quasi equivalenti ai controller sul sistema primario per fornire i dati in modo efficiente dallo storage mirrorato.
+
+image::../media/snapmirror.gif[snapmirror]
+
+|===
+
+
+ a| 
+*_utilizzo di SnapMirror per il trasferimento dei dati_*
+
+È inoltre possibile utilizzare SnapMirror per replicare i dati tra endpoint nel data fabric NetApp. Quando si crea il criterio SnapMirror, è possibile scegliere tra replica singola o ricorrente.
+
+|===

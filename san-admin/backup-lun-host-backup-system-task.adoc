@@ -1,0 +1,60 @@
+---
+permalink: san-admin/backup-lun-host-backup-system-task.html 
+sidebar: sidebar 
+keywords: back up, lun, through, host, backup, system 
+summary: È possibile utilizzare un LUN clonato da una copia Snapshot come dati di origine per il sistema di backup host. 
+---
+= Eseguire il backup di un LUN tramite un sistema di backup host
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare un LUN clonato da una copia Snapshot come dati di origine per il sistema di backup host.
+
+.Di cosa hai bisogno
+Un LUN di produzione deve esistere ed essere mappato a un igroup che includa il nome del nodo WWPN o Initiator del server applicazioni. Anche il LUN deve essere formattato e accessibile all'host
+
+.Fasi
+. Salvare su disco il contenuto dei buffer del file system host.
++
+È possibile utilizzare il comando fornito dal sistema operativo host oppure SnapDrive per Windows o SnapDrive per UNIX. Puoi anche scegliere di includere questo passo nello script di pre-elaborazione del backup SAN.
+
+. Utilizzare `volume snapshot create` Per creare una copia Snapshot del LUN di produzione.
++
+`volume snapshot create -vserver vs0 -volume vol3 -snapshot vol3_snapshot -comment "Single snapshot" -foreground false`
+
+. Utilizzare `volume file clone create` Per creare un clone del LUN di produzione.
++
+`volume file clone create -vserver vs3 -volume vol3 -source-path lun1 -snapshot-name snap_vol3 -destination-path lun1_backup`
+
+. Utilizzare `lun igroup create` Per creare un igroup che includa il WWPN del server di backup.
++
+`lun igroup create -vserver vs3 -igroup igroup3 -protocol fc -ostype windows -initiator 10:00:00:00:c9:73:5b:91`
+
+. Utilizzare `lun mapping create` Per mappare il clone LUN creato al punto 3 all'host di backup.
++
+`lun mapping create -vserver vs3 -volume vol3 -lun lun1_backup -igroup igroup3`
+
++
+È possibile scegliere di inserire questo passo nello script di post-elaborazione dell'applicazione DI backup SAN.
+
+. Individuare il nuovo LUN dall'host e rendere il file system disponibile all'host.
++
+È possibile scegliere di inserire questo passo nello script di post-elaborazione dell'applicazione DI backup SAN.
+
+. Eseguire il backup dei dati nel clone LUN dall'host di backup su nastro utilizzando l'applicazione DI backup SAN.
+. Utilizzare `lun modify` Comando per portare offline il clone del LUN.
++
+`lun modify -vserver vs3 -path /vol/vol3/lun1_backup -state offline`
+
+. Utilizzare `lun delete` Per rimuovere il clone del LUN.
++
+`lun delete -vserver vs3 -volume vol3 -lun lun1_backup`
+
+. Utilizzare `volume snapshot delete` Comando per rimuovere la copia Snapshot.
++
+`volume snapshot delete -vserver vs3 -volume vol3 -snapshot vol3_snapshot`
+
+

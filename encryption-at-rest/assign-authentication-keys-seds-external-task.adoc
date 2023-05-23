@@ -1,0 +1,62 @@
+---
+permalink: encryption-at-rest/assign-authentication-keys-seds-external-task.html 
+sidebar: sidebar 
+keywords: assign, data, authentication, key, fips, drive, sed, external, key, management 
+summary: 'È possibile utilizzare il comando di modifica del disco per la crittografia dello storage per assegnare una chiave di autenticazione dei dati a un"unità FIPS o SED. I nodi del cluster utilizzano questa chiave per bloccare o sbloccare i dati crittografati sul disco.' 
+---
+= Assegnazione di una chiave di autenticazione dei dati a un disco FIPS o SED (gestione esterna delle chiavi)
+:allow-uri-read: 
+
+
+[role="lead"]
+È possibile utilizzare `storage encryption disk modify` Comando per assegnare una chiave di autenticazione dei dati a un'unità FIPS o SED. I nodi del cluster utilizzano questa chiave per bloccare o sbloccare i dati crittografati sul disco.
+
+.A proposito di questa attività
+Un'unità con crittografia automatica è protetta da accessi non autorizzati solo se l'ID della chiave di autenticazione è impostato su un valore non predefinito. L'ID sicuro del produttore (MSID), con ID chiave 0x0, è il valore predefinito standard per i dischi SAS. Per i dischi NVMe, il valore predefinito standard è una chiave nulla, rappresentata come ID chiave vuoto. Quando si assegna l'ID della chiave a un'unità con crittografia automatica, il sistema modifica l'ID della chiave di autenticazione in un valore non predefinito.
+
+Questa procedura non comporta interruzioni.
+
+.Prima di iniziare
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.Fasi
+. Assegnare una chiave di autenticazione dei dati a un'unità FIPS o SED:
++
+`storage encryption disk modify -disk _disk_ID_ -data-key-id _key_ID_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man del comando.
+
++
+[NOTE]
+====
+È possibile utilizzare `security key-manager query -key-type NSE-AK` Per visualizzare gli ID chiave.
+
+====
++
+[listing]
+----
+cluster1::> storage encryption disk modify -disk 0.10.* -data-key-id F1CB30AFF1CB30B00101000000000000A68B167F92DD54196297159B5968923C
+
+Info: Starting modify on 14 disks.
+      View the status of the operation by using the
+      storage encryption disk show-status command.
+----
+. Verificare che le chiavi di autenticazione siano state assegnate:
++
+`storage encryption disk show`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[listing]
+----
+cluster1::> storage encryption disk show
+Disk    Mode Data Key ID
+-----   ---- ----------------------------------------------------------------
+0.0.0   data F1CB30AFF1CB30B00101000000000000A68B167F92DD54196297159B5968923C
+0.0.1   data F1CB30AFF1CB30B00101000000000000A68B167F92DD54196297159B5968923C
+[...]
+----
+

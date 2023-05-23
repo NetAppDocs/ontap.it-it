@@ -1,0 +1,114 @@
+---
+permalink: encryption-at-rest/emergency-shred-data-disks-storage-encryption-task.html 
+sidebar: sidebar 
+keywords: emergency, shred, data, fips, drive, sed, disk encrypt sanitize, disk encrypt destroy 
+summary: 'In caso di emergenza di sicurezza, è possibile impedire immediatamente l"accesso a un disco FIPS o SED, anche se il sistema storage o il server KMIP non sono in grado di fornire alimentazione.' 
+---
+= Distruzione di emergenza dei dati su un disco FIPS o SED
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+In caso di emergenza di sicurezza, è possibile impedire immediatamente l'accesso a un disco FIPS o SED, anche se il sistema storage o il server KMIP non sono in grado di fornire alimentazione.
+
+.Di cosa hai bisogno
+* Se si utilizza un server KMIP privo di alimentazione, il server KMIP deve essere configurato con un elemento di autenticazione facilmente distrutto (ad esempio, una smart card o un'unità USB).
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+
+.Fase
+. Eseguire la cancellazione di emergenza dei dati su un disco FIPS o SED:
++
+|===
+
+
+| Se... 2+| Quindi... 
+
+
+ a| 
+Il sistema di storage è alimentato e hai tempo per portare il sistema di storage offline senza problemi
+ a| 
+.. Se il sistema storage è configurato come coppia ha, disattivare il Takeover.
+.. Portare tutti gli aggregati offline ed eliminarli.
+.. Impostare il livello di privilegio su Advanced: +
+`set -privilege advanced`
+.. Se il disco è in modalità di conformità FIPS, impostare nuovamente l'ID della chiave di autenticazione FIPS per il nodo sul valore MSID predefinito: +
+`storage encryption disk modify -disk * -fips-key-id 0x0`
+.. Arrestare il sistema storage.
+.. Avviare in modalità di manutenzione.
+.. Sanificare o distruggere i dischi:
++
+*** Se si desidera rendere i dati sui dischi inaccessibili e continuare a riutilizzare i dischi, disinfettare i dischi: +
+`disk encrypt sanitize -all`
+*** Se si desidera rendere i dati sui dischi inaccessibili e non è necessario salvarli, distruggere i dischi: +
+`disk encrypt destroy disk_id1 disk_id2 …`
+
+
++
+[NOTE]
+====
+Il `disk encrypt sanitize` e. `disk encrypt destroy` i comandi sono riservati solo alla modalità di manutenzione. Questi comandi devono essere eseguiti su ciascun nodo ha e non sono disponibili per i dischi rotti.
+
+====
+.. Ripetere questi passaggi per il nodo partner. In questo modo, il sistema di storage viene disattivato in modo permanente e tutti i dati vengono cancellati. Per utilizzare di nuovo il sistema, è necessario riconfigurarlo.
+
+
+
+
+ a| 
+Il sistema storage è alimentato e i dati devono essere immediatamente sottratti
+ a| 
+.. *Se si desidera rendere i dati sui dischi inaccessibili e continuare a riutilizzare i dischi, eseguire la pulizia dei dischi:*
+.. Se il sistema storage è configurato come coppia ha, disattivare il Takeover.
+.. Impostare il livello di privilegio su Advanced (avanzato):
++
+`set -privilege advanced`
+
+.. Se il disco è in modalità di conformità FIPS, impostare nuovamente l'ID della chiave di autenticazione FIPS per il nodo sul valore MSID predefinito:
++
+`storage encryption disk modify -disk * -fips-key-id 0x0`
+
+.. Igienizzare il disco:
++
+`storage encryption disk sanitize -disk * -force-all-states true`
+
+
+ a| 
+.. *Se si desidera rendere i dati sui dischi inaccessibili e non è necessario salvarli, distruggere i dischi:*
+.. Se il sistema storage è configurato come coppia ha, disattivare il Takeover.
+.. Impostare il livello di privilegio su Advanced (avanzato):
++
+`set -privilege advanced`
+
+.. Distruggere i dischi:
+`storage encryption disk destroy -disk * -force-all-states true`
+
+
+
+
+ a| 
+Il sistema di storage esegue una panoramica, lasciando il sistema in uno stato di disattivazione permanente con tutti i dati cancellati. Per utilizzare di nuovo il sistema, è necessario riconfigurarlo.
+
+
+
+ a| 
+L'alimentazione è disponibile per il server KMIP ma non per il sistema storage
+ a| 
+.. Accedere al server KMIP.
+.. Distruggere tutte le chiavi associate ai dischi FIPS o ai SED che contengono i dati a cui si desidera impedire l'accesso. In questo modo si impedisce l'accesso alle chiavi di crittografia del disco da parte del sistema di storage.
+
+
+
+
+ a| 
+L'alimentazione del server KMIP o del sistema storage non è disponibile
+ a| 
+Eliminare l'elemento di autenticazione per il server KMIP (ad esempio, la smart card). In questo modo si impedisce l'accesso alle chiavi di crittografia del disco da parte del sistema di storage.
+
+|===
++
+Per la sintassi completa dei comandi, vedere le pagine man.
+
+

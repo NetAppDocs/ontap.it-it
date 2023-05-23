@@ -1,0 +1,70 @@
+---
+permalink: smb-admin/manage-accessibility-users-home-directories-task.html 
+sidebar: sidebar 
+keywords: 'default, user, home, directory, access, dynamic, name, share, precede, enable, disable, windows, administrator, public, access, manage accessibility to users" home directories' 
+summary: 'Per impostazione predefinita, è possibile accedere alla home directory di un utente solo da quell"utente. Per le condivisioni in cui il nome dinamico della condivisione è preceduto da una tilde ({tilde}), è possibile attivare o disattivare l"accesso alle home directory degli utenti da parte degli amministratori di Windows o di qualsiasi altro utente (accesso pubblico).' 
+---
+= Gestire l'accessibilità alle home directory degli utenti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per impostazione predefinita, l'accesso alla home directory di un utente è consentito solo a quell'utente. Per le condivisioni in cui il nome dinamico della condivisione è preceduto da una tilde ({tilde}), è possibile attivare o disattivare l'accesso alle home directory degli utenti da parte degli amministratori di Windows o di qualsiasi altro utente (accesso pubblico).
+
+.Prima di iniziare
+Le condivisioni home directory sulla macchina virtuale di storage (SVM) devono essere configurate con nomi di condivisione dinamici preceduti da una tilde ({tilde}). I seguenti casi illustrano i requisiti di naming delle condivisioni:
+
+|===
+| Nome di condivisione della home directory | Esempio di comando per connettersi alla condivisione 
+
+
+ a| 
+{tilde}%d{tilde}%w
+ a| 
+`net use * {backslash}{backslash}IPaddress{backslash}{tilde}domain{tilde}user/u:credentials`
+
+
+
+ a| 
+{tilde}%w
+ a| 
+`net use * {backslash}{backslash}IPaddress{backslash}{tilde}user/u:credentials`
+
+
+
+ a| 
+{tilde}abc{tilde}%w
+ a| 
+`net use * {backslash}{backslash}IPaddress{backslash}abc{tilde}user/u:credentials`
+
+|===
+.Fase
+. Eseguire l'azione appropriata:
++
+|===
+| Se si desidera attivare o disattivare l'accesso alle home directory degli utenti per... | Immettere quanto segue... 
+
+
+| Amministratori di Windows | `vserver cifs home-directory modify -vserver _vserver_name_ -is-home-dirs-access-for-admin-enabled {true{vbar}false}`L'impostazione predefinita è `true`. 
+
+
+| Qualsiasi utente (accesso pubblico)  a| 
+.. Impostare il livello di privilegio su Advanced: +
+`set -privilege advanced`
+.. Abilitare o disabilitare l'accesso: `vserver cifs home-directory modify -vserver _vserver_name_ -is-home-dirs-access-for-public-enabled {true|false}` + il valore predefinito è `false`.
+.. Tornare al livello di privilegio admin: +
+`set -privilege admin`
+
+
+|===
+
+
+L'esempio seguente consente l'accesso pubblico alle home directory degli utenti: +
+`set -privilege advanced` +
+`vserver cifs home-directory modify -vserver vs1 -is-home-dirs-access-for-public-enabled true` +
+`set -privilege admin`
+
+.Informazioni correlate
+xref:display-user-home-directory-path-task.adoc[Visualizzazione delle informazioni sul percorso home directory di un utente SMB]

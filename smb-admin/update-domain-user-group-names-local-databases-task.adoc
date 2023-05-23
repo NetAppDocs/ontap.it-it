@@ -1,0 +1,97 @@
+---
+permalink: smb-admin/update-domain-user-group-names-local-databases-task.html 
+sidebar: sidebar 
+keywords: add, domain, users, groups, cifs, server, local, register, database, manual, update, update domain user and group names in local databases 
+summary: È possibile aggiungere utenti e gruppi di dominio ai gruppi locali di un server CIFS. Questi oggetti di dominio vengono registrati nei database locali del cluster. Se un oggetto di dominio viene rinominato, i database locali devono essere aggiornati manualmente. 
+---
+= Aggiornare i nomi degli utenti e dei gruppi di dominio nei database locali
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile aggiungere utenti e gruppi di dominio ai gruppi locali di un server CIFS. Questi oggetti di dominio vengono registrati nei database locali del cluster. Se un oggetto di dominio viene rinominato, i database locali devono essere aggiornati manualmente.
+
+.A proposito di questa attività
+Specificare il nome della macchina virtuale di storage (SVM) su cui si desidera aggiornare i nomi di dominio.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
+. Eseguire l'azione appropriata:
++
+|===
+| Se si desidera aggiornare utenti e gruppi di dominio e... | Utilizzare questo comando... 
+
+
+ a| 
+Visualizza gli utenti e i gruppi di dominio che hanno eseguito l'aggiornamento e che non sono riusciti ad aggiornare
+ a| 
+`vserver cifs users-and-groups update-names -vserver _vserver_name_`
+
+
+
+ a| 
+Visualizzare gli utenti e i gruppi di dominio che sono stati aggiornati correttamente
+ a| 
+`vserver cifs users-and-groups update-names -vserver _vserver_name_ -display-failed-only false`
+
+
+
+ a| 
+Visualizzare solo gli utenti e i gruppi di dominio che non riescono ad aggiornare
+ a| 
+`vserver cifs users-and-groups update-names -vserver _vserver_name_ -display-failed-only true`
+
+
+
+ a| 
+Elimina tutte le informazioni di stato relative agli aggiornamenti
+ a| 
+`vserver cifs users-and-groups update-names -vserver _vserver_name_ -suppress-all-output true`
+
+|===
+. Tornare al livello di privilegio admin: `set -privilege admin`
+
+
+.Esempio
+Nell'esempio riportato di seguito vengono aggiornati i nomi degli utenti e dei gruppi di dominio associati alla macchina virtuale di storage (SVM, precedentemente nota come Vserver) vs1. Per l'ultimo aggiornamento, è necessario aggiornare una catena di nomi dipendente:
+
+[listing]
+----
+cluster1::> set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use them
+only when directed to do so by technical support personnel.
+Do you wish to continue? (y or n): y
+
+cluster1::*> vserver cifs users-and-groups update-names -vserver vs1
+
+   Vserver:           vs1
+   SID:               S-1-5-21-123456789-234565432-987654321-12345
+   Domain:            EXAMPLE1
+   Out-of-date Name:  dom_user1
+   Updated Name:      dom_user2
+   Status:            Successfully updated
+
+   Vserver:           vs1
+   SID:               S-1-5-21-123456789-234565432-987654322-23456
+   Domain:            EXAMPLE2
+   Out-of-date Name:  dom_user1
+   Updated Name:      dom_user2
+   Status:            Successfully updated
+
+   Vserver:           vs1
+   SID:               S-1-5-21-123456789-234565432-987654321-123456
+   Domain:            EXAMPLE1
+   Out-of-date Name:  dom_user3
+   Updated Name:      dom_user4
+   Status:            Successfully updated; also updated SID "S-1-5-21-123456789-234565432-987654321-123457"
+                      to name "dom_user5"; also updated SID "S-1-5-21-123456789-234565432-987654321-123458"
+                      to name "dom_user6"; also updated SID "S-1-5-21-123456789-234565432-987654321-123459"
+                      to name "dom_user7"; also updated SID "S-1-5-21-123456789-234565432-987654321-123460"
+                      to name "dom_user8"
+
+The command completed successfully. 7 Active Directory objects have been updated.
+
+cluster1::*> set -privilege admin
+----

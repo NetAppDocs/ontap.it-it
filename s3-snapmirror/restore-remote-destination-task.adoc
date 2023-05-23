@@ -1,0 +1,74 @@
+---
+sidebar: sidebar 
+permalink: s3-snapmirror/restore-remote-destination-task.html 
+keywords: restore a bucket from the destination storage VM remote cluster, source bucket data lost or corrupt, snapmirror restore, restore data, restore to destination bucket, remote cluster, snapmirror restore back up, snapmirror, bucket, restore to new bucket, storage vm, snapmirror data loss 
+summary: In caso di perdita o danneggiamento dei dati in un bucket di origine, è necessario ripopolare i dati eseguendo il ripristino da un bucket di destinazione. 
+---
+= Ripristinare un bucket dalla VM di storage di destinazione (cluster remoto)
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+:toc-position: content
+
+
+[role="lead"]
+In caso di perdita o danneggiamento dei dati in un bucket di origine, è necessario ripopolare i dati eseguendo il ripristino da un bucket di destinazione.
+
+.A proposito di questa attività
+È possibile ripristinare il bucket di destinazione su un bucket esistente o su un nuovo bucket. Il bucket di destinazione per l'operazione di ripristino deve essere più grande dello spazio logico utilizzato del bucket di destinazione.
+
+Se si utilizza un bucket esistente, questo deve essere vuoto quando si avvia un'operazione di ripristino. Il ripristino non "esegue il rollback" di un bucket nel tempo, ma popola un bucket vuoto con i contenuti precedenti.
+
+L'operazione di ripristino deve essere avviata dal cluster remoto.
+
+
+
+== Procedura di System Manager
+
+Ripristinare i dati di backup:
+
+. Fare clic su *protezione > Relazioni*, quindi selezionare *S3 SnapMirror*.
+. Fare clic su image:icon_kabob.gif["icona altro"] Quindi selezionare *Ripristina*.
+. In *Source* (origine), selezionare *Existing Bucket* (bucket esistente) (impostazione predefinita) o *New Bucket* (nuovo bucket).
++
+** Per ripristinare un *bucket esistente* (impostazione predefinita), completare le seguenti azioni:
++
+*** Selezionare il cluster e la VM di storage per cercare il bucket esistente.
+*** Selezionare il bucket esistente.
+*** Copiare e incollare il contenuto del certificato CA del server S3 _destination_.
+
+
+** Per ripristinare un *nuovo bucket*, immettere i seguenti valori:
++
+*** Il cluster e la VM di storage per ospitare il nuovo bucket.
+*** Il nome, la capacità e il livello di servizio delle performance del nuovo bucket. Vedere link:../s3-config/storage-service-definitions-reference.html["Livelli di servizio dello storage"] per ulteriori informazioni.
+*** Il contenuto del certificato CA del server S3 _destination_.
+
+
+
+
+. In *destinazione*, copiare e incollare il contenuto del certificato CA del server S3 _origine_.
+. Fare clic su *protezione > Relazioni* per monitorare l'avanzamento del ripristino.
+
+
+
+
+== Procedura CLI
+
+. Se si sta ripristinando un nuovo bucket, creare il nuovo bucket. Per ulteriori informazioni, vedere link:create-cloud-backup-new-bucket-task.html["Creare una relazione di backup per un nuovo bucket (target cloud)"].
+. Avviare un'operazione di ripristino per il bucket di destinazione:
+`snapmirror restore -source-path _svm_name_:/bucket/_bucket_name_  -destination-path _svm_name_:/bucket/_bucket_name_`
+
+
+.Esempio
+[listing]
+----
+dest_cluster::> snapmirror restore -source-path src_vs1:/bucket/test-bucket -destination-path dest_vs1:/bucket/test-bucket-mirror
+----

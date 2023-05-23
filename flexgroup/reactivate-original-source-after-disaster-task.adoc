@@ -1,0 +1,55 @@
+---
+permalink: flexgroup/reactivate-original-source-after-disaster-task.html 
+sidebar: sidebar 
+keywords: reactivate, original, source, flexgroup, volume, disaster 
+summary: Quando il volume FlexGroup di origine diventa disponibile, è possibile risincronizzare i volumi FlexGroup di origine e di destinazione originali. Tutti i nuovi dati presenti nel volume FlexGroup di destinazione andranno persi. 
+---
+= Riattivare il volume FlexGroup di origine originale dopo un disastro
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando il volume FlexGroup di origine diventa disponibile, è possibile risincronizzare i volumi FlexGroup di origine e di destinazione originali. Tutti i nuovi dati presenti nel volume FlexGroup di destinazione andranno persi.
+
+.A proposito di questa attività
+Tutte le regole di quota attive sul volume di destinazione vengono disattivate e le regole di quota vengono eliminate prima di eseguire la risincronizzazione.
+
+È possibile utilizzare `volume quota policy rule create` e. `volume quota modify` comandi per creare e riattivare le regole di quota al termine dell'operazione di risincronizzazione.
+
+.Fasi
+. Dal cluster di destinazione, risincronizzare la relazione SnapMirror del volume FlexGroup: `snapmirror resync -destination-path dst_svm:dest_flexgroup`
+. Visualizzare lo stato della relazione SnapMirror: `snapmirror show -expand`
++
+[listing]
+----
+cluster2::> snapmirror show -expand
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vss:s       XDP  vsd:dst        Snapmirrored
+                                      Idle           -         true    -
+vss:s__0001 XDP  vsd:dst__0001  Snapmirrored
+                                      Idle           -         true    -
+vss:s__0002 XDP  vsd:dst__0002  Snapmirrored
+                                      Idle           -         true    -
+vss:s__0003 XDP  vsd:dst__0003  Snapmirrored
+                                      Idle           -         true    -
+vss:s__0004 XDP  vsd:dst__0004  Snapmirrored
+                                      Idle           -         true    -
+vss:s__0005 XDP  vsd:dst__0005  Snapmirrored
+                                      Idle           -         true    -
+vss:s__0006 XDP  vsd:dst__0006  Snapmirrored
+                                      Idle           -         true    -
+vss:s__0007 XDP  vsd:dst__0007  Snapmirrored
+                                      Idle           -         true    -
+vss:s__0008 XDP  vsd:dst__0008  Snapmirrored
+                                      Idle           -         true    -
+...
+----
++
+Lo stato della relazione SnapMirror di ciascun componente è `Snapmirrored`.
+
+

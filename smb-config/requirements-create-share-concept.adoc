@@ -1,0 +1,57 @@
+---
+permalink: smb-config/requirements-create-share-concept.html 
+sidebar: sidebar 
+keywords: creating, create, smb, share, requirement, path, properties, property, home, directories, directory, requirements and considerations for creating an smb share 
+summary: Prima di creare una condivisione SMB, è necessario comprendere i requisiti per i percorsi di condivisione e le proprietà di condivisione, in particolare per le home directory. 
+---
+= Requisiti e considerazioni per la creazione di una condivisione SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di creare una condivisione SMB, è necessario comprendere i requisiti per i percorsi di condivisione e le proprietà di condivisione, in particolare per le home directory.
+
+La creazione di una condivisione SMB richiede la specifica di una struttura di percorso di directory (utilizzando l' `-path` in `vserver cifs share create` a cui accederanno i client. Il percorso della directory corrisponde al percorso di giunzione di un volume o qtree creato nello spazio dei nomi SVM. Il percorso di directory e il percorso di giunzione corrispondente devono esistere prima di creare la condivisione.
+
+I percorsi di condivisione hanno i seguenti requisiti:
+
+* Il nome di un percorso di directory può contenere fino a 255 caratteri.
+* Se nel nome del percorso è presente uno spazio, l'intera stringa deve essere inserita tra virgolette (ad esempio, `"/new volume/mount here"`).
+* Se il percorso UNC (`\\servername\sharename\filepath`) Della condivisione contiene più di 256 caratteri (escludendo l'iniziale "``" nel percorso UNC), quindi la scheda *Security* nella casella Proprietà di Windows non è disponibile.
++
+Si tratta di un problema del client Windows piuttosto che di un problema ONTAP. Per evitare questo problema, non creare condivisioni con percorsi UNC con più di 256 caratteri.
+
+
+
+È possibile modificare le impostazioni predefinite della proprietà di condivisione:
+
+* Le proprietà iniziali predefinite per tutte le condivisioni sono `oplocks`, `browsable`, `changenotify`, e. `show-previous-versions`.
+* È facoltativo specificare le proprietà di condivisione quando si crea una condivisione.
++
+Tuttavia, se si specificano le proprietà di condivisione quando si crea la condivisione, le impostazioni predefinite non vengono utilizzate. Se si utilizza `-share-properties` parametro quando si crea una condivisione, è necessario specificare tutte le proprietà della condivisione che si desidera applicare alla condivisione utilizzando un elenco delimitato da virgole.
+
+* Per designare una condivisione della home directory, utilizzare `homedirectory` proprietà.
++
+Questa funzione consente di configurare una condivisione mappata a diverse directory in base all'utente che si connette ad essa e a una serie di variabili. Invece di dover creare condivisioni separate per ciascun utente, è possibile configurare una singola condivisione con alcuni parametri della home directory per definire la relazione di un utente tra un punto di ingresso (la condivisione) e la propria home directory (una directory sulla SVM).
+
++
+[NOTE]
+====
+Non è possibile aggiungere o rimuovere questa proprietà dopo aver creato la condivisione.
+
+====
+
+
+Le condivisioni home directory hanno i seguenti requisiti:
+
+* Prima di creare le home directory SMB, è necessario aggiungere almeno un percorso di ricerca della home directory utilizzando `vserver cifs home-directory search-path add` comando.
+* Condivisioni home directory specificate dal valore di `homedirectory` su `-share-properties` il parametro deve includere `%w` (Nome utente Windows) variabile dinamica nel nome della condivisione.
++
+Il nome della condivisione può contenere anche `%d` (nome di dominio) variabile dinamica (ad esempio, `%d/%w`) o una parte statica nel nome della condivisione (ad esempio, `home1_%w`).
+
+* Se la condivisione viene utilizzata da amministratori o utenti per connettersi alle home directory di altri utenti (utilizzando le opzioni di `vserver cifs home-directory modify` comando), il modello di nome di condivisione dinamica deve essere preceduto da una tilde (`~`).
+
+
+link:../smb-admin/index.html["Gestione delle PMI"] e. `vserver cifs share` le pagine man contengono informazioni aggiuntive.

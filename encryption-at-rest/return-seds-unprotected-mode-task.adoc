@@ -1,0 +1,125 @@
+---
+permalink: encryption-at-rest/return-seds-unprotected-mode-task.html 
+sidebar: sidebar 
+keywords: returning, fips, drive, unprotected, mode 
+summary: 'Un"unità FIPS o SED è protetta da accessi non autorizzati solo se l"ID della chiave di autenticazione del nodo è impostato su un valore diverso da quello predefinito. È possibile ripristinare un"unità FIPS o SED in modalità non protetta utilizzando il comando di modifica del disco di crittografia dello storage per impostare l"ID della chiave sul valore predefinito.' 
+---
+= Consente di ripristinare un'unità FIPS o SED in modalità non protetta
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un'unità FIPS o SED è protetta da accessi non autorizzati solo se l'ID della chiave di autenticazione del nodo è impostato su un valore diverso da quello predefinito. È possibile ripristinare un'unità FIPS o SED in modalità non protetta utilizzando `storage encryption disk modify` Per impostare l'ID della chiave sul valore predefinito.
+
+Se una coppia ha utilizza dischi SAS o NVMe con crittografia (SED, NSE, FIPS), è necessario seguire questa procedura per tutti i dischi all'interno della coppia ha prima di inizializzare il sistema (opzioni di avvio 4 o 9). Il mancato rispetto di questa procedura potrebbe causare la perdita di dati in futuro se i dischi vengono riutilizzati.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+`set -privilege advanced`
+
+. Se un disco FIPS è in esecuzione in modalità di conformità FIPS, impostare nuovamente l'ID della chiave di autenticazione FIPS per il nodo sul valore MSID 0x0 predefinito:
++
+`storage encryption disk modify -disk _disk_id_ -fips-key-id 0x0`
+
++
+È possibile utilizzare `security key-manager query` Per visualizzare gli ID chiave.
+
++
+[listing]
+----
+cluster1::> storage encryption disk modify -disk 2.10.11 -fips-key-id 0x0
+
+Info: Starting modify on 14 disks.
+      View the status of the operation by using the
+      storage encryption disk show-status command.
+----
++
+Confermare l'operazione con il comando:
+
++
+`storage encryption disk show-status`
+
++
+Ripetere il comando show-status fino a quando i numeri in "Disks incomincied" (dischi iniziati) e "Disks Done" (dischi eseguiti) non sono gli stessi.
+
++
+[listing]
+----
+cluster1:: storage encryption disk show-status
+
+            FIPS    Latest   Start               Execution   Disks   Disks Disks
+Node        Support Request  Timestamp           Time (sec)  Begun   Done  Successful
+-------     ------- -------- ------------------  ---------- ------ ------  ----------
+cluster1    true    modify   1/18/2022 15:29:38    3           14     5         5
+1 entry was displayed.
+----
+. Impostare nuovamente l'ID della chiave di autenticazione dei dati per il nodo sul valore MSID 0x0 predefinito:
++
+`storage encryption disk modify -disk _disk_id_ -data-key-id 0x0`
+
++
+Il valore di `-data-key-id` Deve essere impostato su 0x0 se si sta ripristinando un'unità SAS o NVMe in modalità non protetta.
+
++
+È possibile utilizzare `security key-manager query` Per visualizzare gli ID chiave.
+
++
+[listing]
+----
+cluster1::> storage encryption disk modify -disk 2.10.11 -data-key-id 0x0
+
+Info: Starting modify on 14 disks.
+      View the status of the operation by using the
+      storage encryption disk show-status command.
+----
++
+Confermare l'operazione con il comando:
+
++
+`storage encryption disk show-status`
+
++
+Ripetere il comando show-status fino a quando i numeri non coincidono. L'operazione è completa quando i numeri in "dischi iniziati" e "dischi completati" sono gli stessi.
+
+
+
+
+
+== Modalità di manutenzione
+
+A partire da ONTAP 9.7, è possibile modificare la chiave di un disco FIPS dalla modalità di manutenzione. Utilizzare la modalità di manutenzione solo se non è possibile utilizzare le istruzioni dell'interfaccia utente di ONTAP descritte nella sezione precedente.
+
+.Fasi
+. Impostare nuovamente l'ID della chiave di autenticazione FIPS per il nodo sul valore MSID 0x0 predefinito:
++
+`disk encrypt rekey_fips 0x0 _disklist_`
+
+. Impostare nuovamente l'ID della chiave di autenticazione dei dati per il nodo sul valore MSID 0x0 predefinito:
++
+`disk encrypt rekey 0x0 _disklist_`
+
+. Verificare che la chiave di autenticazione FIPS sia stata reinserita correttamente:
++
+`disk encrypt show_fips`
+
+. Confermare che la chiave di autenticazione dei dati è stata risigitata correttamente con:
++
+`disk encrypt show`
+
++
+L'output visualizza probabilmente l'ID chiave MSID 0x0 predefinito o il valore di 64 caratteri posseduto dal server delle chiavi. Il `Locked?` il campo si riferisce al blocco dei dati.
+
+
+
+[listing]
+----
+Disk       FIPS Key ID                 Locked?
+---------- --------------------------- -------
+0a.01.0    0x0                          Yes
+----

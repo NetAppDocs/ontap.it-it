@@ -1,0 +1,64 @@
+---
+permalink: s3-audit/create-enable-config-task.html 
+sidebar: sidebar 
+keywords: consistency groups, consistency group, application protection, parent, child, configure 
+summary: 'Per implementare il controllo S3, creare prima una configurazione di controllo dell"archivio di oggetti persistente su una SVM abilitata per S3, quindi attivare la configurazione.' 
+---
+= Creare e abilitare una configurazione di controllo S3
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per implementare il controllo S3, creare prima una configurazione di controllo dell'archivio di oggetti persistente su una SVM abilitata per S3, quindi attivare la configurazione.
+
+.Di cosa hai bisogno
+* Una SVM abilitata per S3.
+* Spazio sufficiente per lo staging dei volumi nell'aggregato.
+
+
+.A proposito di questa attività
+Per ogni SVM contenente i bucket S3 che si desidera controllare è necessaria una configurazione di controllo. È possibile attivare il controllo S3 su server S3 nuovi o esistenti. Le configurazioni di controllo persistono in un ambiente S3 fino a quando non vengono rimosse dal comando *vserver object-store-server audit delete*.
+
+La configurazione di controllo S3 si applica a tutti i bucket della SVM selezionati per il controllo. Una SVM abilitata all'audit può contenere bucket controllati e non verificati.
+
+Si consiglia di configurare il controllo S3 per la rotazione automatica del log, determinata dalle dimensioni del log o da una pianificazione. Se non si configura la rotazione automatica del log, tutti i file di log vengono conservati per impostazione predefinita. È inoltre possibile ruotare manualmente i file di log S3 utilizzando il comando *vserver object-store-server audit rotate-log*.
+
+Se SVM è un'origine di disaster recovery SVM, il percorso di destinazione non può trovarsi sul volume root.
+
+.Procedura
+. Creare la configurazione di controllo per ruotare i registri di controllo in base alle dimensioni del registro o a una pianificazione.
++
+[cols="2,4"]
+|===
+| Se si desidera ruotare i registri di audit di... | Inserisci... 
+
+
+| Dimensione del log | `vserver object-store-server audit create -vserver _svm_name_ -destination _path_ [[-events] {data{vbar}management}, ...] {[-rotate-limit _integer_] {vbar} [-retention-duration [_integer_d] [_integer_h][_integer_m][_integers_]]} [-rotate-size {_integer_[KB{vbar}MB{vbar}GB{vbar}TB{vbar}PB]}]` 
+
+
+| Un calendario  a| 
+`vserver object-store-server audit create -vserver _svm_name_ -destination path [[-events] {data{vbar}management}, ...] {[-rotate-limit _integer_] {vbar} [-retention-duration [_integerd_][_integerh_] [_integerm_][_integers_]] } [-rotate-schedule-month _chron_month_] [-rotate-schedule-dayofweek _chron_dayofweek_] [-rotate-schedule-day _chron_dayofmonth_] [-rotate-schedule-hour _chron_hour_] -rotate-schedule-minute _chron_minute_`
+
+Il `-rotate-schedule-minute` il parametro è obbligatorio se si configura la rotazione del log di audit basata sul tempo.
+
+|===
+. Abilita controllo S3:
++
+`vserver object-store-server audit enable -vserver _svm_name_`
+
+
+
+.Esempi
+Nell'esempio seguente viene creata una configurazione di controllo che controlla tutti gli eventi S3 (impostazione predefinita) utilizzando la rotazione basata sulle dimensioni. I registri vengono memorizzati nella directory /audit_log. Il limite delle dimensioni del file di log è di 200 MB. I log vengono ruotati quando raggiungono le dimensioni di 200 MB.
+
+`cluster1::> vserver audit create -vserver vs1 -destination /audit_log -rotate-size 200MB`
+
+Nell'esempio seguente viene creata una configurazione di controllo che controlla tutti gli eventi S3 (impostazione predefinita) utilizzando la rotazione basata sulle dimensioni. Il limite delle dimensioni del file di registro è di 100 MB (impostazione predefinita) e i registri vengono conservati per 5 giorni prima di essere cancellati.
+
+`cluster1::> vserver audit create -vserver vs1 -destination /audit_log -retention-duration 5d0h0m`
+
+Nell'esempio seguente viene creata una configurazione di controllo che controlla gli eventi di gestione S3 e gli eventi di staging dei criteri di accesso centrale utilizzando la rotazione basata sul tempo. I registri di audit vengono ruotati mensilmente alle 12:30 tutti i giorni della settimana. Il limite di rotazione del log è 5.
+
+`cluster1::> vserver audit create -vserver vs1 -destination /audit_log -events management -rotate-schedule-month all -rotate-schedule-dayofweek all -rotate-schedule-hour 12 -rotate-schedule-minute 30 -rotate-limit 5`

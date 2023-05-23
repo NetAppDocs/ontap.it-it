@@ -1,0 +1,33 @@
+---
+permalink: smb-admin/configure-ntfs-file-permissions-concept.html 
+sidebar: sidebar 
+keywords: configure, ntfs, file, permission, directories, directory, ontap, cli, enable, windows, client, how to configure ntfs file permissions using the ontap cli 
+summary: 'È possibile configurare le autorizzazioni dei file NTFS su file e directory utilizzando l"interfaccia utente di ONTAP. Ciò consente di configurare le autorizzazioni per i file NTFS senza la necessità di connettersi ai dati utilizzando una condivisione SMB su un client Windows.' 
+---
+= Configurare le autorizzazioni per i file NTFS utilizzando l'interfaccia utente di ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare le autorizzazioni dei file NTFS su file e directory utilizzando l'interfaccia utente di ONTAP. Ciò consente di configurare le autorizzazioni per i file NTFS senza la necessità di connettersi ai dati utilizzando una condivisione SMB su un client Windows.
+
+È possibile configurare le autorizzazioni dei file NTFS aggiungendo voci agli elenchi di controllo degli accessi discrezionali (DACL) NTFS associati a un descrittore di protezione NTFS. Il descrittore di protezione viene quindi applicato ai file e alle directory NTFS.
+
+È possibile configurare le autorizzazioni dei file NTFS solo dalla riga di comando. Non è possibile configurare gli ACL NFSv4 utilizzando l'interfaccia CLI.
+
+.Fasi
+. Creare un descrittore di protezione NTFS.
++
+`vserver security file-directory ntfs create -vserver _svm_name_ -ntfs-sd _ntfs_security_descriptor_name_ -owner _owner_name_ -group _primary_group_name_ -control-flags-raw _raw_control_flags_`
+
+. Aggiungere DACL al descrittore di protezione NTFS.
++
+`vserver security file-directory ntfs dacl add -vserver _svm_name_ -ntfs-sd _ntfs_security_descriptor_name_ -access-type {deny|allow} -account _account_name_ -rights {no-access|full-control|modify|read-and-execute|read|write} -apply-to {this-folder|sub-folders|files}`
+
+. Creare una policy di sicurezza per file/directory.
++
+`vserver security file-directory policy create -vserver _svm_name_ -policy-name _policy_name_`
+
+

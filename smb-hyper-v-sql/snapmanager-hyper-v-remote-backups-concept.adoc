@@ -1,0 +1,60 @@
+---
+permalink: smb-hyper-v-sql/snapmanager-hyper-v-remote-backups-concept.html 
+sidebar: sidebar 
+keywords: snapmanager, hyper, v, remote, manage, vss, backup, smb 
+summary: 'È possibile utilizzare SnapManager per Hyper-V per gestire i servizi di backup basati su VSS remoto. L"utilizzo del servizio di backup gestito di SnapManager per Hyper-V offre vantaggi per creare set di backup efficienti in termini di spazio.' 
+---
+= In che modo SnapManager per Hyper-V gestisce backup remoti basati su VSS per Hyper-V su SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare SnapManager per Hyper-V per gestire i servizi di backup basati su VSS remoto. L'utilizzo del servizio di backup gestito di SnapManager per Hyper-V offre vantaggi per creare set di backup efficienti in termini di spazio.
+
+Le ottimizzazioni di SnapManager per i backup gestiti da Hyper-V includono quanto segue:
+
+* L'integrazione di SnapDrive con ONTAP offre l'ottimizzazione delle performance quando si scopre la posizione di condivisione delle PMI.
++
+ONTAP fornisce a SnapDrive il nome del volume in cui risiede la condivisione.
+
+* SnapManager per Hyper-V specifica l'elenco dei file delle macchine virtuali nelle condivisioni SMB che il servizio di copia shadow deve copiare.
++
+Fornendo un elenco mirato di file di macchine virtuali, il servizio di copia shadow non deve creare copie shadow di tutti i file nella condivisione.
+
+* La macchina virtuale per lo storage (SVM) conserva le copie Snapshot per SnapManager per Hyper-V da utilizzare per i ripristini.
++
+Non esiste alcuna fase di backup. Il backup è la copia Snapshot efficiente in termini di spazio.
+
+
+
+SnapManager per Hyper-V offre funzionalità di backup e ripristino per HyperV su SMB utilizzando il seguente processo:
+
+. Preparazione per l'operazione di copia shadow
++
+Il client VSS di SnapManager per l'applicazione Hyper-V imposta il set di copie shadow. Il client VSS raccoglie informazioni sulle condivisioni da includere nel set di copie shadow e fornisce queste informazioni a ONTAP. Un set potrebbe contenere una o più copie shadow e una copia shadow corrisponde a una condivisione.
+
+. Creazione del set di copie shadow (se viene utilizzato il ripristino automatico)
++
+Per ogni condivisione inclusa nel set di copie shadow, ONTAP crea una copia shadow e la rende scrivibile.
+
+. Esposizione del set di copie shadow
++
+Dopo che ONTAP ha creato le copie shadow, queste vengono esposte a SnapManager per Hyper-V in modo che i writer VSS dell'applicazione possano eseguire il ripristino automatico.
+
+. Ripristino automatico del set di copie shadow
++
+Durante la creazione del set di copie shadow, vi è un periodo di tempo in cui si verificano modifiche attive ai file inclusi nel set di backup. I writer VSS dell'applicazione devono aggiornare le copie shadow per assicurarsi che si trovino in uno stato completamente coerente prima del backup.
+
++
+[NOTE]
+====
+Il modo in cui viene eseguito il ripristino automatico è specifico dell'applicazione. Il VSS remoto non è coinvolto in questa fase.
+
+====
+. Completamento e pulizia del set di copie shadow
++
+Il client VSS notifica a ONTAP una volta completato il ripristino automatico. Il set di copie shadow viene reso di sola lettura e quindi pronto per il backup. Quando si utilizza SnapManager per Hyper-V per il backup, i file in una copia Snapshot diventano il backup; pertanto, per la fase di backup, viene creata una copia Snapshot per ogni volume contenente condivisioni nel set di backup. Una volta completato il backup, il set di copie shadow viene rimosso dal server CIFS.
+
+

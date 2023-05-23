@@ -1,0 +1,702 @@
+---
+permalink: authentication/config-worksheets-reference.html 
+sidebar: sidebar 
+keywords: worksheets, administrator authentication, rbac configuration 
+summary: 'Prima di creare account di accesso e impostare RBAC (role-based access control), è necessario raccogliere informazioni per ciascun elemento nei fogli di lavoro di configurazione.' 
+---
+= Fogli di lavoro per l'autenticazione dell'amministratore e la configurazione RBAC
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di creare account di accesso e impostare RBAC (role-based access control), è necessario raccogliere informazioni per ciascun elemento nei fogli di lavoro di configurazione.
+
+
+
+== Creare o modificare gli account di accesso
+
+Questi valori vengono forniti con `security login create` Quando si abilitano gli account di accesso per accedere a una SVM (Storage Virtual Machine). Vengono forniti gli stessi valori con `security login modify` Quando si modifica il modo in cui un account accede a una SVM.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM a cui accede l'account. Il valore predefinito è il nome della SVM amministrativa per il cluster.
+ a| 
+
+
+
+ a| 
+`-user-or-group-name`
+ a| 
+Il nome utente o il nome del gruppo dell'account. Specificando un nome di gruppo, è possibile accedere a ciascun utente del gruppo. È possibile associare un nome utente o un nome di gruppo a più applicazioni.
+ a| 
+
+
+
+ a| 
+`-application`
+ a| 
+L'applicazione utilizzata per accedere a SVM:
+
+* `http`
+* `ontapi`
+* `snmp`
+* `ssh`
+
+ a| 
+
+
+
+ a| 
+`-authmethod`
+ a| 
+Il metodo utilizzato per autenticare l'account:
+
+* `cert` Per l'autenticazione del certificato SSL
+* `domain` Per l'autenticazione di Active Directory
+* `nsswitch` Per l'autenticazione LDAP o NIS
+* `password` per l'autenticazione della password dell'utente
+* `publickey` per l'autenticazione a chiave pubblica
+* `community` Per le stringhe di comunità SNMP
+* `usm` Per il modello di sicurezza dell'utente SNMP
+* `saml` Per l'autenticazione SAML (Security Assertion Markup Language)
+
+ a| 
+
+
+
+ a| 
+`-remote-switch-ipaddress`
+ a| 
+L'indirizzo IP dello switch remoto. Lo switch remoto può essere uno switch del cluster monitorato dal monitor di stato dello switch del cluster (CSHM) o uno switch Fibre Channel (FC) monitorato dal monitor di stato MetroCluster (MCC-HM). Questa opzione è applicabile solo quando l'applicazione è `snmp` e il metodo di autenticazione è `usm`.
+ a| 
+
+
+
+ a| 
+`-role`
+ a| 
+Il ruolo di controllo degli accessi assegnato all'account:
+
+* Per il cluster (SVM admin), il valore predefinito è `admin`.
+* Per un SVM dati, il valore predefinito è `vsadmin`.
+
+ a| 
+
+
+
+ a| 
+`-comment`
+ a| 
+(Facoltativo) testo descrittivo per l'account. Racchiudere il testo tra virgolette doppie (").
+ a| 
+
+
+
+ a| 
+`-is-ns-switch-group`
+ a| 
+Se l'account è un account di gruppo LDAP o NIS (`yes` oppure `no`).
+ a| 
+
+
+
+ a| 
+`-second-authentication-method`
+ a| 
+Secondo metodo di autenticazione in caso di autenticazione a più fattori in *ONTAP 9.3*:
+
+* `none` se non si utilizza l'autenticazione a più fattori, valore predefinito
+* `publickey` per l'autenticazione a chiave pubblica quando `authmethod` è password o nsswitch
+* `password` per l'autenticazione della password utente quando `authmethod` è chiave pubblica
+* `nsswitch` per l'autenticazione della password utente quando il metodo authmethod è publickey
++
+[NOTE]
+====
+A partire da ONTAP 9.4, è disponibile il supporto per nsswitch.
+
+====
+
+
+L'ordine di autenticazione è sempre la chiave pubblica seguita dalla password.
+ a| 
+
+
+
+ a| 
+`-is-ldap-fastbind`
+ a| 
+A partire da ONTAP 9.11.1, se impostato su true, attiva il binding rapido LDAP per l'autenticazione nsswitch; l'impostazione predefinita è false. Per utilizzare l'associazione rapida LDAP, il `-authentication-method` il valore deve essere impostato su `nsswitch`. link:../nfs-admin/ldap-fast-bind-nsswitch-authentication-task.html["Scopri di più su LDAP fastbind per l'autenticazione nsswitch."]
+ a| 
+
+|===
+
+
+== Definire ruoli personalizzati
+
+Questi valori vengono forniti con `security login role create` quando si definisce un ruolo personalizzato.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+(Facoltativo) il nome della SVM associata al ruolo.
+ a| 
+
+
+
+ a| 
+`-role`
+ a| 
+Il nome del ruolo.
+ a| 
+
+
+
+ a| 
+`-cmddirname`
+ a| 
+La directory di comando a cui il ruolo dà accesso. I nomi delle sottodirectory dei comandi devono essere racimati tra virgolette doppie ("). Ad esempio, `"volume snapshot"`. È necessario immettere `DEFAULT` per specificare tutte le directory dei comandi.
+ a| 
+
+
+
+ a| 
+`-access`
+ a| 
+(Facoltativo) il livello di accesso per il ruolo. Per le directory dei comandi:
+
+* `none` (il valore predefinito per i ruoli personalizzati) nega l'accesso ai comandi nella directory dei comandi
+* `readonly` concede l'accesso a `show` comandi nella directory dei comandi e nelle relative sottodirectory
+* `all` concede l'accesso a tutti i comandi nella directory dei comandi e alle relative sottodirectory
+
+
+Per _comandi non intrinseci_ (comandi che non finiscono in `create`, `modify`, `delete`, o. `show`):
+
+* `none` (il valore predefinito per i ruoli personalizzati) nega l'accesso al comando
+* `readonly` non applicabile
+* `all` concede l'accesso al comando
+
+
+Per concedere o negare l'accesso ai comandi intrinseci, è necessario specificare la directory dei comandi.
+ a| 
+
+
+
+ a| 
+`-query`
+ a| 
+(Facoltativo) oggetto query utilizzato per filtrare il livello di accesso, specificato sotto forma di un'opzione valida per il comando o per un comando nella directory dei comandi. Racchiudere l'oggetto di query tra virgolette doppie ("). Ad esempio, se la directory dei comandi è `volume`, l'oggetto query `"-aggr aggr0"` consentirebbe l'accesso a `aggr0` solo aggregato.
+ a| 
+
+|===
+
+
+== Associare una chiave pubblica a un account utente
+
+Questi valori vengono forniti con `security login publickey create` Quando si associa una chiave pubblica SSH a un account utente.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+(Facoltativo) il nome della SVM a cui accede l'account.
+ a| 
+
+
+
+ a| 
+`-username`
+ a| 
+Il nome utente dell'account. Il valore predefinito, `admin`, che è il nome predefinito dell'amministratore del cluster.
+ a| 
+
+
+
+ a| 
+`-index`
+ a| 
+Il numero di indice della chiave pubblica. Il valore predefinito è 0 se la chiave è la prima chiave creata per l'account; in caso contrario, il valore predefinito è uno più del numero di indice più alto esistente per l'account.
+ a| 
+
+
+
+ a| 
+`-publickey`
+ a| 
+La chiave pubblica OpenSSH. Racchiudere la chiave tra virgolette doppie (").
+ a| 
+
+
+
+ a| 
+`-role`
+ a| 
+Il ruolo di controllo degli accessi assegnato all'account.
+ a| 
+
+
+
+ a| 
+`-comment`
+ a| 
+(Facoltativo) testo descrittivo per la chiave pubblica. Racchiudere il testo tra virgolette doppie (").
+ a| 
+
+
+
+ a| 
+`-x509-certificate`
+ a| 
+(Facoltativo) a partire da ONTAP 9.13.1, consente di gestire l'associazione del certificato X.509 con la chiave pubblica SSH.
+
+Quando si associa un certificato X.509 alla chiave pubblica SSH, ONTAP verifica la validità del certificato al momento dell'accesso SSH. Se è scaduto o è stato revocato, l'accesso non è consentito e la chiave pubblica SSH associata è disattivata. Valori possibili:
+
+* `install`: Installare il certificato X.509 con codifica PEM specificato e associarlo alla chiave pubblica SSH. Includere il testo completo del certificato che si desidera installare.
+* `modify`: Aggiornare il certificato X.509 con codifica PEM esistente con il certificato specificato e associarlo alla chiave pubblica SSH. Includere il testo completo del nuovo certificato.
+* `delete`: Rimuovere l'associazione esistente del certificato X.509 con la chiave pubblica SSH.
+
+ a| 
+
+|===
+
+
+== Installare un certificato digitale del server firmato dalla CA
+
+Questi valori vengono forniti con `security certificate generate-csr` Quando si genera una richiesta di firma del certificato digitale (CSR) da utilizzare per l'autenticazione di una SVM come server SSL.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-common-name`
+ a| 
+Il nome del certificato, ovvero un nome di dominio completo (FQDN) o un nome comune personalizzato.
+ a| 
+
+
+
+ a| 
+`-size`
+ a| 
+Il numero di bit nella chiave privata. Maggiore è il valore, maggiore sarà la sicurezza della chiave. Il valore predefinito è `2048`. I valori possibili sono `512`, `1024`, `1536`, e. `2048`.
+ a| 
+
+
+
+ a| 
+`-country`
+ a| 
+Il paese della SVM, in un codice di due lettere. Il valore predefinito è `US`. Consultare le pagine man per un elenco di codici.
+ a| 
+
+
+
+ a| 
+`-state`
+ a| 
+Stato o provincia della SVM.
+ a| 
+
+
+
+ a| 
+`-locality`
+ a| 
+La località di SVM.
+ a| 
+
+
+
+ a| 
+`-organization`
+ a| 
+L'organizzazione di SVM.
+ a| 
+
+
+
+ a| 
+`-unit`
+ a| 
+L'unità nell'organizzazione della SVM.
+ a| 
+
+
+
+ a| 
+`-email-addr`
+ a| 
+L'indirizzo e-mail dell'amministratore del contatto per SVM.
+ a| 
+
+
+
+ a| 
+`-hash-function`
+ a| 
+Funzione di hashing crittografico per la firma del certificato. Il valore predefinito è `SHA256`. I valori possibili sono `SHA1`, `SHA256`, e. `MD5`.
+ a| 
+
+|===
+Questi valori vengono forniti con `security certificate install` Quando si installa un certificato digitale firmato dalla CA per l'autenticazione del cluster o della SVM come server SSL. Nella tabella seguente sono riportate solo le opzioni relative alla configurazione dell'account.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM su cui deve essere installato il certificato.
+ a| 
+
+
+
+ a| 
+`-type`
+ a| 
+Il tipo di certificato:
+
+* `server` per i certificati server e intermedi
+* `client-ca` Per il certificato a chiave pubblica della CA principale del client SSL
+* `server-ca` Per il certificato a chiave pubblica della CA principale del server SSL di cui ONTAP è un client
+* `client` Per un certificato digitale autofirmato o firmato da CA e una chiave privata per ONTAP come client SSL
+
+ a| 
+
+|===
+
+
+== Configurare l'accesso al controller di dominio Active Directory
+
+Questi valori vengono forniti con `security login domain-tunnel create` Quando è già stato configurato un server SMB per una SVM dati e si desidera configurare la SVM come gateway o _tunnel_ per l'accesso al cluster da parte del controller di dominio Active Directory.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM per cui è stato configurato il server SMB.
+ a| 
+
+|===
+Questi valori vengono forniti con `vserver active-directory create` Comando quando non è stato configurato un server SMB e si desidera creare un account di computer SVM nel dominio Active Directory.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM per la quale si desidera creare un account di computer Active Directory.
+ a| 
+
+
+
+ a| 
+`-account-name`
+ a| 
+Il nome NetBIOS dell'account del computer.
+ a| 
+
+
+
+ a| 
+`-domain`
+ a| 
+Il nome di dominio completo (FQDN).
+ a| 
+
+
+
+ a| 
+`-ou`
+ a| 
+L'unità organizzativa nel dominio. Il valore predefinito è `CN=Computers`. ONTAP aggiunge questo valore al nome di dominio per produrre il nome distinto di Active Directory.
+ a| 
+
+|===
+
+
+== Configurare l'accesso al server LDAP o NIS
+
+Questi valori vengono forniti con `vserver services name-service ldap client create` Quando si crea una configurazione client LDAP per SVM.
+
+[NOTE]
+====
+A partire da ONTAP 9.2, la `-ldap-servers` il campo sostituisce `-servers` campo. Questo nuovo campo può assumere un nome host o un indirizzo IP come valore per il server LDAP.
+
+====
+Nella seguente tabella sono riportate solo le opzioni relative alla configurazione dell'account:
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM per la configurazione del client.
+ a| 
+
+
+
+ a| 
+`-client-config`
+ a| 
+Il nome della configurazione del client.
+ a| 
+
+
+
+ a| 
+`-servers`
+ a| 
+*ONTAP 9.0, 9.1*: Un elenco separato da virgole di indirizzi IP per i server LDAP a cui si connette il client.
+ a| 
+
+
+
+ a| 
+`-ldap-servers`
+ a| 
+*ONTAP 9.2*: Un elenco separato da virgole di indirizzi IP e nomi host per i server LDAP a cui si connette il client.
+ a| 
+
+
+
+ a| 
+`-schema`
+ a| 
+Lo schema utilizzato dal client per eseguire query LDAP.
+ a| 
+
+
+
+ a| 
+`-use-start-tls`
+ a| 
+Se il client utilizza Start TLS per crittografare la comunicazione con il server LDAP (`true` oppure `false`).
+
+[NOTE]
+====
+Start TLS è supportato solo per l'accesso ai dati SVM. Non è supportato per l'accesso alle SVM amministrative.
+
+==== a| 
+
+|===
+Questi valori vengono forniti con `vserver services name-service ldap create` Quando si associa una configurazione del client LDAP a SVM.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM a cui deve essere associata la configurazione del client.
+ a| 
+
+
+
+ a| 
+`-client-config`
+ a| 
+Il nome della configurazione del client.
+ a| 
+
+
+
+ a| 
+`-client-enabled`
+ a| 
+Se SVM può utilizzare la configurazione del client LDAP (`true` oppure `false`).
+ a| 
+
+|===
+Questi valori vengono forniti con `vserver services name-service nis-domain create` Quando si crea una configurazione di dominio NIS su una SVM.
+
+[NOTE]
+====
+A partire da ONTAP 9.2, la `-nis-servers` il campo sostituisce `-servers` campo. Questo nuovo campo può assumere un nome host o un indirizzo IP come valore per il server NIS.
+
+====
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM su cui deve essere creata la configurazione del dominio.
+ a| 
+
+
+
+ a| 
+`-domain`
+ a| 
+Il nome del dominio.
+ a| 
+
+
+
+ a| 
+`-active`
+ a| 
+Se il dominio è attivo (`true` oppure `false`).
+ a| 
+
+
+
+ a| 
+`-servers`
+ a| 
+*ONTAP 9.0, 9.1*: Un elenco separato da virgole di indirizzi IP per i server NIS utilizzati dalla configurazione del dominio.
+ a| 
+
+
+
+ a| 
+`-nis-servers`
+ a| 
+*ONTAP 9.2*: Un elenco separato da virgole di indirizzi IP e nomi host per i server NIS utilizzati dalla configurazione del dominio.
+ a| 
+
+|===
+Questi valori vengono forniti con `vserver services name-service ns-switch create` quando si specifica l'ordine di ricerca per le origini del servizio nome.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+Il nome della SVM in cui deve essere configurato l'ordine di ricerca del servizio di nomi.
+ a| 
+
+
+
+ a| 
+`-database`
+ a| 
+Il database name service:
+
+* `hosts` Per file e servizi di nomi DNS
+* `group` Per file, LDAP e NIS name service
+* `passwd` Per file, LDAP e NIS name service
+* `netgroup` Per file, LDAP e NIS name service
+* `namemap` Per file e servizi di nomi LDAP
+
+ a| 
+
+
+
+ a| 
+`-sources`
+ a| 
+L'ordine in cui cercare le origini del servizio dei nomi (in un elenco separato da virgole):
+
+* `files`
+* `dns`
+* `ldap`
+* `nis`
+
+ a| 
+
+|===
+
+
+== Configurare l'accesso SAML
+
+A partire da ONTAP 9.3, si forniscono questi valori con `security saml-sp create` Comando per configurare l'autenticazione SAML.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-idp-uri`
+ a| 
+L'indirizzo FTP o HTTP dell'host IdP (Identity Provider) da cui è possibile scaricare i metadati IdP.
+ a| 
+
+
+
+ a| 
+`-sp-host`
+ a| 
+Il nome host o l'indirizzo IP dell'host del provider di servizi SAML (sistema ONTAP). Per impostazione predefinita, viene utilizzato l'indirizzo IP della LIF di gestione del cluster.
+ a| 
+
+
+
+ a| 
+`-cert-ca` e. `-cert-serial`, o. `-cert-common-name`
+ a| 
+I dettagli del certificato del server dell'host del provider di servizi (sistema ONTAP). È possibile immettere l'autorità di certificazione (CA) di emissione del certificato del provider di servizi e il numero di serie del certificato oppure il nome comune del certificato del server.
+ a| 
+
+
+
+ a| 
+`-verify-metadata-server`
+ a| 
+Se l'identità del server di metadati IdP deve essere convalidata  `true` oppure `false`). La procedura consigliata consiste nell'impostare sempre questo valore su `true`.
+ a| 
+
+|===

@@ -1,0 +1,141 @@
+---
+sidebar: sidebar 
+permalink: s3-snapmirror/create-cloud-backup-existing-bucket-task.html 
+keywords: create a backup relationship for an existing bucket, backup relationship, existing bucket 
+summary: È possibile iniziare il backup dei bucket S3 esistenti in qualsiasi momento, ad esempio se è stata aggiornata una configurazione S3 da una release precedente a ONTAP 9.10.1. 
+---
+= Creare una relazione di backup per un bucket esistente (target cloud)
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+:toc-position: content
+
+
+[role="lead"]
+È possibile iniziare il backup dei bucket S3 esistenti in qualsiasi momento, ad esempio se è stata aggiornata una configurazione S3 da una release precedente a ONTAP 9.10.1.
+
+.Di cosa hai bisogno
+* Si dispone di credenziali account e informazioni di configurazione valide per il provider dell'archivio di oggetti.
+* Le interfacce di rete tra cluster e un IPSpace sono state configurate sul sistema di origine.
+* La configurazione DNS per la VM dello storage di origine deve essere in grado di risolvere l'FQDN della destinazione.
+
+
+
+
+== Procedura di System Manager
+
+. Verificare che gli utenti e i gruppi siano definiti correttamente: Fare clic su *Storage > Storage VM*, fare clic sulla VM di storage, fare clic su *Settings* (Impostazioni) e quindi su image:icon_pencil.gif["icona edit (modifica)"] Sotto S3.
++
+Vedere link:../task_object_provision_add_s3_users_groups.html["Aggiungere utenti e gruppi S3"] per ulteriori informazioni.
+
+. Creare un criterio S3 SnapMirror se non si dispone di un criterio esistente e non si desidera utilizzare quello predefinito:
++
+.. Fare clic su *protezione > Panoramica*, quindi su *Impostazioni policy locale*.
+.. Fare clic su image:../media/icon_arrow.gif["freccia destra"] Accanto a *Criteri di protezione*, quindi fare clic su *Aggiungi*.
+.. Immettere il nome e la descrizione della policy.
+.. Selezionare l'ambito del criterio, il cluster o SVM
+.. Selezionare *Continuous* per le relazioni di S3 SnapMirror.
+.. Inserire i valori *Throttle* e *Recovery Point Objective*.
+
+
+. Aggiungere un Cloud Object Store sul sistema di origine:
++
+.. Fare clic su *protezione > Panoramica*, quindi selezionare *Cloud Object Store*.
+.. Fare clic su *Aggiungi*, quindi selezionare *Amazon S3* o *altri* per StorageGRID webscale.
+.. Immettere i seguenti valori:
++
+*** Nome archivio oggetti cloud
+*** Stile URL (path o virtual-hosted)
+*** Storage VM (abilitato per S3)
+*** Nome server archivio oggetti (FQDN)
+*** Certificato dell'archivio di oggetti
+*** Tasto di accesso
+*** Chiave segreta
+*** Nome del container (bucket)
+
+
+
+
+. Verificare che la policy di accesso al bucket del bucket esistente soddisfi ancora le proprie esigenze:
++
+.. Fare clic su *Storage* > *Bucket* e selezionare il bucket che si desidera proteggere.
+.. Nella scheda *Permissions*, fare clic su image:icon_pencil.gif["icona edit (modifica)"] *Modifica*, quindi fare clic su *Aggiungi* in *permessi*.
++
+*** *Principal* e *Effect* - selezionare i valori corrispondenti alle impostazioni del gruppo di utenti o accettare le impostazioni predefinite.
+*** *Azioni* - assicurarsi che vengano visualizzati i seguenti valori: `GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts`
+*** *Risorse* - utilizzare le impostazioni predefinite `_(bucketname, bucketname/*)_` o altri valori di cui hai bisogno.
++
+Vedere link:../task_object_provision_manage_bucket_access.html["Gestire l'accesso degli utenti ai bucket"] per ulteriori informazioni su questi campi.
+
+
+
+
+
+. Eseguire il backup del bucket utilizzando S3 SnapMirror:
++
+.. Fare clic su *Storage* > *Bucket*, quindi selezionare il bucket di cui si desidera eseguire il backup.
+.. Fare clic su *Protect*, selezionare *Cloud Storage* sotto *Target*, quindi selezionare *Cloud Object Store*.
+
+
+
+
+Facendo clic su *Save* (Salva), viene eseguito il backup del bucket esistente nell'archivio di oggetti cloud.
+
+
+
+== Procedura CLI
+
+. Verificare che le regole di accesso nel criterio bucket predefinito siano corrette:
+`vserver object-store-server bucket policy add-statement -vserver _svm_name_ -bucket _bucket_name_ -effect {allow|deny} -action _object_store_actions_ -principal _user_and_group_names_ -resource _object_store_resources_ [-sid _text_] [-index _integer_]`
++
+.Esempio
+[listing]
+----
+clusterA::> vserver object-store-server bucket policy add-statement -bucket test-bucket -effect allow -action GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts -principal - -resource test-bucket, test-bucket /*
+----
+. Creare un criterio S3 SnapMirror se non si dispone di un criterio esistente e non si desidera utilizzare quello predefinito:
+`snapmirror policy create -vserver svm_name -policy policy_name -type continuous [-rpo _integer_] [-throttle _throttle_type_] [-comment _text_] [_additional_options_]`
++
+Parametri: * `type continuous` – L'unico tipo di policy per le relazioni di S3 SnapMirror (obbligatorio). * `-rpo` – specifica il tempo per l'obiettivo del punto di ripristino, in secondi (facoltativo). * `-throttle` – specifica il limite massimo di throughput/larghezza di banda, in kilobyte/secondi (opzionale).
+
++
+.Esempio
+[listing]
+----
+clusterA::> snapmirror policy create -vserver vs0 -type continuous -rpo 0 -policy test-policy
+----
+. Se la destinazione è un sistema StorageGRID, installare il certificato CA StorageGRID sulla SVM amministrativa del cluster di origine:
+`security certificate install -type server-ca -vserver _src_admin_svm_ -cert-name _storage_grid_server_certificate_`
++
+Vedere `security certificate install` pagina man per i dettagli.
+
+. Definire l'archivio di oggetti di destinazione di S3 SnapMirror:
+`snapmirror object-store config create -vserver _svm_name_ -object-store-name _target_store_name_ -usage data -provider-type {AWS_S3|SGWS} -server _target_FQDN_ -container-name _remote_bucket_name_ -is-ssl-enabled true -port _port_number_ -access-key target_access_key -secret-password _target_secret_key_`
++
+Parametri: * `-object-store-name` – Il nome della destinazione dell'archivio di oggetti nel sistema ONTAP locale. * `-usage` – utilizzare `data` per questo flusso di lavoro. * `-provider-type` – `AWS_S3` e. `SGWS` Sono supportati i target (StorageGRID). * `-server` – L'indirizzo FQDN o IP del server di destinazione. * `-is-ssl-enabled` –L'abilitazione di SSL è facoltativa ma consigliata. + vedere `snapmirror object-store config create` pagina man per i dettagli.
+
++
+.Esempio
+[listing]
+----
+src_cluster::> snapmirror object-store config create -vserver vs0 -object-store-name sgws-store -usage data -provider-type SGWS -server sgws.example.com -container-name target-test-bucket -is-ssl-enabled true -port 443 -access-key abc123 -secret-password xyz890
+----
+. Creare una relazione SnapMirror S3:
+`snapmirror create -source-path _svm_name_:/bucket/_bucket_name_ -destination-path _object_store_name_:/objstore  -policy _policy_name_`
++
+Parametri: * `-destination-path` – il nome dell'archivio di oggetti creato nel passaggio precedente e il valore fisso `objstore`. + è possibile utilizzare un criterio creato o accettare quello predefinito.
+
++
+....
+src_cluster::> snapmirror create -source-path vs0:/bucket/buck-evp -destination-path sgws-store:/objstore -policy test-policy
+....
+. Verificare che il mirroring sia attivo:
+`snapmirror show -policy-type continuous -fields status`
+

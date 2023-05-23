@@ -1,0 +1,86 @@
+---
+sidebar: sidebar 
+permalink: networking/monitor_the_health_of_network_ports.html 
+keywords: monitor, monitoring, manage, managing, automatic, health, port, monitor the health of network ports, automatic health monitoring and a set of health monitors help you identify network ports that might not be suitable for hosting lifs, network options port-health-monitor modify 
+summary: 'Il monitoraggio automatico dello stato di salute e una serie di monitor di stato consentono di identificare le porte di rete che potrebbero non essere adatte per l"hosting di LIF' 
+---
+= Monitorare lo stato delle porte di rete
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+La gestione ONTAP delle porte di rete include il monitoraggio automatico dello stato di salute e un set di monitor per aiutare a identificare le porte di rete che potrebbero non essere adatte per l'hosting di LIF.
+
+.A proposito di questa attività
+Se un monitor dello stato di salute determina che una porta di rete non è funzionante, avvisa gli amministratori tramite un messaggio EMS o contrassegna la porta come danneggiata. ONTAP evita l'hosting di LIF su porte di rete degradate se sono presenti destinazioni di failover alternative sane per tale LIF. Una porta può diventare degradata a causa di un errore di tipo soft, come ad esempio il link flapping (link che rimbalzano rapidamente tra up e down) o la partizione di rete:
+
+* Le porte di rete nell'IPSpace del cluster vengono contrassegnate come degradate quando si verificano lo sfarfallio del collegamento o la perdita di raggiungibilità Layer 2 (L2) ad altre porte di rete nel dominio di trasmissione.
+* Le porte di rete negli spazi IP non cluster vengono contrassegnate come degradate quando si verifica lo sfarfallio dei collegamenti.
+
+
+È necessario conoscere i seguenti comportamenti di una porta danneggiata:
+
+* Una porta degradata non può essere inclusa in una VLAN o in un gruppo di interfacce.
++
+Se una porta membro di un gruppo di interfacce è contrassegnata come degradata, ma il gruppo di interfacce è ancora contrassegnato come integro, i file LIF possono essere ospitati su quel gruppo di interfacce.
+
+* Le LIF vengono migrate automaticamente dalle porte degradate alle porte integre.
+* Durante un evento di failover, una porta degradata non viene considerata come destinazione di failover. Se non sono disponibili porte integre, le porte degradate ospitano le LIF in base alla normale policy di failover.
+* Non è possibile creare, migrare o ripristinare una LIF su una porta degradata.
++
+È possibile modificare `ignore-health-status` impostazione della porta di rete su `true`. È quindi possibile ospitare una LIF sulle porte sane.
+
+
+
+.Fasi
+. Accedere alla modalità avanzata dei privilegi:
++
+....
+set -privilege advanced
+....
+. Controllare quali monitor di stato sono abilitati per il monitoraggio dello stato delle porte di rete:
++
+....
+network options port-health-monitor show
+....
++
+Lo stato di salute di una porta è determinato dal valore dei monitor di stato.
+
++
+I seguenti monitor di stato sono disponibili e abilitati per impostazione predefinita in ONTAP:
+
++
+** Monitor di stato link-flapping: Monitora il link flapping
++
+Se una porta presenta uno sfarfallio del collegamento più di una volta in cinque minuti, questa porta viene contrassegnata come degradata.
+
+** L2 Reachability Health Monitor: Monitora se tutte le porte configurate nello stesso dominio di trasmissione hanno una raggiungibilità L2 l'una rispetto all'altra
++
+Questo monitor dello stato di salute segnala problemi di raggiungibilità L2 in tutti gli spazi IP; tuttavia, contrassegna solo le porte nell'IPSpace del cluster come degradate.
+
+** Monitor CRC: Monitora le statistiche CRC sulle porte
++
+Questo monitor dello stato di salute non contrassegna una porta come degradata, ma genera un messaggio EMS quando si osserva un tasso di guasti CRC molto elevato.
+
+
+
+. Attivare o disattivare i monitor di stato di un IPSpace come desiderato utilizzando `network options port-health-monitor modify` comando.
+. Visualizzazione dello stato dettagliato di una porta:
++
+....
+network port show -health
+....
+
+
+L'output del comando visualizza lo stato di salute della porta, `ignore health status` impostazione ed elenco dei motivi per cui la porta è contrassegnata come degradata.
+
+Lo stato di integrità della porta può essere `healthy` oppure `degraded`.
+
+Se il `ignore health status` l'impostazione è `true`, indica che lo stato di salute della porta è stato modificato da `degraded` a. `healthy` dall'amministratore.
+
+Se il `ignore health status` l'impostazione è `false`, lo stato delle porte viene determinato automaticamente dal sistema.

@@ -1,0 +1,54 @@
+---
+permalink: volumes/default-user-group-quotas-derived-concept.html 
+sidebar: sidebar 
+keywords: how, default, user, group quotas, create, derived, quotas 
+summary: Quando si creano quote utente o gruppo predefinite, le quote utente o gruppo derivate corrispondenti vengono create automaticamente per ogni utente o gruppo proprietario di file allo stesso livello. 
+---
+= In che modo le quote predefinite di utenti e gruppi creano quote derivate
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si creano quote utente o gruppo predefinite, le quote utente o gruppo derivate corrispondenti vengono create automaticamente per ogni utente o gruppo proprietario di file allo stesso livello.
+
+Le quote di utenti e gruppi derivati vengono create nei seguenti modi:
+
+* Una quota utente predefinita su un volume FlexVol crea quote utente derivate per ogni utente che possiede un file in qualsiasi punto del volume.
+* Una quota utente predefinita su un qtree crea quote utente derivate per ogni utente che possiede un file nel qtree.
+* Una quota di gruppo predefinita su un volume FlexVol crea quote di gruppo derivate per ogni gruppo che possiede un file in qualsiasi punto del volume.
+* Una quota di gruppo predefinita su un qtree crea quote di gruppo derivate per ogni gruppo che possiede un file nel qtree.
+
+
+Se un utente o un gruppo non possiede file al livello di una quota utente o di gruppo predefinita, le quote derivate non vengono create per l'utente o il gruppo. Ad esempio, se viene creata una quota utente predefinita per qtree proj1 e l'utente jsmith possiede file su un qtree diverso, non viene creata alcuna quota utente derivata per jsmith.
+
+Le quote derivate hanno le stesse impostazioni delle quote predefinite, inclusi limiti e mappatura utente. Ad esempio, se una quota utente predefinita ha un limite di 50 MB di disco e la mappatura utente è attivata, anche le quote derivate risultanti hanno un limite di 50 MB di disco e la mappatura utente è attivata.
+
+Tuttavia, non esistono limiti nelle quote derivate per tre utenti e gruppi speciali. Se i seguenti utenti e gruppi possiedono file al livello di una quota utente o di gruppo predefinita, viene creata una quota derivata con la stessa impostazione di mappatura utente della quota utente o di gruppo predefinita, ma si tratta solo di una quota di controllo (senza limiti):
+
+* Utente root UNIX (UID 0)
+* Gruppo root UNIX (GID 0)
+* Gruppo BUILTIN/Administrators di Windows
++
+Poiché le quote per i gruppi Windows vengono registrate come quote utente, una quota derivata per questo gruppo è una quota utente derivata da una quota utente predefinita, non una quota di gruppo predefinita.
+
+
+
+.Esempio di quote utente derivate
+Se si dispone di un volume in cui tre utenti (root, jsmith e bob) possiedono file e si crea una quota utente predefinita sul volume, ONTAP crea automaticamente tre quote utente derivate. Pertanto, dopo aver reinizializzato le quote sul volume, nel report delle quote vengono visualizzate quattro nuove quote:
+
+[listing]
+----
+cluster1::> volume quota report
+  Vserver: vs1
+                                     ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol1               user    *           0B   50MB       0       -   *
+vol1               user    root        5B      -       1       -
+vol1               user    jsmith     30B   50MB      10       -   *
+vol1               user    bob        40B   50MB      15       -   *
+4 entries were displayed.
+----
+La prima nuova riga è la quota utente predefinita creata, identificabile dall'asterisco (*) come ID. Le altre nuove righe sono le quote utente derivate. Le quote derivate per jsmith e bob hanno lo stesso limite di 50 MB di disco della quota predefinita. La quota derivata per l'utente root è una quota di monitoraggio senza limiti.

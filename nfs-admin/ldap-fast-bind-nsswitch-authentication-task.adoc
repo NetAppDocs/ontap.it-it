@@ -1,0 +1,67 @@
+---
+permalink: nfs-admin/ldap-fast-bind-nsswitch-authentication-task.html 
+sidebar: sidebar 
+keywords: use, ldap, fast, bind, authentication, configure 
+summary: 'A partire da ONTAP 9.11.1, è possibile sfruttare la funzionalità LDAP _fast bind_ (nota anche come _Concurrent BIND_) per richieste di autenticazione client più semplici e veloci. Per utilizzare questa funzionalità, il server LDAP deve supportare la funzionalità di associazione rapida' 
+---
+= Utilizza il binding rapido LDAP per l'autenticazione nsswitch
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.11.1, è possibile sfruttare la funzionalità LDAP _fast bind_ (nota anche come _Concurrent BIND_) per richieste di autenticazione client più semplici e veloci. Per utilizzare questa funzionalità, il server LDAP deve supportare la funzionalità di associazione rapida.
+
+.A proposito di questa attività
+Senza il binding rapido, ONTAP utilizza il binding semplice LDAP per autenticare gli utenti amministratori con il server LDAP. Con questo metodo di autenticazione, ONTAP invia un nome utente o di gruppo al server LDAP, riceve la password hash memorizzata e confronta il codice hash del server con il codice hash generato localmente dalla password utente. Se sono identici, ONTAP concede l'autorizzazione di accesso.
+
+Grazie alla funzionalità di associazione rapida, ONTAP invia solo le credenziali utente (nome utente e password) al server LDAP tramite una connessione sicura. Il server LDAP convalida quindi queste credenziali e richiede a ONTAP di concedere le autorizzazioni di accesso.
+
+Uno dei vantaggi di fast bind è che non è necessario che ONTAP supporti ogni nuovo algoritmo di hashing supportato dai server LDAP, perché l'hashing delle password viene eseguito dal server LDAP.
+
+link:https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/dc4eb502-fb94-470c-9ab8-ad09fa720ea6["Scopri come utilizzare fast bind."^]
+
+È possibile utilizzare le configurazioni client LDAP esistenti per l'associazione rapida LDAP. Tuttavia, si consiglia vivamente di configurare il client LDAP per TLS o LDAPS; in caso contrario, la password viene inviata via cavo in testo normale.
+
+Per abilitare il binding rapido LDAP in un ambiente ONTAP, è necessario soddisfare i seguenti requisiti:
+
+* Gli utenti admin di ONTAP devono essere configurati su un server LDAP che supporti il fast bind.
+* ONTAP SVM deve essere configurato per LDAP nel database name Services switch (nsswitch).
+* Gli account di gruppo e utente amministratore di ONTAP devono essere configurati per l'autenticazione nsswitch utilizzando il collegamento rapido.
+
+
+.Fasi
+. Verificare con l'amministratore LDAP che il collegamento rapido LDAP sia supportato sul server LDAP.
+. Assicurarsi che le credenziali dell'utente amministratore di ONTAP siano configurate sul server LDAP.
+. Verificare che l'amministratore o l'SVM dei dati sia configurato correttamente per il binding rapido LDAP.
++
+.. Per confermare che il server fast bind LDAP è elencato nella configurazione del client LDAP, immettere:
++
+`vserver services name-service ldap client show`
+
++
+link:https://docs.netapp.com/us-en/ontap/nfs-config/create-ldap-client-config-task.html["Informazioni sulla configurazione del client LDAP."]
+
+.. Per confermare `ldap` è una delle sorgenti configurate per nsswitch `passwd` database, inserire:
++
+`vserver services name-service ns-switch show`
+
++
+link:https://docs.netapp.com/us-en/ontap/nfs-config/configure-name-service-switch-table-task.html["Scopri di più sulla configurazione di nsswitch."]
+
+
+
+. Assicurarsi che gli utenti admin stiano autenticando con nsswitch e che l'autenticazione LDAP fast bind sia attivata nei propri account.
++
+** Per gli utenti esistenti, immettere `security login modify` e verificare le seguenti impostazioni dei parametri:
++
+`-authentication-method nsswitch`
+
++
+`-is-ldap-fastbind true`
+
+** Per i nuovi utenti admin, vedere link:https://docs.netapp.com/us-en/ontap/authentication/grant-access-nis-ldap-user-accounts-task.html["Abilitare l'accesso all'account LDAP o NIS."]
+
+
+

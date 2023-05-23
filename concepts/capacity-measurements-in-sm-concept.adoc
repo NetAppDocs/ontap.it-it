@@ -1,0 +1,183 @@
+---
+sidebar: sidebar 
+permalink: concepts/capacity-measurements-in-sm-concept.html 
+keywords: capacity, measurement, physical, logical, storage, used storage, local tier capacity, aggregate capacity, block, capacity concern, add capacity, volume, used capacity, available capacity, total capacity, inactive capacity, static insights, dynamic insights, snapshot copy, snapshot copies, inactive data, overprovision, overflows, snapshot copy policy, snapshot copy reserves, reserves, policy, top volumes 
+summary: La capacità del sistema può essere misurata come spazio fisico o spazio logico. A partire da ONTAP 9.7, System Manager fornisce misurazioni della capacità fisica e logica. 
+---
+= Misurazioni della capacità in System Manager
+:allow-uri-read: 
+
+
+[role="lead"]
+La capacità del sistema può essere misurata come spazio fisico o spazio logico. A partire da ONTAP 9.7, System Manager fornisce misurazioni della capacità fisica e logica.
+
+Le differenze tra le due misurazioni sono spiegate nelle seguenti descrizioni:
+
+* *Capacità fisica*: Lo spazio fisico si riferisce ai blocchi fisici di storage utilizzati nel volume o nel Tier locale. Il valore della capacità fisica utilizzata è in genere inferiore al valore della capacità logica utilizzata a causa della riduzione dei dati dalle funzionalità di efficienza dello storage (come deduplica e compressione).
+* *Capacità logica*: Lo spazio logico si riferisce allo spazio utilizzabile (i blocchi logici) in un volume o in un Tier locale. Lo spazio logico si riferisce al modo in cui lo spazio teorico può essere utilizzato, senza tenere conto dei risultati della deduplica o della compressione. Il valore dello spazio logico utilizzato deriva dalla quantità di spazio fisico utilizzato e dai risparmi derivanti dalle funzionalità di efficienza dello storage (come deduplica e compressione) configurate. Questa misurazione appare spesso più grande della capacità fisica utilizzata perché include copie Snapshot, cloni e altri componenti e non riflette la compressione dei dati e altre riduzioni dello spazio fisico. Pertanto, la capacità logica totale potrebbe essere superiore allo spazio fornito.
+
+
+
+NOTE: In System Manager, le rappresentazioni della capacità non tengono conto delle capacità del Tier storage root (aggregato).
+
+
+
+== Misurazioni della capacità utilizzata
+
+Le misurazioni della capacità utilizzata vengono visualizzate in modo diverso a seconda della versione di System Manager in uso, come illustrato nella seguente tabella:
+
+[cols="30,30,40"]
+|===
+
+
+| Versione di System Manager | Termine utilizzato per la capacità | Tipo di capacità a cui si fa riferimento 
+
+
+ a| 
+9.5 e 9.6 (visualizzazione classica)
+ a| 
+Utilizzato
+ a| 
+Spazio fisico utilizzato
+
+
+
+ a| 
+9.7 e 9.8
+ a| 
+Utilizzato
+ a| 
+Spazio logico utilizzato (se sono state attivate le impostazioni di efficienza dello storage)
+
+
+
+ a| 
+9.9.1 e versioni successive
+ a| 
+Logica utilizzata
+ a| 
+Spazio logico utilizzato (se sono state attivate le impostazioni di efficienza dello storage)
+
+|===
+
+
+== Termini di misurazione della capacità
+
+Quando si descrive la capacità, vengono utilizzati i seguenti termini:
+
+* *Capacità allocata*: Quantità di spazio allocato per i volumi in una VM di storage.
+* *Available*: La quantità di spazio fisico disponibile per memorizzare i dati o per eseguire il provisioning dei volumi in una VM di storage o su un Tier locale.
+* *Capacità tra volumi*: La somma dello storage utilizzato e dello storage disponibile di tutti i volumi su una VM di storage.
+* *Dati del client*: Quantità di spazio utilizzata dai dati del client (fisici o logici).
+* *Impegnato*: Quantità di capacità impegnata per un Tier locale.
+* *Riduzione dei dati*:
++
+** *Overall*: Il rapporto tra tutto lo spazio logico utilizzato e lo spazio fisico utilizzato.
+** *Senza copie Snapshot e cloni*: Il rapporto dello spazio logico utilizzato solo dai dati del client rispetto allo spazio fisico utilizzato solo dai dati del client.
+
+
+* *Logica utilizzata*: La quantità di spazio utilizzato senza considerare lo spazio risparmiato dalle funzionalità di efficienza dello storage.
+* *Logical used %*: Percentuale della capacità logica utilizzata corrente rispetto alle dimensioni fornite, escluse le riserve Snapshot. Questo valore può essere superiore al 100%, perché include risparmi di efficienza nel volume.
+* *Capacità massima*: Quantità massima di spazio allocato per i volumi su una VM di storage.
+* *Fisico utilizzato*: La quantità di capacità utilizzata nei blocchi fisici di un volume o di un Tier locale.
+* *Physical used %*: Percentuale di capacità utilizzata nei blocchi fisici di un volume rispetto alle dimensioni del provisioning.
+* *Reserved*: Quantità di spazio riservato ai volumi già sottoposti a provisioning in un Tier locale.
+* *Used*: Quantità di spazio che contiene dati.
+* *Utilizzato e riservato*: La somma dello spazio fisico utilizzato e riservato.
+
+
+
+
+== Capacità di una VM storage
+
+La capacità massima di una VM di storage è determinata dallo spazio allocato totale per i volumi più lo spazio non allocato rimanente.
+
+* Lo spazio allocato per i volumi è la somma della capacità utilizzata e della capacità disponibile di volumi FlexVol, FlexGroup e FlexCache.
+* La capacità dei volumi viene inclusa nelle somme, anche quando sono limitate, offline o nella coda di ripristino dopo l'eliminazione.
+* Se i volumi sono configurati con la crescita automatica, il valore massimo di dimensionamento automatico del volume viene utilizzato nelle somme. Senza la crescita automatica, la capacità effettiva del volume viene utilizzata nelle somme.
+
+
+Il grafico seguente spiega come la misurazione della capacità tra i volumi si riferisce al limite massimo di capacità.
+
+image:max-cap-limit-cap-x-volumes.gif["Il limite massimo di capacità comprende lo spazio allocato e lo spazio disponibile e la capacità tra i volumi occupa solo lo spazio allocato."]
+
+A partire da ONTAP 9.13.1, gli amministratori del cluster possono farlo link:../manage-max-cap-limit-svm-in-sm-task.html["Abilitare un limite massimo di capacità per una VM di storage"]. Tuttavia, non è possibile impostare limiti di storage per una VM di storage che contiene volumi per la protezione dei dati, in una relazione SnapMirror o in una configurazione MetroCluster. Inoltre, le quote non possono essere configurate in modo da superare la capacità massima di una VM di storage.
+
+Una volta impostato il limite massimo di capacità, non è possibile modificarlo in una dimensione inferiore alla capacità attualmente allocata.
+
+Quando una VM di storage raggiunge il limite massimo di capacità, alcune operazioni non possono essere eseguite. System Manager fornisce suggerimenti per le fasi successive di link:../insights-system-optimization-task.html["*Insights*"].
+
+
+
+== Unità di misura della capacità
+
+System Manager calcola la capacità dello storage in base a unità binarie di 1024 (2^10^) byte. In ONTAP 9.10.0 e versioni precedenti, queste unità venivano visualizzate in Gestione sistema come KB, MB, GB, TB e PB. A partire da ONTAP 9.10.1, vengono visualizzati in Gestore di sistema come KiB, MiB, GiB, TIB e PIB.
+
+
+NOTE: Le unità utilizzate in Gestione sistema per il throughput continuano a essere KB/s, MB/s, GB/s, TB/s e PB/s per tutte le release di ONTAP.
+
+[cols="20,20,30,30"]
+|===
+
+
+| Unità di capacità visualizzata in Gestore di sistema per ONTAP 9.10.0 e versioni precedenti | Unità di capacità visualizzata in Gestore di sistema per ONTAP 9.10.1 e versioni successive | Calcolo | Valore in byte 
+
+
+ a| 
+KB
+ a| 
+KiB
+ a| 
+1024
+ a| 
+1024 byte
+
+
+
+ a| 
+MB
+ a| 
+MIB
+ a| 
+1024 * 1024
+ a| 
+1,048,576 byte
+
+
+
+ a| 
+GB
+ a| 
+Gib
+ a| 
+1024 * 1024 * 1024
+ a| 
+1,073,741,824 byte
+
+
+
+ a| 
+TB
+ a| 
+TIB
+ a| 
+1024 * 1024 * 1024 * 1024
+ a| 
+1,099,511,627,776 byte
+
+
+
+ a| 
+PB
+ a| 
+PIB
+ a| 
+1024 * 1024 * 1024 * 1024 * 1024
+ a| 
+1,125,899,906,842,624 byte
+
+|===
+.Informazioni correlate
+link:../task_admin_monitor_capacity_in_sm.html["Monitorare la capacità in System Manager"]
+
+link:../volumes/logical-space-reporting-enforcement-concept.html["Creazione di report e applicazione dello spazio logico per i volumi"]

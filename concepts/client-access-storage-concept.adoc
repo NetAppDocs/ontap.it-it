@@ -1,0 +1,63 @@
+---
+permalink: concepts/client-access-storage-concept.html 
+sidebar: sidebar 
+keywords: client authentication, authorization 
+summary: 'ONTAP autentica un computer client e un utente verificando la propria identità con un"origine attendibile. ONTAP autorizza un utente ad accedere a un file o a una directory confrontando le credenziali dell"utente con le autorizzazioni configurate nel file o nella directory.' 
+---
+= Autenticazione e autorizzazione del client
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP utilizza metodi standard per proteggere l'accesso client e amministratore allo storage e per proteggerlo dai virus. Sono disponibili tecnologie avanzate per la crittografia dei dati a riposo e per lo storage WORM.
+
+ONTAP autentica un computer client e un utente verificando la propria identità con un'origine attendibile. ONTAP autorizza un utente ad accedere a un file o a una directory confrontando le credenziali dell'utente con le autorizzazioni configurate nel file o nella directory.
+
+
+
+== Autenticazione
+
+È possibile creare account utente locali o remoti:
+
+* Un account locale è un account in cui le informazioni dell'account risiedono nel sistema di storage.
+* Un account remoto è un account in cui le informazioni sull'account vengono memorizzate in un controller di dominio Active Directory, in un server LDAP o in un server NIS.
+
+
+ONTAP utilizza i servizi dei nomi locali o esterni per cercare informazioni relative a nome host, utente, gruppo, netgroup e mappatura dei nomi. ONTAP supporta i seguenti servizi per i nomi:
+
+* Utenti locali
+* DNS
+* Domini NIS esterni
+* Domini LDAP esterni
+
+
+Una _name service switch table_ specifica le fonti per la ricerca delle informazioni di rete e l'ordine in cui ricercarle (fornendo la funzionalità equivalente del file /etc/nsswitch.conf sui sistemi UNIX). Quando un client NAS si connette a SVM, ONTAP verifica i servizi dei nomi specificati per ottenere le informazioni richieste.
+
+|===
+
+
+ a| 
+*_supporto Kerberos_* Kerberos è un protocollo di autenticazione di rete che fornisce "`sautenticazione trong`" crittografando le password utente nelle implementazioni client-server. ONTAP supporta l'autenticazione Kerberos 5 con controllo dell'integrità (krb5i) e l'autenticazione Kerberos 5 con controllo della privacy (krb5p).
+
+|===
+
+
+== Autorizzazione
+
+ONTAP valuta tre livelli di sicurezza per determinare se un'entità è autorizzata a eseguire un'azione richiesta su file e directory che risiedono su una SVM. L'accesso è determinato dalle autorizzazioni effettive dopo la valutazione dei livelli di sicurezza:
+
+* Sicurezza di esportazione (NFS) e condivisione (SMB)
++
+La sicurezza di esportazione e condivisione si applica all'accesso client a una data esportazione NFS o condivisione SMB. Gli utenti con privilegi amministrativi possono gestire la sicurezza a livello di esportazione e condivisione dai client SMB e NFS.
+
+* Protezione di file e directory di Access Guard a livello di storage
++
+La sicurezza di Access Guard a livello di storage si applica all'accesso dei client SMB e NFS ai volumi SVM. Sono supportate solo le autorizzazioni di accesso NTFS. Affinché ONTAP esegua controlli di sicurezza sugli utenti UNIX per l'accesso ai dati sui volumi per i quali è stato applicato Storage-Level Access Guard, l'utente UNIX deve eseguire il mapping a un utente Windows sulla SVM proprietaria del volume.
+
+* Sicurezza nativa a livello di file in NTFS, UNIX e NFSv4
++
+La protezione nativa a livello di file esiste nel file o nella directory che rappresenta l'oggetto di storage. È possibile impostare la sicurezza a livello di file da un client. Le autorizzazioni dei file sono efficaci indipendentemente dal fatto che SMB o NFS vengano utilizzati per accedere ai dati.
+
+

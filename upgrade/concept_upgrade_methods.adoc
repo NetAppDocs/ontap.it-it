@@ -1,0 +1,109 @@
+---
+permalink: upgrade/concept_upgrade_methods.html 
+sidebar: sidebar 
+keywords: upgrade, methods, andu, ndu, automated, automatic, system manager, cli, nondisruptive, disruptive 
+summary: 'Il metodo utilizzato per l"aggiornamento dipende dalla configurazione. Se disponibile, l"aggiornamento automatico senza interruzioni (ANDU) con System Manager è il metodo preferito.' 
+---
+= Quale metodo di aggiornamento è necessario utilizzare?
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il metodo utilizzato per l'aggiornamento -- senza interruzioni o interruzioni, automatizzato o manuale -- dipende dalla configurazione. Se disponibile, l'aggiornamento automatico senza interruzioni (ANDU) con System Manager è il metodo preferito.
+
+*Aggiornamenti senza interruzioni* + aggiornamenti senza interruzioni sfrutta la tecnologia di failover ad alta disponibilità (ha) di ONTAP per garantire che i cluster continuino a servire i dati durante l'upgrade. Esistono due tipi di processi di aggiornamento senza interruzioni.
+
+* _Batch_ aggiornamenti + in un aggiornamento batch, il cluster è diviso in diversi batch, ciascuno dei quali contiene più coppie ha. Nel primo batch, la metà dei nodi viene aggiornata, seguita dai partner ha. Il processo viene quindi ripetuto in sequenza per i batch rimanenti.
+* _Rolling_ updates + in un aggiornamento rolling, un nodo viene portato offline e aggiornato mentre il partner assume il controllo dello storage. Una volta completato l'aggiornamento del nodo, il nodo partner restituisce il controllo al nodo proprietario originale e il processo viene ripetuto, questa volta sul nodo partner. Ogni coppia ha aggiuntiva viene aggiornata in sequenza fino a quando tutte le coppie ha non eseguono la release di destinazione. + *Nota:* il termine _aggiornamento a rotazione_ viene spesso utilizzato nel settore software per gli aggiornamenti software che non causano interruzioni del servizio e quindi spesso è sinonimo di "aggiornamento senza interruzioni". Negli aggiornamenti di ONTAP 9, un _aggiornamento in sequenza_ è uno dei processi che è possibile utilizzare per gli aggiornamenti senza interruzioni.
+
+
+Gli aggiornamenti senza interruzioni possono essere eseguiti utilizzando un metodo _automatizzato_ o _manuale_.
+
+* *Aggiornamento automatizzato senza interruzioni (ANDU)*
++
+** Quando un amministratore avvia UN ANDU, ONTAP installa automaticamente l'immagine ONTAP di destinazione su ciascun nodo, convalida i componenti del cluster per garantire che il cluster possa essere aggiornato senza interruzioni, quindi esegue un aggiornamento in batch o in continuo in background.
++
+*** Gli aggiornamenti in batch sono quelli predefiniti per i cluster di 8 nodi o più.
+*** Gli aggiornamenti in sequenza sono quelli predefiniti per i cluster con meno di 8 nodi. Gli aggiornamenti in sequenza possono anche essere selezionati esplicitamente per i cluster con 8 nodi o più.
+
+
+** È possibile eseguire UN ANDU utilizzando Gestione di sistema o l'interfaccia della riga di comando (CLI) di ONTAP. Se disponibile per la configurazione, È consigliabile UTILIZZARE System Manager.
+
+
+* *Aggiornamento manuale senza interruzioni*
++
+** Un amministratore deve confermare manualmente la preparazione all'aggiornamento dei componenti del cluster su ciascun nodo, quindi eseguire manualmente le fasi del processo di aggiornamento in primo piano.
+** Gli aggiornamenti manuali senza interruzioni vengono eseguiti utilizzando l'interfaccia utente di ONTAP.
+** Utilizzare un metodo manuale solo se NON è supportato DA ANDU per la configurazione.
+
+
+
+
+*Aggiornamenti dirompenti* + in un upgrade dirompente, il failover dello storage viene disattivato per ogni coppia ha, quindi ogni nodo viene riavviato uno alla volta. Gli aggiornamenti disruptive possono essere eseguiti più rapidamente rispetto agli aggiornamenti senza interruzioni e richiedono meno passaggi da completare. Tuttavia, non si consiglia di eseguire un aggiornamento senza interruzioni, a meno che non sia possibile disattivare il cluster per tutta la durata dell'aggiornamento. Se si opera in un ambiente SAN, è necessario essere pronti a chiudere o sospendere tutti i client SAN prima di eseguire un aggiornamento disgregativo. Gli aggiornamenti disruptive vengono eseguiti utilizzando l'interfaccia utente di ONTAP.
+
+
+
+== Metodi per configurazioni non MetroCluster
+
+I cluster con 2 o più nodi possono utilizzare uno dei seguenti metodi di aggiornamento, elencati in ordine di utilizzo consigliato.
+
+* xref:task_upgrade_andu_sm.html[Automazione senza interruzioni con System Manager]
+* xref:task_upgrade_andu_cli.html[Automazione senza interruzioni con CLI]
+* xref:task_upgrade_nondisruptive_manual_cli.html[Manuale senza interruzioni con CLI]
+* xref:task_updating_an_ontap_cluster_disruptively.html[Interruzione manuale tramite CLI]
+
+
+I cluster a nodo singolo devono utilizzare uno dei metodi di interruzione, anche se si consiglia il metodo automatizzato.
+
+* xref:task_upgrade_disruptive_automated_cli.html[Interruzione automatica tramite CLI]
+* xref:task_updating_an_ontap_cluster_disruptively.html[Interruzione manuale tramite CLI]
+
+
+
+
+== Metodi per le configurazioni MetroCluster
+
+I metodi di aggiornamento disponibili per ciascuna configurazione sono elencati in ordine di utilizzo consigliato.
+
+[cols="3*"]
+|===
+| Versione di ONTAP | Numero di nodi | Metodo di aggiornamento 
+
+
+| 9.3 o versione successiva | 2,4  a| 
+* xref:task_upgrade_andu_sm.html[Automazione senza interruzioni con System Manager]
+* xref:task_upgrade_andu_cli.html[Automazione senza interruzioni con CLI]
+* xref:task_updating_an_ontap_cluster_disruptively.html[Interruzione manuale tramite CLI]
+
+
+
+
+| 9.3 o versione successiva | 8  a| 
+* xref:task_upgrade_andu_cli.html[Automazione senza interruzioni con CLI]
+* xref:task_updating_a_four_or_eight_node_mcc.html[Manuale senza interruzioni con CLI]
+* xref:task_updating_an_ontap_cluster_disruptively.html[Interruzione manuale tramite CLI]
+
+
+
+
+| 9.2 o versioni precedenti | 2  a| 
+* xref:task_updating_a_two_node_metrocluster_configuration_in_ontap_9_2_and_earlier.html[Manuale senza interruzioni (per cluster a 2 nodi) utilizzando la CLI]
+* xref:task_updating_an_ontap_cluster_disruptively.html[Interruzione manuale tramite CLI]
+
+
+
+
+| 9.2 o versioni precedenti | 4, 8  a| 
+* xref:task_updating_a_four_or_eight_node_mcc.html[Manuale senza interruzioni con CLI]
+* xref:task_updating_an_ontap_cluster_disruptively.html[Interruzione manuale tramite CLI]
+
+
+
+
+| 9.0 o versione successiva | 4, 8 (solo patch) | xref:task_upgrade_andu_sm.html[Automazione senza interruzioni con System Manager] 
+
+
+| 9.2 o versioni precedenti | 2, 4, 8 (solo patch) | xref:task_upgrade_andu_sm.html[Automazione senza interruzioni con System Manager] 
+|===

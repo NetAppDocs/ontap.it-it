@@ -1,0 +1,107 @@
+---
+permalink: concepts/encryption-concept.html 
+sidebar: sidebar 
+keywords: encryption 
+summary: ONTAP offre tecnologie di crittografia basate su software e hardware per garantire che i dati inattivi non possano essere letti in caso di riposizionamento, restituzione, smarrimento o furto del supporto di storage. 
+---
+= Crittografia
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP offre tecnologie di crittografia basate su software e hardware per garantire che i dati inattivi non possano essere letti in caso di riposizionamento, restituzione, smarrimento o furto del supporto di storage.
+
+ONTAP è conforme agli standard federali sull'elaborazione delle informazioni (FIPS) 140-2 per tutte le connessioni SSL. È possibile utilizzare le seguenti soluzioni di crittografia:
+
+* Soluzioni hardware:
++
+** NetApp Storage Encryption (NSE)
++
+NSE è una soluzione hardware che utilizza dischi con crittografia automatica (SED).
+
+** SED NVMe
++
+ONTAP offre la crittografia completa del disco per i SED NVMe che non dispongono della certificazione FIPS 140-2.
+
+
+
+* Soluzioni software:
++
+** NetApp aggregate Encryption (NAE)
++
+NAE è una soluzione software che consente la crittografia di qualsiasi volume di dati su qualsiasi tipo di disco in cui è abilitato con chiavi univoche per ciascun aggregato.
+
+** NetApp Volume Encryption (NVE)
++
+NVE è una soluzione software che consente la crittografia di qualsiasi volume di dati su qualsiasi tipo di disco in cui è abilitato con una chiave univoca per ciascun volume.
+
+
+
+
+
+Utilizzare soluzioni di crittografia sia software (NAE o NVE) che hardware (NSE o NVMe SED) per ottenere una doppia crittografia a riposo. L'efficienza dello storage non è influenzata dalla crittografia NAE o NVE.
+
+
+
+== Crittografia dello storage NetApp
+
+NetApp Storage Encryption (NSE) supporta i SED che crittografano i dati durante la scrittura. I dati non possono essere letti senza una chiave di crittografia memorizzata sul disco. La chiave di crittografia, a sua volta, è accessibile solo a un nodo autenticato.
+
+In caso di richiesta i/o, un nodo esegue l'autenticazione in un SED utilizzando una chiave di autenticazione recuperata da un server di gestione delle chiavi esterno o da Onboard Key Manager:
+
+* Il server di gestione delle chiavi esterno è un sistema di terze parti nell'ambiente di storage che fornisce le chiavi di autenticazione ai nodi utilizzando il protocollo KMIP (Key Management Interoperability Protocol).
+* Onboard Key Manager è uno strumento integrato che fornisce chiavi di autenticazione ai nodi dello stesso sistema storage dei dati.
+
+
+NSE supporta HDD e SSD con crittografia automatica. È possibile utilizzare NetApp Volume Encryption con NSE per la doppia crittografia dei dati sui dischi NSE.
+
+
+
+== Dischi con crittografia automatica NVMe
+
+I dischi SED NVMe non dispongono della certificazione FIPS 140-2, tuttavia, utilizzano la crittografia trasparente dei dischi AES a 256 bit per proteggere i dati inattivi.
+
+Le operazioni di crittografia dei dati, come la generazione di una chiave di autenticazione, vengono eseguite internamente. La chiave di autenticazione viene generata la prima volta che il sistema di storage accede al disco. In seguito, i dischi proteggono i dati inattivi richiedendo l'autenticazione del sistema di storage ogni volta che vengono richieste operazioni sui dati.
+
+
+
+== Crittografia aggregata NetApp
+
+NetApp aggregate Encryption (NAE) è una tecnologia software per la crittografia di tutti i dati su un aggregato. Un vantaggio di NAE è che i volumi sono inclusi nella deduplica a livello di aggregato, mentre i volumi NVE sono esclusi.
+
+Con NAE attivato, i volumi all'interno dell'aggregato possono essere crittografati con chiavi aggregate.
+
+A partire da ONTAP 9.7, gli aggregati e i volumi appena creati vengono crittografati per impostazione predefinita quando si dispone della licenza NVE e della gestione delle chiavi integrata o esterna.
+
+
+
+== Crittografia dei volumi NetApp
+
+NetApp Volume Encryption (NVE) è una tecnologia software per la crittografia dei dati inattivi di un volume alla volta. Una chiave di crittografia accessibile solo al sistema di storage garantisce che i dati del volume non possano essere letti se il dispositivo sottostante è separato dal sistema.
+
+Entrambi i dati, incluse le copie Snapshot, e i metadati sono crittografati. L'accesso ai dati viene fornito da una chiave XTS-AES-256 univoca, una per volume. Un Onboard Key Manager integrato protegge le chiavi dello stesso sistema con i dati.
+
+È possibile utilizzare NVE su qualsiasi tipo di aggregato (HDD, SSD, ibrido, LUN array), con qualsiasi tipo di RAID e in qualsiasi implementazione ONTAP supportata, incluso ONTAP Select. È inoltre possibile utilizzare NVE con NetApp Storage Encryption (NSE) per eseguire la doppia crittografia dei dati sui dischi NSE.
+
+|===
+
+
+ a| 
+*_quando utilizzare i server KMIP_* sebbene sia meno costoso e generalmente più conveniente utilizzare Onboard Key Manager, è necessario configurare i server KMIP se si verifica una delle seguenti condizioni:
+
+* La soluzione di gestione delle chiavi di crittografia deve essere conforme agli standard FIPS (Federal Information Processing Standards) 140-2 o ALLO standard OASIS KMIP.
+* Hai bisogno di una soluzione multi-cluster. I server KMIP supportano più cluster con gestione centralizzata delle chiavi di crittografia.
++
+I server KMIP supportano più cluster con gestione centralizzata delle chiavi di crittografia.
+
+* La tua azienda richiede una maggiore sicurezza nell'archiviazione delle chiavi di autenticazione su un sistema o in una posizione diversa dai dati.
++
+I server KMIP memorizzano le chiavi di autenticazione separatamente dai dati.
+
+
+
+|===
+.Informazioni correlate
+link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/FAQ%3A_NetApp_Volume_Encryption_and_NetApp_Aggregate_Encryption["FAQ - NetApp Volume Encryption e NetApp aggregate Encryption"^]

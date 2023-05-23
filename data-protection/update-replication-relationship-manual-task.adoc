@@ -1,0 +1,43 @@
+---
+permalink: data-protection/update-replication-relationship-manual-task.html 
+sidebar: sidebar 
+keywords: update, replication, relationship, manual, snap mirror, snapmirror, synchronous 
+summary: Potrebbe essere necessario aggiornare manualmente una relazione di replica se un aggiornamento non riesce a causa dello spostamento del volume di origine. 
+---
+= Aggiornare manualmente una relazione di replica
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Potrebbe essere necessario aggiornare manualmente una relazione di replica se un aggiornamento non riesce a causa dello spostamento del volume di origine.
+
+.A proposito di questa attività
+SnapMirror interrompe i trasferimenti da un volume di origine spostato fino a quando non si aggiorna manualmente la relazione di replica.
+
+A partire da ONTAP 9.5, sono supportate le relazioni sincroni di SnapMirror. Sebbene i volumi di origine e di destinazione siano sempre sincronizzati in queste relazioni, la vista dal cluster secondario viene sincronizzata con il principale solo su base oraria. Se si desidera visualizzare i dati point-in-time nella destinazione, eseguire un aggiornamento manuale eseguendo il `snapmirror update` comando.
+
+.Fase
+. Aggiornare manualmente una relazione di replica:
++
+`snapmirror update -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume|cluster://SVM/volume_, ...`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+È necessario eseguire questo comando dalla SVM di destinazione o dal cluster di destinazione. Il comando non riesce se non esiste una copia Snapshot comune sull'origine e sulla destinazione. Utilizzare `snapmirror initialize` per reinizializzare la relazione.
+
+====
++
+Nell'esempio seguente viene aggiornata la relazione tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA_dst` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_src::> snapmirror update -source-path svm1:volA -destination-path svm_backup:volA_dst
+----
+

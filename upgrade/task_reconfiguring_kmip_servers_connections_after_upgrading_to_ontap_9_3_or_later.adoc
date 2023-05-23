@@ -1,0 +1,34 @@
+---
+permalink: upgrade/task_reconfiguring_kmip_servers_connections_after_upgrading_to_ontap_9_3_or_later.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, reconfigure, reconfiguring, kmip, server, connections, 9.3, later 
+summary: 'Dopo aver eseguito un aggiornamento a ONTAP 9.3 o versione successiva, è necessario riconfigurare le connessioni del server KMIP (External Key Management).' 
+---
+= Riconfigurazione delle connessioni del server KMIP dopo l'aggiornamento a ONTAP 9.3 o versione successiva
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dopo aver eseguito un aggiornamento a ONTAP 9.3 o versione successiva, è necessario riconfigurare le connessioni del server KMIP (External Key Management).
+
+. Configurare la connettività del gestore delle chiavi:``security key-manager setup``
+. Aggiungere i server KMIP: `security key-manager add -address key_management_server_ip_address`
+. Verificare che i server KMIP siano connessi: `security key-manager show -status`
+. Eseguire una query sui server delle chiavi: `security key-manager query`
+. Creare una nuova chiave di autenticazione e una nuova passphrase: `security key-manager create-key -prompt-for-key true`
++
+La passphrase deve contenere almeno 32 caratteri.
+
+. Eseguire una query sulla nuova chiave di autenticazione: `security key-manager query`
+. Assegnare la nuova chiave di autenticazione ai dischi con crittografia automatica (SED): `storage encryption disk modify -disk disk_ID -data-key-id key_ID`
++
+
+NOTE: Assicurarsi di utilizzare la nuova chiave di autenticazione della query.
+
+. Se necessario, assegnare una chiave FIPS ai SED: `storage encryption disk modify -disk disk_id -fips-key-id fips_authentication_key_id`
++
+Se la configurazione della protezione richiede l'utilizzo di chiavi diverse per l'autenticazione dei dati e l'autenticazione FIPS 140-2, è necessario creare una chiave separata per ciascuna di esse. In caso contrario, è possibile utilizzare la stessa chiave di autenticazione per la conformità FIPS utilizzata per l'accesso ai dati.
+
+

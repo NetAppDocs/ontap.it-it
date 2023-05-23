@@ -1,0 +1,45 @@
+---
+sidebar: sidebar 
+permalink: high-availability/index.html 
+keywords: high availability, ha, overview 
+summary: 'L"acquisizione è il processo in cui un nodo assume il controllo dello storage del partner. Giveback è il processo in cui lo storage viene restituito al partner.' 
+---
+= Panoramica sulla gestione delle coppie HA
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+I nodi del cluster sono configurati in coppie ad alta disponibilità (ha) per la fault tolerance e le operazioni senza interruzioni. Se un nodo si guasta o se è necessario interrompere un nodo per la manutenzione ordinaria, il partner può assumere il controllo dello storage e continuare a fornire i dati da esso. Il partner restituisce lo storage quando il nodo viene riportato on-line.
+
+La configurazione del Pair Controller ha è costituita da una coppia di storage controller FAS/AFF corrispondenti (nodo locale e nodo partner). Ciascuno di questi nodi è collegato agli shelf di dischi dell'altro. Quando un nodo di una coppia ha rileva un errore e interrompe l'elaborazione dei dati, il partner rileva lo stato di errore del partner e rileva tutte le elaborazioni dei dati da quel controller.
+
+_Takeover_ è il processo in cui un nodo assume il controllo dello storage del partner.
+
+_Giveback_ è il processo in cui lo storage viene restituito al partner.
+
+Per impostazione predefinita, i takeover si verificano automaticamente in una delle seguenti situazioni:
+
+* Si verifica un errore di software o di sistema su un nodo che porta a un panico. I controller di coppia ha eseguono automaticamente il failover nel nodo partner. Una volta che il partner si è ripristinato dal panico e si è avviato, il nodo esegue automaticamente un giveback, riportando il partner al normale funzionamento.
+* Si verifica un errore di sistema su un nodo e il nodo non può essere riavviato. Ad esempio, quando un nodo si guasta a causa di una perdita di alimentazione, i controller di coppia ha eseguono automaticamente il failover nel nodo partner e distribuiscono i dati dal controller di storage sopravvissuto.
+
+
+
+NOTE: Se anche lo storage di un nodo perde alimentazione contemporaneamente, non è possibile eseguire un takeover standard.
+
+* I messaggi heartbeat non vengono ricevuti dal partner del nodo. Ciò potrebbe verificarsi se il partner ha riscontrato un errore hardware o software (ad esempio, un errore di interconnessione) che non ha causato panico ma ha comunque impedito il corretto funzionamento.
+* Arrestare uno dei nodi senza utilizzare `-f` oppure `-inhibit-takeover true` parametro.
+
+
+
+NOTE: In un cluster a due nodi con cluster ha attivato, arrestare o riavviare un nodo utilizzando `‑inhibit‑takeover true` Il parametro causa l'interruzione della fornitura dei dati da parte di entrambi i nodi, a meno che non venga prima disattivata la disponibilità del cluster e quindi assegnata l'epsilon al nodo che si desidera mantenere in linea.
+
+* Riavviare uno dei nodi senza utilizzare `‑inhibit‑takeover true` parametro. (Il `‑onboot` del parametro `storage failover` il comando è attivato per impostazione predefinita).
+* Il dispositivo di gestione remota (Service Processor) rileva un errore del nodo partner. Questa opzione non è applicabile se si disattiva il Takeover assistito dall'hardware.
+
+
+È inoltre possibile avviare manualmente le operazioni di takeover con `storage failover takeover` comando.

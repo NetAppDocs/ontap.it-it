@@ -1,0 +1,68 @@
+---
+permalink: san-admin/restore-single-lun-snapshot-copy-task.html 
+sidebar: sidebar 
+keywords: restore, single lun, snapshot copy 
+summary: 'È possibile ripristinare una singola LUN da una copia Snapshot senza ripristinare l"intero volume che contiene la singola LUN. È possibile ripristinare il LUN in posizione o in un nuovo percorso nel volume. L"operazione ripristina solo la singola LUN senza influire su altri file o LUN nel volume. È anche possibile ripristinare i file con i flussi.' 
+---
+= Ripristinare una singola LUN da una copia Snapshot
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile ripristinare una singola LUN da una copia Snapshot senza ripristinare l'intero volume che contiene la singola LUN. È possibile ripristinare il LUN in posizione o in un nuovo percorso nel volume. L'operazione ripristina solo la singola LUN senza influire su altri file o LUN nel volume. È anche possibile ripristinare i file con i flussi.
+
+.Di cosa hai bisogno
+* È necessario disporre di spazio sufficiente sul volume per completare l'operazione di ripristino:
++
+** Se si sta ripristinando una LUN riservata allo spazio in cui la riserva frazionaria è pari a 0%, è necessario avere una dimensione pari a una volta quella della LUN ripristinata.
+** Se si sta ripristinando una LUN riservata allo spazio in cui la riserva frazionale è del 100%, sono necessarie due volte le dimensioni della LUN ripristinata.
+** Se si sta ripristinando una LUN non riservata allo spazio, è necessario solo lo spazio effettivo utilizzato per la LUN ripristinata.
+
+
+* È necessario creare una copia Snapshot del LUN di destinazione.
++
+Se l'operazione di ripristino non riesce, il LUN di destinazione potrebbe essere troncato. In questi casi, è possibile utilizzare la copia Snapshot per evitare la perdita di dati.
+
+* È necessario creare una copia Snapshot del LUN di origine.
++
+In rari casi, il ripristino del LUN potrebbe non riuscire, lasciando inutilizzabile il LUN di origine. In questo caso, è possibile utilizzare la copia Snapshot per riportare il LUN allo stato precedente al tentativo di ripristino.
+
+* Il LUN di destinazione e il LUN di origine devono avere lo stesso tipo di sistema operativo.
++
+Se il LUN di destinazione ha un tipo di sistema operativo diverso dal LUN di origine, l'host potrebbe perdere l'accesso ai dati al LUN di destinazione dopo l'operazione di ripristino.
+
+
+
+.Fasi
+. Interrompere tutti gli accessi host al LUN dall'host.
+. Smontare il LUN sul proprio host in modo che l'host non possa accedere al LUN.
+. Dismappare il LUN:
++
+`lun mapping delete -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -igroup _igroup_name_`
+
+. Determinare la copia Snapshot in cui si desidera ripristinare il LUN:
++
+`volume snapshot show -vserver _vserver_name_ -volume _volume_name_`
+
+. Creare una copia Snapshot del LUN prima di ripristinare il LUN:
++
+`volume snapshot create -vserver _vserver_name_ -volume _volume_name_ -snapshot _snapshot_name_`
+
+. Ripristinare il LUN specificato in un volume:
++
+`volume snapshot restore-file -vserver _vserver_name_ -volume _volume_name_ -snapshot _snapshot_name_ -path _lun_path_`
+
+. Seguire le istruzioni visualizzate.
+. Se necessario, portare il LUN online:
++
+`lun modify -vserver _vserver_name_ -path _lun_path_ -state online`
+
+. Se necessario, rimappare il LUN:
++
+`lun mapping create -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -igroup _igroup_name_`
+
+. Dall'host, rimontare il LUN.
+. Riavviare l'accesso al LUN dall'host.
+

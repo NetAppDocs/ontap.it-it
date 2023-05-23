@@ -1,0 +1,159 @@
+---
+permalink: performance-admin/set-throughput-ceiling-qos-task.html 
+sidebar: sidebar 
+keywords: setting, throughput, ceiling, qos 
+summary: 'È possibile utilizzare il campo di throughput massimo per un gruppo di policy per definire un limite massimo di throughput per i carichi di lavoro degli oggetti di storage (QoS Max). È possibile applicare il gruppo di criteri quando si crea o si modifica l"oggetto di storage.' 
+---
+= Impostare un limite massimo di throughput con QoS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `max-throughput` Campo per un gruppo di criteri per definire un limite massimo di throughput per i carichi di lavoro degli oggetti di storage (QoS Max). È possibile applicare il gruppo di criteri quando si crea o si modifica l'oggetto di storage.
+
+.Di cosa hai bisogno
+* Per creare un gruppo di criteri, è necessario essere un amministratore del cluster.
+* Per applicare un gruppo di criteri a una SVM, è necessario essere un amministratore del cluster.
+
+
+.A proposito di questa attività
+* A partire da ONTAP 9.4, è possibile utilizzare un gruppo di policy di qualità del servizio _non-shared_ per specificare che il limite di throughput definito si applica a ogni singolo carico di lavoro membro. In caso contrario, il gruppo di criteri è _shared:_ il throughput totale per i carichi di lavoro assegnati al gruppo di criteri non può superare il limite massimo specificato.
++
+Impostare `-is-shared=false` per `qos policy-group create` per specificare un gruppo di politiche non condiviso.
+
+* È possibile specificare il limite di throughput per il limite massimo in IOPS, MB/s o IOPS, MB/s. Se si specificano IOPS e MB/s, viene applicato il limite raggiunto per primo.
++
+[NOTE]
+====
+Se si impostano un soffitto e un pavimento per lo stesso carico di lavoro, è possibile specificare il limite di throughput per il soffitto solo in IOPS.
+
+====
+* Un oggetto storage soggetto a un limite di QoS deve essere contenuto dalla SVM a cui appartiene il gruppo di criteri. Più gruppi di criteri possono appartenere alla stessa SVM.
+* Non è possibile assegnare un oggetto di storage a un gruppo di criteri se l'oggetto contenente o i relativi oggetti figlio appartengono al gruppo di criteri.
+* È consigliabile applicare un gruppo di criteri allo stesso tipo di oggetti di storage.
+
+
+.Fasi
+. Creare un gruppo di criteri:
++
+`qos policy-group create -policy-group _policy_group_ -vserver _SVM_ -max-throughput _number_of_iops_|Mb/S|iops,Mb/S -is-shared true|false`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man. È possibile utilizzare `qos policy-group modify` comando per regolare i limiti di throughput.
+
++
+Il comando seguente crea il gruppo di criteri condivisi `pg-vs1` Con un throughput massimo di 5,000 IOPS:
+
++
+[listing]
+----
+cluster1::> qos policy-group create -policy-group pg-vs1 -vserver vs1 -max-throughput 5000iops -is-shared true
+----
++
+Il comando seguente crea il gruppo di criteri non condivisi `pg-vs3` Con un throughput massimo di 100 IOPS e 400 Kb/S:
+
++
+[listing]
+----
+cluster1::> qos policy-group create -policy-group pg-vs3 -vserver vs3 -max-throughput 100iops,400KB/s -is-shared false
+----
++
+Il comando seguente crea il gruppo di criteri non condivisi `pg-vs4` senza un limite di throughput:
+
++
+[listing]
+----
+cluster1::> qos policy-group create -policy-group pg-vs4 -vserver vs4 -is-shared false
+----
+. Applicare un gruppo di criteri a una SVM, a un file, a un volume o a un LUN:
++
+`_storage_object_ create -vserver _SVM_ -qos-policy-group _policy_group_`
+
++
+Per la sintassi completa dei comandi, vedere le pagine man. È possibile utilizzare `_storage_object_ modify` per applicare un gruppo di criteri diverso all'oggetto di storage.
+
++
+Il seguente comando applica il gruppo di criteri `pg-vs1` A SVM `vs1`:
+
++
+[listing]
+----
+cluster1::> vserver create -vserver vs1 -qos-policy-group pg-vs1
+----
++
+I seguenti comandi applicano il gruppo di criteri `pg-app` ai volumi `app1` e. `app2`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs2 -volume app1 -aggregate aggr1 -qos-policy-group pg-app
+----
++
+[listing]
+----
+cluster1::> volume create -vserver vs2 -volume app2 -aggregate aggr1 -qos-policy-group pg-app
+----
+. Monitorare le performance dei gruppi di policy:
++
+`qos statistics performance show`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+Monitorare le performance dal cluster. Non utilizzare uno strumento sull'host per monitorare le prestazioni.
+
+====
++
+Il seguente comando mostra le prestazioni del gruppo di criteri:
+
++
+[listing]
+----
+cluster1::> qos statistics performance show
+Policy Group           IOPS      Throughput   Latency
+-------------------- -------- --------------- ----------
+-total-                 12316       47.76MB/s  1264.00us
+pg_vs1                   5008       19.56MB/s     2.45ms
+_System-Best-Effort        62       13.36KB/s     4.13ms
+_System-Background         30           0KB/s        0ms
+----
+. Monitorare le performance dei carichi di lavoro:
++
+`qos statistics workload performance show`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+Monitorare le performance dal cluster. Non utilizzare uno strumento sull'host per monitorare le prestazioni.
+
+====
++
+Il seguente comando mostra le performance del carico di lavoro:
+
++
+[listing]
+----
+cluster1::> qos statistics workload performance show
+Workload          ID     IOPS      Throughput    Latency
+--------------- ------ -------- ---------------- ----------
+-total-              -    12320        47.84MB/s  1215.00us
+app1-wid7967      7967     7219        28.20MB/s   319.00us
+vs1-wid12279     12279     5026        19.63MB/s     2.52ms
+_USERSPACE_APPS     14       55        10.92KB/s   236.00us
+_Scan_Backgro..   5688       20            0KB/s        0ms
+----
++
+[NOTE]
+====
+È possibile utilizzare `qos statistics workload latency show` Comando per visualizzare statistiche dettagliate sulla latenza per i carichi di lavoro QoS.
+
+====
+

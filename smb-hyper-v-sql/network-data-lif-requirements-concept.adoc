@@ -1,0 +1,54 @@
+---
+permalink: smb-hyper-v-sql/network-data-lif-requirements-concept.html 
+sidebar: sidebar 
+keywords: network, data, lif, requirements, hyper, v, sql, server, protocol 
+summary: 'Quando si creano configurazioni SQL Server o Hyper-V su SMB per operazioni senza interruzioni, è necessario conoscere alcuni requisiti LIF di rete e dati).' 
+---
+= Requisiti LIF di rete e dati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si creano configurazioni SQL Server o Hyper-V su SMB per operazioni senza interruzioni, è necessario conoscere alcuni requisiti LIF di rete e dati).
+
+
+
+== Requisiti del protocollo di rete
+
+* Sono supportate le reti IPv4 e IPv6.
+* È richiesto SMB 3.0 o versione successiva.
++
+SMB 3.0 offre le funzionalità necessarie per creare le connessioni SMB continuamente disponibili necessarie per offrire operazioni senza interruzioni.
+
+* I server DNS devono contenere voci che associano il nome del server CIFS agli indirizzi IP assegnati ai file LIF dei dati sulla macchina virtuale di storage (SVM).
++
+I server applicativi Hyper-V o SQL Server in genere effettuano più connessioni su più file di dati LIF quando accedono a macchine virtuali o file di database. Per una corretta funzionalità, i server applicazioni devono stabilire connessioni SMB multiple utilizzando il nome del server CIFS invece di effettuare connessioni multiple a più indirizzi IP univoci.
+
++
+Il server Witness richiede inoltre l'utilizzo del nome DNS del server CIFS invece di singoli indirizzi IP LIF.
+
++
+A partire da ONTAP 9.4, è possibile migliorare il throughput e la tolleranza agli errori per Hyper-V e SQL Server sulle configurazioni SMB attivando SMB multicanale. A tale scopo, è necessario implementare più NIC 1G, 10G o superiori nel cluster e nei client.
+
+
+
+
+
+== Requisiti Data LIF
+
+* La SVM che ospita l'application server sulla soluzione SMB deve avere almeno un LIF di dati operativi su ogni nodo del cluster.
++
+Le LIF dei dati SVM possono eseguire il failover su altre porte dati all'interno del cluster, inclusi i nodi che attualmente non ospitano dati a cui accedono i server applicazioni. Inoltre, poiché il nodo di controllo è sempre il partner SFO di un nodo a cui è connesso l'application server, ogni nodo del cluster è un potenziale nodo di controllo.
+
+* I file LIF dei dati non devono essere configurati per il ripristino automatico.
++
+Dopo un takeover o un evento di giveback, è necessario ripristinare manualmente le LIF dei dati alle porte home.
+
+* Tutti gli indirizzi IP LIF dei dati devono avere una voce nel DNS e tutte le voci devono essere risolte nel nome del server CIFS.
++
+I server applicazioni devono connettersi alle condivisioni SMB utilizzando il nome del server CIFS. Non è necessario configurare i server applicazioni per effettuare connessioni utilizzando gli indirizzi IP LIF.
+
+* Se il nome del server CIFS è diverso dal nome SVM, le voci DNS devono essere risolte nel nome del server CIFS.
+

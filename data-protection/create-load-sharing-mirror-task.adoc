@@ -1,0 +1,85 @@
+---
+permalink: data-protection/create-load-sharing-mirror-task.html 
+sidebar: sidebar 
+keywords: create, initialize, load-sharing, mirror, relationship 
+summary: 'È necessario creare un mirror di condivisione del carico (LSM) per ogni volume root nel cluster. È possibile creare il LSM su qualsiasi nodo diverso da quello contenente il volume root, ad esempio il nodo partner in una coppia ha o preferibilmente in una coppia ha diversa. Per un cluster a due nodi, è necessario creare l"LSM sul partner del nodo con il volume root.' 
+---
+= Creare e inizializzare relazioni mirror di condivisione del carico
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario creare un mirror di condivisione del carico (LSM) per ogni volume root SVM che serve i dati NAS nel cluster. È possibile creare il LSM su qualsiasi nodo diverso da quello contenente il volume root, ad esempio il nodo partner in una coppia ha o preferibilmente in una coppia ha diversa. Per un cluster a due nodi, è necessario creare l'LSM sul partner del nodo con il volume root SVM.
+
+.A proposito di questa attività
+Se si crea un LSM sullo stesso nodo e il nodo non è disponibile, si dispone di un singolo punto di errore e non si dispone di una seconda copia per garantire che i dati rimangano accessibili ai client. Tuttavia, quando si crea il LSM su un nodo diverso da quello contenente il volume root o su una coppia ha diversa, i dati rimangono accessibili in caso di interruzione.
+
+Ad esempio, in un cluster a quattro nodi con un volume root su tre nodi:
+
+* Per il volume root sul nodo ha 1 1, creare il LSM sul nodo ha 2 1 o il nodo ha 2 2.
+* Per il volume root sul nodo ha 1 2, creare il LSM sul nodo ha 2 1 o il nodo ha 2 2.
+* Per il volume root sul nodo ha 2 1, creare il LSM sul nodo ha 1 1 o il nodo ha 1 2.
+
+
+.Fasi
+. Creare un volume di destinazione per LSM:
++
+`volume create -vserver _SVM_ -volume volume -aggregate _aggregate_ -type DP -size size`
+
++
+Le dimensioni del volume di destinazione devono essere uguali o superiori a quelle del volume root.
+
++
+Si consiglia di assegnare un nome al volume root e a quello di destinazione con suffissi, ad esempio `_root` e. `_m1`.
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene creato un volume mirror per la condivisione del carico per il volume root `svm1_root` poll `cluster_src`:
+
++
+[listing]
+----
+cluster_src:> volume create -vserver svm1 -volume svm1_m1 -aggregate aggr_1 -size 1gb -state online -type DP
+----
+. Creare una pianificazione dei processi di replica, come descritto in link:create-replication-job-schedule-task.html["Creazione di una pianificazione del processo di replica"].
+. Creare una relazione mirror di condivisione del carico tra il volume root SVM e il volume di destinazione per LSM:
++
+`snapmirror create -source-path _SVM:volume_|_cluster://SVM/volume_ -destination-path _SVM:volume_|_cluster://SVM/volume_ -type LS -schedule _schedule_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene creata una relazione mirror di condivisione del carico tra il volume root `svm1_root` e il volume mirror per la condivisione del carico `svm1_m1`:
+
++
+[listing]
+----
+cluster_src::> snapmirror create -source-path svm1:svm1_root -destination-path svm1:svm1_m1 -type LS -schedule hourly
+----
++
+L'attributo type del mirror di condivisione del carico cambia da `DP` a. `LS`.
+
+. Inizializzare il mirror di condivisione del carico:
++
+`snapmirror initialize-ls-set -source-path _SVM:volume_|_cluster://SVM/volume_`
+
++
+L'inizializzazione può richiedere molto tempo. Si consiglia di eseguire il trasferimento di riferimento in ore non di punta.
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio riportato di seguito viene inizializzato il mirror di load sharing per il volume root `svm1_root`:
+
++
+[listing]
+----
+cluster_src::> snapmirror initialize-ls-set -source-path svm1:svm1_root
+----
+

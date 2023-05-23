@@ -1,0 +1,131 @@
+---
+permalink: smb-admin/configure-offline-files-support-task.html 
+sidebar: sidebar 
+keywords: configure, offline, file, support, ontap, cli, smb, modify, exist, smb, share, manual, default, setting, configure offline files support on smb shares using the cli 
+summary: 'È possibile configurare il supporto dei file offline utilizzando l"interfaccia utente di ONTAP specificando una delle quattro impostazioni offline quando si creano condivisioni SMB o in qualsiasi momento modificando le condivisioni SMB esistenti. Il supporto manuale dei file offline è l"impostazione predefinita.' 
+---
+= Configurare il supporto dei file offline sulle condivisioni SMB utilizzando la CLI
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare il supporto dei file offline utilizzando l'interfaccia utente di ONTAP specificando una delle quattro impostazioni offline quando si creano condivisioni SMB o in qualsiasi momento modificando le condivisioni SMB esistenti. Il supporto manuale dei file offline è l'impostazione predefinita.
+
+.A proposito di questa attività
+Quando si configura il supporto per i file offline, è possibile scegliere una delle seguenti quattro impostazioni per i file offline:
+
+|===
+| Impostazione | Descrizione 
+
+
+ a| 
+`none`
+ a| 
+Non consente ai client Windows di memorizzare nella cache i file presenti in questa condivisione.
+
+
+
+ a| 
+`manual`
+ a| 
+Consente agli utenti sui client Windows di selezionare manualmente i file da memorizzare nella cache.
+
+
+
+ a| 
+`documents`
+ a| 
+Consente ai client Windows di memorizzare nella cache i documenti utente utilizzati dall'utente per l'accesso offline.
+
+
+
+ a| 
+`programs`
+ a| 
+Consente ai client Windows di memorizzare nella cache i programmi utilizzati dall'utente per l'accesso offline. I client possono utilizzare i file di programma memorizzati nella cache in modalità offline anche se la condivisione è disponibile.
+
+|===
+È possibile scegliere una sola impostazione di file offline. Se si modifica un'impostazione dei file offline su una condivisione SMB esistente, la nuova impostazione dei file offline sostituisce l'impostazione originale. Le altre impostazioni di configurazione della condivisione SMB e le proprietà di condivisione esistenti non vengono rimosse o sostituite. Rimangono in vigore fino a quando non vengono esplicitamente rimossi o modificati.
+
+.Fasi
+. Eseguire l'azione appropriata:
++
+|===
+| Se si desidera configurare i file offline su... | Immettere il comando... 
+
+
+ a| 
+Una nuova condivisione SMB
+ a| 
+`vserver cifs share create -vserver vserver_name -share-name share_name -path path -offline-files {none|manual|documents|programs}`
+
+
+
+ a| 
+Una condivisione SMB esistente
+ a| 
+`vserver cifs share modify -vserver vserver_name -share-name share_name -offline-files {none|manual|documents|programs}`
+
+|===
+. Verificare che la configurazione della condivisione SMB sia corretta: `vserver cifs share show -vserver vserver_name -share-name share_name -instance`
+
+
+.Esempio
+Il seguente comando crea una condivisione SMB denominata "`data1`" con i file offline impostati su `documents`:
+
+[listing]
+----
+cluster1::> vserver cifs share create -vserver vs1 -share-name data1 -path /data1 -comment "Offline files" -offline-files documents
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name data1 -instance
+
+                          Vserver: vs1
+                            Share: data1
+         CIFS Server NetBIOS Name: VS1
+                             Path: /data1
+                 Share Properties: oplocks
+                                   browsable
+                                   changenotify
+               Symlink Properties: enable
+          File Mode Creation Mask: -
+     Directory Mode Creation Mask: -
+                    Share Comment: Offline files
+                        Share ACL: Everyone / Full Control
+    File Attribute Cache Lifetime: -
+                      Volume Name: -
+                    Offline Files: documents
+    Vscan File-Operations Profile: standard
+Maximum Tree Connections on Share: 4294967295
+       UNIX Group for File Create: -
+----
+Il seguente comando modifica una condivisione SMB esistente denominata "`data1`" modificando l'impostazione dei file offline su `manual` e aggiungendo i valori per la maschera di creazione della modalità file e directory:
+
+[listing]
+----
+cluster1::> vserver cifs share modify -vserver vs1 -share-name data1 -offline-files manual -file-umask 644 -dir-umask 777
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name data1 -instance
+
+                          Vserver: vs1
+                            Share: data1
+         CIFS Server NetBIOS Name: VS1
+                             Path: /data1
+                 Share Properties: oplocks
+                                   browsable
+                                   changenotify
+               Symlink Properties: enable
+          File Mode Creation Mask: 644
+     Directory Mode Creation Mask: 777
+                    Share Comment: Offline files
+                        Share ACL: Everyone / Full Control
+    File Attribute Cache Lifetime: -
+                      Volume Name: -
+                    Offline Files: manual
+    Vscan File-Operations Profile: standard
+Maximum Tree Connections on Share: 4294967295
+       UNIX Group for File Create: -
+----
+.Informazioni correlate
+xref:add-remove-share-properties-eexisting-share-task.adoc[Aggiunta o rimozione delle proprietà di condivisione su una condivisione SMB esistente]

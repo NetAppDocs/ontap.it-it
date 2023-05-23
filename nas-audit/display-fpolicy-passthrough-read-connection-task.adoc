@@ -1,0 +1,107 @@
+---
+permalink: nas-audit/display-fpolicy-passthrough-read-connection-task.html 
+sidebar: sidebar 
+keywords: display, information, fpolicy, passthrough-read, connection status 
+summary: 'È possibile visualizzare informazioni sullo stato della connessione pass-through-Read di FPolicy ai server FPolicy esterni (server FPolicy) per il cluster o per una specifica macchina virtuale di storage (SVM). Queste informazioni consentono di determinare quali server FPolicy dispongono di connessioni dati pass-through-Read e per quali server FPolicy la connessione pass-through-Read è disconnessa.' 
+---
+= Visualizza le informazioni sullo stato della connessione pass-through-Read di FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile visualizzare informazioni sullo stato della connessione pass-through-Read di FPolicy ai server FPolicy esterni (server FPolicy) per il cluster o per una specifica macchina virtuale di storage (SVM). Queste informazioni consentono di determinare quali server FPolicy dispongono di connessioni dati pass-through-Read e per quali server FPolicy la connessione pass-through-Read è disconnessa.
+
+.A proposito di questa attività
+Se non si specifica alcun parametro, il comando visualizza le seguenti informazioni:
+
+* Nome SVM
+* Nome del criterio FPolicy
+* Nome del nodo
+* Indirizzo IP del server FPolicy
+* Stato della connessione pass-through-Read di FPolicy
+
+
+Oltre a visualizzare informazioni sulle connessioni FPolicy sul cluster o su una specifica SVM, è possibile utilizzare i parametri dei comandi per filtrare l'output del comando in base ad altri criteri.
+
+È possibile specificare `-instance` parametro per visualizzare informazioni dettagliate sui criteri elencati. In alternativa, è possibile utilizzare `-fields` parametro per visualizzare solo i campi indicati nell'output del comando. È possibile immettere `?` dopo il `-fields` parametro per scoprire quali campi è possibile utilizzare.
+
+.Fase
+. Visualizzare le informazioni filtrate sullo stato della connessione tra il nodo e il server FPolicy utilizzando il comando appropriato:
++
+[cols="35,65"]
+|===
+
+
+| Se si desidera visualizzare le informazioni sullo stato della connessione relative a... | Immettere il comando... 
+
+
+ a| 
+Stato della connessione pass-through-Read FPolicy per il cluster
+ a| 
+`vserver fpolicy show-passthrough-read-connection`
+
+
+
+ a| 
+Stato della connessione pass-through-Read FPolicy per una SVM specificata
+ a| 
+`vserver fpolicy show-passthrough-read-connection -vserver vserver_name`
+
+
+
+ a| 
+Stato della connessione pass-through-Read FPolicy per una policy specifica
+ a| 
+`vserver fpolicy show-passthrough-read-connection -policy-name policy_name`
+
+
+
+ a| 
+Stato dettagliato della connessione pass-through-Read di FPolicy per una policy specifica
+ a| 
+`vserver fpolicy show-passthrough-read-connection -policy-name policy_name -instance`
+
+
+
+ a| 
+Stato della connessione passthrough-Read FPolicy per lo stato specificato
+ a| 
+`vserver fpolicy show-passthrough-read-connection -policy-name policy_name -server-status status` Lo stato del server può essere uno dei seguenti:
+
+** `connected`
+** `disconnected`
+
+
+|===
+
+
+.Esempio
+Il seguente comando visualizza informazioni sulle connessioni pass-through-Read da tutti i server FPolicy del cluster:
+
+[listing]
+----
+cluster1::> vserver fpolicy show-passthrough-read-connection
+                                            FPolicy           Server
+Vserver          Policy Name   Node         Server            Status
+---------------  ------------- ------------ ----------------- --------------
+vs2.example.com  pol_cifs_2    FPolicy-01   2.2.2.2           disconnected
+vs1.example.com  pol_cifs_1    FPolicy-01   1.1.1.1           connected
+----
+Il seguente comando visualizza informazioni dettagliate sulle connessioni pass-through-Read dai server FPolicy configurati nel criterio "`pol_cifs_1`":
+
+[listing]
+----
+cluster1::> vserver fpolicy show-passthrough-read-connection -policy-name pol_cifs_1 -instance
+
+                                             Node: FPolicy-01
+                                          Vserver: vs1.example.com
+                                           Policy: pol_cifs_1
+                                           Server: 1.1.1.1
+                Session ID of the Control Channel: 8cef052e-2502-11e3-88d4-123478563412
+                                    Server Status: connected
+      Time Passthrough Read Channel was Connected: 9/24/2013 10:17:45
+   Time Passthrough Read Channel was Disconnected: -
+Reason for Passthrough Read Channel Disconnection: none
+----

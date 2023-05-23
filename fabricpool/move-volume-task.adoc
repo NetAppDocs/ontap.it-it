@@ -1,0 +1,50 @@
+---
+permalink: fabricpool/move-volume-task.html 
+sidebar: sidebar 
+keywords: moving, volume, fabricpool, fabric pool, tiering, policy, policies, block, capacity, cold data, 
+summary: Quando si sposta un volume in FabricPool, è possibile specificare o modificare il criterio di tiering per il volume durante lo spostamento. A partire da ONTAP 9.8, quando si sposta un volume non FabricPool con la funzione di reporting dei dati inattivi attivata, FabricPool utilizza una mappa termica per leggere i blocchi tierable e sposta i dati cold nel Tier di capacità sulla destinazione FabricPool. 
+---
+= Spostare un volume su FabricPool
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si sposta un volume in FabricPool, è possibile specificare o modificare il criterio di tiering per il volume durante lo spostamento. A partire da ONTAP 9.8, quando si sposta un volume non FabricPool con la funzione di reporting dei dati inattivi attivata, FabricPool utilizza una mappa termica per leggere i blocchi tierable e sposta i dati cold nel Tier di capacità sulla destinazione FabricPool.
+
+.Di cosa hai bisogno
+Devi comprendere come la modifica della policy di tiering possa influire sul tempo necessario per far diventare i dati più freddi e spostarli nel Tier cloud.
+
+link:tiering-policies-concept.html#what-happens-to-the-tiering-policy-when-you-move-a-volume["Cosa accade alla policy di tiering quando si sposta un volume"]
+
+.A proposito di questa attività
+Se un volume non FabricPool ha attivato la funzione di reporting dei dati inattivi, quando si sposta un volume con policy di tiering `auto` oppure `snapshot-only` In un FabricPool, FabricPool legge i blocchi di temperatura da un file di mappa termica e utilizza tale temperatura per spostare i dati Cold direttamente nel Tier di capacità sulla destinazione FabricPool.
+
+Non utilizzare `-tiering-policy` Opzione di spostamento del volume se si utilizza ONTAP 9.8 e si desidera che FabricPools utilizzi le informazioni di reporting dei dati inattive per spostare i dati direttamente nel livello di capacità. L'utilizzo di questa opzione fa sì che FabricPools ignori i dati relativi alla temperatura e segua invece il comportamento di spostamento delle release precedenti a ONTAP 9.8.
+
+.Fase
+. Utilizzare `volume move start` Comando per spostare un volume in FabricPool.
++
+Il `-tiering-policy` il parametro opzionale consente di specificare il criterio di tiering per il volume.
+
++
+È possibile specificare uno dei seguenti criteri di tiering:
+
++
+** `snapshot-only` (impostazione predefinita)
+** `auto`
+** `all`
+** `none`+link:tiering-policies-concept.html#types-of-fabricpool-tiering-policies["Tipi di policy di tiering FabricPool"]
+
+
+
+
+.Esempio di spostamento di un volume in FabricPool
+Nell'esempio riportato di seguito viene spostato un volume denominato "`myvol2`" della SVM "vs1" nell'aggregato abilitato a FabricPool "dest_FabricPool". Il volume viene esplicitamente impostato per l'utilizzo di `none` policy di tiering:
+
+[listing]
+----
+cluster1::> volume move start -vserver vs1 -volume myvol2
+-destination-aggregate dest_FabricPool -tiering-policy none
+----

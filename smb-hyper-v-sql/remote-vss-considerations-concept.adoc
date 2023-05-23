@@ -1,0 +1,62 @@
+---
+permalink: smb-hyper-v-sql/remote-vss-considerations-concept.html 
+sidebar: sidebar 
+keywords: remote, vss, consideration, hyper, v, smb, configuration, backup, solution, automatic, recovery, shadow, copy 
+summary: Quando si utilizzano soluzioni di backup abilitate per VSS remoto per configurazioni Hyper-V su SMB, è necessario tenere presenti alcune considerazioni. 
+---
+= Considerazioni sul VSS remoto per le configurazioni Hyper-V su SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si utilizzano soluzioni di backup abilitate per VSS remoto per configurazioni Hyper-V su SMB, è necessario tenere presenti alcune considerazioni.
+
+
+
+== Considerazioni generali su Remote VSS
+
+* È possibile configurare un massimo di 64 condivisioni per server applicazioni Microsoft.
++
+L'operazione di copia shadow non riesce se sono presenti più di 64 condivisioni in un set di copie shadow. Si tratta di un requisito Microsoft.
+
+* È consentito un solo set di copie shadow attive per server CIFS.
++
+Un'operazione di copia shadow non riesce se è in corso un'operazione di copia shadow sullo stesso server CIFS. Si tratta di un requisito Microsoft.
+
+* Non sono consentite giunzioni all'interno della struttura di directory in cui Remote VSS crea una copia shadow.
++
+** In caso di ripristino automatico, la creazione della copia shadow non riesce se si incontra una giunzione durante l'attraversamento della condivisione.
+** Nel caso di recovery non automatico, la creazione della copia shadow non fallisce, ma la giunzione non punta a nulla.
+
+
+
+
+
+
+== Considerazioni sul VSS remoto valide solo per le copie shadow con ripristino automatico
+
+Alcuni limiti si applicano solo alle copie shadow con ripristino automatico.
+
+* Per la creazione delle copie shadow è consentita una profondità massima di directory di cinque sottodirectory.
++
+Questa è la profondità della directory in cui il servizio di copia shadow crea un set di backup delle copie shadow. La creazione della copia shadow non riesce se le directory contenenti il file della macchina virtuale sono nidificate più in profondità di cinque livelli. Questa opzione consente di limitare l'attraversamento della directory durante la clonazione della condivisione. È possibile modificare la profondità massima della directory utilizzando un'opzione del server CIFS.
+
+* La quantità di spazio disponibile sul volume deve essere adeguata.
++
+Lo spazio disponibile deve essere almeno pari allo spazio combinato utilizzato da tutti i file, le directory e le sottodirectory contenuti nelle condivisioni incluse nel set di backup delle copie shadow.
+
+* Non sono consentiti collegamenti o file non regolari all'interno della struttura di directory in cui Remote VSS crea una copia shadow.
++
+La creazione della copia shadow non riesce se nella condivisione sono presenti collegamenti o file non regolari alla copia shadow. Il processo di clonazione non li supporta.
+
+* Non sono consentiti ACL NFSv4 nelle directory.
++
+Sebbene la creazione delle copie shadow conservi gli ACL NFSv4 nei file, gli ACL NFSv4 nelle directory vengono persi.
+
+* È consentito creare un set di copie shadow per un massimo di 60 secondi.
++
+Le specifiche Microsoft consentono di creare il set di copie shadow per un massimo di 60 secondi. Se il client VSS non riesce a creare il set di copie shadow entro questo intervallo di tempo, l'operazione di copia shadow non riesce; pertanto, questo limita il numero di file in un set di copie shadow. Il numero effettivo di file o macchine virtuali che possono essere inclusi in un set di backup varia; tale numero dipende da molti fattori e deve essere determinato per ogni ambiente del cliente.
+
+

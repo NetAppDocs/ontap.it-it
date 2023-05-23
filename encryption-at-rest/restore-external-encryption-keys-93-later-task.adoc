@@ -1,0 +1,80 @@
+---
+permalink: encryption-at-rest/restore-external-encryption-keys-93-later-task.html 
+sidebar: sidebar 
+keywords: restoring, external key management, encryption keys 
+summary: È possibile ripristinare manualmente le chiavi di crittografia per la gestione delle chiavi esterne e inserirle in un nodo diverso. Questa operazione potrebbe essere utile se si sta riavviando un nodo temporaneamente inattivo quando sono state create le chiavi per il cluster. 
+---
+= Ripristinare le chiavi di crittografia esterne per la gestione delle chiavi
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile ripristinare manualmente le chiavi di crittografia esterne per la gestione delle chiavi e "`push`" su un nodo diverso. Questa operazione potrebbe essere utile se si sta riavviando un nodo temporaneamente inattivo quando sono state create le chiavi per il cluster.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster o di SVM.
+
+.A proposito di questa attività
+In ONTAP 9.6 e versioni successive, è possibile utilizzare `security key-manager key query -node node_name` per verificare se la chiave deve essere ripristinata.
+
+In ONTAP 9.5 e versioni precedenti, è possibile utilizzare `security key-manager key show` per verificare se la chiave deve essere ripristinata.
+
+.Fasi
+. Se si utilizza ONTAP 9.8 o versione successiva e il volume root è crittografato, procedere come segue:
++
+Se si utilizza ONTAP 9.7 o versioni precedenti o se si utilizza ONTAP 9.8 o versioni successive e il volume root non è crittografato, ignorare questo passaggio.
+
++
+.. Impostare il bootargs: +
+`setenv kmip.init.ipaddr <ip-address>`+
+`setenv kmip.init.netmask <netmask>`+
+`setenv kmip.init.gateway <gateway>`+
+`setenv kmip.init.interface e0M`+
+`boot_ontap`
+.. Avviare il nodo dal menu di boot e selezionare l'opzione `(11) Configure node for external key management`.
+.. Seguire le istruzioni per inserire il certificato di gestione.
++
+Una volta inserite tutte le informazioni del certificato di gestione, il sistema torna al menu di avvio.
+
+.. Dal menu di avvio, selezionare opzione `(1) Normal Boot`.
+
+
+. Ripristinare la chiave:
++
+[cols="35,65"]
+|===
+
+
+| Per questa versione di ONTAP... | Utilizzare questo comando... 
+
+
+ a| 
+ONTAP 9.6 e versioni successive
+ a| 
+`security key-manager external restore -vserver SVM -node node -key-server host_name|IP_address:port -key-id key_id -key-tag key_tag`
+
+
+
+ a| 
+ONTAP 9.5 e versioni precedenti
+ a| 
+`security key-manager restore -node node -address IP_address -key-id key_id -key-tag key_tag`
+
+|===
++
+[NOTE]
+====
+`node` per impostazione predefinita, tutti i nodi. Per la sintassi completa dei comandi, vedere le pagine man. Questo comando non è supportato quando è attivata la gestione delle chiavi integrate.
+
+====
++
+Il seguente comando ONTAP 9.6 ripristina le chiavi di autenticazione esterne per la gestione delle chiavi in tutti i nodi in `cluster1`:
+
++
+[listing]
+----
+clusterl::> security key-manager external restore
+----
+

@@ -1,0 +1,54 @@
+---
+permalink: nfs-admin/perform-access-check-netgroups-verify-domains-task.html 
+sidebar: sidebar 
+keywords: perform, strict, access, check, netgroup, verify, domain 
+summary: 'Per impostazione predefinita, ONTAP esegue un"ulteriore verifica quando valuta l"accesso client per un netgroup. Il controllo aggiuntivo garantisce che il dominio del client corrisponda alla configurazione di dominio della macchina virtuale di storage (SVM). In caso contrario, ONTAP nega l"accesso al client.' 
+---
+= Eseguire un controllo degli accessi più rigoroso per i netgroup verificando i domini
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per impostazione predefinita, ONTAP esegue un'ulteriore verifica quando valuta l'accesso client per un netgroup. Il controllo aggiuntivo garantisce che il dominio del client corrisponda alla configurazione di dominio della macchina virtuale di storage (SVM). In caso contrario, ONTAP nega l'accesso al client.
+
+.A proposito di questa attività
+Quando ONTAP valuta le regole dei criteri di esportazione per l'accesso client e una regola dei criteri di esportazione contiene un netgroup, ONTAP deve determinare se l'indirizzo IP di un client appartiene al netgroup. A tale scopo, ONTAP converte l'indirizzo IP del client in un nome host utilizzando DNS e ottiene un nome di dominio completo (FQDN).
+
+Se il file netgroup elenca solo un nome breve per l'host e il nome breve per l'host esiste in più domini, è possibile che un client di un dominio diverso ottenga l'accesso senza questo controllo.
+
+Per evitare che ciò accada, ONTAP confronta il dominio restituito dal DNS per l'host con l'elenco dei nomi di dominio DNS configurati per la SVM. Se corrisponde, l'accesso è consentito. Se non corrisponde, l'accesso viene negato.
+
+Questa verifica è attivata per impostazione predefinita. È possibile gestirlo modificando il `-netgroup-dns-domain-search` che è disponibile al livello di privilegio avanzato.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+`set -privilege advanced`
+
+. Eseguire l'azione desiderata:
++
+[cols="2*"]
+|===
+| Se si desidera che la verifica del dominio per i netgroup sia... | Inserisci... 
+
+
+ a| 
+Attivato
+ a| 
+`vserver nfs modify -vserver vserver_name -netgroup-dns-domain-search enabled`
+
+
+
+ a| 
+Disattivato
+ a| 
+`vserver nfs modify -vserver vserver_name -netgroup-dns-domain-search disabled`
+
+|===
+. Impostare il livello di privilegio su admin:
++
+`set -privilege admin`
+
+

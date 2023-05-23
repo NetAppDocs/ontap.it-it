@@ -1,0 +1,133 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_how_automatic_takeover_and_giveback_works.html 
+keywords: ontap, high availability, ha, pair, automatic, takeover, giveback, background, updates, policy, effect, node, panics, what, happens 
+summary: Le operazioni automatiche di Takeover e giveback possono lavorare insieme per ridurre ed evitare le interruzioni dei client. 
+---
+= Come funziona il Takeover e il giveback automatico
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Le operazioni automatiche di Takeover e giveback possono lavorare insieme per ridurre ed evitare le interruzioni dei client.
+
+Per impostazione predefinita, se un nodo della coppia ha esegue il panic, il riavvio o l'arresto, il nodo partner assume automaticamente il controllo e restituisce lo storage al riavvio del nodo interessato. La coppia ha riprende quindi uno stato operativo normale.
+
+Le acquisizioni automatiche possono verificarsi anche se uno dei nodi non risponde.
+
+Il giveback automatico viene eseguito per impostazione predefinita. Se si desidera controllare l'impatto del giveback sui client, è possibile disattivare il giveback automatico e utilizzare `storage failover modify -auto-giveback false -node <node>` comando. Prima di eseguire il giveback automatico (indipendentemente da ciò che lo ha attivato), il nodo partner attende un periodo di tempo fisso, come controllato da `-delay- seconds` del parametro `storage failover modify` comando. Il ritardo predefinito è di 600 secondi. Ritardando il giveback, il processo si traduce in due brevi interruzioni: Una durante il takeover e una durante il giveback.
+
+Questo processo evita un singolo e prolungato disservizio che include il tempo necessario per:
+
+* Operazione di Takeover
+* Il nodo preso in consegna per l'avvio fino al punto in cui è pronto per il giveback
+* L'operazione di giveback
+
+
+Se il giveback automatico non riesce per uno qualsiasi degli aggregati non root, il sistema effettua automaticamente due tentativi aggiuntivi per completare il giveback.
+
+
+NOTE: Durante il processo di takeover, il processo di giveback automatico inizia prima che il nodo partner sia pronto per il giveback. Quando il limite di tempo del processo di giveback automatico scade e il nodo partner non è ancora pronto, il timer viene riavviato. Di conseguenza, il tempo che intercorre tra il nodo partner pronto e l'effettivo giveback eseguito potrebbe essere inferiore al tempo di giveback automatico.
+
+
+
+== Cosa succede durante il takeover
+
+Quando un nodo assume il controllo del proprio partner, continua a fornire e aggiornare i dati negli aggregati e nei volumi del partner.
+
+Durante il processo di Takeover si verificano le seguenti fasi:
+
+. Se il Takeover negoziato è avviato dall'utente, i dati aggregati vengono spostati dal nodo partner al nodo che sta eseguendo il Takeover. Una breve interruzione si verifica quando il proprietario corrente di ciascun aggregato (ad eccezione dell'aggregato root) passa al nodo di Takeover. Questa interruzione è più breve di un'interruzione che si verifica durante un'acquisizione senza ricollocazione aggregata.
++
+** È possibile monitorare l'avanzamento utilizzando `storage failover show‑takeover` comando.
+** È possibile evitare il trasferimento dell'aggregato durante questa istanza di Takeover utilizzando `‑bypass‑optimization` con il `storage failover takeover` comando.
++
+
+NOTE: Gli aggregati vengono ricollocati in modo seriale durante le operazioni di Takeover pianificate per ridurre l'interruzione del servizio del client. Se il trasferimento aggregato viene ignorato, si verifica un'interruzione più lunga del client durante gli eventi di acquisizione pianificati.
+
+
+
+. Se il Takeover avviato dall'utente è un Takeover negoziato, il nodo di destinazione si spegne senza problemi, seguito dal Takeover dell'aggregato root del nodo di destinazione e degli aggregati che non sono stati ricollocati nella fase 1.
+. Prima dell'inizio del processo di acquisizione dello storage, le LIF dei dati (interfacce logiche) migrano dal nodo di destinazione al nodo di acquisizione o a qualsiasi altro nodo del cluster in base alle regole di failover LIF. È possibile evitare la migrazione LIF utilizzando `‑skip‑lif-migration` con il `storage failover takeover` comando.
+. Le sessioni SMB esistenti vengono disconnesse quando si verifica il takeover.
++
+
+NOTE: A causa della natura del protocollo SMB, tutte le sessioni SMB vengono interrotte (ad eccezione delle sessioni SMB 3.0 connesse alle condivisioni con il set di proprietà Continuous Availability). Le sessioni SMB 1.0 e SMB 2.x non possono riconnettersi dopo un evento di Takeover; pertanto, il Takeover è un'interruzione e potrebbe verificarsi una perdita di dati.
+
+. Le sessioni SMB 3.0 stabilite per le condivisioni con la proprietà disponibilità continua attivata possono riconnettersi alle condivisioni disconnesse dopo un evento di Takeover. Se il sito utilizza connessioni SMB 3.0 a Microsoft Hyper-V e la proprietà disponibilità continua è attivata sulle condivisioni associate, le acquisizioni non sono disruptive per tali sessioni.
+
+
+
+
+=== Cosa succede se un nodo che esegue una panoramica di Takeover
+
+Se il nodo che esegue il takeover esegue il panic entro 60 secondi dall'inizio del takeover, si verificano i seguenti eventi:
+
+* Il nodo che ha avviato il panico si riavvia.
+* Dopo il riavvio, il nodo esegue le operazioni di ripristino automatico e non è più in modalità Takeover.
+* Il failover è disattivato.
+* Se il nodo possiede ancora alcuni aggregati del partner, dopo aver attivato il failover dello storage, restituire questi aggregati al partner utilizzando `storage failover giveback` comando.
+
+
+
+
+== Cosa succede durante il giveback
+
+Il nodo locale restituisce la proprietà al nodo partner quando i problemi vengono risolti, quando il nodo partner si avvia o quando viene avviato il giveback.
+
+Il seguente processo viene eseguito in una normale operazione di giveback. In questa discussione, il nodo A ha assunto il controllo del nodo B. Tutti i problemi sul nodo B sono stati risolti ed è pronto per riprendere la fornitura dei dati.
+
+. Tutti i problemi sul nodo B vengono risolti e viene visualizzato il seguente messaggio: `Waiting for giveback`
+. Il giveback viene avviato da `storage failover giveback` o tramite giveback automatico se il sistema è configurato per esso. Questo avvia il processo di restituzione della proprietà degli aggregati e dei volumi del nodo B dal nodo A al nodo B.
+. Il nodo A restituisce prima il controllo dell'aggregato root.
+. Il nodo B completa il processo di avvio fino al suo normale stato operativo.
+. Non appena il nodo B raggiunge il punto del processo di boot in cui può accettare gli aggregati non root, il nodo A restituisce la proprietà degli altri aggregati, uno alla volta, fino al completamento del giveback. È possibile monitorare l'avanzamento del giveback utilizzando `storage failover show-giveback` comando.
++
+
+NOTE: Il `storage failover show-giveback` command non visualizza (né intende) informazioni su tutte le operazioni che si verificano durante l'operazione di giveback di failover dello storage. È possibile utilizzare `storage failover show` per visualizzare ulteriori dettagli sullo stato di failover corrente del nodo, ad esempio se il nodo è completamente funzionante, è possibile eseguire il takeover e il giveback è completo.
+
++
+I/o riprende per ciascun aggregato dopo il completamento del giveback per quell'aggregato, riducendo così la finestra generale di interruzione.
+
+
+
+
+
+== Ha e il suo effetto sull'acquisizione e sul giveback
+
+ONTAP assegna automaticamente a un aggregato una policy ha di CFO (failover del controller) e SFO (failover dello storage). Questo criterio determina il modo in cui avvengono le operazioni di failover dello storage per l'aggregato e i suoi volumi.
+
+Le due opzioni, CFO e SFO, determinano la sequenza di controllo aggregata utilizzata da ONTAP durante le operazioni di giveback e failover dello storage.
+
+Sebbene i termini CFO e SFO siano talvolta utilizzati in modo informale per fare riferimento alle operazioni di failover dello storage (takeover e giveback), essi rappresentano effettivamente la policy ha assegnata agli aggregati. Ad esempio, i termini aggregato SFO o aggregato CFO si riferiscono semplicemente all'assegnazione dei criteri ha dell'aggregato.
+
+Le policy DI HA influiscono sulle operazioni di takeover e giveback come segue:
+
+* Gli aggregati creati sui sistemi ONTAP (ad eccezione dell'aggregato root contenente il volume root) hanno una policy di ha di SFO. Il Takeover avviato manualmente è ottimizzato per le performance trasferendo gli aggregati SFO (non root) in modo seriale al partner prima del Takeover. Durante il processo di giveback, gli aggregati vengono restituiti in modo seriale dopo l'avvio del sistema acquisito e l'accesso alle applicazioni di gestione, consentendo al nodo di ricevere i propri aggregati.
+* Poiché le operazioni di riposizionamento degli aggregati comportano la riassegnazione della proprietà dei dischi aggregati e lo spostamento del controllo da un nodo al suo partner, solo gli aggregati con una policy di ha di SFO sono idonei per il riposizionamento degli aggregati.
+* L'aggregato root ha sempre una policy di ha di CFO e viene restituita all'inizio dell'operazione di giveback. Ciò è necessario per consentire l'avvio del sistema preso in consegna. Tutti gli altri aggregati vengono restituiti in modo seriale dopo che il sistema acquisito ha completato il processo di boot e le applicazioni di gestione sono online, consentendo al nodo di ricevere i propri aggregati.
+
+
+
+NOTE: La modifica della policy ha di un aggregato da SFO a CFO è un'operazione in modalità Maintenance. Non modificare questa impostazione a meno che non sia richiesto da un rappresentante dell'assistenza clienti.
+
+
+
+== In che modo gli aggiornamenti in background influiscono su Takeover e giveback
+
+Gli aggiornamenti in background del firmware del disco influiscono in modo diverso sulle operazioni di takeover, giveback e trasferimento degli aggregati della coppia ha, a seconda di come vengono avviate tali operazioni.
+
+Il seguente elenco descrive come gli aggiornamenti del firmware dei dischi in background influiscono su Takeover, giveback e trasferimento degli aggregati:
+
+* Se si verifica un aggiornamento del firmware del disco in background su un disco su uno dei nodi, le operazioni di Takeover avviate manualmente vengono ritardate fino al completamento dell'aggiornamento del firmware del disco su tale disco. Se l'aggiornamento del firmware del disco in background richiede più di 120 secondi, le operazioni di Takeover vengono interrotte e devono essere riavviate manualmente al termine dell'aggiornamento del firmware del disco. Se l'acquisizione è stata avviata con `‑bypass‑optimization` del parametro `storage failover takeover` comando impostato su `true`, l'aggiornamento del firmware del disco in background che si verifica sul nodo di destinazione non influisce sul takeover.
+* Se si verifica un aggiornamento del firmware del disco in background su un disco nel nodo di origine (o Takeover) e il Takeover è stato avviato manualmente con `‑options` del parametro `storage failover takeover` comando impostato su `immediate`, le operazioni di takeover iniziano immediatamente.
+* Se si verifica un aggiornamento del firmware del disco in background su un disco di un nodo e si verifica una situazione di panico, l'acquisizione del nodo in panello inizia immediatamente.
+* Se si verifica un aggiornamento del firmware del disco in background su un disco su uno dei nodi, il giveback degli aggregati di dati viene ritardato fino al completamento dell'aggiornamento del firmware del disco su tale disco.
+* Se l'aggiornamento del firmware del disco in background richiede più di 120 secondi, le operazioni di giveback vengono interrotte e devono essere riavviate manualmente al termine dell'aggiornamento del firmware del disco.
+* Se si verifica un aggiornamento del firmware del disco in background su un disco di uno dei nodi, le operazioni di trasferimento aggregato vengono ritardate fino al completamento dell'aggiornamento del firmware del disco su tale disco. Se l'aggiornamento del firmware del disco in background richiede più di 120 secondi, le operazioni di trasferimento aggregato vengono interrotte e devono essere riavviate manualmente al termine dell'aggiornamento del firmware del disco. Se è stato avviato il trasferimento di aggregati con `-override-destination-checks` di `storage aggregate relocation` comando impostato su `true`, l'aggiornamento del firmware del disco in background che si verifica sul nodo di destinazione non influisce sul trasferimento dell'aggregato.
+

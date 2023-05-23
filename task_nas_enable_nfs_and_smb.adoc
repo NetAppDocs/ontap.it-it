@@ -1,0 +1,89 @@
+---
+sidebar: sidebar 
+permalink: task_nas_enable_nfs_and_smb.html 
+keywords: ontap, netapp, provision nas storage, linux, windows, NFS, SMB, SMB, CIFS, enable NFS, enable SMB, configure DNS, modify storage VM, configure DNS, configure name server, configure Kerberos, map user names 
+summary: Modificare le VM di storage per consentire ai server NFS e SMB di fornire dati ai client Linux e Windows. 
+---
+= Abilitare lo storage NAS per Windows e Linux utilizzando sia NFS che SMB
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Creare o modificare le VM di storage per consentire ai server NFS e SMB di fornire dati ai client Linux e Windows.
+
+Questa procedura consente a una VM di storage nuova o esistente di servire protocolli NFS e SMB. Si presuppone che i dettagli di configurazione siano disponibili per qualsiasi servizio di rete, autenticazione o sicurezza richiesto nel proprio ambiente.
+
+image:workflow_nas_enable_nfs_and_smb.gif["Diagramma del flusso di lavoro per abilitare NAS per server Linux e Windows utilizzando NFS e SMB"]
+
+.Fasi
+. Abilitare NFS e SMB su una VM di storage.
++
+.. Per le nuove macchine virtuali storage: Fare clic su *Storage > Storage VMS*, fare clic su *Add* (Aggiungi), inserire il nome di una macchina virtuale storage e nella scheda *SMB/CIFS, NFS, S3*, selezionare *Enable SMB/CIFS* (attiva SMB/CIFS*) e *Enable NFS* (attiva NFS*).
++
+*** Inserire le seguenti informazioni:
++
+**** Nome e password dell'amministratore
+**** Nome del server
+**** Dominio Active Directory
+
+
+*** Confermare l'unità organizzativa.
+*** Confermare i valori DNS.
+*** Confermare la lingua predefinita.
+*** Aggiungere interfacce di rete.
+*** Aggiornare le informazioni dell'account amministratore della VM di storage (opzionale).
+
+
+.. Per le VM di storage esistenti: Fare clic su *Storage > Storage VM*, selezionare una VM di storage, quindi fare clic su *Settings* (Impostazioni). Se NFS o SMB non sono già abilitati, completare i seguenti passaggi secondari.
++
+*** Fare clic su image:icon_gear.gif["icona delle impostazioni"] Sotto *NFS*.
+*** Fare clic su image:icon_gear.gif["icona delle impostazioni"] Sotto *SMB*.
+
+
+
+
+. Aprire il criterio di esportazione del volume root della VM di storage:
++
+.. Fare clic su *Storage > Volumes*, selezionare il volume root della VM di storage (che per impostazione predefinita è _volume-name_root_), quindi fare clic sul criterio visualizzato in *Export Policy*.
+.. Fare clic su *Aggiungi* per aggiungere una regola.
++
+*** Specifica del client = `0.0.0.0/0`
+*** Access Protocol (protocolli di accesso) = NFS
+*** Dettagli di accesso = NFS di sola lettura
+
+
+
+
+. Configurare il DNS per la risoluzione del nome host:
++
+.. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, fare clic su *Settings*, quindi fare clic su image:icon_gear.gif["icona delle impostazioni"] Sotto *DNS*.
+.. Una volta completata la configurazione DNS, passare al server DNS e mappare il server SMB.
++
+*** Creare voci di ricerca in avanti (A - record di indirizzo) e indietro (PTR - record puntatore) per mappare il nome del server SMB all'indirizzo IP dell'interfaccia di rete dati.
+*** Se si utilizzano alias NetBIOS, creare una voce di ricerca alias canonical name (CNAME resource record) per associare ciascun alias all'indirizzo IP dell'interfaccia di rete dati del server SMB.
+
+
+
+
+. Configurare i name service secondo necessità:
++
+.. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, fare clic su *Settings*, quindi fare clic su image:icon_gear.gif["icona delle impostazioni"] Per LDAP o NIS.
+.. Includere eventuali modifiche nel file name Services switch: Fare clic su image:icon_pencil.gif["icona edit (modifica)"] Sotto *Name Services Switch*.
+
+
+. Configurare Kerberos se necessario: Fare clic su image:icon_arrow.gif["icona a forma di freccia"] Nel riquadro Kerberos, quindi fare clic su *Aggiungi*.
+. Se necessario, mappare i nomi utente UNIX e Windows: Fare clic su image:icon_arrow.gif["icona a forma di freccia"] In *mappatura nome* e fare clic su *Aggiungi*.
++
+Utilizzare questa procedura solo se il sito dispone di account utente Windows e UNIX che non vengono mappati implicitamente, ovvero quando la versione minuscola di ciascun nome utente Windows corrisponde al nome utente UNIX. Questa procedura può essere eseguita utilizzando LDAP, NIS o utenti locali. Se si dispone di due set di utenti che non corrispondono, è necessario configurare la mappatura dei nomi.
+
+

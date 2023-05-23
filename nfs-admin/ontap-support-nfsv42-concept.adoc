@@ -1,0 +1,73 @@
+---
+permalink: nfs-admin/ontap-support-nfsv42-concept.html 
+sidebar: sidebar 
+keywords: ontap, support, nfsv4.2, MAC-labelled NFS, extended attributes, xattrs 
+summary: 'A partire da ONTAP 9.8, il protocollo NFSv4.2 è supportato per consentire l"accesso ai client abilitati a NFSv4.2.' 
+---
+= Supporto ONTAP per NFSv4.2
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.8, il protocollo NFSv4.2 è supportato per consentire l'accesso ai client abilitati a NFSv4.2.
+
+NFSv4.2 è attivato per impostazione predefinita in ONTAP 9.9.1 e versioni successive. In ONTAP 9.8, è possibile attivare la versione 4.2 specificando `-v4.1` e impostarlo su `enabled` Quando si crea un server NFS sulla macchina virtuale di storage (SVM). L'abilitazione di NFSv4.1 consente inoltre ai client di utilizzare le funzionalità di NFSv4.1 mentre sono montati come v4.2.
+
+Sono supportate le seguenti funzionalità opzionali di NFSv4.2:
+
+[cols="2*"]
+|===
+| Funzione | Supportato a partire da ... 
+
+
+ a| 
+Obbligatorio Access Control (MAC) con etichetta NFS
+ a| 
+ONTAP 9.9.1
+
+
+
+ a| 
+Attributi estesi NFS
+ a| 
+ONTAP 9.12.1
+
+|===
+Ulteriori funzionalità opzionali di NFSv4.2 verranno aggiunte in una release successiva di ONTAP.
+
+
+
+== Abilitare le etichette di sicurezza NFS v4.2
+
+A partire da ONTAP 9.9.1, è possibile attivare le etichette di sicurezza NFS. Sono disattivati per impostazione predefinita.
+
+Con le etichette di sicurezza NFS v4.2, i server NFS ONTAP sono compatibili con il controllo di accesso obbligatorio (MAC), memorizzando e recuperando gli attributi sec_label inviati dai client.
+
+Per ulteriori informazioni, vedere link:https://tools.ietf.org/html/rfc7204["RFC 7240"^]
+
+A partire da ONTAP 9.12.1, le etichette di sicurezza NFS v4.2 sono supportate per le operazioni di dump NDMP. Se vengono rilevate etichette di sicurezza su file o directory nelle release precedenti, il dump non riesce.
+
+.Fasi
+. Impostare i privilegi su Advanced (avanzato):
++
+``set -privilege advanced``
+
+. Abilitare le etichette di sicurezza:
++
+``vserver nfs modify -vserver _svm_name_ -v4.2-seclabel enabled``
+
+
+
+
+
+== Abilitare gli attributi estesi NFS
+
+A partire da ONTAP 9.12.1, gli attributi estesi NFS (xattrs) sono attivati per impostazione predefinita.
+
+Gli attributi estesi sono attributi NFS standard definiti da https://tools.ietf.org/html/rfc8276["RFC 8276"^] E abilitato nei moderni client NFS. Possono essere utilizzati per allegare metadati definiti dall'utente agli oggetti del file system e sono di interesse per implementazioni di sicurezza avanzate.
+
+Gli attributi estesi NFS non sono attualmente supportati per le operazioni di dump NDMP. Se vengono rilevati attributi estesi su file o directory, il dump procede ma non esegue il backup degli attributi estesi su tali file o directory.
+
+Se è necessario disattivare gli attributi estesi, utilizzare ``vserver nfs modify -v4.2-xattrs disabled`` comando.

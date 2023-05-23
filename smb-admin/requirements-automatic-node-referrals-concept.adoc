@@ -1,0 +1,99 @@
+---
+permalink: smb-admin/requirements-automatic-node-referrals-concept.html 
+sidebar: sidebar 
+keywords: smb, automatic, node, referral, autolocation, aware, requirement, version, ontap, feature, support, guideline, requirement, requirements and guidelines for using automatic node referrals 
+summary: Prima di poter utilizzare i riferimenti automatici ai nodi SMB, noti anche come autolocation, è necessario conoscere alcuni requisiti, incluse le versioni di ONTAP che supportano la funzionalità. È inoltre necessario conoscere le versioni del protocollo SMB supportate e alcune altre linee guida speciali. 
+---
+= Requisiti e linee guida per l'utilizzo dei riferimenti automatici ai nodi
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di poter utilizzare i riferimenti automatici ai nodi SMB, noti anche come _autolocation_, è necessario conoscere alcuni requisiti, incluse le versioni di ONTAP che supportano la funzione. È inoltre necessario conoscere le versioni del protocollo SMB supportate e alcune altre linee guida speciali.
+
+
+
+== Versione di ONTAP e requisiti di licenza
+
+* Tutti i nodi del cluster devono eseguire una versione di ONTAP che supporti i riferimenti automatici dei nodi.
+* Per utilizzare l'autolocation, i Widelink devono essere abilitati su una condivisione SMB.
+* CIFS deve essere concesso in licenza e un server SMB deve esistere sulle SVM.
+
+
+
+
+== Requisiti di versione del protocollo SMB
+
+* Per le SVM, ONTAP supporta i riferimenti automatici dei nodi su tutte le versioni di SMB.
+
+
+
+
+== Requisiti del client SMB
+
+Tutti i client Microsoft supportati da ONTAP supportano i riferimenti automatici dei nodi SMB.
+
+La matrice di interoperabilità contiene le informazioni più recenti sui client Windows supportati da ONTAP.
+
+link:http://mysupport.netapp.com/matrix["Tool di matrice di interoperabilità NetApp"^]
+
+
+
+== Requisiti Data LIF
+
+Se si desidera utilizzare una LIF di dati come potenziale riferimento per i client SMB, è necessario creare LIF di dati con NFS e CIFS abilitati.
+
+I riferimenti automatici dei nodi possono non funzionare se il nodo di destinazione contiene LIF di dati che sono abilitati solo per il protocollo NFS o abilitati solo per il protocollo SMB.
+
+Se questo requisito non viene soddisfatto, l'accesso ai dati non viene compromesso. Il client SMB esegue la mappatura della condivisione utilizzando la LIF originale utilizzata dal client per connettersi alla SVM.
+
+
+
+== Requisiti di autenticazione NTLM quando si effettua una connessione SMB di riferimento
+
+L'autenticazione NTLM deve essere consentita nel dominio contenente il server CIFS e nei domini contenenti client che desiderano utilizzare i riferimenti automatici ai nodi.
+
+Quando si fa un riferimento, il server SMB fa riferimento a un indirizzo IP per il client Windows. Poiché l'autenticazione NTLM viene utilizzata quando si effettua una connessione utilizzando un indirizzo IP, l'autenticazione Kerberos non viene eseguita per le connessioni di riferimento.
+
+Questo accade perché il client Windows non può creare il nome principale del servizio utilizzato da Kerberos (che è del formato `service/NetBIOS name` e. `service/FQDN`), il che significa che il client non può richiedere un ticket Kerberos al servizio.
+
+
+
+== Linee guida per l'utilizzo dei riferimenti automatici ai nodi con la funzione home directory
+
+Quando le condivisioni sono configurate con la proprietà di condivisione della home directory attivata, possono essere configurati uno o più percorsi di ricerca della home directory per una configurazione della home directory. I percorsi di ricerca possono puntare ai volumi contenuti in ciascun nodo contenente volumi SVM. I client ricevono un riferimento e, se è disponibile un LIF di dati locale attivo, si connettono attraverso un LIF di riferimento locale alla home directory dell'utente domestico.
+
+Esistono linee guida quando i client SMB 1.0 accedono alle home directory dinamiche con i riferimenti automatici dei nodi abilitati. Questo perché i client SMB 1.0 richiedono il riferimento automatico al nodo prima dell'autenticazione, ovvero prima che il server SMB abbia il nome dell'utente. Tuttavia, l'accesso alla home directory SMB funziona correttamente per i client SMB 1.0 se le seguenti affermazioni sono vere:
+
+* Le home directory SMB sono configurate in modo da utilizzare nomi semplici, come "`%w`" (nome utente Windows) o "`%u`" (nome utente UNIX mappato) e non nomi di stile dominio, come "`%d%w `" (nome-dominio nome-utente).
+* Quando si creano condivisioni della home directory, i nomi delle condivisioni della home directory CIFS vengono configurati con variabili ("`%w`" o "`%u`") e non con nomi statici, ad esempio "`HOME`".
+
+
+Per i client SMB 2.x e SMB 3.0, non esistono linee guida speciali per l'accesso alle home directory mediante riferimenti automatici ai nodi.
+
+
+
+== Linee guida per la disattivazione dei riferimenti automatici dei nodi sui server CIFS con connessioni referenziate esistenti
+
+Se si disattivano i riferimenti automatici ai nodi dopo l'attivazione dell'opzione, i client attualmente connessi a una LIF referenziata mantengono la connessione referenziata. Poiché ONTAP utilizza i riferimenti DFS come meccanismo per i riferimenti automatici ai nodi SMB, i client possono anche riconnettersi al file LIF indicato dopo aver disattivato l'opzione fino al timeout del riferimento DFS memorizzato nella cache del client per la connessione a cui si fa riferimento. Ciò vale anche nel caso di un ripristino di una versione di ONTAP che non supporta i riferimenti automatici ai nodi. I client continuano a utilizzare i riferimenti fino a quando il riferimento DFS non passa in timeout dalla cache del client.
+
+L'autolocation utilizza i riferimenti automatici ai nodi SMB per aumentare le performance dei client SMB facendo riferimento ai client alla LIF sul nodo proprietario del volume di dati di una SVM. Quando un client SMB si connette a una condivisione SMB ospitata su una SVM, potrebbe connettersi utilizzando una LIF su un nodo che non possiede i dati richiesti e utilizza una rete di interconnessione cluster per recuperare i dati. Se la connessione SMB utilizza un LIF situato sul nodo contenente i dati richiesti, il client può ottenere tempi di risposta più rapidi.
+
+ONTAP fornisce questa funzionalità utilizzando i riferimenti del file system distribuito Microsoft (DFS) per informare i client SMB che un file o una cartella richiesti nello spazio dei nomi è ospitato altrove. Un nodo fa un riferimento quando determina la presenza di una LIF SVM sul nodo contenente i dati. I riferimenti vengono effettuati in base alla posizione della directory principale della condivisione attraverso la quale il client è connesso.
+
+Il riferimento si verifica durante la negoziazione SMB. Il riferimento viene fatto prima che venga stabilita la connessione. Dopo che ONTAP fa riferimento al nodo di destinazione, la connessione viene stabilita e il client accede ai dati attraverso il percorso LIF indicato da quel punto in poi. In questo modo, i client possono accedere più rapidamente ai dati ed evitare ulteriori comunicazioni del cluster.
+
+
+
+== Linee guida per l'utilizzo dei riferimenti automatici dei nodi con client Mac OS
+
+I client Mac OS X non supportano i riferimenti automatici ai nodi SMB, anche se Mac OS supporta il file system distribuito (DFS) di Microsoft. I client Windows effettuano una richiesta di riferimento DFS prima di connettersi a una condivisione SMB. ONTAP fornisce un riferimento a una LIF di dati trovata sullo stesso nodo che ospita i dati richiesti, il che porta a tempi di risposta del client migliorati. Anche se Mac OS supporta DFS, i client Mac OS non si comportano esattamente come i client Windows in quest'area.
+
+.Informazioni correlate
+xref:dynamic-home-directories-concept.html[In che modo ONTAP abilita le home directory dinamiche]
+
+link:../networking/index.html["Gestione della rete"]
+
+https://mysupport.netapp.com/NOW/products/interoperability["Tool di matrice di interoperabilità NetApp"^]

@@ -1,0 +1,84 @@
+---
+permalink: authentication/enable-ssh-public-key-accounts-task.html 
+sidebar: sidebar 
+keywords: enable, ssh, public key, accounts 
+summary: È possibile utilizzare il comando Security login create per consentire agli account amministratore di accedere a un amministratore o a una SVM di dati con una chiave pubblica SSH. 
+---
+= Abilitare gli account a chiave pubblica SSH
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `security login create` Comando per consentire agli account amministratore di accedere a una SVM amministrativa o di dati con una chiave pubblica SSH.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.A proposito di questa attività
+* Prima che l'account possa accedere a SVM, è necessario associare la chiave pubblica all'account.
++
+xref:manage-public-key-authentication-concept.adoc[Associazione di una chiave pubblica a un account utente]
+
++
+È possibile eseguire questa attività prima o dopo aver attivato l'accesso all'account.
+
+* Se non si è sicuri del ruolo di controllo degli accessi che si desidera assegnare all'account di accesso, è possibile utilizzare `security login modify` per aggiungere il ruolo in un secondo momento.
+
+
+Se si desidera attivare la modalità FIPS sul cluster, gli account a chiave pubblica SSH esistenti senza gli algoritmi a chiave supportati devono essere riconfigurati con un tipo di chiave supportato. Gli account devono essere riconfigurati prima di attivare FIPS, altrimenti l'autenticazione dell'amministratore non avrà esito positivo.
+
+La seguente tabella indica gli algoritmi del tipo di chiave host supportati per le connessioni SSH ONTAP. Questi tipi di chiave non si applicano alla configurazione dell'autenticazione pubblica SSH.
+
+[cols="30,30,30"]
+|===
+
+
+| Release di ONTAP | Tipi di chiave supportati in modalità FIPS | Tipi di chiave supportati in modalità non FIPS 
+
+
+ a| 
+9.11.1 e versioni successive
+ a| 
+ecdsa-sha2-nistp256
+ a| 
+ecdsa-sha2-nistp256 + rsa-sha2-512 + rsa-sha2-256 + ssh-ed25519 + ssh-dss + ssh-rsa
+
+
+
+ a| 
+9.10.1 e versioni precedenti
+ a| 
+ecdsa-sha2-nistp256 + ssh-ed25519
+ a| 
+ecdsa-sha2-nistp256 + ssh-ed25519 + ssh-dss + ssh-rsa
+
+|===
+
+NOTE: il supporto per l'algoritmo della chiave host ssh-ed25519 è stato rimosso nel 9.11.1
+
+Per ulteriori informazioni, vedere link:../networking/configure_network_security_using_federal_information_processing_standards_@fips@.html["Configurare la sicurezza di rete utilizzando FIPS"].
+
+.Fase
+. Abilitare gli account dell'amministratore locale per accedere a una SVM utilizzando una chiave pubblica SSH:
++
+`security login create -vserver _SVM_name_ -user-or-group-name user_or_group_name -application _application_ -authmethod _authentication_method_ -role _role_ -comment _comment_`
+
++
+Per la sintassi completa dei comandi, vedere link:config-worksheets-reference.html["foglio di lavoro"].
+
++
+Il seguente comando attiva l'account amministratore SVM `svmadmin1` con il predefinito `vsadmin-volume` Ruolo per accedere a SVM``engData1`` Utilizzando una chiave pubblica SSH:
+
++
+[listing]
+----
+cluster1::>security login create -vserver engData1 -user-or-group-name svmadmin1 -application ssh -authmethod publickey -role vsadmin-volume
+----
+
+
+.Al termine
+Se non è stata associata una chiave pubblica all'account amministratore, è necessario farlo prima che l'account possa accedere a SVM.
+
+xref:manage-public-key-authentication-concept.adoc[Associazione di una chiave pubblica a un account utente]

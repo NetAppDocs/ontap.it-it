@@ -1,0 +1,83 @@
+---
+permalink: volumes/rehost-snapmirror-relationship-task.html 
+sidebar: sidebar 
+keywords: rehost, volumes, snapmirror, relationship 
+summary: È possibile eseguire il rehosting dei volumi in una relazione SnapMirror. 
+---
+= Eseguire il rehosting dei volumi in una relazione SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile eseguire il rehosting dei volumi in una relazione SnapMirror.
+
+.Di cosa hai bisogno
+* Il volume deve essere online.
+* Le operazioni di gestione dei volumi, come gli spostamenti dei volumi o delle LUN, non devono essere in esecuzione.
+* L'accesso ai dati al volume che viene reospitato deve essere interrotto.
+* La configurazione ns-switch e name Services della SVM di destinazione deve essere configurata per supportare l'accesso ai dati del volume di re-hosting.
+* L'ID utente e l'ID gruppo del volume devono essere disponibili nella SVM di destinazione o modificati nel volume di hosting.
+
+
+.A proposito di questa attività
+* Il rehosting è un'operazione che interrompe.
+* Se l'operazione di rehosting non riesce, potrebbe essere necessario riconfigurare i criteri del volume e le regole associate sul volume di origine.
+* Dopo l'operazione di rehosting, le seguenti policy, regole dei criteri e configurazioni del volume vengono perse dal volume di origine e devono essere riconfigurate manualmente sul volume rehosted:
++
+** Policy di esportazione di volumi e qtree
+** Policy antivirus
+** Policy di efficienza dei volumi
+** Policy sulla qualità del servizio (QoS)
+** Policy di Snapshot
+** Regole di quota
+** criteri e regole di esportazione della configurazione di ns-switch e name services
+** ID utente e gruppo
+
+
+
+
+.Fasi
+. Registrare il tipo di relazione SnapMirror:
++
+`snapmirror show`
+
++
+Si tratta di una procedura precauzionale per evitare di perdere informazioni sul tipo di relazione SnapMirror in caso di errore del rehost del volume.
+
+. Dal cluster di destinazione, eliminare la relazione SnapMirror:
++
+`snapmirror delete`
+
++
+Non interrompere la relazione di SnapMirror; in caso contrario, la funzionalità di protezione dei dati del volume di destinazione viene persa e la relazione non può essere ristabilita dopo l'operazione di rehosting.
+
+. Dal cluster di origine, rimuovere le informazioni sulle relazioni di SnapMirror:
++
+`snapmirror release relationship-info-only true`
+
++
+Impostazione di `relationship-info-only` parametro a. `true` Rimuove le informazioni di relazione di origine senza eliminare le copie Snapshot.
+
+. Passare al livello di privilegio avanzato:
++
+`set -privilege advanced`
+
+. Eseguire nuovamente l'hosting del volume sulla SVM di destinazione:
++
+`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+
+. Se la relazione di peering SVM non è presente, creare la relazione peer SVM tra SVM di origine e SVM di destinazione:
++
+`vserver peer create`
+
+. Creare la relazione di SnapMirror tra il volume di origine e il volume di destinazione:
++
+`snapmirror create`
+
++
+È necessario eseguire `snapmirror create` Dal SVM che ospita il volume DP. Il volume rehosted può essere l'origine o la destinazione della relazione SnapMirror.
+
+. Risincronizzare la relazione SnapMirror.
+

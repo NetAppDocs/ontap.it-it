@@ -1,0 +1,194 @@
+---
+permalink: smb-admin/server-options-reference.html 
+sidebar: sidebar 
+keywords: useful, option, available, consider, customize, smb, cifs, server, general, enable, configure, functionality, vserver, modify, available smb server options 
+summary: 'È utile sapere quali opzioni sono disponibili quando si considera come personalizzare il server SMB. Anche se alcune opzioni sono per uso generale sul server SMB, molte vengono utilizzate per abilitare e configurare funzionalità SMB specifiche. Le opzioni del server SMB sono controllate con l"opzione di modifica delle opzioni cifs del vserver.' 
+---
+= Opzioni server SMB disponibili
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È utile sapere quali opzioni sono disponibili quando si considera come personalizzare il server SMB. Anche se alcune opzioni sono per uso generale sul server SMB, molte vengono utilizzate per abilitare e configurare funzionalità SMB specifiche. Le opzioni dei server SMB sono controllate con `vserver cifs options modify` opzione.
+
+L'elenco seguente specifica le opzioni del server SMB disponibili a livello di privilegi di amministratore:
+
+* *Configurazione del valore di timeout della sessione SMB*
++
+La configurazione di questa opzione consente di specificare il numero di secondi di inattività prima della disconnessione di una sessione SMB. Una sessione inattiva è una sessione in cui un utente non ha file o directory aperti sul client. Il valore predefinito è 900 secondi.
+
+* *Configurazione dell'utente UNIX predefinito*
++
+La configurazione di questa opzione consente di specificare l'utente UNIX predefinito utilizzato dal server SMB. ONTAP crea automaticamente un utente predefinito denominato "`pcuser`" (con un UID di 65534), crea un gruppo denominato "`pcuser`" (con un GID di 65534) e aggiunge l'utente predefinito al gruppo "`pcuser`". Quando si crea un server SMB, ONTAP configura automaticamente "`pcuser`" come utente UNIX predefinito.
+
+* *Configurazione dell'utente UNIX guest*
++
+La configurazione di questa opzione consente di specificare il nome di un utente UNIX a cui vengono mappati gli utenti che accedono da domini non attendibili, consentendo a un utente di un dominio non attendibile di connettersi al server SMB. Per impostazione predefinita, questa opzione non è configurata (non esiste alcun valore predefinito); pertanto, l'impostazione predefinita è di non consentire agli utenti di domini non attendibili di connettersi al server SMB.
+
+* *Abilitazione o disabilitazione dell'esecuzione della concessione in lettura per i bit di modalità*
++
+L'attivazione o la disattivazione di questa opzione consente di specificare se consentire ai client SMB di eseguire file eseguibili con bit in modalità UNIX ai quali hanno accesso in lettura, anche quando il bit eseguibile UNIX non è impostato. Questa opzione è disattivata per impostazione predefinita.
+
+* *Abilitazione o disabilitazione della possibilità di eliminare i file di sola lettura dai client NFS*
++
+L'attivazione o la disattivazione di questa opzione determina se consentire ai client NFS di eliminare file o cartelle con il set di attributi di sola lettura. La semantica di eliminazione NTFS non consente l'eliminazione di un file o di una cartella quando viene impostato l'attributo di sola lettura. La semantica di eliminazione di UNIX ignora il bit di sola lettura, utilizzando invece le autorizzazioni della directory principale per determinare se un file o una cartella può essere eliminata. L'impostazione predefinita è `disabled`, Che determina la semantica di eliminazione di NTFS.
+
+* *Configurazione degli indirizzi del server Windows Internet Name Service*
++
+La configurazione di questa opzione consente di specificare un elenco di indirizzi del server WINS (Windows Internet Name Service) come elenco delimitato da virgole. Specificare gli indirizzi IPv4. Gli indirizzi IPv6 non sono supportati. Non esiste alcun valore predefinito.
+
+
+
+L'elenco seguente specifica le opzioni del server SMB disponibili al livello di privilegio avanzato:
+
+* *Concessione delle autorizzazioni di gruppo UNIX agli utenti CIFS*
++
+La configurazione di questa opzione determina se all'utente CIFS in entrata che non è il proprietario del file può essere concessa l'autorizzazione di gruppo. Se l'utente CIFS non è il proprietario del file di sicurezza UNIX e questo parametro è impostato su `true`, quindi viene concessa l'autorizzazione di gruppo per il file. Se l'utente CIFS non è il proprietario del file di sicurezza UNIX e questo parametro è impostato su `false`, Quindi, le normali regole UNIX sono applicabili per concedere l'autorizzazione al file. Questo parametro è applicabile ai file di sicurezza UNIX con autorizzazione impostata su `mode bits` E non è applicabile ai file con la modalità di sicurezza NTFS o NFSv4. L'impostazione predefinita è `false`.
+
+* *Abilitazione o disabilitazione di SMB 1.0*
++
+SMB 1.0 è disattivato per impostazione predefinita su una SVM per la quale viene creato un server SMB in ONTAP 9.3.
+
++
+[NOTE]
+====
+A partire da ONTAP 9.3, SMB 1.0 è disattivato per impostazione predefinita per i nuovi server SMB creati in ONTAP 9.3. È necessario migrare a una versione SMB più recente il prima possibile per prepararsi ai miglioramenti di sicurezza e conformità. Per ulteriori informazioni, contatta il tuo rappresentante NetApp.
+
+====
+* *Abilitazione o disabilitazione di SMB 2.x*
++
+SMB 2.0 è la versione SMB minima che supporta il failover LIF. Se si disattiva SMB 2.x, anche ONTAP disattiva automaticamente SMB 3.X.
+
++
+SMB 2.0 è supportato solo su SVM. L'opzione è attivata per impostazione predefinita sulle SVM
+
+* *Abilitazione o disabilitazione di SMB 3.0*
++
+SMB 3.0 è la versione SMB minima che supporta le condivisioni a disponibilità continua. Windows Server 2012 e Windows 8 sono le versioni minime di Windows che supportano SMB 3.0.
+
++
+SMB 3.0 è supportato solo su SVM. L'opzione è attivata per impostazione predefinita sulle SVM
+
+* *Abilitazione o disabilitazione di SMB 3.1*
++
+Windows 10 è l'unica versione di Windows che supporta SMB 3.1.
+
++
+SMB 3.1 è supportato solo su SVM. L'opzione è attivata per impostazione predefinita sulle SVM
+
+* *Abilitazione o disabilitazione dell'offload delle copie ODX*
++
+L'offload delle copie ODX viene utilizzato automaticamente dai client Windows che lo supportano. Questa opzione è attivata per impostazione predefinita.
+
+* *Abilitazione o disabilitazione del meccanismo di copia diretta per l'offload delle copie ODX*
++
+Il meccanismo di copia diretta aumenta le prestazioni dell'operazione di offload delle copie quando i client Windows tentano di aprire il file di origine di una copia in una modalità che impedisce la modifica del file mentre la copia è in corso. Per impostazione predefinita, il meccanismo di copia diretta è attivato.
+
+* *Abilitazione o disabilitazione dei riferimenti automatici ai nodi*
++
+Con i riferimenti automatici ai nodi, il server SMB fa automaticamente riferimento ai client a una LIF di dati locale al nodo che ospita i dati a cui si accede attraverso la condivisione richiesta.
+
+* *Attivazione o disattivazione delle policy di esportazione per SMB*
++
+Questa opzione è disattivata per impostazione predefinita.
+
+* *Abilitazione o disabilitazione dell'utilizzo dei punti di giunzione come punti di analisi*
++
+Se questa opzione è attivata, il server SMB espone i punti di giunzione ai client SMB come punti di analisi. Questa opzione è valida solo per connessioni SMB 2.x o SMB 3.0. Questa opzione è attivata per impostazione predefinita.
+
++
+Questa opzione è supportata solo sulle SVM. L'opzione è attivata per impostazione predefinita sulle SVM
+
+* *Configurazione del numero massimo di operazioni simultanee per connessione TCP*
++
+Il valore predefinito è 255.
+
+* *Abilitazione o disabilitazione della funzionalità locale di utenti e gruppi Windows*
++
+Questa opzione è attivata per impostazione predefinita.
+
+* *Attivazione o disattivazione dell'autenticazione degli utenti Windows locali*
++
+Questa opzione è attivata per impostazione predefinita.
+
+* *Attivazione o disattivazione della funzionalità di copia shadow VSS*
++
+ONTAP utilizza la funzionalità di copia shadow per eseguire backup remoti dei dati memorizzati utilizzando la soluzione Hyper-V su SMB.
+
++
+Questa opzione è supportata solo sulle SVM e solo per le configurazioni Hyper-V su SMB. L'opzione è attivata per impostazione predefinita sulle SVM
+
+* *Configurazione della profondità della directory della copia shadow*
++
+La configurazione di questa opzione consente di definire la profondità massima delle directory in cui creare copie shadow quando si utilizza la funzionalità di copia shadow.
+
++
+Questa opzione è supportata solo sulle SVM e solo per le configurazioni Hyper-V su SMB. L'opzione è attivata per impostazione predefinita sulle SVM
+
+* *Attivazione o disattivazione delle funzionalità di ricerca multidominio per la mappatura dei nomi*
++
+Se questa opzione è attivata, quando un utente UNIX viene mappato a un utente di dominio Windows utilizzando un carattere jolly (*) nella parte di dominio del nome utente Windows (ad esempio, * joe), ONTAP ricerca l'utente specificato in tutti i domini con trust bidirezionali nel dominio principale. Il dominio principale è il dominio che contiene l'account del computer del server SMB.
+
++
+In alternativa alla ricerca di tutti i domini trusted bidirezionalmente, è possibile configurare un elenco di domini trusted preferiti. Se questa opzione è attivata e viene configurato un elenco preferito, l'elenco preferito viene utilizzato per eseguire ricerche di mappatura dei nomi di più domini.
+
++
+L'impostazione predefinita prevede l'attivazione delle ricerche di associazione dei nomi a più domini.
+
+* *Configurazione della dimensione del settore del file system*
++
+La configurazione di questa opzione consente di configurare la dimensione del settore del file system in byte che ONTAP invia ai client SMB. Sono disponibili due valori validi per questa opzione: `4096` e. `512`. Il valore predefinito è `4096`. Potrebbe essere necessario impostare questo valore su `512` Se l'applicazione Windows supporta solo una dimensione di settore di 512 byte.
+
+* *Attivazione o disattivazione del controllo dinamico degli accessi*
++
+L'attivazione di questa opzione consente di proteggere gli oggetti sul server SMB utilizzando il controllo dinamico dell'accesso (DAC), incluso l'utilizzo del controllo per organizzare i criteri di accesso centrali e l'utilizzo degli oggetti Criteri di gruppo per implementare i criteri di accesso centrali. L'opzione è disattivata per impostazione predefinita.
+
++
+Questa opzione è supportata solo sulle SVM.
+
+* *Impostazione delle restrizioni di accesso per le sessioni non autenticate (limitazione anonima)*
++
+L'impostazione di questa opzione determina le restrizioni di accesso per le sessioni non autenticate. Le restrizioni vengono applicate agli utenti anonimi. Per impostazione predefinita, non esistono restrizioni di accesso per gli utenti anonimi.
+
+* *Abilitazione o disabilitazione della presentazione di ACL NTFS su volumi con sicurezza efficace UNIX (volumi di sicurezza UNIX o volumi di sicurezza misti con sicurezza effettiva UNIX)*
++
+L'attivazione o la disattivazione di questa opzione determina il modo in cui la sicurezza dei file su file e cartelle con protezione UNIX viene presentata ai client SMB. Se abilitato, ONTAP presenta file e cartelle in volumi con protezione UNIX ai client SMB come dotati di protezione dei file NTFS con ACL NTFS. Se disattivato, ONTAP presenta i volumi con sicurezza UNIX come volumi FAT, senza alcuna protezione dei file. Per impostazione predefinita, i volumi presentano la protezione dei file NTFS con ACL NTFS.
+
+* *Abilitazione o disabilitazione della funzionalità SMB finta aperta*
++
+L'abilitazione di questa funzionalità migliora le performance di SMB 2.x e SMB 3.0 ottimizzando il modo in cui ONTAP effettua richieste aperte e ravvicinato quando si esegue una query per ottenere informazioni sugli attributi su file e directory. Per impostazione predefinita, la funzionalità SMB fake open è attivata. Questa opzione è utile solo per le connessioni effettuate con SMB 2.x o versioni successive.
+
+* *Abilitazione o disabilitazione delle estensioni UNIX*
++
+L'attivazione di questa opzione attiva le estensioni UNIX su un server SMB. Le estensioni UNIX consentono di visualizzare la sicurezza in stile POSIX/UNIX tramite il protocollo SMB. Per impostazione predefinita, questa opzione è disattivata.
+
++
+Se si dispone di client SMB basati su UNIX, come i client Mac OSX, è necessario attivare le estensioni UNIX. L'abilitazione delle estensioni UNIX consente al server SMB di trasmettere le informazioni di sicurezza POSIX/UNIX tramite SMB al client basato su UNIX, che quindi traduce le informazioni di sicurezza in sicurezza POSIX/UNIX.
+
+* *Abilitazione o disabilitazione del supporto per le ricerche di nomi brevi*
++
+L'attivazione di questa opzione consente al server SMB di eseguire ricerche sui nomi brevi. Una query di ricerca con questa opzione attivata tenta di associare 8.3 nomi di file con nomi di file lunghi. Il valore predefinito per questo parametro è `false`.
+
+* *Abilitazione o disabilitazione del supporto per la pubblicità automatica delle funzionalità DFS*
++
+L'attivazione o la disattivazione di questa opzione determina se i server SMB pubblicizzano automaticamente le funzionalità DFS ai client SMB 2.x e SMB 3.0 che si connettono alle condivisioni. ONTAP utilizza i riferimenti DFS nell'implementazione di collegamenti simbolici per l'accesso SMB. Se attivato, il server SMB comunica sempre le funzionalità DFS indipendentemente dall'attivazione dell'accesso tramite collegamento simbolico. Se disattivato, il server SMB comunica le funzionalità DFS solo quando i client si connettono alle condivisioni in cui è attivato l'accesso al collegamento simbolico.
+
+* *Configurazione del numero massimo di crediti SMB*
++
+A partire da ONTAP 9.4, configurazione di `-max-credits` L'opzione consente di limitare il numero di crediti da concedere su una connessione SMB quando client e server eseguono SMB versione 2 o successiva. Il valore predefinito è 128.
+
+* *Abilitazione o disabilitazione del supporto per SMB multicanale*
++
+Attivazione di `-is-multichannel-enabled` L'opzione di ONTAP 9.4 e versioni successive consente al server SMB di stabilire più connessioni per una singola sessione SMB quando vengono implementate le NIC appropriate sul cluster e sui relativi client. In questo modo si migliora il throughput e la tolleranza agli errori. Il valore predefinito per questo parametro è `false`.
+
++
+Quando SMB Multichannel è attivato, è anche possibile specificare i seguenti parametri:
+
++
+** Numero massimo di connessioni consentite per sessione multicanale. Il valore predefinito per questo parametro è 32.
+** Il numero massimo di interfacce di rete pubblicizzate per ogni sessione multicanale. Il valore predefinito per questo parametro è 256.
+
+
+

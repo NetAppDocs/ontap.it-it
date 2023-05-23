@@ -1,0 +1,109 @@
+---
+permalink: san-admin/create-nvme-namespace-subsystem-task.html 
+sidebar: sidebar 
+keywords: create, nvme, namespace, subsystem 
+summary: 'Per i sistemi che utilizzano il protocollo NVMe, è necessario creare uno o più spazi dei nomi e sottosistemi NVMe. Ciascun namespace può quindi essere mappato a un sottosistema NVMe per consentire l"accesso ai dati dal sistema host.' 
+---
+= Eseguire il provisioning dello storage NVMe
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se non è disponibile una procedura per l'host specifico, è possibile utilizzare questa procedura per creare spazi dei nomi e fornire lo storage per qualsiasi host supportato da NVMe.
+
+Questa procedura crea nuovi spazi dei nomi su una VM di storage esistente. La VM di storage deve essere configurata per NVME e il trasporto FC o TCP deve essere già impostato.
+
+A partire da ONTAP 9.8, quando si esegue il provisioning dello storage, la qualità del servizio viene attivata per impostazione predefinita. È possibile disattivare la QoS o scegliere una policy QoS personalizzata durante il processo di provisioning o in un secondo momento.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Utilizzando Gestione di sistema di ONTAP (9.7 e versioni successive), creare spazi dei nomi per fornire lo storage utilizzando il protocollo NVMe.
+
+.Fasi
+. In System Manager, fare clic su *Storage > NVMe Namespaces*, quindi fare clic su *Add*.
++
+Per creare un nuovo sottosistema, fare clic su *altre opzioni*.
+
+. Se si utilizza ONTAP 9.8 o versione successiva e si desidera disattivare la qualità del servizio o scegliere un criterio di qualità del servizio personalizzato, fare clic su *altre opzioni*, quindi in *archiviazione e ottimizzazione* selezionare *livello di servizio delle prestazioni*.
+. Zone your FC switch by WWPN (zone switch FC in base al numero WWPN Utilizzare una zona per iniziatore e includere tutte le porte di destinazione in ciascuna zona.
+. Sul tuo host, scopri i nuovi spazi dei nomi.
+. Inizializzare lo spazio dei nomi e formattarlo con un file system.
+. Verificare che l'host sia in grado di scrivere e leggere i dati sullo spazio dei nomi.
+
+
+--
+.CLI
+--
+Utilizzando l'interfaccia CLI di ONTAP, creare spazi dei nomi per fornire storage utilizzando il protocollo NVMe.
+
+Questa procedura crea uno spazio dei nomi e un sottosistema NVMe su una VM di storage esistente già configurata per il protocollo NVMe, quindi mappa lo spazio dei nomi al sottosistema per consentire l'accesso ai dati dal sistema host.
+
+Per configurare la VM di storage per NVMe, vedere link:configure-svm-nvme-task.html["Configurare una SVM per NVMe"].
+
+.Fasi
+. Verificare che la SVM sia configurata per NVMe:
++
+[source, cli]
+----
+vserver show -vserver <svm_name> -fields allowed-protocols
+----
++
+`NVMe` dovrebbe essere visualizzato sotto `allowed-protocols` colonna.
+
+. Creare lo spazio dei nomi NVMe:
++
+[source, cli]
+----
+vserver nvme namespace create -vserver <svm_name> -path <path> -size <size_of_namespace> -ostype <OS_type>
+----
+. Creare il sottosistema NVMe:
++
+[source, cli]
+----
+vserver nvme subsystem create -vserver <svm_name> -subsystem <name_of_subsystem> -ostype <OS_type>
+----
++
+Il nome del sottosistema NVMe rileva la distinzione tra maiuscole e minuscole. Deve contenere da 1 a 96 caratteri. Sono consentiti caratteri speciali.
+
+. Verificare che il sottosistema sia stato creato:
++
+[source, cli]
+----
+vserver nvme subsystem show -vserver <svm_name>
+----
++
+Il `nvme` il sottosistema deve essere visualizzato sotto `Subsystem` colonna.
+
+. Ottenere l'NQN dall'host.
+. Aggiungere l'NQN host al sottosistema:
++
+[source, cli]
+----
+vserver nvme subsystem host add -vserver <svm_name> -subsystem <subsystem_name> -host-nqn <Host_NQN>
+----
+. Mappare lo spazio dei nomi nel sottosistema:
++
+[source, cli]
+----
+vserver nvme subsystem map add -vserver <svm_name> -subsystem <subsystem_name> -path <path>
+----
++
+Uno spazio dei nomi può essere mappato solo a un singolo sottosistema.
+
+. Verificare che lo spazio dei nomi sia mappato al sottosistema:
++
+[source, cli]
+----
+vserver nvme namespace show -vserver <svm_name> -instance
+----
++
+Il sottosistema deve essere elencato come `Attached subsystem`.
+
+
+
+--
+====

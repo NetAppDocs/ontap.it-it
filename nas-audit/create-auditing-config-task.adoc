@@ -1,0 +1,85 @@
+---
+permalink: nas-audit/create-auditing-config-task.html 
+sidebar: sidebar 
+keywords: create, audit, configuration 
+summary: 'Prima di iniziare il controllo degli eventi di file e directory, è necessario creare una configurazione di controllo sulla macchina virtuale di storage (SVM).' 
+---
+= Creare la configurazione di controllo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La creazione di una configurazione per il controllo di file e directory sulla macchina virtuale di storage (SVM) include la comprensione delle opzioni di configurazione disponibili, la pianificazione della configurazione, quindi la configurazione e l'abilitazione della configurazione. È quindi possibile visualizzare le informazioni sulla configurazione di controllo per confermare che la configurazione risultante è quella desiderata.
+
+Prima di iniziare il controllo degli eventi di file e directory, è necessario creare una configurazione di controllo sulla macchina virtuale di storage (SVM).
+
+.Prima di iniziare
+Se si prevede di creare una configurazione di controllo per lo staging dei criteri di accesso centrale, è necessario che un server SMB esista sulla SVM.
+
+[NOTE]
+====
+* Sebbene sia possibile attivare lo staging dei criteri di accesso centrale nella configurazione di controllo senza attivare il controllo dinamico degli accessi sul server SMB, gli eventi di staging dei criteri di accesso centrale vengono generati solo se è attivato il controllo dinamico degli accessi.
++
+Il controllo dinamico degli accessi viene attivato tramite un'opzione server SMB. Non è attivato per impostazione predefinita.
+
+* Se gli argomenti di un campo in un comando non sono validi, ad esempio voci non valide per campi, voci duplicate e voci non esistenti, il comando non riesce prima della fase di audit.
++
+Tali errori non generano un record di audit.
+
+
+
+====
+.A proposito di questa attività
+Se SVM è un'origine di disaster recovery SVM, il percorso di destinazione non può trovarsi sul volume root.
+
+.Fase
+. Utilizzando le informazioni contenute nel foglio di lavoro di pianificazione, creare la configurazione di controllo per ruotare i registri di controllo in base alle dimensioni del log o a una pianificazione:
++
+[cols="30,70"]
+|===
+
+
+| Se si desidera ruotare i registri di audit di... | Inserisci... 
+
+
+ a| 
+Dimensione del log
+ a| 
+`vserver audit create -vserver vserver_name -destination path -events [{file-ops|cifs-logon-logoff|cap-staging|file-share|authorization-policy-change|user-account|security-group|authorization-policy-change}] [-format {xml|evtx}] [-rotate-limit integer] [-rotate-size {integer[KB|MB|GB|TB|PB]}]`
+
+
+
+ a| 
+Un calendario
+ a| 
+`vserver audit create -vserver vserver_name -destination path -events [{file-ops|cifs-logon-logoff|cap-staging}] [-format {xml|evtx}] [-rotate-limit integer] [-rotate-schedule-month chron_month] [-rotate-schedule-dayofweek chron_dayofweek] [-rotate-schedule-day chron_dayofmonth] [-rotate-schedule-hour chron_hour] -rotate-schedule-minute chron_minute`
+
+[NOTE]
+====
+Il `-rotate-schedule-minute` il parametro è obbligatorio se si configura la rotazione del log di audit basata sul tempo.
+
+====
+|===
+
+
+.Esempi
+Nell'esempio seguente viene creata una configurazione di controllo che controlla le operazioni dei file e gli eventi di logon e logoff SMB (impostazione predefinita) utilizzando la rotazione basata sulle dimensioni. Il formato del log è `EVTX` (impostazione predefinita). I registri vengono memorizzati in `/audit_log` directory. Il limite delle dimensioni del file di registro è `200 MB`. I log vengono ruotati quando raggiungono le dimensioni di 200 MB:
+
+[listing]
+----
+cluster1::> vserver audit create -vserver vs1 -destination /audit_log -rotate-size 200MB
+----
+Nell'esempio seguente viene creata una configurazione di controllo che controlla le operazioni dei file e gli eventi di logon e logoff SMB (impostazione predefinita) utilizzando la rotazione basata sulle dimensioni. Il formato del log è `EVTX` (impostazione predefinita). Il limite delle dimensioni del file di registro è `100 MB` (l'impostazione predefinita) e il limite di rotazione del registro è `5`:
+
+[listing]
+----
+cluster1::> vserver audit create -vserver vs1 -destination /audit_log -rotate-limit 5
+----
+Nell'esempio seguente viene creata una configurazione di controllo che controlla le operazioni dei file, gli eventi di logon e logoff di CIFS e gli eventi di staging dei criteri di accesso centrale utilizzando la rotazione basata sul tempo. Il formato del log è `EVTX` (impostazione predefinita). I registri di audit vengono ruotati mensilmente alle 12:30 tutti i giorni della settimana. Il limite di rotazione del log è `5`:
+
+[listing]
+----
+cluster1::> vserver audit create -vserver vs1 -destination /audit_log -events file-ops,cifs-logon-logoff,file-share,audit-policy-change,user-account,security-group,authorization-policy-change,cap-staging -rotate-schedule-month all -rotate-schedule-dayofweek all -rotate-schedule-hour 12 -rotate-schedule-minute 30 -rotate-limit 5
+----

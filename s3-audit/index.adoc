@@ -1,0 +1,69 @@
+---
+permalink: s3-audit/index.html 
+sidebar: sidebar 
+keywords: S3, audit, management events 
+summary: Questo articolo spiega come controllare i dati e gli eventi di gestione negli ambienti ONTAP S3. 
+---
+= Controllare gli eventi S3
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.10.1, è possibile controllare i dati e gli eventi di gestione negli ambienti ONTAP S3. La funzionalità di audit S3 è simile alle funzionalità di auditing NAS esistenti e l'auditing S3 e NAS può coesistere in un cluster.
+
+Quando si crea e si attiva una configurazione di controllo S3 su una SVM, gli eventi S3 vengono registrati in un file di registro. È possibile specificare i seguenti eventi da registrare:
+
+* Eventi di accesso a oggetti (dati)
++
+GetObject, PutObject e DeleteObject
+
+* Eventi di gestione
++
+Putbucket e Deletebucket
+
+
+
+Il formato del log è JavaScript Object Notation (JSON).
+
+Il limite combinato per le configurazioni di controllo S3 e NFS è di 50 SVM per cluster.
+
+È richiesto il seguente bundle di licenza:
+
+* Bundle core, per protocollo e storage ONTAP S3
+
+
+Per ulteriori informazioni, vedere link:../nas-audit/auditing-process-concept.html["Come funziona il processo di audit di ONTAP"].
+
+
+
+== Auditing garantito
+
+Per impostazione predefinita, è garantito il controllo S3 e NAS. ONTAP garantisce la registrazione di tutti gli eventi di accesso al bucket verificabili, anche se un nodo non è disponibile. Un'operazione bucket richiesta non può essere completata fino a quando il record di audit per tale operazione non viene salvato nel volume di staging sullo storage persistente. Se non è possibile eseguire il commit dei record di audit nei file di staging, a causa di spazio insufficiente o a causa di altri problemi, le operazioni del client vengono negate.
+
+
+
+== Requisiti di spazio per il controllo
+
+Nel sistema di audit ONTAP, i record di audit vengono inizialmente memorizzati in file di staging binari su singoli nodi. Periodicamente, vengono consolidati e convertiti in registri eventi leggibili dall'utente, memorizzati nella directory del registro eventi di controllo per SVM.
+
+I file di staging vengono memorizzati in un volume di staging dedicato, creato da ONTAP al momento della creazione della configurazione di audit. Esiste un volume di staging per aggregato.
+
+È necessario pianificare uno spazio disponibile sufficiente nella configurazione di controllo:
+
+* Per i volumi di staging in aggregati che contengono bucket controllati.
+* Per il volume contenente la directory in cui sono memorizzati i registri degli eventi convertiti.
+
+
+È possibile controllare il numero di registri eventi e quindi lo spazio disponibile nel volume utilizzando uno dei due metodi per creare la configurazione di controllo S3:
+
+* Un limite numerico; il `-rotate-limit` parametro controlla il numero minimo di file di audit che devono essere conservati.
+* Un limite di tempo; il `-retention-duration` parametro controlla il periodo massimo di conservazione dei file.
+
+
+In entrambi i parametri, una volta superato il valore configurato, è possibile eliminare i file di audit più vecchi per fare spazio a quelli più recenti. Per entrambi i parametri, il valore è 0, a indicare che tutti i file devono essere mantenuti. Per garantire uno spazio sufficiente, è quindi consigliabile impostare uno dei parametri su un valore diverso da zero.
+
+A causa del controllo garantito, se lo spazio disponibile per i dati di audit si esaurisce prima del limite di rotazione, non è possibile creare dati di audit più recenti, con conseguente impossibilità per i client di accedere ai dati. Pertanto, la scelta di questo valore e dello spazio allocato per l'audit deve essere scelta con attenzione, ed è necessario rispondere agli avvisi sullo spazio disponibile dal sistema di audit.
+
+Per ulteriori informazioni, vedere link:../nas-audit/basic-auditing-concept.html["Concetti di controllo di base"].

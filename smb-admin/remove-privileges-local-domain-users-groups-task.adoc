@@ -1,0 +1,51 @@
+---
+permalink: smb-admin/remove-privileges-local-domain-users-groups-task.html 
+sidebar: sidebar 
+keywords: manage, user, right, local, domain, group, removing, remove, privilege, enhance, security, allow, customize, maximum, remove privileges from local or domain users or groups 
+summary: È possibile gestire i diritti utente per utenti o gruppi locali o di dominio rimuovendo i privilegi. In questo modo è possibile migliorare la sicurezza, consentendo di personalizzare i privilegi massimi di utenti e gruppi. 
+---
+= Rimuovere i privilegi da utenti o gruppi locali o di dominio
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile gestire i diritti utente per utenti o gruppi locali o di dominio rimuovendo i privilegi. In questo modo è possibile migliorare la sicurezza, consentendo di personalizzare i privilegi massimi di utenti e gruppi.
+
+.Prima di iniziare
+L'utente o il gruppo locale o di dominio da cui verranno rimossi i privilegi deve già esistere.
+
+.A proposito di questa attività
+Quando si rimuovono privilegi da utenti o gruppi locali o di dominio, è necessario tenere presente quanto segue:
+
+* È possibile rimuovere uno o più privilegi.
+* Quando si rimuovono i privilegi da un utente o gruppo di dominio, ONTAP può validare l'utente o il gruppo di dominio contattando il controller di dominio.
++
+Il comando potrebbe non riuscire se ONTAP non riesce a contattare il controller di dominio.
+
+
+
+.Fasi
+. Rimuovere uno o più privilegi da un utente o gruppo locale o di dominio: `+vserver cifs users-and-groups privilege remove-privilege -vserver _vserver_name_ -user-or-group-name _name_ -privileges _privilege_[,...]+`
+. Verificare che i privilegi desiderati siano stati rimossi dall'oggetto: `vserver cifs users-and-groups privilege show -vserver _vserver_name_ ‑user-or-group-name _name_`
+
+
+.Esempio
+Nell'esempio seguente vengono rimossi i privilegi "`SeTcbPrivilege`" e "`SeTakeOwnershipPrivilege`" dall'utente "`CIFS_SERVER` sue" sulla macchina virtuale di storage (SVM, precedentemente nota come Vserver) vs1:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- ---------------
+vs1       CIFS_SERVER\sue       SeTcbPrivilege
+                                SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege remove-privilege -vserver vs1 -user-or-group-name CIFS_SERVER\sue -privileges SeTcbPrivilege,SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- -------------------
+vs1       CIFS_SERVER\sue       -
+----

@@ -1,0 +1,66 @@
+---
+permalink: encryption-at-rest/modify-external-key-server-96-later-task.html 
+sidebar: sidebar 
+keywords: modifying, external key management, server, properties 
+summary: A partire da ONTAP 9.6, è possibile utilizzare il comando modify-server esterno del gestore delle chiavi di protezione per modificare il timeout i/o e il nome utente di un server di gestione delle chiavi esterno. 
+---
+= Modificare le proprietà del server di gestione delle chiavi esterno
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.6, è possibile utilizzare `security key-manager external modify-server` Comando per modificare il timeout i/o e il nome utente di un server di gestione delle chiavi esterno.
+
+.Prima di iniziare
+* Per eseguire questa attività, è necessario essere un amministratore del cluster o di SVM.
+* Per questa attività sono richiesti privilegi avanzati.
+* In un ambiente MetroCluster, è necessario ripetere questi passaggi su entrambi i cluster per la SVM amministrativa.
+
+
+.Fasi
+. Sul sistema storage, passare al livello di privilegio avanzato:
++
+`set -privilege advanced`
+
+. Modificare le proprietà del server di gestione delle chiavi esterno per il cluster:
++
+`security key-manager external modify-server -vserver admin_SVM -key-server host_name|IP_address:port,... -timeout 1...60 -username user_name`
+
++
+[NOTE]
+====
+Il valore di timeout viene espresso in secondi. Se si modifica il nome utente, viene richiesto di inserire una nuova password. Se si esegue il comando al prompt di login del cluster, `_admin_SVM_` Per impostazione predefinita, viene impostata la SVM amministrativa del cluster corrente. È necessario essere l'amministratore del cluster per modificare le proprietà del server del gestore delle chiavi esterno.
+
+====
++
+Il seguente comando modifica il valore di timeout a 45 secondi per `cluster1` server di gestione delle chiavi esterno in attesa sulla porta predefinita 5696:
+
++
+[listing]
+----
+clusterl::> security key-manager external modify-server -vserver cluster1 -key-server ks1.local -timeout 45
+----
+. Modificare le proprietà del server di gestione delle chiavi esterne per una SVM (solo NVE):
++
+`security key-manager external modify-server -vserver SVM -key-server host_name|IP_address:port,... -timeout 1...60 -username user_name`
+
++
+[NOTE]
+====
+Il valore di timeout viene espresso in secondi. Se si modifica il nome utente, viene richiesto di inserire una nuova password. Se si esegue il comando al prompt di accesso SVM, `_SVM_` Per impostazione predefinita, viene impostata la SVM corrente. Per modificare le proprietà del server del gestore delle chiavi esterno, è necessario essere l'amministratore del cluster o SVM.
+
+====
++
+Il seguente comando consente di modificare il nome utente e la password di `svm1` server di gestione delle chiavi esterno in attesa sulla porta predefinita 5696:
+
++
+[listing]
+----
+svml::> security key-manager external modify-server -vserver svm11 -key-server ks1.local -username svm1user
+Enter the password:
+Reenter the password:
+----
+. Ripetere l'ultimo passaggio per eventuali SVM aggiuntive.
+

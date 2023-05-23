@@ -1,0 +1,41 @@
+---
+permalink: volumes/ls-command-space-usage-concept.html 
+sidebar: sidebar 
+keywords: how, ls command, accounts, space, usage 
+summary: 'Quando si utilizza il comando ls per visualizzare il contenuto di un volume FlexVol montato su un client UNIX, le dimensioni del file visualizzate nell"output potrebbero essere inferiori o superiori all"utilizzo dello spazio visualizzato nel report di quota per il volume, a seconda del tipo di blocchi di dati per il file.' 
+---
+= Il modo in cui il comando ls tiene conto dell'utilizzo dello spazio
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si utilizza `ls` Comando per visualizzare il contenuto di un volume FlexVol montato su un client UNIX, le dimensioni del file visualizzato nell'output potrebbero essere inferiori o superiori all'utilizzo dello spazio visualizzato nel report delle quote per il volume, a seconda del tipo di blocchi di dati per il file.
+
+L'output di `ls` il comando visualizza solo le dimensioni di un file e non include i blocchi indiretti utilizzati dal file. Anche i blocchi vuoti del file vengono inclusi nell'output del comando.
+
+Pertanto, se un file non ha blocchi vuoti, la dimensione visualizzata da `ls` il comando potrebbe essere inferiore all'utilizzo del disco specificato da un report di quota a causa dell'inclusione di blocchi indiretti nel report di quota. Al contrario, se il file contiene blocchi vuoti, le dimensioni visualizzate da `ls` il comando potrebbe essere superiore all'utilizzo del disco specificato dal report delle quote.
+
+L'output di `ls` il comando visualizza solo le dimensioni di un file e non include i blocchi indiretti utilizzati dal file. Anche i blocchi vuoti del file vengono inclusi nell'output del comando.
+
+.Esempio della differenza tra l'utilizzo dello spazio rappresentato dal comando ls e un report di quota
+Il seguente report sulle quote mostra un limite di 10 MB per un qtree q1:
+
+[listing]
+----
+
+                                      ----Disk----  ----Files-----   Quota
+  Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+  -------  --------  ------  -------  -----  -----  ------  ------   ---------
+  vol1     q1          tree    user1   10MB  10MB        1       -   q1
+
+...
+----
+Un file presente nello stesso qtree può avere una dimensione che supera il limite di quota quando viene visualizzato da un client UNIX utilizzando `ls` comando, come illustrato nell'esempio seguente:
+
+[listing]
+----
+[user1@lin-sys1 q1]$ ls -lh
+-rwxr-xr-x  1 user1 nfsuser  **27M** Apr 09  2013 file1
+----

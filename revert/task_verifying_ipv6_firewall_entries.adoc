@@ -1,0 +1,61 @@
+---
+permalink: revert/task_verifying_ipv6_firewall_entries.html 
+sidebar: sidebar 
+keywords: revert, reverting, reversion, ipv6, firewall, entries, verify 
+summary: Una nuova versione da qualsiasi versione di ONTAP 9 potrebbe comportare la mancanza di voci predefinite del firewall IPv6 per alcuni servizi nelle policy firewall. Verificare che le voci del firewall richieste siano state ripristinate nel sistema. 
+---
+= Verificare le voci del firewall IPv6
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Una nuova versione da qualsiasi versione di ONTAP 9 potrebbe comportare la mancanza di voci predefinite del firewall IPv6 per alcuni servizi nelle policy firewall. Verificare che le voci del firewall richieste siano state ripristinate nel sistema.
+
+. Verificare che tutti i criteri firewall siano corretti confrontandoli con quelli predefiniti: `system services firewall policy show`
++
+Nell'esempio seguente vengono illustrati i criteri predefiniti:
+
++
+[listing]
+----
+cluster1::*> system services firewall policy show
+Policy           Service    Action IP-List
+---------------- ---------- ------ --------------------
+cluster
+                 dns        allow  0.0.0.0/0
+                 http       allow  0.0.0.0/0
+                 https      allow  0.0.0.0/0
+                 ndmp       allow  0.0.0.0/0
+                 ntp        allow  0.0.0.0/0
+                 rsh        allow  0.0.0.0/0
+                 snmp       allow  0.0.0.0/0
+                 ssh        allow  0.0.0.0/0
+                 telnet     allow  0.0.0.0/0
+data
+                 dns        allow  0.0.0.0/0, ::/0
+                 http       deny   0.0.0.0/0, ::/0
+                 https      deny   0.0.0.0/0, ::/0
+                 ndmp       allow  0.0.0.0/0, ::/0
+                 ntp        deny   0.0.0.0/0, ::/0
+                 rsh        deny   0.0.0.0/0, ::/0
+.
+.
+.
+----
+. Aggiungere manualmente eventuali voci di firewall IPv6 predefinite mancanti creando una nuova policy firewall: `system services firewall policy create`
++
+[listing]
+----
+cluster1::*> system services firewall policy create -policy newIPv6
+-service ssh -action allow -ip-list ::/0
+----
+. Applicare il nuovo criterio alla LIF per consentire l'accesso a un servizio di rete: `network interface modify`
++
+[listing]
+----
+cluster1::*> network interface modify -vserver VS1 -lif LIF1
+-firewall-policy newIPv6
+----
+

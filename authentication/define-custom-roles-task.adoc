@@ -1,0 +1,65 @@
+---
+permalink: authentication/define-custom-roles-task.html 
+sidebar: sidebar 
+keywords: define, custom roles 
+summary: È possibile utilizzare il comando di creazione del ruolo di accesso di sicurezza per definire un ruolo personalizzato. È possibile eseguire il comando tutte le volte necessarie per ottenere la combinazione esatta di funzionalità che si desidera associare al ruolo. 
+---
+= Definire ruoli personalizzati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `security login role create` per definire un ruolo personalizzato. È possibile eseguire il comando tutte le volte necessarie per ottenere la combinazione esatta di funzionalità che si desidera associare al ruolo.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.A proposito di questa attività
+* Un ruolo, predefinito o personalizzato, concede o nega l'accesso ai comandi ONTAP o alle directory dei comandi.
++
+Una directory di comandi (`volume`, ad esempio) è un gruppo di sottodirectory di comandi e comandi correlati. Ad eccezione di quanto descritto in questa procedura, la concessione o il rifiuto dell'accesso a una directory di comandi concede o nega l'accesso a ciascun comando nella directory e nelle relative sottodirectory.
+
+* L'accesso a comandi o sottodirectory specifici sovrascrive l'accesso alla directory principale.
++
+Se un ruolo viene definito con una directory di comandi e quindi viene definito nuovamente con un livello di accesso diverso per un comando specifico o per una sottodirectory della directory principale, il livello di accesso specificato per il comando o la sottodirectory sovrascrive quello della directory principale.
+
+
+
+[NOTE]
+====
+Non è possibile assegnare a un amministratore SVM un ruolo che dia accesso a una directory di comandi o comandi disponibile solo per `admin` amministratore del cluster, ad esempio `security` directory dei comandi.
+
+====
+.Fase
+. Definire un ruolo personalizzato:
++
+`security login role create -vserver SVM_name -role role -cmddirname command_or_directory_name -access access_level -query query`
+
++
+Per la sintassi completa dei comandi, vedere link:config-worksheets-reference.html["foglio di lavoro"].
+
++
+I seguenti comandi assegnano a. `vol_role` accesso completo ai comandi in `volume` directory dei comandi e accesso in sola lettura ai comandi in `volume snapshot` sottodirectory.
+
++
+[listing]
+----
+cluster1::>security login role create -role vol_role -cmddirname "volume" -access all
+
+cluster1::>security login role create -role vol_role -cmddirname "volume snapshot" -access readonly
+----
++
+I seguenti comandi assegnano a. `SVM_storage` accesso in sola lettura ai comandi in `storage` directory dei comandi, nessun accesso ai comandi in `storage encryption` sottodirectory e accesso completo a `storage aggregate plex offline` comando non intrinseco.
+
++
+[listing]
+----
+cluster1::>security login role create -role SVM_storage -cmddirname "storage" -access readonly
+
+cluster1::>security login role create -role SVM_storage -cmddirname "storage encryption" -access none
+
+cluster1::>security login role create -role SVM_storage -cmddirname "storage aggregate plex offline" -access all
+----
+

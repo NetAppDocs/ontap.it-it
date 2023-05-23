@@ -1,0 +1,83 @@
+---
+permalink: peering/prerequisites-cluster-peering-reference.html 
+sidebar: sidebar 
+keywords: prerequisites, cluster, peering. connectivity, requirements, port, firewall 
+summary: 'Prima di configurare il peering del cluster, verificare che la connettività, la porta, l"indirizzo IP, la subnet, il firewall, e i requisiti di naming dei cluster sono soddisfatti.' 
+---
+= Prerequisiti per il peering del cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di configurare il peering del cluster, verificare che la connettività, la porta, l'indirizzo IP, la subnet, il firewall, e i requisiti di naming dei cluster sono soddisfatti.
+
+
+
+== Requisiti di connettività
+
+Ogni LIF di intercluster sul cluster locale deve essere in grado di comunicare con ogni LIF di intercluster sul cluster remoto.
+
+Sebbene non sia necessario, è in genere più semplice configurare gli indirizzi IP utilizzati per le LIF di intercluster nella stessa subnet. Gli indirizzi IP possono risiedere nella stessa sottorete dei file LIF dei dati o in una sottorete diversa. La subnet utilizzata in ciascun cluster deve soddisfare i seguenti requisiti:
+
+* La subnet deve appartenere al dominio di trasmissione che contiene le porte utilizzate per la comunicazione tra cluster.
+* La subnet deve disporre di un numero sufficiente di indirizzi IP da allocare a un LIF intercluster per nodo.
++
+Ad esempio, in un cluster a quattro nodi, la subnet utilizzata per la comunicazione tra cluster deve avere quattro indirizzi IP disponibili. Ciascun nodo deve disporre di una LIF intercluster con un indirizzo IP sulla rete intercluster.
+
+
+
+Le LIF di intercluster possono avere un indirizzo IPv4 o IPv6.
+
+[NOTE]
+====
+ONTAP 9 consente di migrare le reti peering da IPv4 a IPv6, consentendo la presenza simultanea di entrambi i protocolli nelle LIF dell'intercluster. Nelle versioni precedenti, tutte le relazioni tra cluster per un intero cluster erano IPv4 o IPv6. Ciò significava che la modifica dei protocolli era un evento potenzialmente disgregativo.
+
+====
+
+
+== Requisiti delle porte
+
+È possibile utilizzare porte dedicate per la comunicazione tra cluster o condividere le porte utilizzate dalla rete dati. Le porte devono soddisfare i seguenti requisiti:
+
+* Tutte le porte utilizzate per comunicare con un determinato cluster remoto devono trovarsi nello stesso IPSpace.
++
+È possibile utilizzare più IPspaces per eseguire il peer con più cluster. La connettività full-mesh a coppie è necessaria solo all'interno di un IPSpace.
+
+* Il dominio di broadcast utilizzato per la comunicazione tra cluster deve includere almeno due porte per nodo in modo che la comunicazione tra cluster possa eseguire il failover da una porta a un'altra.
++
+Le porte aggiunte a un dominio di broadcast possono essere porte di rete fisiche, VLAN o gruppi di interfacce (ifgrps).
+
+* Tutte le porte devono essere cablate.
+* Tutte le porte devono essere in buono stato.
+* Le impostazioni MTU delle porte devono essere coerenti.
+
+
+
+
+== Requisiti del firewall
+
+I firewall e i criteri di firewall tra cluster devono consentire i seguenti protocolli:
+
+* Servizio ICMP
+* TCP agli indirizzi IP di tutte le LIF dell'intercluster sulle porte 10000, 11104 e 11105
+* HTTPS bidirezionale tra le LIF dell'intercluster
++
+Sebbene HTTPS non sia richiesto quando si imposta il peering del cluster utilizzando la CLI, HTTPS è richiesto in seguito se si utilizza System Manager per configurare la protezione dei dati.
+
+
+
+L'impostazione predefinita `intercluster` La policy firewall consente l'accesso tramite il protocollo HTTPS e da tutti gli indirizzi IP (0.0.0.0/0). Se necessario, è possibile modificare o sostituire la policy.
+
+
+NOTE: A partire da ONTAP 9.10.1, le policy firewall sono obsolete e completamente sostituite con le policy di servizio LIF. Per ulteriori informazioni, vedere link:../networking/configure_firewall_policies_for_lifs.html["Configurare le policy firewall per le LIF"].
+
+
+
+== Requisito del cluster
+
+I cluster devono soddisfare i seguenti requisiti:
+
+* Un cluster non può trovarsi in una relazione peer con più di 255 cluster.
+

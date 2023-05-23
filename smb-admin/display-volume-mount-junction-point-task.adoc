@@ -1,0 +1,76 @@
+---
+permalink: smb-admin/display-volume-mount-junction-point-task.html 
+sidebar: sidebar 
+keywords: display, information, mount, volume, storage, virtual, machine, svm, junction, point, namespace, display volume mount and junction point information 
+summary: 'È possibile visualizzare informazioni sui volumi montati per le macchine virtuali di storage (SVM) e sui punti di giunzione in cui vengono montati i volumi. È inoltre possibile determinare quali volumi non sono montati su un punto di giunzione. È possibile utilizzare queste informazioni per comprendere e gestire lo spazio dei nomi SVM.' 
+---
+= Visualizzare le informazioni sul punto di giunzione e sul montaggio del volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile visualizzare informazioni sui volumi montati per le macchine virtuali di storage (SVM) e sui punti di giunzione in cui vengono montati i volumi. È inoltre possibile determinare quali volumi non sono montati su un punto di giunzione. È possibile utilizzare queste informazioni per comprendere e gestire lo spazio dei nomi SVM.
+
+.Fasi
+. Eseguire l'azione desiderata:
++
+|===
+| Se si desidera visualizzare... | Immettere il comando... 
+
+
+ a| 
+Informazioni riepilogative sui volumi montati e non montati su SVM
+ a| 
+`volume show -vserver vserver_name -junction`
+
+
+
+ a| 
+Informazioni dettagliate sui volumi montati e non montati su SVM
+ a| 
+`volume show -vserver vserver_name -volume volume_name -instance`
+
+
+
+ a| 
+Informazioni specifiche sui volumi montati e non montati su SVM
+ a| 
+.. Se necessario, è possibile visualizzare campi validi per `-fields` utilizzando il seguente comando: `volume show -fields ?`
+.. Visualizzare le informazioni desiderate utilizzando `-fields` parametro: volume show -vserver vserver_name -fieldname,...
+
+
+|===
+
+
+.Esempi
+Nell'esempio seguente viene visualizzato un riepilogo dei volumi montati e non montati su SVM vs1:
+
+[listing]
+----
+cluster1::> volume show -vserver vs1 -junction
+                     Junction                 Junction
+Vserver   Volume     Active   Junction Path   Path Source
+--------- ---------- -------- --------------- -----------
+vs1       data       true     /data           RW_volume
+vs1       home4      true     /eng/home       RW_volume
+vs1       vs1_root   -        /               -
+vs1       sales      true     /sales          RW_volume
+----
+Nell'esempio seguente vengono visualizzate informazioni sui campi specificati per i volumi che si trovano su SVM vs2:
+
+[listing]
+----
+cluster1::> volume show -vserver vs2 -fields vserver,volume,aggregate,size,state,type,security-style,junction-path,junction-parent,node
+vserver volume   aggregate size state  type security-style junction-path junction-parent node
+------- ------   --------- ---- ------ ---- -------------- ------------- --------------- -----
+vs2     data1    aggr3     2GB  online RW   unix           -             -               node3
+vs2     data2    aggr3     1GB  online RW   ntfs           /data2        vs2_root        node3
+vs2     data2_1  aggr3     8GB  online RW   ntfs           /data2/d2_1   data2           node3
+vs2     data2_2  aggr3     8GB  online RW   ntfs           /data2/d2_2   data2           node3
+vs2     pubs     aggr1     1GB  online RW   unix           /publications vs2_root        node1
+vs2     images   aggr3     2TB  online RW   ntfs           /images       vs2_root        node3
+vs2     logs     aggr1     1GB  online RW   unix           /logs         vs2_root        node1
+vs2     vs2_root aggr3     1GB  online RW   ntfs           /             -               node3
+----

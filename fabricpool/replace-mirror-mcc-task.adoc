@@ -1,0 +1,78 @@
+---
+permalink: fabricpool/replace-mirror-mcc-task.html 
+sidebar: sidebar 
+keywords: replacing, fabricpool, mirror, metrocluster, configuration 
+summary: 'Se uno degli archivi di oggetti in un mirror FabricPool viene distrutto o diventa permanentemente non disponibile in una configurazione MetroCluster, è possibile rendere l"archivio di oggetti il mirror se non è già il mirror, rimuovere l"archivio di oggetti danneggiato dal mirror FabricPool, Quindi aggiungere un nuovo mirror dell"archivio di oggetti a FabricPool.' 
+---
+= Sostituire un mirror FabricPool in una configurazione MetroCluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se uno degli archivi di oggetti in un mirror FabricPool viene distrutto o diventa permanentemente non disponibile in una configurazione MetroCluster, è possibile rendere l'archivio di oggetti il mirror se non è già il mirror, rimuovere l'archivio di oggetti danneggiato dal mirror FabricPool, Quindi aggiungere un nuovo mirror dell'archivio di oggetti a FabricPool.
+
+.Fasi
+. Se l'archivio di oggetti danneggiato non è già il mirror, fare in modo che l'oggetto memorizzi il mirror con `storage aggregate object-store modify` comando.
++
+[listing]
+----
+storage aggregate object-store modify -aggregate -aggregate fp_aggr1_A01 -name mcc1_ostore1 -mirror-type mirror
+----
+. Rimuovere il mirror dell'archivio di oggetti da FabricPool utilizzando `storage aggregate object-store unmirror` comando.
++
+[listing]
+----
+storage aggregate object-store unmirror -aggregate <aggregate name> -name mcc1_ostore1
+----
+. È possibile forzare il ripristino del tiering nell'archivio dati principale dopo aver rimosso l'archivio dati mirror utilizzando `storage aggregate object-store modify` con `-force-tiering-on-metrocluster true` opzione.
++
+L'assenza di un mirror interferisce con i requisiti di replica di una configurazione MetroCluster.
+
++
+[listing]
+----
+storage aggregate object-store modify -aggregate <aggregate name> -name mcc1_ostore1 -force-tiering-on-metrocluster true
+----
+. Creare un archivio di oggetti sostitutivo utilizzando `storage aggregate object-store config create` comando.
++
+[listing]
+----
+storage aggregate object-store config create -object-store-name mcc1_ostore3 -cluster clusterA -provider-type SGWS -server <SGWS-server-1> -container-name <SGWS-bucket-1> -access-key <key> -secret-password <password> -encrypt <true|false> -provider <provider-type> -is-ssl-enabled <true|false> ipspace <IPSpace>
+----
+. Aggiungere il mirror dell'archivio di oggetti al mirror FabricPool utilizzando `storage aggregate object-store mirror` comando.
++
+[listing]
+----
+storage aggregate object-store mirror -aggregate aggr1 -name mcc1_ostore3-mc
+----
+. Visualizzare le informazioni sull'archivio di oggetti utilizzando `storage aggregate object-store show` comando.
++
+[listing]
+----
+storage aggregate object-store show -fields mirror-type,is-mirror-degraded
+----
++
+[listing]
+----
+aggregate      object-store-name mirror-type     is-mirror-degraded
+-------------- ----------------- ------------- ------------------
+aggr1          mcc1_ostore1-mc    primary           -
+               mcc1_ostore3-mc    mirror          true
+----
+. Monitorare lo stato di risincronizzazione del mirror utilizzando `storage aggregate object-store show-resync-status` comando.
++
+[listing]
+----
+storage aggregate object-store show-resync-status -aggregate aggr1
+----
++
+[listing]
+----
+                                                  Complete
+      Aggregate    Primary        Mirror          Percentage
+      ---------    -----------    ----------      ----------
+      aggr1        mcc1_ostore1-mc mcc1_ostore3-mc   40%
+----
+

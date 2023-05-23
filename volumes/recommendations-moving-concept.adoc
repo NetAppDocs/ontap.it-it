@@ -1,0 +1,83 @@
+---
+permalink: volumes/recommendations-moving-concept.html 
+sidebar: sidebar 
+keywords: considerations, recommendations, when, moving, volumes, flexclone volume, metroCluster configuration 
+summary: Lo spostamento di un volume contiene molte considerazioni e consigli che sono influenzati dal volume che si sta spostando o dalla configurazione del sistema, ad esempio una configurazione MetroCluster. È necessario comprendere le considerazioni e i consigli relativi allo spostamento dei volumi. 
+---
+= Considerazioni e consigli per lo spostamento dei volumi
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Lo spostamento di un volume contiene molte considerazioni e consigli che sono influenzati dal volume che si sta spostando o dalla configurazione del sistema, ad esempio una configurazione MetroCluster. È necessario comprendere le considerazioni e i consigli relativi allo spostamento dei volumi.
+
+
+
+== Considerazioni e raccomandazioni generali
+
+* Se si sta aggiornando la famiglia di release per un cluster, non spostare un volume fino a quando non si aggiornano tutti i nodi del cluster.
++
+Questo suggerimento impedisce di tentare inavvertitamente di spostare un volume da una famiglia di release più recente a una famiglia di release più vecchia.
+
+* Il volume di origine deve essere coerente.
+* Se sono stati assegnati uno o più aggregati alla SVM (Storage Virtual Machine) associata, l'aggregato di destinazione deve essere uno degli aggregati assegnati.
+* Non è possibile spostare un volume da o verso un aggregato CFO preso in consegna.
+* Se un volume contenente LUN non è abilitato prima dello spostamento, il volume sarà abilitato NVFAIL dopo lo spostamento.
+* È possibile spostare un volume da un aggregato di Flash Pool a un altro aggregato di Flash Pool.
++
+** Vengono spostate anche le policy di caching di quel volume.
+** Lo spostamento potrebbe influire sulle prestazioni del volume.
+
+
+* È possibile spostare i volumi tra un aggregato di Flash Pool e un aggregato non di Flash Pool.
++
+** Se si sposta un volume da un aggregato di Flash Pool a un aggregato non di Flash Pool, ONTAP visualizza un messaggio che avvisa che lo spostamento potrebbe influire sulle prestazioni del volume e chiede se si desidera continuare.
+** Se si sposta un volume da un aggregato non Flash Pool a un aggregato Flash Pool, ONTAP assegna il `auto` policy di caching.
+
+
+* I volumi dispongono delle protezioni dei dati a riposo dell'aggregato su cui risiedono. Se si sposta un volume da un aggregato costituito da unità NSE a un volume che non lo utilizza, il volume non dispone più della protezione NSE per i dati inattivi.
+
+
+
+
+== Considerazioni e consigli sul volume FlexClone
+
+* I volumi FlexClone non possono essere offline quando vengono spostati.
+* È possibile spostare volumi FlexClone da un aggregato a un altro aggregato sullo stesso nodo o su un altro nodo nella stessa SVM senza avviare `vol clone split start` comando.
++
+Avviando un'operazione di spostamento del volume su un volume FlexClone, il volume clone viene suddiviso durante il processo di spostamento in un aggregato diverso. Una volta completato lo spostamento del volume sul volume clone, il volume spostato non viene più visualizzato come clone, ma come volume indipendente senza alcuna relazione di clone con il volume padre precedente.
+
+* Le copie Snapshot del volume FlexClone non vengono perse dopo lo spostamento di un clone.
+* È possibile spostare volumi padre FlexClone da un aggregato a un altro.
++
+Quando si sposta un volume padre FlexClone, viene lasciato un volume temporaneo che funge da volume padre per tutti i volumi FlexClone. Non sono consentite operazioni sul volume temporaneo, ad eccezione di portarlo offline o eliminarlo. Una volta che tutti i volumi FlexClone sono stati divisi o distrutti, il volume temporaneo viene ripulito automaticamente.
+
+* Dopo aver spostato un volume figlio FlexClone, il volume non è più un volume FlexClone.
+* Le operazioni di spostamento di FlexClone si escludono a vicenda dalle operazioni di copia o divisione di FlexClone.
+* Se è in corso un'operazione di suddivisione dei cloni, lo spostamento di un volume potrebbe non riuscire.
++
+Non spostare un volume fino al completamento delle operazioni di suddivisione dei cloni.
+
+
+
+
+
+== Considerazioni sulla configurazione di MetroCluster
+
+* Durante lo spostamento di un volume in una configurazione MetroCluster, quando viene creato un volume temporaneo sull'aggregato di destinazione nel cluster di origine, viene creato un record del volume temporaneo corrispondente al volume nel mirror, ma non assimilato, anche l'aggregato nel cluster esistente.
+* Se si verifica uno switchover MetroCluster prima del cutover, il volume di destinazione ha un record ed è un volume temporaneo (un volume di tipo TMP).
++
+Lo spostamento dei job viene riavviato nel cluster sopravvissuto (disaster recovery), segnala un errore e ripulisce tutti gli elementi correlati allo spostamento, incluso il volume temporaneo. In qualsiasi caso in cui la pulizia non possa essere eseguita correttamente, viene generato un EMS che avvisa l'amministratore di sistema di eseguire la pulizia necessaria.
+
+* Se si verifica uno switchover MetroCluster dopo l'avvio della fase di cutover, ma prima del completamento del processo di spostamento (ovvero, lo spostamento ha raggiunto una fase in cui può aggiornare il cluster per puntare all'aggregato di destinazione), il processo di spostamento viene riavviato sulla cluster e viene eseguito fino al completamento.
++
+Tutti gli elementi correlati allo spostamento vengono ripuliti, incluso il volume temporaneo (origine originale). In qualsiasi caso in cui la pulizia non possa essere eseguita correttamente, viene generato un EMS che avvisa l'amministratore di sistema di eseguire la pulizia necessaria.
+
+* Non sono consentiti switchback MetroCluster forzati o non forzati se sono in corso operazioni di spostamento del volume per volumi appartenenti al sito di switchover.
++
+I switchback non vengono bloccati quando sono in corso operazioni di spostamento del volume per i volumi locali nel sito sopravvissuto.
+
+* Gli switchover MetroCluster non forzati sono bloccati, ma gli switchover MetroCluster forzati non vengono bloccati se sono in corso operazioni di spostamento del volume.
+

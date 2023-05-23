@@ -1,0 +1,212 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_automatic_giveback_commands.html 
+keywords: ontap, high, availability, ha, pair, automatic, giveback, commands 
+summary: Comandi di giveback automatici 
+---
+= Comandi di giveback automatici
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Per impostazione predefinita, il nodo partner take-over restituisce automaticamente lo storage quando il nodo off-line viene riportato in linea, ripristinando così la relazione di coppia ad alta disponibilità. Nella maggior parte dei casi, questo è il comportamento desiderato. Se è necessario disattivare il giveback automatico, ad esempio se si desidera esaminare la causa del takeover prima di restituirgli, è necessario essere consapevoli dell'interazione delle impostazioni non predefinite.
+
+|===
+
+
+| Se si desidera... | Utilizzare questo comando... 
+
+
+ a| 
+Abilitare il giveback automatico in modo che il giveback avvenga non appena il nodo preso in consegna si avvia, raggiunga lo stato Waiting for Giveback (in attesa di giveback) e il periodo Delay before Auto Giveback (ritardo prima del giveback automatico) sia scaduto.
+
+L'impostazione predefinita è true.
+ a| 
+`storage failover modify ‑node _nodename_ ‑auto‑giveback true`
+
+
+
+ a| 
+Disattiva il giveback automatico. L'impostazione predefinita è true.
+
+*Nota:* l'impostazione di questo parametro su false non disattiva il giveback automatico dopo il takeover in panic; il giveback automatico dopo il takeover in panic deve essere disattivato impostando il `‑auto‑giveback‑after‑panic` parametro su false.
+ a| 
+`storage failover modify ‑node _nodename_ ‑auto‑giveback false`
+
+
+
+ a| 
+Disattiva il giveback automatico dopo il takeover in panic (questa impostazione è attivata per impostazione predefinita).
+ a| 
+`storage failover modify ‑node _nodename_ ‑auto‑giveback‑after‑panic false`
+
+
+
+ a| 
+Ritarda il giveback automatico per un numero di secondi specificato (l'impostazione predefinita è 600). Questa opzione determina il tempo minimo in cui un nodo rimane in fase di Takeover prima di eseguire un giveback automatico.
+ a| 
+`storage failover modify ‑node _nodename_ ‑delay‑seconds _seconds_`
+
+|===
+
+
+== In che modo le variazioni del comando di modifica del failover dello storage influiscono sul giveback automatico
+
+Il funzionamento del giveback automatico dipende dalla modalità di configurazione dei parametri del comando di modifica del failover dello storage.
+
+La seguente tabella elenca le impostazioni predefinite per `storage failover modify` parametri di comando che si applicano agli eventi di takeover non causati da un panico.
+
+|===
+
+
+| Parametro | Impostazione predefinita 
+
+
+ a| 
+`-auto-giveback _true_ | _false_`
+ a| 
+`_true_`
+
+
+
+ a| 
+`-delay-seconds _integer_ (seconds)`
+ a| 
+600
+
+
+
+ a| 
+`-onreboot _true_ | _false_`
+ a| 
+`_true_`
+
+|===
+La seguente tabella descrive le combinazioni di `-onreboot` e. `-auto-giveback` i parametri influiscono sul giveback automatico per gli eventi di takeover non causati da un panico.
+
+|===
+
+
+| `storage failover modify` parametri utilizzati | Causa dell'acquisizione | Si verifica il giveback automatico? 
+
+
+ a| 
+`-onreboot _true_`
+
+`-auto-giveback _true_`
+| comando reboot | Sì 
+
+
+| Comando Halt (arresto) o operazione di spegnimento e riaccensione emessa dal Service Processor | Sì 
+
+
+ a| 
+`-onreboot _true_`
+
+`-auto-giveback _false_`
+| comando reboot | Sì 
+
+
+| Comando Halt (arresto) o operazione di spegnimento e riaccensione emessa dal Service Processor | No 
+
+
+ a| 
+`-onreboot _false_`
+
+`-auto-giveback _true_`
+| comando reboot | N/D in questo caso, l'acquisizione non avviene 
+
+
+| Comando Halt (arresto) o operazione di spegnimento e riaccensione emessa dal Service Processor | Sì 
+
+
+ a| 
+`-onreboot _false_`
+
+`-auto-giveback _false_`
+| comando reboot | No 
+
+
+| Comando Halt (arresto) o operazione di spegnimento e riaccensione emessa dal Service Processor | No 
+|===
+Il `-auto-giveback` i controlli dei parametri vengono ripristinati dopo il panic e tutti gli altri takover automatici. Se il `-onreboot` il parametro è impostato su `true` e un takeover si verifica a causa di un riavvio, quindi viene sempre eseguito il giveback automatico, indipendentemente dal fatto che il `-auto-giveback` il parametro è impostato su `true`.
+
+Il `-onreboot` Il parametro si applica ai comandi di riavvio e arresto emessi da ONTAP. Quando il `-onreboot` il parametro è impostato su false, non si verifica un takeover in caso di riavvio di un nodo. Pertanto, non è possibile eseguire il giveback automatico, indipendentemente dal fatto che il `-auto-giveback` il parametro è impostato su true. Si verifica un'interruzione del client.
+
+
+
+== Gli effetti delle combinazioni di parametri di giveback automatico che si applicano alle situazioni di panico.
+
+La seguente tabella elenca `storage failover modify` parametri dei comandi applicabili alle situazioni di emergenza:
+
+|===
+
+
+| Parametro | Impostazione predefinita 
+
+
+ a| 
+`-onpanic _true | false_`
+ a| 
+`_true_`
+
+
+
+ a| 
+`-auto-giveback-after-panic _true | false_`
+
+(Privilegio: Avanzato)
+ a| 
+`_true_`
+
+
+
+ a| 
+`-auto-giveback _true | false_`
+ a| 
+`_true_`
+
+|===
+La seguente tabella descrive le combinazioni di parametri di `storage failover modify` il comando influisce sul giveback automatico in situazioni di panico.
+
+[cols="60,40"]
+|===
+
+
+| `storage failover` parametri utilizzati | Il giveback automatico si verifica dopo il panico? 
+
+
+| `-onpanic true`
+`-auto-giveback true`
+`-auto-giveback-after-panic true` | Sì 
+
+
+| `-onpanic true`
+`-auto-giveback true`
+`-auto-giveback-after-panic false` | Sì 
+
+
+| `-onpanic true`
+`-auto-giveback false`
+`-auto-giveback-after-panic true` | Sì 
+
+
+| `-onpanic true`
+`-auto-giveback false`
+`-auto-giveback-after-panic false` | No 
+
+
+| `-onpanic false`Se `-onpanic` è impostato su `false`, il takeover/giveback non si verifica, indipendentemente dal valore impostato per `-auto-giveback` oppure `-auto-giveback-after-panic` | No 
+|===
+
+NOTE: Un takeover può derivare da un errore non associato a un panico. Si verifica un _guasto_ quando la comunicazione tra un nodo e il suo partner viene persa, chiamata anche _perdita heartbeat_. Se si verifica un Takeover a causa di un guasto, il giveback viene controllato da `-onfailure` invece di `-auto-giveback-after-panic parameter`.
+
+
+NOTE: Quando un nodo viene preso in panica, invia un pacchetto panic al nodo partner. Se per qualsiasi motivo il pacchetto panic non viene ricevuto dal nodo partner, il panic può essere interpretato erroneamente come un errore. Senza la ricezione del pacchetto panic, il nodo partner sa solo che la comunicazione è stata persa e non sa che si è verificato un panico. In questo caso, il nodo partner elabora la perdita di comunicazione come un errore invece di un panico e il giveback è controllato da `-onfailure` (e non da `-auto-giveback-after-panic parameter`).
+
+Per ulteriori informazioni su tutti `storage failover modify` per i parametri, vedere link:https://docs.netapp.com/us-en/ontap-cli-9131/storage-failover-modify.html["Pagine di manuale di ONTAP"].

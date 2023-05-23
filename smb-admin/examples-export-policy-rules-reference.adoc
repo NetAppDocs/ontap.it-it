@@ -1,0 +1,78 @@
+---
+permalink: smb-admin/examples-export-policy-rules-reference.html 
+sidebar: sidebar 
+keywords: create, export, policy, rule, restrict, allow, access, smb, svm, enable, examples of export policy rules that restrict or allow access over smb 
+summary: 'Gli esempi mostrano come creare regole di policy di esportazione che limitano o consentono l"accesso tramite SMB su una SVM con criteri di esportazione per l"accesso SMB abilitati.' 
+---
+= Esempi di regole dei criteri di esportazione che limitano o consentono l'accesso tramite SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Gli esempi mostrano come creare regole di policy di esportazione che limitano o consentono l'accesso tramite SMB su una SVM con criteri di esportazione per l'accesso SMB abilitati.
+
+I criteri di esportazione per l'accesso SMB sono disattivati per impostazione predefinita. È necessario configurare le regole dei criteri di esportazione che limitano o consentono l'accesso su SMB solo se sono state attivate le policy di esportazione per l'accesso SMB.
+
+
+
+== Regola di esportazione solo per l'accesso SMB
+
+Il seguente comando crea una regola di esportazione sulla SVM denominata "`vs1`" con la seguente configurazione:
+
+* Nome policy: Cifs1
+* Numero indice: 1
+* Client match (corrispondenza client): Corrisponde solo ai client sulla rete 192.168.1.0/24
+* Protocol (protocollo): Consente solo l'accesso SMB
+* Accesso di sola lettura: Ai client che utilizzano l'autenticazione NTLM o Kerberos
+* Accesso in lettura/scrittura: Ai client che utilizzano l'autenticazione Kerberos
+
+
+[listing]
+----
+cluster1::> vserver export-policy rule create -vserver vs1 -policyname cifs1 ‑ruleindex 1 -protocol cifs -clientmatch 192.168.1.0/255.255.255.0 -rorule krb5,ntlm -rwrule krb5
+----
+
+
+== Regola di esportazione per accesso SMB e NFS
+
+Il seguente comando crea una regola di esportazione sulla SVM denominata"` vs1`" con la seguente configurazione:
+
+* Nome policy: Cifsnfs1
+* Numero indice: 2
+* Client match (corrispondenza client): Corrisponde a tutti i client
+* Protocollo: Accesso SMB e NFS
+* Accesso in sola lettura: A tutti i client
+* Accesso in lettura/scrittura: Ai client che utilizzano Kerberos (NFS e SMB) o autenticazione NTLM (SMB)
+* Mapping per ID utente UNIX 0 (zero): Mappato all'ID utente 65534 (che in genere viene mappato al nome utente nessuno)
+* Accesso SUID e sgid: Consente
+
+
+[listing]
+----
+cluster1::> vserver export-policy rule create -vserver vs1 -policyname cifsnfs1 ‑ruleindex 2 -protocol cifs,nfs -clientmatch 0.0.0.0/0 -rorule any -rwrule krb5,ntlm -anon 65534 -allow-suid true
+----
+
+
+== Regola di esportazione per l'accesso SMB utilizzando solo NTLM
+
+Il seguente comando crea una regola di esportazione sulla SVM denominata "`vs1`" con la seguente configurazione:
+
+* Nome policy: Ntlm1
+* Numero indice: 1
+* Client match (corrispondenza client): Corrisponde a tutti i client
+* Protocol (protocollo): Consente solo l'accesso SMB
+* Accesso di sola lettura: Solo ai client che utilizzano NTLM
+* Accesso di lettura/scrittura: Solo ai client che utilizzano NTLM
+
+
+[NOTE]
+====
+Se si configura l'opzione di sola lettura o l'opzione di lettura/scrittura per l'accesso solo NTLM, è necessario utilizzare le voci basate sull'indirizzo IP nell'opzione di corrispondenza del client. In caso contrario, ricevi `access denied` errori. Questo perché ONTAP utilizza i nomi principali del servizio Kerberos (SPN) quando si utilizza un nome host per verificare i diritti di accesso del client. L'autenticazione NTLM non supporta i nomi SPN.
+
+====
+[listing]
+----
+cluster1::> vserver export-policy rule create -vserver vs1 -policyname ntlm1 ‑ruleindex 1 -protocol cifs -clientmatch 0.0.0.0/0 -rorule ntlm -rwrule ntlm
+----

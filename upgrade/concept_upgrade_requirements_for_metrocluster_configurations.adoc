@@ -1,0 +1,76 @@
+---
+permalink: upgrade/concept_upgrade_requirements_for_metrocluster_configurations.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, update, requirements, metrocluster, mcc, general, normal, operations, switchover 
+summary: Se è necessario aggiornare una configurazione MetroCluster, è necessario conoscere alcuni requisiti importanti. 
+---
+= Requisiti di upgrade per le configurazioni MetroCluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se è necessario aggiornare una configurazione MetroCluster, è necessario conoscere alcuni requisiti importanti.
+
+
+
+== Metodi richiesti per eseguire aggiornamenti importanti e minori delle configurazioni MetroCluster
+
+Gli aggiornamenti delle patch alle configurazioni MetroCluster possono essere eseguiti con la procedura di aggiornamento automatico senza interruzioni (NDU).
+
+A partire da ONTAP 9.3, è possibile eseguire importanti aggiornamenti alle configurazioni MetroCluster con la procedura di aggiornamento automatico senza interruzioni (NDU). Sui sistemi che eseguono ONTAP 9.2 o versioni precedenti, è necessario eseguire importanti aggiornamenti alle configurazioni MetroCluster con la procedura NDU specifica per le configurazioni MetroCluster.
+
+
+
+== Requisiti generali
+
+* Entrambi i cluster devono eseguire la stessa versione di ONTAP.
++
+È possibile verificare la versione di ONTAP utilizzando il comando version.
+
+* La configurazione MetroCluster deve essere in modalità normale o switchover.
++
+
+NOTE: L'upgrade in modalità switchover è supportato solo in aggiornamenti di patch minori.
+
+* Per tutte le configurazioni, ad eccezione dei cluster a due nodi, è possibile aggiornare entrambi i cluster senza interruzioni allo stesso tempo.
++
+Per un upgrade senza interruzioni in cluster a due nodi, i cluster devono essere aggiornati un nodo alla volta.
+
+* Gli aggregati in entrambi i cluster non devono trovarsi nello stato RAID di risyncing.
++
+Durante la riparazione MetroCluster, gli aggregati mirrorati vengono risincronizzati. È possibile verificare se la configurazione MetroCluster si trova in questo stato utilizzando `storage aggregate plex show -in-progress true` comando. Se vengono sincronizzati degli aggregati, non eseguire un aggiornamento fino al completamento della risincronizzazione.
+
+* Le operazioni di switchover negoziate non avranno esito positivo durante l'aggiornamento.
++
+Per evitare problemi con le operazioni di upgrade o revert, non tentare uno switchover non pianificato durante un'operazione di upgrade o revert, a meno che tutti i nodi su entrambi i cluster non eseguano la stessa versione di ONTAP.
+
+
+
+
+
+== Requisiti di configurazione per il normale funzionamento
+
+* I LIF SVM di origine devono essere attivi e posizionati sui nodi domestici.
++
+Non è necessario che le LIF dei dati per le SVM di destinazione siano attive o che si trovino sui propri nodi domestici.
+
+* Tutti gli aggregati del sito locale devono essere online.
+* Tutti i volumi root e di dati di proprietà delle SVM del cluster locale devono essere online.
+
+
+
+
+== Requisiti di configurazione per lo switchover
+
+* Tutti i LIF devono essere attivi e posizionati sui propri nodi domestici.
+* Tutti gli aggregati devono essere online, ad eccezione degli aggregati root del sito DR.
++
+Gli aggregati root del sito DR sono offline durante alcune fasi di switchover.
+
+* Tutti i volumi devono essere online.
+
+
+.Informazioni correlate
+link:task_verifying_the_networking_and_storage_status_for_metrocluster_cluster_is_ready.html["Verifica dello stato di rete e storage per le configurazioni MetroCluster"]

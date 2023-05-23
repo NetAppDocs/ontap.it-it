@@ -1,0 +1,110 @@
+---
+permalink: disks-aggregates/create-aggregates-manual-task.html 
+sidebar: sidebar 
+keywords: ontap 9, create, aggregates, manually, manual, add, local tier 
+summary: 'Se non si desidera aggiungere un Tier locale (creare un aggregato) utilizzando le Best practice di ONTAP, è possibile eseguire il processo manualmente.' 
+---
+= Aggiungere manualmente i Tier locali (creare aggregati)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se non si desidera aggiungere un Tier locale (creare un aggregato) utilizzando le Best practice di ONTAP, è possibile eseguire il processo manualmente.
+
+Il processo che si segue dipende dall'interfaccia in uso: System Manager o CLI.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per aggiungere manualmente un Tier locale*
+
+A partire da ONTAP 9.11.1, se non si desidera utilizzare la configurazione consigliata da Gestore di sistema per creare un Tier locale, è possibile specificare la configurazione desiderata.
+
+.Fasi
+. In System Manager, fare clic su *Storage > Tier*.
+. Nella pagina *Tier*, fare clic su image:icon-add-local-tier.png["Aggiungere un'icona di Tier locale"] per creare un nuovo tier locale:
++
+La pagina *Add Local Tier* mostra il numero consigliato di Tier locali che possono essere creati sui nodi e lo storage utilizzabile disponibile.
+
+. Quando System Manager visualizza le raccomandazioni relative allo storage per il Tier locale, fare clic su *Switch to Manual Local Tier Creation* (passa alla creazione manuale del Tier locale) nella sezione *Spare Disks*.
++
+La pagina *Add Local Tier* (Aggiungi livello locale) visualizza i campi utilizzati per configurare il livello locale.
+
+. Nella prima sezione della pagina *Add Local Tier* (Aggiungi livello locale), completare quanto segue:
++
+.. Immettere il nome del Tier locale.
+.. (Facoltativo): Selezionare la casella di controllo *Mirror this local Tier* (Esegui mirroring del livello locale) se si desidera eseguire il mirroring del livello locale.
+.. Selezionare un tipo di disco.
+.. Selezionare il numero di dischi.
+
+
+. Nella sezione *Configurazione RAID*, completare quanto segue:
++
+.. Selezionare il tipo di RAID.
+.. Selezionare la dimensione del gruppo RAID.
+.. Fare clic su RAID allocation (allocazione RAID) per visualizzare la modalità di allocazione dei dischi nel gruppo.
+
+
+. (Facoltativo): Se Onboard Key Manager è stato installato, è possibile configurarlo per la crittografia nella sezione *Encryption* della pagina. Selezionare la casella di controllo *Configura Onboard Key Manager per la crittografia*.
++
+.. Inserire una passphrase.
+.. Immettere nuovamente la passphrase per confermarla.
+.. Salvare la passphrase per utilizzarla in futuro in caso di ripristino del sistema.
+.. Eseguire il backup del database delle chiavi per un utilizzo futuro.
+
+
+. Fare clic su *Save* (Salva) per creare il Tier locale e aggiungerlo alla soluzione di storage.
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per creare un aggregato manualmente*
+
+Prima di creare gli aggregati manualmente, è necessario rivedere le opzioni di configurazione del disco e simulare la creazione.
+
+A questo punto, è possibile eseguire il `storage aggregate create` controllare e verificare i risultati.
+
+.Di cosa hai bisogno
+È necessario determinare il numero di dischi e il numero di dischi hot spare necessari nell'aggregato.
+
+.A proposito di questa attività
+Se la partizione root-data-data è attivata e si dispone di 24 unità a stato solido (SSD) o meno nella configurazione, si consiglia di assegnare le partizioni dei dati a nodi diversi.
+
+La procedura per la creazione di aggregati su sistemi con partizione dei dati root e partizione dei dati root abilitata è la stessa della procedura per la creazione di aggregati su sistemi che utilizzano dischi non partizionati. Se la partizione dei dati root è abilitata sul sistema, utilizzare il numero di partizioni del disco per `-diskcount` opzione. Per la partizione root-data-data, il `-diskcount` l'opzione specifica il numero di dischi da utilizzare.
+
+
+NOTE: Quando si creano più aggregati per l'utilizzo con FlexGroups, gli aggregati devono avere dimensioni il più possibile vicine.
+
+Il `storage aggregate create` la pagina man contiene ulteriori informazioni sulle opzioni e sui requisiti di creazione degli aggregati.
+
+.Fasi
+. Visualizzare l'elenco delle partizioni dei dischi di riserva per verificare di disporre di una quantità sufficiente per creare l'aggregato:
++
+`storage aggregate show-spare-disks -original-owner _node_name_`
+
++
+Le partizioni dei dati sono visualizzate in `Local Data Usable`. Non è possibile utilizzare una partizione root come spare.
+
+. Simulare la creazione dell'aggregato:
++
+`storage aggregate create -aggregate _aggregate_name_ -node _node_name_ -raidtype raid_dp -diskcount _number_of_disks_or_partitions_ -simulate true`
+
+. Se dal comando simulato vengono visualizzate delle avvertenze, regolare il comando e ripetere la simulazione.
+. Creare l'aggregato:
++
+`storage aggregate create -aggregate _aggr_name_ -node _node_name_ -raidtype raid_dp -diskcount _number_of_disks_or_partitions_`
+
+. Visualizzare l'aggregato per verificare che sia stato creato:
++
+`storage aggregate show-status _aggregate_name_`
+
+
+
+--
+====
+.Informazioni correlate
+http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^]

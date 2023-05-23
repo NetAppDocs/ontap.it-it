@@ -1,0 +1,78 @@
+---
+permalink: volumes/df-command-file-size-concept.html 
+sidebar: sidebar 
+keywords: how, df command, accounts for file size 
+summary: 'Il modo in cui il comando df segnala l"utilizzo dello spazio dipende da due condizioni: Se le quote sono attivate o disattivate per il volume che contiene il qtree e se viene rilevato l"utilizzo delle quote all"interno del qtree.' 
+---
+= Il modo in cui il comando df tiene conto della dimensione del file
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il modo in cui in `df` il comando segnala che l'utilizzo dello spazio dipende da due condizioni: se le quote sono attivate o disattivate per il volume che contiene il qtree e se viene rilevato l'utilizzo delle quote all'interno del qtree.
+
+Quando vengono attivate le quote per il volume che contiene l'utilizzo di qtree e quota all'interno del qtree, viene registrato l'utilizzo dello spazio riportato da `df` command è uguale al valore specificato dal report di quota. In questa situazione, l'utilizzo delle quote esclude i blocchi utilizzati da directory, ACL, directory di flusso e metafile.
+
+Quando le quote non sono attivate sul volume o quando il qtree non ha una regola di quota configurata, l'utilizzo dello spazio riportato include i blocchi utilizzati da directory, ACL, directory di flusso e metafile per l'intero volume, inclusi altri qtree all'interno del volume. In questa situazione, l'utilizzo dello spazio riportato da `df` il comando è maggiore del valore previsto riportato quando vengono monitorate le quote.
+
+Quando si esegue `df` dal punto di montaggio di un qtree per il quale viene registrato l'utilizzo della quota, l'output del comando mostra lo stesso utilizzo dello spazio del valore specificato dal report della quota. Nella maggior parte dei casi, quando la regola di quota ad albero ha un limite per il disco rigido, la dimensione totale indicata da `df` il comando equivale al limite del disco e lo spazio disponibile equivale alla differenza tra il limite del disco di quota e l'utilizzo della quota.
+
+Tuttavia, in alcuni casi, lo spazio disponibile riportato da `df` il comando potrebbe essere uguale allo spazio disponibile nel volume nel suo complesso. Questo può verificarsi quando non è configurato alcun limite di dischi rigidi per il qtree. A partire da ONTAP 9.9.1, può verificarsi anche quando lo spazio disponibile nel volume nel suo complesso è inferiore allo spazio di quota ad albero rimanente. Quando si verifica una di queste condizioni, la dimensione totale indicata da `df` Command è un numero sintetizzato uguale alla quota utilizzata all'interno del qtree più lo spazio disponibile nel volume FlexVol.
+
+[NOTE]
+====
+Questa dimensione totale non corrisponde né al limite del disco qtree né alla dimensione del volume configurato. Può anche variare in base all'attività di scrittura all'interno di altri qtree o all'attività di efficienza dello storage in background.
+
+====
+.Esempio di utilizzo dello spazio rappresentato da `df` e un report di quota
+Il seguente report di quota mostra un limite di 1 GB per qtree alice, 2 GB per qtree bob e nessun limite per qtree project1:
+
+[listing]
+----
+C1_vsim1::> quota report -vserver vs0
+Vserver: vs0
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol2     alice     tree    1
+                                  502.0MB    1GB       2       -   alice
+vol2     bob       tree    2
+                                   1003MB    2GB       2       -   bob
+vol2     project1  tree    3
+                                  200.8MB      -       2       -   project1
+vol2               tree    *           0B      -       0       -   *
+4 entries were displayed.
+----
+Nell'esempio seguente, l'output di `df` Il comando sui qtree alice e BOB riporta lo stesso spazio utilizzato del report di quota e la stessa dimensione totale (in termini di blocchi 1 M) del limite di dischi. Questo perché le regole di quota per qtree alice e BOB hanno un limite di disco definito e lo spazio disponibile del volume (1211 MB) è maggiore dello spazio di quota ad albero rimanente per qtree alice (523 MB) e qtree Bob (1045 MB).
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2/alice
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      1024   502       523  50% /mnt/vol2
+
+linux-client1 [~]$ df -m /mnt/vol2/bob
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      2048  1004      1045  50% /mnt/vol2
+----
+Nell'esempio seguente, l'output di `df` Il comando sul progetto qtree 1 riporta lo stesso spazio utilizzato del report delle quote, ma la dimensione totale viene sintetizzata aggiungendo lo spazio disponibile nel volume nel suo complesso (1211 MB) all'utilizzo delle quote del progetto qtree 1 (201 MB) per un totale di 1412 MB. Questo perché la regola di quota per il progetto qtree 1 non ha limiti di disco.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2/project1
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      1412   201      1211  15% /mnt/vol2
+----
+[NOTE]
+====
+Nell'esempio seguente viene illustrato l'output di `df` il comando sul volume nel suo complesso riporta lo stesso spazio disponibile del proietto1.
+
+[listing]
+----
+linux-client1 [~]$ df -m /mnt/vol2
+Filesystem          1M-blocks  Used Available Use% Mounted on
+172.21.76.153:/vol2      2919  1709      1211  59% /mnt/vol2
+----
+====

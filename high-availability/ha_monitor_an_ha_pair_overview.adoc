@@ -1,0 +1,291 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_monitor_an_ha_pair_overview.html 
+keywords: ontap, high, availability, ha, pair, monitor 
+summary: È possibile utilizzare i comandi ONTAP per monitorare lo stato della coppia ha. 
+---
+= Comandi per il monitoraggio di una coppia ha
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+È possibile utilizzare i comandi ONTAP per monitorare lo stato della coppia ha. Se si verifica un Takeover, è anche possibile determinare la causa del Takeover.
+
+|===
+
+
+| Se si desidera controllare | Utilizzare questo comando 
+
+
+| Se il failover è attivato o si è verificato, oppure perché il failover non è attualmente possibile | `storage failover show` 
+
+
+| Visualizzare i nodi su cui è abilitata l'impostazione ha-mode di failover dello storage è necessario impostare il valore su ha affinché il nodo partecipi a una configurazione di failover dello storage (coppia ha). Il `non-ha` value viene utilizzato solo in una configurazione cluster a nodo singolo o standalone. | `storage failover show -fields mode` 
+
+
+| Se il Takeover assistito dall'hardware è attivato | `storage failover hwassist show` 
+
+
+| La cronologia degli eventi di Takeover assistiti dall'hardware che si sono verificati | `storage failover hwassist stats show` 
+
+
+| Lo stato di avanzamento di un'operazione di Takeover mentre gli aggregati del partner vengono spostati nel nodo che esegue il Takeover | `storage failover show‑takeover` 
+
+
+| Lo stato di avanzamento di un'operazione di giveback nella restituzione degli aggregati al nodo partner | `storage failover show‑giveback` 
+
+
+| Se un aggregato è a casa durante le operazioni di acquisizione o di giveback | `aggregate show ‑fields home‑id,owner‑id,home‑name,owner‑name,is‑home` 
+
+
+| Se l'ha del cluster è attivato (si applica solo ai cluster a due nodi) | `cluster ha show` 
+
+
+| Lo stato ha dei componenti di una coppia ha (sui sistemi che utilizzano lo stato ha) | `ha‑config show`Si tratta di un comando della modalità di manutenzione. 
+|===
+
+
+== stati dei nodi visualizzati dai comandi di tipo show di failover dello storage
+
+L'elenco seguente descrive gli stati dei nodi in cui si trova `storage failover show` viene visualizzato il comando.
+
+|===
+
+
+| Stato del nodo | Descrizione 
+
+
+ a| 
+Connesso a partner_name, Takeover automatico disattivato.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. L'acquisizione automatica del partner è disattivata.
+
+
+
+ a| 
+In attesa di nome_partner, giveback dei dischi di riserva del partner in sospeso.
+ a| 
+Il nodo locale non può scambiare informazioni con il nodo partner tramite l'interconnessione ha. Il giveback degli aggregati SFO per il partner viene eseguito, ma i dischi di riserva del partner sono ancora di proprietà del nodo locale.
+
+* Eseguire `storage failover show-giveback` per ulteriori informazioni.
+
+
+
+
+ a| 
+In attesa di nome_partner. In attesa della sincronizzazione del blocco partner.
+ a| 
+Il nodo locale non può scambiare informazioni con il nodo partner tramite l'interconnessione ha e attende che venga eseguita la sincronizzazione del blocco del partner.
+
+
+
+ a| 
+In attesa di nome_partner. In attesa che le applicazioni cluster siano online sul nodo locale.
+ a| 
+Il nodo locale non può scambiare informazioni con il nodo partner tramite l'interconnessione ha e attende che le applicazioni del cluster siano online.
+
+
+
+ a| 
+Takeover pianificato. Nodo di destinazione spostamento dei propri aggregati SFO in preparazione del Takeover.
+ a| 
+L'elaborazione del takeover è iniziata. Il nodo di destinazione sta trasferendo la proprietà dei propri aggregati SFO in preparazione del takeover.
+
+
+
+ a| 
+Takeover pianificato. Il nodo di destinazione ha riallocato i propri aggregati SFO in preparazione del Takeover.
+ a| 
+L'elaborazione del takeover è iniziata. Il nodo di destinazione ha riallocato la proprietà dei propri aggregati SFO in preparazione del takeover.
+
+
+
+ a| 
+Takeover pianificato. In attesa di disattivare gli aggiornamenti del firmware del disco in background sul nodo locale. È in corso un aggiornamento del firmware sul nodo.
+ a| 
+L'elaborazione del takeover è iniziata. Il sistema è in attesa del completamento delle operazioni di aggiornamento del firmware del disco in background sul nodo locale.
+
+
+
+ a| 
+Spostamento degli aggregati SFO nel nodo di acquisizione in preparazione del Takeover.
+ a| 
+Il nodo locale sta trasferendo la proprietà dei propri aggregati SFO nel nodo di Taking-over in preparazione del Takeover.
+
+
+
+ a| 
+Riallocare gli aggregati SFO per assumere il nodo. In attesa di acquisizione del nodo.
+ a| 
+Il trasferimento della proprietà degli aggregati SFO dal nodo locale al nodo di acquisizione è stato completato. Il sistema è in attesa di essere assunto dal nodo di acquisizione.
+
+
+
+ a| 
+Spostamento degli aggregati SFO in nome_partner. In attesa di disattivare gli aggiornamenti del firmware del disco in background sul nodo locale. È in corso un aggiornamento del firmware sul nodo.
+ a| 
+È in corso il trasferimento della proprietà degli aggregati SFO dal nodo locale al nodo di acquisizione. Il sistema è in attesa del completamento delle operazioni di aggiornamento del firmware del disco in background sul nodo locale.
+
+
+
+ a| 
+Spostamento degli aggregati SFO in nome_partner. In attesa di disattivare gli aggiornamenti del firmware del disco in background su partner_name. È in corso un aggiornamento del firmware sul nodo.
+ a| 
+È in corso il trasferimento della proprietà degli aggregati SFO dal nodo locale al nodo di acquisizione. Il sistema è in attesa del completamento delle operazioni di aggiornamento del firmware del disco in background sul nodo partner.
+
+
+
+ a| 
+Connesso a partner_name. Il precedente tentativo di takeover è stato interrotto a causa del motivo. Il nodo locale possiede alcuni aggregati SFO del partner. Riemettere un'acquisizione del partner con `‑bypass-optimization` parametro impostato su true per rilevare gli aggregati rimanenti o emettere un giveback del partner per restituire gli aggregati ricollocati.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il tentativo di acquisizione precedente è stato interrotto a causa del motivo visualizzato sotto Reason (motivo). Il nodo locale possiede alcuni aggregati SFO del partner.
+
+* Riemettere un takeover del nodo partner, impostando il parametro di ottimizzazione ‑bypass‑su true per rilevare gli aggregati SFO rimanenti, oppure eseguire un giveback del partner per restituire gli aggregati ricollocati.
+
+
+
+
+ a| 
+Connesso a partner_name. Il tentativo di acquisizione precedente è stato interrotto. Il nodo locale possiede alcuni aggregati SFO del partner. Riemettere un'acquisizione del partner con `‑bypass-optimization` parametro impostato su true per rilevare gli aggregati rimanenti o emettere un giveback del partner per restituire gli aggregati ricollocati.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il tentativo di acquisizione precedente è stato interrotto. Il nodo locale possiede alcuni aggregati SFO del partner.
+
+* Riemettere un takeover del nodo partner, impostando il parametro di ottimizzazione ‑bypass‑su true per rilevare gli aggregati SFO rimanenti, oppure eseguire un giveback del partner per restituire gli aggregati ricollocati.
+
+
+
+
+ a| 
+In attesa di nome_partner. Il precedente tentativo di takeover è stato interrotto a causa del motivo. Il nodo locale possiede alcuni aggregati SFO del partner. Riemettere un'acquisizione del partner con il parametro "‑bypass-Optimization" impostato su true per rilevare gli aggregati rimanenti o emettere un giveback del partner per restituire gli aggregati ricollocati.
+ a| 
+Il nodo locale non può scambiare informazioni con il nodo partner tramite l'interconnessione ha. Il tentativo di acquisizione precedente è stato interrotto a causa del motivo visualizzato sotto Reason (motivo). Il nodo locale possiede alcuni aggregati SFO del partner.
+
+* Riemettere un takeover del nodo partner, impostando il parametro di ottimizzazione ‑bypass‑su true per rilevare gli aggregati SFO rimanenti, oppure eseguire un giveback del partner per restituire gli aggregati ricollocati.
+
+
+
+
+ a| 
+In attesa di nome_partner. Il tentativo di acquisizione precedente è stato interrotto. Il nodo locale possiede alcuni aggregati SFO del partner. Riemettere un'acquisizione del partner con il parametro "‑bypass-Optimization" impostato su true per rilevare gli aggregati rimanenti o emettere un giveback del partner per restituire gli aggregati ricollocati.
+ a| 
+Il nodo locale non può scambiare informazioni con il nodo partner tramite l'interconnessione ha. Il tentativo di acquisizione precedente è stato interrotto. Il nodo locale possiede alcuni aggregati SFO del partner.
+
+* Riemettere un takeover del nodo partner, impostando il parametro di ottimizzazione ‑bypass‑su true per rilevare gli aggregati SFO rimanenti, oppure eseguire un giveback del partner per restituire gli aggregati ricollocati.
+
+
+
+
+ a| 
+Connesso a partner_name. Il precedente tentativo di takeover è stato interrotto perché non è stato possibile disattivare l'aggiornamento del firmware del disco in background (BDFU) sul nodo locale.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il tentativo di takeover precedente è stato interrotto perché l'aggiornamento del firmware del disco in background sul nodo locale non era stato disattivato.
+
+
+
+ a| 
+Connesso a partner_name. Il precedente tentativo di takeover è stato interrotto a causa del motivo.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il tentativo di acquisizione precedente è stato interrotto a causa del motivo visualizzato sotto Reason (motivo).
+
+
+
+ a| 
+In attesa di nome_partner. Il precedente tentativo di takeover è stato interrotto a causa del motivo.
+ a| 
+Il nodo locale non può scambiare informazioni con il nodo partner tramite l'interconnessione ha. Il tentativo di acquisizione precedente è stato interrotto a causa del motivo visualizzato sotto Reason (motivo).
+
+
+
+ a| 
+Connesso a partner_name. Il precedente tentativo di acquisizione da parte di partner_name è stato interrotto a causa del motivo.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il precedente tentativo di acquisizione da parte del nodo partner è stato interrotto a causa del motivo visualizzato sotto Reason.
+
+
+
+ a| 
+Connesso a partner_name. Il precedente tentativo di acquisizione da parte di partner_name è stato interrotto.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il precedente tentativo di acquisizione da parte del nodo partner è stato interrotto.
+
+
+
+ a| 
+In attesa di nome_partner. Il precedente tentativo di acquisizione da parte di partner_name è stato interrotto a causa del motivo.
+ a| 
+Il nodo locale non può scambiare informazioni con il nodo partner tramite l'interconnessione ha. Il precedente tentativo di acquisizione da parte del nodo partner è stato interrotto a causa del motivo visualizzato sotto Reason.
+
+
+
+ a| 
+Giveback precedente non riuscito nel modulo: Nome modulo. Il giveback automatico verrà avviato in pochi secondi.
+ a| 
+Il precedente tentativo di giveback non è riuscito nel modulo module_name. Il giveback automatico verrà avviato in pochi secondi.
+
+* Eseguire `storage failover show-giveback` per ulteriori informazioni.
+
+
+
+
+ a| 
+Node possiede gli aggregati del partner come parte della procedura di upgrade del controller senza interruzioni.
+ a| 
+Il nodo possiede gli aggregati del partner a causa della procedura di aggiornamento del controller senza interruzioni attualmente in corso.
+
+
+
+ a| 
+Connesso a partner_name. Il nodo possiede aggregati appartenenti a un altro nodo del cluster.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il nodo possiede aggregati appartenenti a un altro nodo del cluster.
+
+
+
+ a| 
+Connesso a partner_name. In attesa della sincronizzazione del blocco partner.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il sistema è in attesa del completamento della sincronizzazione del blocco partner.
+
+
+
+ a| 
+Connesso a partner_name. In attesa che le applicazioni cluster siano online sul nodo locale.
+ a| 
+L'interconnessione ha è attiva e può trasmettere i dati al nodo partner. Il sistema è in attesa che le applicazioni del cluster siano online sul nodo locale.
+
+
+
+ a| 
+Modalità non ha, riavviare per utilizzare la NVRAM completa.
+ a| 
+Il failover dello storage non è possibile. L'opzione ha mode è configurata come non_ha.
+
+* Riavviare il nodo per utilizzare tutta la NVRAM.
+
+
+
+
+ a| 
+Modalità non ha. Riavviare il nodo per attivare ha.
+ a| 
+Il failover dello storage non è possibile.
+
+* Il nodo deve essere riavviato per abilitare la funzionalità ha.
+
+
+
+
+ a| 
+Modalità non ha.
+ a| 
+Il failover dello storage non è possibile. L'opzione ha mode è configurata come non_ha.
+
+* È necessario eseguire `storage failover modify ‑mode ha ‑node nodename` Su entrambi i nodi della coppia ha, quindi riavviare i nodi per abilitare la funzionalità ha.
+
+
+|===

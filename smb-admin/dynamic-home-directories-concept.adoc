@@ -1,0 +1,70 @@
+---
+permalink: smb-admin/dynamic-home-directories-concept.html 
+sidebar: sidebar 
+keywords: ontap, home, directories, directory, configure, smb, share, map, base, connect, set, variable, creating, create, separate, share, user, define, home, relationship, entry, point, svm, how ontap enables dynamic home directories 
+summary: 'Le home directory di ONTAP consentono di configurare una condivisione SMB che viene mappata a diverse directory in base all"utente che si connette ad essa e a una serie di variabili. Invece di creare condivisioni separate per ciascun utente, è possibile configurare una condivisione con alcuni parametri della home directory per definire la relazione di un utente tra un punto di ingresso (la condivisione) e la home directory (una directory sulla SVM).' 
+---
+= In che modo ONTAP abilita le home directory dinamiche
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Le home directory di ONTAP consentono di configurare una condivisione SMB che viene mappata a diverse directory in base all'utente che si connette ad essa e a una serie di variabili. Invece di creare condivisioni separate per ciascun utente, è possibile configurare una condivisione con alcuni parametri della home directory per definire la relazione di un utente tra un punto di ingresso (la condivisione) e la home directory (una directory sulla SVM).
+
+Un utente che ha effettuato l'accesso come utente ospite non dispone di una home directory e non può accedere alle home directory di altri utenti. Esistono quattro variabili che determinano il modo in cui un utente viene mappato a una directory:
+
+* *Nome condivisione*
++
+Si tratta del nome della condivisione creata a cui l'utente si connette. È necessario impostare la proprietà home directory per questa condivisione.
+
++
+Il nome della condivisione può utilizzare i seguenti nomi dinamici:
+
++
+** `%w` (Il nome utente Windows dell'utente)
+** `%d` (Il nome di dominio Windows dell'utente)
+**  `%u` (Il nome utente UNIX mappato dell'utente) per rendere unico il nome di condivisione in tutte le home directory, il nome di condivisione deve contenere/`%w` o il `%u` variabile. Il nome della condivisione può contenere entrambi `%d` e a./`%w` variabile (ad esempio, `%d`/`%w`), oppure il nome della condivisione può contenere una porzione statica e una porzione variabile (ad esempio, home_/`%w`).
+
+
+* *Percorso di condivisione*
++
+Si tratta del percorso relativo, definito dalla condivisione e quindi associato a uno dei nomi di condivisione, che viene aggiunto a ciascun percorso di ricerca per generare l'intero percorso della home directory dell'utente dalla directory principale della SVM. Può essere statico (ad esempio, `home`), dinamico (ad esempio, `%w`), o una combinazione dei due (ad esempio, `eng/%w`).
+
+* *Percorsi di ricerca*
++
+Questo è l'insieme di percorsi assoluti dalla directory principale di SVM che si specifica che dirige la ricerca di home directory in ONTAP. È possibile specificare uno o più percorsi di ricerca utilizzando `vserver cifs home-directory search-path add` comando. Se si specificano più percorsi di ricerca, ONTAP li prova nell'ordine specificato fino a trovare un percorso valido.
+
+* *Directory*
++
+Questa è la home directory dell'utente creata per l'utente. Il nome della directory è generalmente il nome dell'utente. È necessario creare la home directory in una delle directory definite dai percorsi di ricerca.
+
+
+
+Ad esempio, considerare la seguente configurazione:
+
+* Utente: John Smith
+* Dominio utente: acme
+* Nome utente: Jsmith
+* Nome SVM: vs1
+* Nome di condivisione della home directory n. 1: home_ `%w` - percorso di condivisione: `%w`
+* Nome condivisione home directory n. 2: `%w` - percorso di condivisione: `%d/%w`
+* Percorso di ricerca n. 1: `/vol0home/home`
+* Percorso di ricerca n. 2: `/vol1home/home`
+* Percorso di ricerca n. 3: `/vol2home/home`
+* Home directory: `/vol1home/home/jsmith`
+
+
+Scenario 1: L'utente si connette a. `\\vs1\home_jsmith`. Corrisponde al primo nome di condivisione della home directory e genera il relativo percorso `jsmith`. ONTAP ricerca ora una directory denominata `jsmith` selezionando ciascun percorso di ricerca nell'ordine indicato:
+
+* `/vol0home/home/jsmith` non esiste; passaggio al percorso di ricerca n. 2.
+* `/vol1home/home/jsmith` esiste; pertanto, il percorso di ricerca n. 3 non è selezionato; l'utente è ora connesso alla propria home directory.
+
+
+Scenario 2: L'utente si connette a. `\\vs1\jsmith`. Corrisponde al secondo nome di condivisione della home directory e genera il relativo percorso `acme/jsmith`. ONTAP ricerca ora una directory denominata `acme/jsmith` selezionando ciascun percorso di ricerca nell'ordine indicato:
+
+* `/vol0home/home/acme/jsmith` non esiste; passaggio al percorso di ricerca n. 2.
+* `/vol1home/home/acme/jsmith` non esiste; passaggio al percorso di ricerca n. 3.
+* `/vol2home/home/acme/jsmith` non esiste; la home directory non esiste; pertanto, la connessione non riesce.
+

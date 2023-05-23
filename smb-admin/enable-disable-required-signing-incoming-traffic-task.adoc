@@ -1,0 +1,71 @@
+---
+permalink: smb-admin/enable-disable-required-signing-incoming-traffic-task.html 
+sidebar: sidebar 
+keywords: enforce, requirement, client, smb, message, enabling, enable, require, sign, disable, enable or disable require smb signing for incoming smb traffic 
+summary: È possibile applicare il requisito per i client di firmare i messaggi SMB attivando la firma SMB richiesta. Se attivato, ONTAP accetta i messaggi SMB solo se dispongono di firme valide. Se si desidera consentire la firma SMB, ma non la si desidera, è possibile disattivare la firma SMB richiesta. 
+---
+= Attiva o disattiva la firma SMB richiesta per il traffico SMB in entrata
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile applicare il requisito per i client di firmare i messaggi SMB attivando la firma SMB richiesta. Se attivato, ONTAP accetta i messaggi SMB solo se dispongono di firme valide. Se si desidera consentire la firma SMB, ma non la si desidera, è possibile disattivare la firma SMB richiesta.
+
+.A proposito di questa attività
+Per impostazione predefinita, la firma SMB richiesta è disattivata. È possibile attivare o disattivare la firma SMB richiesta in qualsiasi momento.
+
+[NOTE]
+====
+La firma SMB non viene disattivata per impostazione predefinita nei seguenti casi:
+
+. La firma SMB richiesta è attivata e il cluster viene reinstallato su una versione di ONTAP che non supporta la firma SMB.
+. Il cluster viene successivamente aggiornato a una versione di ONTAP che supporta la firma SMB.
++
+In queste circostanze, la configurazione della firma SMB originariamente configurata su una versione supportata di ONTAP viene mantenuta attraverso la reversione e il successivo aggiornamento.
+
+
+
+====
+Quando si imposta una relazione di disaster recovery SVM (Storage Virtual Machine), il valore selezionato per `-identity-preserve` opzione di `snapmirror create` Determina i dettagli di configurazione replicati nella SVM di destinazione.
+
+Se si imposta `-identity-preserve` opzione a. `true` (ID-Preserve), l'impostazione di protezione della firma SMB viene replicata nella destinazione.
+
+Se si imposta `-identity-preserve` opzione a. `false` (Non-ID-Preserve), l'impostazione di protezione della firma SMB non viene replicata nella destinazione. In questo caso, le impostazioni di sicurezza del server CIFS sulla destinazione vengono impostate sui valori predefiniti. Se è stata attivata la firma SMB richiesta sulla SVM di origine, è necessario attivare manualmente la firma SMB richiesta sulla SVM di destinazione.
+
+.Fasi
+. Eseguire una delle seguenti operazioni:
++
+|===
+| Se si desidera che la firma SMB richiesta sia... | Immettere il comando... 
+
+
+ a| 
+Attivato
+ a| 
+`vserver cifs security modify -vserver _vserver_name_ -is-signing-required true`
+
+
+
+ a| 
+Disattivato
+ a| 
+`vserver cifs security modify -vserver _vserver_name_ -is-signing-required false`
+
+|===
+. Verificare che la firma SMB richiesta sia attivata o disattivata determinando se il valore in `Is Signing Required` nell'output del seguente comando viene impostato il valore desiderato: `vserver cifs security show -vserver _vserver_name_ -fields is-signing-required`
+
+
+.Esempio
+L'esempio seguente abilita la firma SMB richiesta per SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs security modify -vserver vs1 -is-signing-required true
+
+cluster1::> vserver cifs security show -vserver vs1 -fields is-signing-required
+vserver  is-signing-required
+-------- -------------------
+vs1      true
+----

@@ -1,0 +1,79 @@
+---
+permalink: system-admin/sp-concept.html 
+sidebar: sidebar 
+keywords: understand, sp, service, processor, remote, management, device, access, monitor, troubleshoot, node 
+summary: 'Service Processor (SP) è un dispositivo di gestione remota che consente di accedere, monitorare e risolvere i problemi di un nodo in remoto.' 
+---
+= A proposito di SP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Service Processor (SP) è un dispositivo di gestione remota che consente di accedere, monitorare e risolvere i problemi di un nodo in remoto.
+
+Le funzionalità principali del SP includono:
+
+* L'SP consente di accedere a un nodo in remoto per diagnosticare, spegnere, spegnere e riaccendere o riavviare il nodo, indipendentemente dallo stato del controller del nodo.
++
+L'SP è alimentato da una tensione di standby, disponibile a condizione che il nodo abbia alimentazione in ingresso da almeno uno dei suoi alimentatori.
+
++
+È possibile accedere al SP utilizzando un'applicazione client Secure Shell da un host di amministrazione. È quindi possibile utilizzare l'interfaccia CLI SP per monitorare e risolvere i problemi del nodo in remoto. Inoltre, è possibile utilizzare l'SP per accedere alla console seriale ed eseguire i comandi ONTAP in remoto.
+
++
+È possibile accedere all'SP dalla console seriale o dalla console seriale dall'SP. SP consente di aprire contemporaneamente una sessione CLI SP e una sessione console separata.
+
++
+Ad esempio, quando un sensore di temperatura diventa estremamente alto o basso, ONTAP attiva l'SP per spegnere la scheda madre in modo corretto. La console seriale non risponde, ma è comunque possibile premere Ctrl-G sulla console per accedere alla CLI SP. È quindi possibile utilizzare `system power on` oppure `system power cycle` Comando dall'SP per accendere o spegnere e riaccendere il nodo.
+
+* L'SP monitora i sensori ambientali e registra gli eventi per aiutarti a intraprendere azioni di servizio tempestive ed efficaci.
++
+L'SP monitora i sensori ambientali, ad esempio le temperature del nodo, le tensioni, le correnti e la velocità della ventola. Quando un sensore ambientale ha raggiunto una condizione anomala, l'SP registra le letture anomale, notifica il problema a ONTAP e invia avvisi e notifiche "sistema proprio `d`" secondo necessità attraverso un messaggio AutoSupport, indipendentemente dal fatto che il nodo possa inviare messaggi AutoSupport.
+
++
+L'SP registra anche eventi come l'avanzamento dell'avvio, le modifiche delle FRU (Field Replaceable Unit), gli eventi generati da ONTAP e la cronologia dei comandi SP. È possibile richiamare manualmente un messaggio AutoSupport per includere i file di log SP raccolti da un nodo specifico.
+
++
+Oltre a generare questi messaggi per conto di un nodo inattivo e allegare informazioni diagnostiche aggiuntive ai messaggi AutoSupport, il SP non ha alcun effetto sulla funzionalità AutoSupport. Le impostazioni di configurazione di AutoSupport e il comportamento del contenuto dei messaggi sono ereditati da ONTAP.
+
++
+[NOTE]
+====
+L'SP non si basa su `-transport` impostazione dei parametri di `system node autosupport modify` comando per inviare notifiche. L'SP utilizza solo il protocollo SMTP (Simple Mail Transport Protocol) e richiede la configurazione AutoSupport dell'host per includere le informazioni sull'host di posta.
+
+====
++
+Se SNMP è attivato, l'SP genera trap SNMP per gli host trap configurati per tutti gli eventi "`dproprio sistema`".
+
+* L'SP dispone di un buffer di memoria non volatile che memorizza fino a 4,000 eventi in un registro eventi di sistema (SEL) per facilitare la diagnosi dei problemi.
++
+Il SEL memorizza ogni voce del registro di controllo come evento di audit. Viene memorizzato nella memoria flash integrata dell'SP. L'elenco degli eventi del SEL viene inviato automaticamente dall'SP a destinatari specificati tramite un messaggio AutoSupport.
+
++
+Il SEL contiene le seguenti informazioni:
+
++
+** Eventi hardware rilevati dall'SP, ad esempio lo stato del sensore relativo a alimentatori, tensione o altri componenti
+** Errori rilevati dall'SP, ad esempio un errore di comunicazione, un guasto alla ventola o un errore della memoria o della CPU
+** Eventi software critici inviati al SP dal nodo, ad esempio un panico, un errore di comunicazione, un errore di avvio o un "`dsistema proprio`" attivato dall'utente come risultato dell'emissione del SP `system reset` oppure `system power cycle` comando
+
+
+* SP monitora la console seriale indipendentemente dal fatto che gli amministratori siano connessi o connessi alla console.
++
+Quando i messaggi vengono inviati alla console, il SP li memorizza nel log della console. Il registro della console rimane attivo fino a quando l'SP è alimentato da uno degli alimentatori del nodo. Poiché l'SP funziona con l'alimentazione in standby, rimane disponibile anche quando il nodo viene spento e riacceso o spento.
+
+* Il Takeover assistito dall'hardware è disponibile se il SP è configurato.
+* Il servizio API SP consente a ONTAP di comunicare con il provider di servizi di rete.
++
+Il servizio migliora la gestione ONTAP dell'SP supportando funzionalità basate sulla rete, ad esempio l'utilizzo dell'interfaccia di rete per l'aggiornamento del firmware SP, consentendo a un nodo di accedere alla funzionalità SP di un altro nodo o alla console di sistema e caricando il registro SP da un altro nodo.
+
++
+È possibile modificare la configurazione del servizio API SP modificando la porta utilizzata dal servizio, rinnovando i certificati SSL e SSH utilizzati dal servizio per la comunicazione interna o disattivando completamente il servizio.
+
+
+
+Il seguente diagramma illustra l'accesso a ONTAP e all'SP di un nodo. L'accesso all'interfaccia SP avviene tramite la porta Ethernet (indicata dall'icona di una chiave a tubo sul retro dello chassis):
+
+image::../media/drw-sp-netwk.gif[Questo grafico è descritto dal testo circostante.]

@@ -1,0 +1,79 @@
+---
+permalink: fabricpool/setup-storagegrid-cloud-tier-task.html 
+sidebar: sidebar 
+keywords: setting up, storagegrid, cloud tier 
+summary: Se utilizzi ONTAP 9.2 o versioni successive, puoi impostare StorageGRID come livello cloud per FabricPool. 
+---
+= Configura StorageGRID come Tier cloud
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se utilizzi ONTAP 9.2 o versioni successive, puoi impostare StorageGRID come livello cloud per FabricPool. Quando si esegue il tiering dei dati a cui accedono i protocolli SAN, NetApp consiglia di utilizzare cloud privati, come StorageGRID, a causa di considerazioni sulla connettività.
+
+.Considerazioni sull'utilizzo di StorageGRID con FabricPool
+* È necessario installare un certificato CA per StorageGRID, a meno che non si disabiliti esplicitamente il controllo dei certificati.
+* Non è necessario attivare la versione degli oggetti StorageGRID nel bucket dell'archivio di oggetti.
+* Non è richiesta una licenza FabricPool.
+* Se un nodo StorageGRID viene implementato in una macchina virtuale con storage assegnato da un sistema NetApp AFF, verificare che il volume non abbia una policy di tiering FabricPool attivata.
++
+La disattivazione del tiering FabricPool per i volumi utilizzati con i nodi StorageGRID semplifica la risoluzione dei problemi e le operazioni di storage.
+
++
+[NOTE]
+====
+Non utilizzare mai FabricPool per eseguire il tiering dei dati relativi a StorageGRID su StorageGRID. Il tiering dei dati StorageGRID su StorageGRID aumenta la risoluzione dei problemi e la complessità operativa.
+
+====
+
+
+.A proposito di questa attività
+Il bilanciamento del carico è abilitato per StorageGRID in ONTAP 9.8 e versioni successive. Quando il nome host del server viene risolto in più indirizzi IP, ONTAP stabilisce connessioni client con tutti gli indirizzi IP restituiti (fino a un massimo di 16 indirizzi IP). Gli indirizzi IP vengono raccolti con un metodo round-robin quando vengono stabilite le connessioni.
+
+.Procedure
+Puoi impostare StorageGRID come livello cloud per FabricPool con Gestione di sistema ONTAP o l'interfaccia utente di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Fare clic su *Storage > Tier > Add Cloud Tier* e selezionare StorageGRID come provider dell'archivio di oggetti.
+. Completare le informazioni richieste.
+. Se si desidera creare un mirror cloud, fare clic su *Aggiungi come mirror FabricPool*.
+
+
+Un mirror FabricPool offre un metodo per sostituire perfettamente un archivio di dati e garantisce che i dati siano disponibili in caso di disastro.
+
+--
+.CLI
+--
+. Specificare le informazioni di configurazione StorageGRID utilizzando `storage aggregate object-store config create` con il `-provider-type` `SGWS` parametro.
++
+** Il `storage aggregate object-store config create` Il comando non riesce se ONTAP non riesce ad accedere a StorageGRID con le informazioni fornite.
+** Si utilizza `-access-key` Parametro per specificare la chiave di accesso per autorizzare le richieste all'archivio di oggetti StorageGRID.
+** Si utilizza `-secret-password` Parametro per specificare la password (chiave di accesso segreta) per l'autenticazione delle richieste all'archivio di oggetti StorageGRID.
+** Se la password StorageGRID viene modificata, è necessario aggiornare immediatamente la password corrispondente memorizzata in ONTAP.
++
+In questo modo, ONTAP può accedere ai dati in StorageGRID senza interruzioni.
+
+** Impostazione di `-is-certificate-validation-enabled` parametro a. `false` Disattiva il controllo dei certificati per StorageGRID.
+
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store config create
+-object-store-name mySGWS -provider-type SGWS -server mySGWSserver
+-container-name mySGWScontainer -access-key mySGWSkey
+-secret-password mySGWSpass
+----
+. Visualizzare e verificare le informazioni di configurazione StorageGRID utilizzando `storage aggregate object-store config show` comando.
++
+Il `storage aggregate object-store config modify` Il comando consente di modificare le informazioni di configurazione StorageGRID per FabricPool.
+
+
+
+--
+====

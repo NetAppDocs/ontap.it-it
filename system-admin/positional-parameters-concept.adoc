@@ -1,0 +1,84 @@
+---
+permalink: system-admin/positional-parameters-concept.html 
+sidebar: sidebar 
+keywords: understand, positional, parameters, cli, command, input, query 
+summary: 'È possibile sfruttare la funzionalità dei parametri di posizione della CLI ONTAP per aumentare l"efficienza nell"input dei comandi. È possibile eseguire una query su un comando per identificare i parametri posizionali per il comando.' 
+---
+= Informazioni sui parametri di posizione
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile sfruttare la funzionalità dei parametri di posizione della CLI ONTAP per aumentare l'efficienza nell'input dei comandi. È possibile eseguire una query su un comando per identificare i parametri posizionali per il comando.
+
+
+
+== Che cos'è un parametro posizionale
+
+* Un parametro posizionale è un parametro che non richiede di specificare il nome del parametro prima di specificare il valore del parametro.
+* Un parametro posizionale può essere intervallato con parametri non posizionali nell'input del comando, purché osservi la sua sequenza relativa con altri parametri posizionali nello stesso comando, come indicato nella `*_command_name ?_*` output.
+* Un parametro posizionale può essere un parametro obbligatorio o facoltativo per un comando.
+* Un parametro può essere posizionale per un comando ma non posizionale per un altro.
+
+
+[NOTE]
+====
+L'utilizzo della funzionalità dei parametri di posizione negli script non è consigliato, in particolare quando i parametri di posizione sono facoltativi per il comando o hanno parametri facoltativi elencati prima di essi.
+
+====
+
+
+== Identificare un parametro di posizione
+
+È possibile identificare un parametro di posizione in `*_command_name ?_*` output del comando. Un parametro di posizione ha parentesi quadre che circondano il nome del parametro, in uno dei seguenti formati:
+
+* [`_-parameter_name_`] `_parameter_value_` mostra un parametro obbligatorio posizionale.
+* [.[`_-parameter_name_`] `_parameter_value_`] mostra un parametro opzionale posizionale.
+
+
+Ad esempio, se visualizzato come segue in `*_command_name ?_*` output, il parametro è posizionale per il comando in cui viene visualizzato:
+
+* `[-lif] <lif-name>`
+* `[[-lif] <lif-name>]`
+
+
+Tuttavia, quando viene visualizzato come segue, il parametro non è posizionale per il comando in cui viene visualizzato:
+
+* `-lif <lif-name>`
+* `[-lif <lif-name>]`
+
+
+
+
+== Esempi di utilizzo dei parametri di posizione
+
+Nell'esempio seguente, il `*_volume create ?_*` l'output mostra che tre parametri sono posizionali per il comando: `-volume`, `-aggregate`, e. `-size`.
+
+[listing]
+----
+cluster1::> volume create ?
+   -vserver <vserver name>                Vserver Name
+   [-volume] <volume name>                Volume Name
+   [-aggregate] <aggregate name>          Aggregate Name
+  [[-size] {<integer>[KB|MB|GB|TB|PB]}]   Volume Size
+  [ -state {online|restricted|offline|force-online|force-offline|mixed} ]
+                                          Volume State (default: online)
+  [ -type {RW|DP|DC} ]                    Volume Type (default: RW)
+  [ -policy <text> ]                      Export Policy
+  [ -user <user name> ]                   User ID
+  ...
+  [ -space-guarantee|-s {none|volume} ]   Space Guarantee Style (default: volume)
+  [ -percent-snapshot-space <percent> ]   Space Reserved for Snapshot Copies
+  ...
+----
+Nell'esempio seguente, il `volume create` il comando viene specificato senza sfruttare la funzionalità del parametro di posizione:
+
+`cluster1::> volume create -vserver svm1 -volume vol1 -aggregate *aggr1 -size 1g* -percent-snapshot-space 0`
+
+Gli esempi seguenti utilizzano la funzionalità del parametro di posizione per aumentare l'efficienza dell'input del comando. I parametri di posizione sono intervallati da parametri non posizionali in `volume create` e i valori dei parametri di posizione vengono specificati senza i nomi dei parametri. I parametri di posizione vengono specificati nella stessa sequenza indicata da `*volume create ?*` output. Questo è il valore per `-volume` viene specificato prima di `-aggregate`, a sua volta specificata prima di quella di `-size`.
+
+`cluster1::> volume create *vol2* *aggr1* *1g* -vserver svm1 -percent-snapshot-space 0`
+
+`cluster1::> volume create -vserver svm1 *vol3* -snapshot-policy default *aggr1* -nvfail off *1g* -space-guarantee none`

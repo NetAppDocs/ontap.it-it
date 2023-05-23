@@ -1,0 +1,104 @@
+---
+permalink: snaplock/create-snaplock-volume-task.html 
+sidebar: sidebar 
+keywords: snaplock, volume, shanpshot, copy, create, complianceclock, file, worm, compliance, enterprise 
+summary: 'È necessario creare un volume SnapLock per i file o le copie Snapshot che si desidera assegnare allo stato WORM. A partire da ONTAP 9.10.1, qualsiasi volume creato, indipendentemente dal tipo di aggregato, viene creato per impostazione predefinita come volume non SnapLock. È necessario utilizzare `-snaplock-type` Opzione per creare esplicitamente un volume SnapLock specificando Compliance o Enterprise come tipo SnapLock. Per impostazione predefinita, il tipo di SnapLock è impostato su `non-snaplock`.' 
+---
+= Creare e montare volumi SnapLock
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario creare un volume SnapLock per i file o le copie Snapshot che si desidera assegnare allo stato WORM. A partire da ONTAP 9.10.1, qualsiasi volume creato, indipendentemente dal tipo di aggregato, viene creato per impostazione predefinita come volume non SnapLock. È necessario utilizzare `-snaplock-type` Opzione per creare esplicitamente un volume SnapLock specificando Compliance o Enterprise come tipo SnapLock. Per impostazione predefinita, il tipo di SnapLock è impostato su `non-snaplock`.
+
+.Di cosa hai bisogno
+* L'aggregato SnapLock deve essere online.
+* La licenza SnapLock deve essere installata sul nodo.
+* ComplianceClock sul nodo deve essere inizializzato.
+
+
+.A proposito di questa attività
+Con le autorizzazioni SnapLock appropriate, è possibile distruggere o rinominare un volume Enterprise in qualsiasi momento. Non è possibile distruggere un volume Compliance fino allo scadere del periodo di conservazione. Non è mai possibile rinominare un volume Compliance.
+
+È possibile clonare i volumi SnapLock, ma non i file su un volume SnapLock. Il volume clone sarà dello stesso tipo di SnapLock del volume padre.
+
+[NOTE]
+====
+I LUN non sono supportati sui volumi SnapLock. Sebbene sia possibile spostare LUN su un volume SnapLock utilizzando la tecnologia legacy, non si tratta di un'operazione supportata, né di altre operazioni che coinvolgono LUN su un volume SnapLock.
+
+====
+Eseguire questa attività utilizzando Gestione di sistema di ONTAP o l'interfaccia utente di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.12.1, è possibile utilizzare Gestione sistema per creare un volume SnapLock.
+
+.Fasi
+. Selezionare *Storage > Volumes* (Storage > volumi) e fare clic su *Add* (Aggiungi).
+. Nella finestra *Add Volume* (Aggiungi volume), fare clic su *More Options* (altre opzioni).
+. Inserire le informazioni sul nuovo volume, inclusi il nome e le dimensioni del volume.
+. Selezionare *Enable SnapLock* (attiva conformità) e scegliere il tipo di SnapLock, Compliance (conformità) o Enterprise (Azienda).
+. Nella sezione *Auto-commit Files*, selezionare *Modified* e inserire il tempo in cui un file deve rimanere invariato prima che venga automaticamente salvato. Il valore minimo è di 5 minuti e il valore massimo è di 10 anni.
+. Nella sezione *conservazione dei dati*, selezionare il periodo di conservazione minimo e massimo.
+. Selezionare il periodo di conservazione predefinito.
+. Fare clic su *Save* (Salva).
+. Selezionare il nuovo volume nella pagina *Volumes* per verificare le impostazioni SnapLock.
+
+
+--
+.CLI
+--
+. Creare un volume SnapLock:
++
+`*volume create -vserver _SVM_name_ -volume _volume_name_ -aggregate _aggregate_name_* -snaplock-type compliance|enterprise`
+
++
+Per un elenco completo delle opzioni, vedere la pagina man del comando. Le seguenti opzioni non sono disponibili per i volumi SnapLock: `-nvfail`, `-atime-update`, `-is-autobalance-eligible`, `-space-mgmt-try-first`, e. `vmalign`.
+
++
+Il seguente comando crea un SnapLock `Compliance` volume denominato `vol1` acceso `aggr1` acceso `vs1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume vol1 -aggregate aggr1 -snaplock-type compliance
+----
+
+
+--
+====
+
+
+== Montare un volume SnapLock
+
+È possibile montare un volume SnapLock su un percorso di giunzione nello spazio dei nomi SVM per l'accesso al client NAS.
+
+.Di cosa hai bisogno
+Il volume SnapLock deve essere online.
+
+.A proposito di questa attività
+* È possibile montare un volume SnapLock solo sotto la directory principale della SVM.
+* Non è possibile montare un volume normale sotto un volume SnapLock.
+
+
+.Fasi
+. Montare un volume SnapLock:
++
+`*volume mount -vserver _SVM_name_ -volume _volume_name_ -junction-path _path_*`
+
++
+Per un elenco completo delle opzioni, vedere la pagina man del comando.
+
++
+Il seguente comando consente di montare un volume SnapLock denominato `vol1` al percorso di giunzione `/sales` in `vs1` spazio dei nomi:
+
++
+[listing]
+----
+cluster1::> volume mount -vserver vs1 -volume vol1 -junction-path /sales
+----
+

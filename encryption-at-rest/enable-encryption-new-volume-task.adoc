@@ -1,0 +1,80 @@
+---
+permalink: encryption-at-rest/enable-encryption-new-volume-task.html 
+sidebar: sidebar 
+keywords: encryption, new volume, NAE, NVE, volume create 
+summary: È possibile utilizzare il comando di creazione del volume per attivare la crittografia su un nuovo volume. 
+---
+= Attivare la crittografia su un nuovo volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `volume create` per attivare la crittografia su un nuovo volume.
+
+.A proposito di questa attività
+È possibile crittografare i volumi utilizzando NetApp Volume Encryption (NVE) e, a partire da ONTAP 9.6, NetApp aggregate Encryption (NAE). Per ulteriori informazioni su NAE e NVE, fare riferimento a. xref:configure-netapp-volume-encryption-concept.html[panoramica sulla crittografia dei volumi].
+
+La procedura per attivare la crittografia su un nuovo volume in ONTAP varia in base alla versione di ONTAP in uso e alla configurazione specifica:
+
+* A partire da ONTAP 9.4, se si attiva `cc-mode` Quando si imposta Onboard Key M anager, i volumi creati con `volume create` i comandi vengono crittografati automaticamente, indipendentemente dal fatto che l'utente lo specifichi o meno `-encrypt true`.
+* In ONTAP 9.6 e versioni precedenti, è necessario utilizzare `-encrypt true` con `volume create` comandi per attivare la crittografia (a condizione che non sia stata attivata) `cc-mode`).
+* Se si desidera creare un volume NAE in ONTAP 9.6, è necessario attivare NAE a livello di aggregato. Fare riferimento a. xref:enable-aggregate-level-encryption-nve-license-task.html[Abilitare la crittografia a livello di aggregato con la licenza VE] per ulteriori dettagli su questa attività.
+* A partire da ONTAP 9.7, i volumi appena creati vengono crittografati per impostazione predefinita quando si dispone della licenza VE e della gestione delle chiavi integrata o esterna. Per impostazione predefinita, i nuovi volumi creati in un aggregato NAE saranno di tipo NAE anziché NVE.
++
+** In ONTAP 9.7 e versioni successive, se si aggiunge `-encrypt true` al `volume create` Comando per creare un volume in un aggregato NAE, il volume avrà la crittografia NVE invece di NAE. Tutti i volumi in un aggregato NAE devono essere crittografati con NVE o NAE.
+
+
+
+
+
+NOTE: I volumi non in testo normale non sono supportati negli aggregati NAE.
+
+.Fasi
+. Creare un nuovo volume e specificare se la crittografia è attivata sul volume. Se il nuovo volume si trova in un aggregato NAE, per impostazione predefinita il volume sarà un volume NAE:
++
+[cols="25,75"]
+|===
+
+
+| Per creare... | Utilizzare questo comando... 
+
+
+ a| 
+Un volume NAE
+ a| 
+`volume create -vserver _SVM_name_ -volume _volume_name_ -aggregate _aggregate_name_`
+
+
+
+ a| 
+Un volume NVE
+ a| 
+`volume create -vserver _SVM_name_ -volume _volume_name_ -aggregate _aggregate_name_ -encrypt true` +
+
+
+NOTE: In ONTAP 9.6 e versioni precedenti, dove non è supportato il servizio NAE, `-encrypt true` Specifica che il volume deve essere crittografato con NVE. In ONTAP 9.7 e versioni successive, dove i volumi vengono creati in aggregati NAE, `-encrypt true` Esegue l'override del tipo di crittografia predefinito di NAE per creare un volume NVE.
+
+
+
+ a| 
+Un volume di testo normale
+ a| 
+`volume create -vserver _SVM_name_ -volume _volume_name_ -aggregate _aggregate_name_ -encrypt false`
+
+|===
++
+Per la sintassi completa dei comandi, fare riferimento alla pagina di riferimento dei comandi per il link:https://docs.netapp.com/us-en/ontap-cli-9131/volume-create.html[`volume create`^].
+
+. Verificare che i volumi siano abilitati per la crittografia:
++
+`volume show -is-encrypted true`
+
++
+Per la sintassi completa dei comandi, vedere link:https://docs.netapp.com/us-en/ontap-cli-9131/volume-show.html["riferimento al comando"^].
+
+
+
+.Risultato
+Se si utilizza un server KMIP per memorizzare le chiavi di crittografia di un nodo, ONTAP "invia" automaticamente una chiave di crittografia al server quando si crittografa un volume.

@@ -1,0 +1,55 @@
+---
+permalink: smb-admin/reset-privileges-local-domain-users-groups-task.html 
+sidebar: sidebar 
+keywords: reset, privilege, local, domain, user, group, modification, reset privilege for local or domain users and groups 
+summary: È possibile reimpostare i privilegi per utenti e gruppi locali o di dominio. Ciò può risultare utile quando si apportano modifiche ai privilegi di un utente o di un gruppo locale o di dominio e tali modifiche non sono più richieste o necessarie. 
+---
+= Ripristinare i privilegi per utenti e gruppi locali o di dominio
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile reimpostare i privilegi per utenti e gruppi locali o di dominio. Ciò può risultare utile quando si apportano modifiche ai privilegi di un utente o di un gruppo locale o di dominio e tali modifiche non sono più richieste o necessarie.
+
+.A proposito di questa attività
+La reimpostazione dei privilegi per un utente o un gruppo locale o di dominio rimuove eventuali voci di privilegio per tale oggetto.
+
+.Fasi
+. Ripristinare i privilegi di un utente o di un gruppo locale o di dominio: `vserver cifs users-and-groups privilege reset-privilege -vserver _vserver_name_ -user-or-group-name _name_`
+. Verificare che i privilegi siano ripristinati sull'oggetto: `vserver cifs users-and-groups privilege show -vserver _vserver_name_ ‑user-or-group-name _name_`
+
+
+.Esempi
+Nell'esempio seguente vengono ripristinati i privilegi dell'utente "`CIFS_SERVER` sue" sulla macchina virtuale di storage (SVM, precedentemente nota come Vserver) vs1. Per impostazione predefinita, gli utenti normali non dispongono di privilegi associati ai propri account:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show
+Vserver   User or Group Name    Privileges
+--------- --------------------- ---------------
+vs1       CIFS_SERVER\sue       SeTcbPrivilege
+                                SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege reset-privilege -vserver vs1 -user-or-group-name CIFS_SERVER\sue
+
+cluster1::> vserver cifs users-and-groups privilege show
+This table is currently empty.
+----
+Nell'esempio riportato di seguito vengono ripristinati i privilegi per il gruppo "`BUILTIN` Administrators", rimuovendo in modo efficace la voce di privilegio:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show
+Vserver   User or Group Name       Privileges
+--------- ------------------------ -------------------
+vs1       BUILTIN\Administrators   SeRestorePrivilege
+                                   SeSecurityPrivilege
+                                   SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege reset-privilege -vserver vs1 -user-or-group-name BUILTIN\Administrators
+
+cluster1::> vserver cifs users-and-groups privilege show
+This table is currently empty.
+----

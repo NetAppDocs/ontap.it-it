@@ -1,0 +1,84 @@
+---
+permalink: smb-admin/modify-servers-task.html 
+sidebar: sidebar 
+keywords: move, smb, server, workgroup, active, directory, domain, vserver, cifs, modify, command, modify smb servers 
+summary: È possibile spostare un server SMB da un gruppo di lavoro a un dominio Active Directory, da un gruppo di lavoro a un altro gruppo di lavoro o da un dominio Active Directory a un gruppo di lavoro utilizzando il comando vserver cifs modify. 
+---
+= Modificare i server SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile spostare un server SMB da un gruppo di lavoro a un dominio Active Directory, da un gruppo di lavoro a un altro gruppo di lavoro o da un dominio Active Directory a un gruppo di lavoro utilizzando `vserver cifs modify` comando.
+
+.A proposito di questa attività
+È inoltre possibile modificare altri attributi del server SMB, ad esempio il nome del server SMB e lo stato amministrativo. Per ulteriori informazioni, consulta la pagina man.
+
+.Scelte
+* Spostare il server SMB da un gruppo di lavoro a un dominio Active Directory:
++
+.. Impostare lo stato amministrativo del server SMB su `down`.
++
+[listing]
+----
+Cluster1::>vserver cifs modify -vserver vs1 -status-admin down
+----
+.. Spostare il server SMB dal gruppo di lavoro a un dominio Active Directory: `vsserver cifs modify -vserver _vserver_name_ -domain _domain_name_`
++
+[listing]
+----
+Cluster1::>vserver cifs modify -vserver vs1 -domain example.com
+----
++
+Per creare un account macchina Active Directory per il server SMB, è necessario fornire il nome e la password di un account Windows con privilegi sufficienti per aggiungere computer a `ou=_example_ ou` container all'interno di `_example_`dominio .com.
+
++
+A partire da ONTAP 9.7, l'amministratore ad può fornire un URI a un file keytab in alternativa a un nome e una password a un account Windows con privilegi. Quando si riceve l'URI, includerlo in `-keytab-uri` con il `vserver cifs` comandi.
+
+
+
+* Spostare il server SMB da un gruppo di lavoro a un altro gruppo di lavoro:
++
+.. Impostare lo stato amministrativo del server SMB su `down`.
++
+[listing]
+----
+Cluster1::>vserver cifs modify -vserver vs1 -status-admin down
+----
+.. Modificare il gruppo di lavoro per il server SMB: `vserver cifs modify -vserver _vserver_name_ -workgroup _new_workgroup_name_`
++
+[listing]
+----
+Cluster1::>vserver cifs modify -vserver vs1 -workgroup workgroup2
+----
+
+
+* Spostare il server SMB da un dominio Active Directory a un gruppo di lavoro:
++
+.. Impostare lo stato amministrativo del server SMB su `down`.
++
+[listing]
+----
+Cluster1::>vserver cifs modify -vserver vs1 -status-admin down
+----
+.. Spostare il server SMB dal dominio Active Directory a un gruppo di lavoro: `vserver cifs modify -vserver _vserver_name_ -workgroup _workgroup_name_`
++
+[listing]
+----
+cluster1::> vserver cifs modify -vserver vs1 -workgroup workgroup1
+----
++
+[NOTE]
+====
+Per accedere alla modalità workgroup, tutte le funzioni basate sul dominio devono essere disattivate e la relativa configurazione rimossa automaticamente dal sistema, incluse le condivisioni a disponibilità continua, le copie shadow e AES. Tuttavia, gli ACL delle condivisioni configurati nel dominio, come "EXAMPLE.COM\userName", non funzionano correttamente, ma non possono essere rimossi da ONTAP. Rimuovere questi ACL di condivisione il prima possibile utilizzando strumenti esterni dopo il completamento del comando. Se AES è attivato, potrebbe essere richiesto di fornire il nome e la password di un account Windows con privilegi sufficienti per disattivarlo nel dominio "example.com".
+
+====
++
+*** Modificare gli altri attributi utilizzando il parametro appropriato di `vserver cifs modify` comando.
+
+
+
+
+

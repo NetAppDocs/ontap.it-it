@@ -1,0 +1,101 @@
+---
+permalink: encryption-at-rest/create-authentication-keys-96-later-task.html 
+sidebar: sidebar 
+keywords: creating, authentication keys, ontap 9.6, later 
+summary: È possibile utilizzare il comando create della chiave di gestione della sicurezza per creare le chiavi di autenticazione per un nodo e memorizzarle nei server KMIP configurati. 
+---
+= Creare chiavi di autenticazione in ONTAP 9.6 e versioni successive
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `security key-manager key create` Per creare le chiavi di autenticazione per un nodo e memorizzarle nei server KMIP configurati.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.A proposito di questa attività
+Se la configurazione della protezione richiede l'utilizzo di chiavi diverse per l'autenticazione dei dati e l'autenticazione FIPS 140-2, è necessario creare una chiave separata per ciascuna di esse. In caso contrario, è possibile utilizzare la stessa chiave di autenticazione per la conformità FIPS utilizzata per l'accesso ai dati.
+
+ONTAP crea chiavi di autenticazione per tutti i nodi del cluster.
+
+* Questo comando non è supportato quando Onboard Key Manager è attivato. Tuttavia, quando Onboard Key Manager è attivato, vengono create automaticamente due chiavi di autenticazione. I tasti possono essere visualizzati con il seguente comando:
++
+`security key-manager key query -key-type NSE-AK`
+
+* Viene visualizzato un avviso se i server di gestione delle chiavi configurati memorizzano già più di 128 chiavi di autenticazione.
+* È possibile utilizzare `security key-manager key delete` per eliminare le chiavi inutilizzate. Il `security key-manager key delete` Il comando non riesce se la chiave è attualmente in uso da ONTAP. Per utilizzare questo comando, è necessario disporre di privilegi superiori a "`admin`".
++
+[NOTE]
+====
+In un ambiente MetroCluster, prima di eliminare una chiave, è necessario assicurarsi che la chiave non sia in uso nel cluster partner. È possibile utilizzare i seguenti comandi sul cluster partner per verificare che la chiave non sia in uso:
+
+** `storage encryption disk show -data-key-id _key-id_`
+** `storage encryption disk show -fips-key-id _key-id_`
+
+
+====
+
+
+.Fasi
+. Creare le chiavi di autenticazione per i nodi del cluster:
++
+`security key-manager key create -key-tag passphrase_label -prompt-for-key true|false`
+
++
+[NOTE]
+====
+Impostazione `prompt-for-key=true` fa in modo che il sistema richieda all'amministratore del cluster la passphrase da utilizzare per l'autenticazione dei dischi crittografati. In caso contrario, il sistema genera automaticamente una passphrase da 32 byte. Il `security key-manager key create` il comando sostituisce `security key-manager create-key` comando. Per la sintassi completa dei comandi, vedere la pagina man.
+
+====
++
+Nell'esempio seguente vengono create le chiavi di autenticazione per `cluster1`, che genera automaticamente una passphrase da 32 byte:
+
++
+[listing]
+----
+cluster1::> security key-manager key create
+Key ID: 000000000000000002000000000001006268333f870860128fbe17d393e5083b0000000000000000
+----
+. Verificare che le chiavi di autenticazione siano state create:
++
+`security key-manager key query -node node`
+
++
+[NOTE]
+====
+Il `security key-manager key query` il comando sostituisce `security key-manager query key` comando. Per la sintassi completa dei comandi, vedere la pagina man. L'ID della chiave visualizzato nell'output è un identificatore utilizzato per fare riferimento alla chiave di autenticazione. Non si tratta della chiave di autenticazione effettiva o della chiave di crittografia dei dati.
+
+====
++
+Nell'esempio seguente viene verificata la creazione di chiavi di autenticazione per `cluster1`:
+
++
+[listing]
+----
+cluster1::> security key-manager key query
+       Vserver: cluster1
+   Key Manager: external
+          Node: node1
+
+Key Tag                               Key Type  Restored
+------------------------------------  --------  --------
+node1                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001000c11b3863f78c2273343d7ec5a67762e0000000000000000
+node1                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001006f4e2513353a674305872a4c9f3bf7970000000000000000
+
+       Vserver: cluster1
+   Key Manager: external
+          Node: node2
+
+Key Tag                               Key Type  Restored
+------------------------------------  --------  --------
+node2                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001000c11b3863f78c2273343d7ec5a67762e0000000000000000
+node2                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001006f4e2513353a674305872a4c9f3bf7970000000000000000
+----
+

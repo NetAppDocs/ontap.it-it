@@ -1,0 +1,84 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/pause-task.html 
+keywords: anti-ransomware, ransomware, pause, autonomous, protection, arp 
+summary: 'Se si prevedono eventi insoliti relativi ai carichi di lavoro, è possibile sospendere temporaneamente e riprendere l"analisi ARP (Autonomous ransomware Protection) in qualsiasi momento.' 
+---
+= Sospendere la protezione ransomware autonoma per escludere gli eventi dei workload dall'analisi
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Se si prevedono eventi insoliti relativi ai carichi di lavoro, è possibile sospendere temporaneamente e riprendere l'analisi ARP (Autonomous ransomware Protection) in qualsiasi momento.
+
+A partire da ONTAP 9.13.1, è possibile attivare la verifica multi-admin (MAV) in modo che due o più amministratori utente autenticati siano necessari per mettere in pausa l'ARP. link:../multi-admin-verify/enable-disable-task.html["Scopri di più"^].
+
+.A proposito di questa attività
+Durante una pausa ARP, non vengono registrati eventi né vengono eseguite azioni per nuove scritture. Tuttavia, l'operazione di analisi continua per i log precedenti in background.
+
+
+NOTE: Non utilizzare la funzione di disattivazione ARP per mettere in pausa gli analytics. In questo modo si disattiva l'ARP sul volume e tutte le informazioni esistenti sul comportamento dei carichi di lavoro appresi vengono perse. Ciò richiederebbe un riavvio del periodo di apprendimento.
+
+.Prima di iniziare
+* ARP in esecuzione in modalità di apprendimento o attiva.
+
+
+.Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Fare clic su *Storage > Volumes* (archiviazione > volumi), quindi selezionare il volume in cui si desidera mettere in pausa ARP.
+. Nella scheda Security (sicurezza) della panoramica dei volumi, fare clic su *Pause anti-ransomware* (Pausa anti-ransomware) nella casella *Anti-ransomware*.
++
+
+NOTE: A partire da ONTAP 9.13.1, se si utilizza MAV per proteggere le impostazioni ARP, l'operazione di pausa richiede di ottenere l'approvazione di uno o più amministratori aggiuntivi. link:../multi-admin-verify/request-operation-task.html["L'approvazione deve essere ricevuta da tutti gli amministratori"] Associato al gruppo di approvazione MAV o l'operazione non riuscirà.
+
+
+
+--
+.CLI
+--
+. Pausa ARP su un volume:
++
+`security anti-ransomware volume pause -vserver _svm_name_ -volume _vol_name_`
+
+. Per riprendere l'elaborazione, utilizzare `resume` parametro.
++
+`security anti-ransomware volume resume -vserver _svm_name_ -volume _vol_name_`
+
+
+
+A partire da ONTAP 9.13.1, se si utilizza MAV per proteggere le impostazioni ARP, l'operazione di pausa richiede di ottenere l'approvazione di uno o più amministratori aggiuntivi. L'approvazione deve essere ricevuta da tutti gli amministratori associati al gruppo di approvazione MAV, altrimenti l'operazione non avrà esito positivo.
+
+Se si utilizza MAV e un'operazione di pausa prevista richiede ulteriori approvazioni, ciascun responsabile dell'approvazione del gruppo MAV esegue le seguenti operazioni:
+
+. Mostra la richiesta:
++
+`security multi-admin-verify request show`
+
+. Approvare la richiesta:
++
+`security multi-admin-verify request approve -index[_number returned from show request_]`
+
++
+La risposta dell'ultimo responsabile dell'approvazione del gruppo indica che il volume è stato modificato e che lo stato di ARP è in pausa.
+
+
+
+Se si utilizza MAV e si è un responsabile dell'approvazione del gruppo MAV, è possibile rifiutare una richiesta di operazione di pausa:
+
+`security multi-admin-verify request veto -index[_number returned from show request_]`
+
+--
+====

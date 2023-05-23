@@ -1,0 +1,110 @@
+---
+permalink: s3-multiprotocol/enable-access-nas-data-task.html 
+sidebar: sidebar 
+keywords: s3, svm, nfs, smb, dns, authentication, protocol, configuration, nas, certificate, authority, installation, lifs 
+summary: 'L"abilitazione dell"accesso al protocollo S3 consiste nel garantire che una SVM abilitata NAS soddisfi gli stessi requisiti di un server abilitato S3, tra cui l"aggiunta di un server di archiviazione a oggetti e la verifica dei requisiti di rete e autenticazione.' 
+---
+= Abilitare l'accesso del protocollo S3 ai dati NAS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'abilitazione dell'accesso al protocollo S3 consiste nel garantire che una SVM abilitata NAS soddisfi gli stessi requisiti di un server abilitato S3, tra cui l'aggiunta di un server di archiviazione a oggetti e la verifica dei requisiti di rete e autenticazione.
+
+Per le nuove installazioni ONTAP, si consiglia di abilitare l'accesso al protocollo S3 a una SVM dopo averla configurato per fornire i dati NAS ai client. Per ulteriori informazioni sulla configurazione del protocollo NAS, consultare:
+
+* link:../nfs-config/index.html["Configurazione NFS"]
+* link:../smb-config/index.html["Configurazione SMB"]
+
+
+.Prima di iniziare
+Prima di attivare il protocollo S3, è necessario configurare quanto segue:
+
+* Il protocollo S3 e i protocolli NAS desiderati (NFS, SMB o entrambi) sono concessi in licenza.
+* Viene configurata una SVM per i protocolli NAS desiderati.
+* Esistono server NFS e/o SMB.
+* Il DNS e gli altri servizi richiesti sono configurati.
+* I dati NAS vengono esportati o condivisi nei sistemi client.
+
+
+.A proposito di questa attività
+Per abilitare il traffico HTTPS dai client S3 alla SVM abilitata per S3, è necessario un certificato CA (Certificate Authority). È possibile utilizzare certificati CA provenienti da tre origini:
+
+* Un nuovo certificato autofirmato ONTAP sulla SVM.
+* Un certificato autofirmato ONTAP esistente su SVM.
+* Un certificato di terze parti.
+
+
+Per il bucket S3/NAS è possibile utilizzare le stesse LIF di dati utilizzate per la fornitura dei dati NAS. Se sono richiesti indirizzi IP specifici, vedere link:../s3-config/create-data-lifs-task.html["Creazione di LIF di dati"]. Per attivare il traffico dati S3 su LIF è necessaria una policy dei dati del servizio S3; è possibile modificare la policy di servizio esistente di SVM in modo da includere S3.
+
+Quando si crea il server a oggetti S3, si dovrebbe essere pronti a inserire il nome del server S3 come FQDN (Fully Qualified Domain Name), che i client utilizzeranno per l'accesso S3. L'FQDN del server S3 non deve iniziare con un nome bucket.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Abilitare S3 su una VM di storage con protocolli NAS configurati.
++
+.. Fare clic su *Storage > Storage VM*, selezionare una VM storage pronta per NAS, fare clic su Settings (Impostazioni), quindi fare clic su image:icon_gear.gif["Ingranaggio icona"] Sotto S3.
+.. Selezionare il tipo di certificato. Se si seleziona un certificato generato dal sistema o uno dei propri, questo sarà necessario per l'accesso del client.
+.. Inserire le interfacce di rete.
+
+
+. Se è stato selezionato il certificato generato dal sistema, le informazioni del certificato vengono visualizzate quando viene confermata la creazione della nuova VM di storage. Fare clic su *Download* e salvarlo per accedere al client.
++
+** La chiave segreta non viene visualizzata di nuovo.
+** Se sono necessarie nuovamente le informazioni del certificato: Fare clic su *Storage > Storage VMS*, selezionare la VM di storage e fare clic su *Settings* (Impostazioni).
+
+
+
+
+--
+.CLI
+--
+. Verificare che il protocollo S3 sia consentito su SVM: +
+`vserver show -fields allowed-protocols`
+. Registrare il certificato della chiave pubblica per questa SVM. + se è necessario un nuovo certificato autofirmato ONTAP, vedere link:../s3-config/create-install-ca-certificate-svm-task.html["Creare e installare un certificato CA sulla SVM"].
+. Aggiornare la policy dei dati del servizio
++
+.. Visualizzare la policy dei dati di servizio per SVM +
+`network interface service-policy show -vserver _svm_name_`
+.. Aggiungere il `data-core` e. `data-s3-server services` se non sono presenti. +
+`network interface service-policy add-service -vserver _svm_name_ -policy _policy_name_ -services data-core,data-s3-server`
+
+
+. Verificare che i dati LIF presenti su SVM soddisfino i requisiti: +
+`network interface show -vserver _svm_name_`
+. Creare il server S3: +
+`vserver object-store-server create -vserver _svm_name_ -object-store-server _s3_server_fqdn_ -certificate-name _ca_cert_name_ -comment text [additional_options]`
+
+
+È possibile specificare opzioni aggiuntive durante la creazione del server S3 o in qualsiasi momento successivo.
+
+* HTTPS è attivato per impostazione predefinita sulla porta 443. È possibile modificare il numero di porta con l'opzione -Secure-listener-port. + quando HTTPS è attivato, i certificati CA sono necessari per la corretta integrazione con SSL/TLS.
+* HTTP è disattivato per impostazione predefinita; se attivato, il server è in attesa sulla porta 80. Puoi abilitarlo con l'opzione -is-http-enabled o modificare il numero di porta con l'opzione -listener-port. + quando HTTP è attivato, tutte le richieste e le risposte vengono inviate in rete in testo non crittografato.
+
+
+. Verificare che S3 sia configurato come desiderato: +
+`vserver object-store-server show`
+
+
+*Esempio* + il seguente comando verifica i valori di configurazione di tutti i server di storage a oggetti: +
+`cluster1::> vserver object-store-server show`
+
+[listing]
+----
+Vserver: vs1
+
+                      Object Store Server Name: s3.example.com
+                          Administrative State: up
+                        Listener Port For HTTP: 80
+                Secure Listener Port For HTTPS: 443
+                                  HTTP Enabled: false
+                                 HTTPS Enabled: true
+             Certificate for HTTPS Connections: svm1_ca
+                                       Comment: Server comment
+----
+--
+====

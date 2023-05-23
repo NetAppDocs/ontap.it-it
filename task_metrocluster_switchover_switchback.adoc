@@ -1,0 +1,151 @@
+---
+sidebar: sidebar 
+permalink: task_metrocluster_switchover_switchback.html 
+keywords: system manager, switchover, switchback, switch over, switch back, metrocluster, maintenance, nvram mirroring, synchronize, mediator, healing, recover 
+summary: 'È possibile passare da un sito MetroCluster all"altro per eseguire la manutenzione o il ripristino da un problema.' 
+---
+= Eseguire lo switchover e lo switchback di IP MetroCluster
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+È possibile passare al controllo da un sito IP MetroCluster all'altro per eseguire la manutenzione o il ripristino da un problema.
+
+
+NOTE: Le procedure di switchover e switchback sono supportate solo per le configurazioni IP MetroCluster.
+
+
+
+== Panoramica dello switchover e dello switchback
+
+Lo switchover può avvenire in due casi:
+
+* *Uno switchover pianificato*
++
+Questo switchover viene avviato da un amministratore di sistema che utilizza System Manager. Lo switchover pianificato consente a un amministratore di sistema di un cluster locale di passare al controllo in modo che i servizi dati del cluster remoto vengano gestiti dal cluster locale. Quindi, un amministratore di sistema nella posizione remota del cluster può eseguire la manutenzione sul cluster remoto.
+
+* *Uno switchover non pianificato*
++
+In alcuni casi, quando un cluster MetroCluster non funziona o le connessioni tra i cluster non sono attive, ONTAP avvia automaticamente una procedura di switchover in modo che il cluster ancora in esecuzione gestisca le responsabilità di gestione dei dati del cluster inattivo.
+
++
+In altri casi, quando ONTAP non è in grado di determinare lo stato di uno dei cluster, l'amministratore di sistema del sito che sta lavorando avvia la procedura di switchover per assumere il controllo delle responsabilità di gestione dei dati dell'altro sito.
+
+
+
+Per qualsiasi tipo di procedura di switchover, la funzionalità di servizio dei dati viene restituita al cluster utilizzando un processo _switchback_.
+
+Vengono eseguiti diversi processi di switchover e switchback per ONTAP 9.7 e 9.8:
+
+* <<sm97-sosb,Utilizzare Gestione sistema in ONTAP 9.7 per lo switchover e lo switchback>>
+* <<sm98-sosb,Utilizzare Gestione sistema in ONTAP 9.8 per lo switchover e lo switchback>>
+
+
+
+
+== Utilizzare Gestione sistema in ONTAP 9.7 per lo switchover e lo switchback
+
+.Fasi
+. Accedere a Gestore di sistema in ONTAP 9.7.
+. Fare clic su *(Torna alla versione classica)*.
+. Fare clic su *Configurazione > MetroCluster*.
++
+System Manager verifica se è possibile uno switchover negoziato.
+
+. Una volta completato il processo di convalida, eseguire una delle seguenti operazioni secondarie:
++
+.. Se la convalida non riesce, ma il sito B è attivo, si è verificato un errore. Ad esempio, potrebbe essersi verificato un problema con un sottosistema oppure il mirroring della NVRAM potrebbe non essere sincronizzato.
++
+... Risolvere il problema che causa l'errore, fare clic su *Chiudi*, quindi ricominciare dalla fase 2.
+... Arrestare i nodi del sito B, fare clic su *Close* (Chiudi), quindi eseguire le operazioni descritte in link:https://docs.netapp.com/us-en/ontap-sm-classic/online-help-96-97/task_performing_unplanned_switchover.html["Esecuzione di uno switchover non pianificato"^].
+
+
+.. Se la convalida non riesce e il sito B è inattivo, molto probabilmente si è verificato un problema di connessione. Verificare che il sito B sia effettivamente inattivo, quindi eseguire le operazioni descritte in link:https://docs.netapp.com/us-en/ontap-sm-classic/online-help-96-97/task_performing_unplanned_switchover.html["Esecuzione di uno switchover non pianificato"^].
+
+
+. Fare clic su *Switchover from Site B to Site A* (passa da sito B a sito A) per avviare il processo di switchover.
+. Fare clic su *passa alla nuova esperienza*.
+
+
+
+
+== Utilizzare Gestione sistema in ONTAP 9.8 per lo switchover e lo switchback
+
+
+
+=== Eseguire uno switchover pianificato (ONTAP 9.8)
+
+.Fasi
+. Accedere a Gestore di sistema in ONTAP 9.8.
+. Selezionare *Dashboard*. Nella sezione *MetroCluster*, i due cluster vengono visualizzati con una connessione.
+. Nel cluster locale (mostrato a sinistra), fare clic su image:icon_kabob.gif["icona del kebab"]E selezionare *Switchover remote data Services to the local site*.
++
+Una volta convalidata la richiesta di switchover, il controllo viene trasferito dal sito remoto al sito locale, che esegue le richieste di servizio dati per entrambi i cluster.
+
++
+Il cluster remoto viene riavviato, ma i componenti dello storage non sono attivi e il cluster non risponde alle richieste di dati. È ora disponibile per la manutenzione pianificata.
+
+
+
+
+NOTE: Il cluster remoto non deve essere utilizzato per la manutenzione dei dati fino a quando non viene eseguito uno switchback.
+
+
+
+=== Eseguire uno switchover non pianificato (ONTAP 9.8)
+
+ONTAP potrebbe avviare automaticamente uno switchover non pianificato. Se ONTAP non è in grado di determinare se è necessario uno switchback, l'amministratore di sistema del sito MetroCluster ancora in esecuzione avvia lo switchover seguendo questa procedura:
+
+.Fasi
+. Accedere a Gestore di sistema in ONTAP 9.8.
+. Selezionare *Dashboard*.
++
+Nella sezione *MetroCluster*, la connessione tra i due cluster viene visualizzata con una "X", il che significa che non è possibile rilevare una connessione. Le connessioni o il cluster non sono attivi.
+
+. Nel cluster locale (mostrato a sinistra), fare clic su image:icon_kabob.gif["icona del kebab"]E selezionare *Switchover remote data Services to the local site*.
++
+Se lo switchover non riesce e viene visualizzato un errore, fare clic sul collegamento "View details" (Visualizza dettagli) nel messaggio di errore e confermare lo switchover non pianificato.
+
++
+Una volta convalidata la richiesta di switchover, il controllo viene trasferito dal sito remoto al sito locale, che esegue le richieste di servizio dati per entrambi i cluster.
+
++
+Il cluster deve essere riparato prima di essere nuovamente messo in linea.
+
+
+
+
+NOTE: Una volta che il cluster remoto viene nuovamente messo in linea, non deve essere utilizzato per la manutenzione dei dati fino a quando non viene eseguito uno switchback.
+
+
+
+=== Eseguire uno switchback (ONTAP 9.8)
+
+.Prima di iniziare
+Che il cluster remoto sia stato inattivo a causa di manutenzione pianificata o a causa di un disastro, ora dovrebbe essere attivo e in attesa dello switchback.
+
+.Fasi
+. Nel cluster locale, accedere a Gestione sistema in ONTAP 9.8.
+. Selezionare *Dashboard*.
++
+Nella sezione *MetroCluster*, vengono visualizzati i due cluster.
+
+. Nel cluster locale (mostrato a sinistra), fare clic su image:icon_kabob.gif["icona del kebab"]E selezionare *Take back control*.
++
+I dati vengono prima _guariti_, per garantire la sincronizzazione e il mirroring dei dati tra entrambi i cluster.
+
+. Una volta completata la riparazione dei dati, fare clic su image:icon_kabob.gif["icona del kebab"]E selezionare *inizia switchback*.
++
+Una volta completato lo switchback, entrambi i cluster sono attivi e servono le richieste di dati. Inoltre, i dati vengono sottoposti a mirroring e sincronizzati tra i cluster.
+
+

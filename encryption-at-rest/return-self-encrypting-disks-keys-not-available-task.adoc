@@ -1,0 +1,81 @@
+---
+permalink: encryption-at-rest/return-self-encrypting-disks-keys-not-available-task.html 
+sidebar: sidebar 
+keywords: returning, fips, drive, sed, service, authentication, keys, lost 
+summary: 'Il sistema considera un"unità FIPS o SED guasta se si perdono le chiavi di autenticazione in modo permanente e non è possibile recuperarle dal server KMIP. Sebbene non sia possibile accedere o ripristinare i dati sul disco, è possibile adottare le misure necessarie per rendere nuovamente disponibile lo spazio inutilizzato di SED per i dati.' 
+---
+= Restituire un'unità FIPS o SED al servizio quando le chiavi di autenticazione vengono perse
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il sistema considera un'unità FIPS o SED guasta se si perdono le chiavi di autenticazione in modo permanente e non è possibile recuperarle dal server KMIP. Sebbene non sia possibile accedere o ripristinare i dati sul disco, è possibile adottare le misure necessarie per rendere nuovamente disponibile lo spazio inutilizzato di SED per i dati.
+
+.Prima di iniziare
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.A proposito di questa attività
+Utilizzare questo processo solo se si è certi che le chiavi di autenticazione dell'unità FIPS o SED vengano perse in modo permanente e che non sia possibile ripristinarle.
+
+Se i dischi sono partizionati, prima di poter avviare questo processo è necessario che siano dispartizionati. include:../_include/unpartition-disk.adoc[]
+
+.Fasi
+. Restituire un'unità FIPS o SED al servizio:
++
+[cols="25,75"]
+|===
+
+
+| Se i SEDS sono... | Seguire questa procedura... 
+
+
+ a| 
+Non in modalità di compliance FIPS o in modalità di compliance FIPS e la chiave FIPS è disponibile
+ a| 
+.. Impostare il livello di privilegio su Advanced (avanzato):
+`set -privilege advanced`
+.. Reimpostare la chiave FIPS sull'ID protetto predefinito 0x0:
+`storage encryption disk modify -fips-key-id 0x0 -disk _disk_id_`
+.. Verificare che l'operazione sia riuscita:
+`storage encryption disk show-status`Se l'operazione non riesce, utilizzare la procedura PSID descritta in questo argomento.
+.. Sanificare il disco danneggiato:
+`storage encryption disk sanitize -disk _disk_id_`Verificare che l'operazione sia riuscita con il comando `storage encryption disk show-status` prima di passare alla fase successiva.
+.. Annullare l'esecuzione di un errore sul disco crittografato:
+`storage disk unfail -spare true -disk _disk_id_`
+.. Verificare se il disco dispone di un proprietario:
+`storage disk show -disk _disk_id_`
+.. Se il disco non dispone di un proprietario, assegnarne uno, quindi eseguire nuovamente l'operazione:
+`storage disk assign -owner node -disk _disk_id_`
+`storage disk unfail -spare true -disk _disk_id_`
+.. Verificare che il disco sia ora uno spare e pronto per essere riutilizzato in un aggregato:
+`storage disk show -disk _disk_id_`
+
+
+
+
+ a| 
+In modalità di compliance FIPS, la chiave FIPS non è disponibile e i SED hanno un PSID stampato sull'etichetta
+ a| 
+.. Ottenere il PSID del disco dall'etichetta del disco.
+.. Impostare il livello di privilegio su Advanced (avanzato):
+`set -privilege advanced`
+.. Ripristinare le impostazioni predefinite del disco:
+`storage encryption disk revert-to-original-state -disk _disk_id_ -psid _disk_physical_secure_id_`Verificare che l'operazione sia riuscita con il comando `storage encryption disk show-status` prima di passare alla fase successiva.
+.. Annullare l'esecuzione di un errore sul disco crittografato:
+`storage disk unfail -spare true -disk _disk_id_`
+.. Verificare se il disco dispone di un proprietario:
+`storage disk show -disk _disk_id_`
+.. Se il disco non dispone di un proprietario, assegnarne uno, quindi eseguire nuovamente l'operazione:
+`storage disk assign -owner node -disk _disk_id_`
+`storage disk unfail -spare true -disk _disk_id_`
+.. Verificare che il disco sia ora uno spare e pronto per essere riutilizzato in un aggregato:
+`storage disk show -disk _disk_id_`
+
+
+|===
+
+
+Per la sintassi completa dei comandi, vedere le pagine man.

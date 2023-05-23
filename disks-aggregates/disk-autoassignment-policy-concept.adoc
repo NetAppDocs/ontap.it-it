@@ -1,0 +1,76 @@
+---
+permalink: disks-aggregates/disk-autoassignment-policy-concept.html 
+sidebar: sidebar 
+keywords: disk, auto-assign, spare, policy, automatic, assignment, disk ownership 
+summary: 'L"assegnazione automatica dei dischi non proprietari è attivata per impostazione predefinita. Le assegnazioni automatiche della proprietà dei dischi avvengono 10 minuti dopo l"inizializzazione del sistema e ogni cinque minuti durante il normale funzionamento del sistema.' 
+---
+= Informazioni sull'assegnazione automatica della proprietà del disco
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'assegnazione automatica dei dischi non proprietari è attivata per impostazione predefinita. Le assegnazioni automatiche della proprietà dei dischi avvengono 10 minuti dopo l'inizializzazione del sistema e ogni cinque minuti durante il normale funzionamento del sistema.
+
+Quando si aggiungono nuovi dischi a un sistema, ad esempio quando si sostituiscono dischi guasti, si risponde a un messaggio di riserva bassa o si aggiunge capacità, il criterio di assegnazione automatica predefinito assegna la proprietà del disco a un nodo come spare. È possibile disattivare l'assegnazione automatica o selezionare un criterio di assegnazione automatica diverso utilizzando `storage disk option modify` comando.
+
+Il criterio di assegnazione automatica predefinito si basa su caratteristiche specifiche della piattaforma, ma utilizza uno dei seguenti metodi per assegnare la proprietà del disco:
+
+|===
+
+
+| Metodo di assegnazione | Effetto sulle assegnazioni dei nodi | Piattaforme 
+
+
+ a| 
+baia
+ a| 
+Gli alloggiamenti con numero pari sono assegnati al nodo A e quelli con numero dispari al nodo B.
+ a| 
+Sistemi entry-level in una configurazione ha con un singolo shelf condiviso.
+
+
+
+ a| 
+shelf
+ a| 
+Tutti i dischi nello shelf sono assegnati al nodo A.
+ a| 
+Sistemi entry-level in una configurazione ha con uno stack di due o più shelf e configurazioni MetroCluster con uno stack per nodo, due o più shelf.
+
+
+
+ a| 
+shelf separato
+ a| 
+I dischi sul lato sinistro dello shelf sono assegnati al nodo A e sul lato destro al nodo B. Gli shelf parziali sui nuovi sistemi vengono spediti dalla fabbrica con i dischi popolati dal bordo dello shelf verso il centro.
+ a| 
+Sistemi AFF C190 e alcune configurazioni MetroCluster.
+
+
+
+ a| 
+impilare
+ a| 
+Tutti i dischi nello stack vengono assegnati al nodo A.
+ a| 
+Sistemi entry-level autonomi e tutte le altre configurazioni.
+
+|===
+Se il metodo di assegnazione predefinito non è consigliabile nell'ambiente in uso, è possibile specificare il metodo di assegnazione dell'alloggiamento, dello shelf o dello stack utilizzando `-autoassign-policy` al `storage disk option modify` comando. Osservare le seguenti regole:
+
+* Se si tenta di utilizzare `bay autoassign-policy` per una piattaforma non entry-level, si verificherà un errore.
+* Non esiste alcun criterio non predefinito corrispondente per specificare il metodo di shelf suddiviso.
+
+
+È inoltre possibile gestire manualmente l'assegnazione dei dischi utilizzando `storage disk assign` comando.
+
+* Se si disattiva l'assegnazione automatica, i nuovi dischi non saranno disponibili come unità di riserva fino a quando non saranno assegnati a un nodo con `storage disk assign` comando.
+* Se si desidera che i dischi vengano assegnati automaticamente e si dispone di più stack o shelf che devono avere proprietà diverse, un disco deve essere stato assegnato manualmente su ogni stack o shelf in modo che l'assegnazione automatica della proprietà funzioni su ogni stack o shelf.
+* Se l'assegnazione automatica è attivata e si assegna manualmente un singolo disco a un nodo non specificato nel criterio attivo, l'assegnazione automatica smette di funzionare e viene visualizzato un messaggio EMS.
+
+
+Scopri di più link:manual-assign-ownership-partitioned-disks-task.html["assegnazione manuale della proprietà del disco"].
+
+È possibile visualizzare le impostazioni di assegnazione automatica correnti con `storage disk option show` comando.

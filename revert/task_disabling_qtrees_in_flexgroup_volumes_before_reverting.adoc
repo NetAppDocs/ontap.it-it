@@ -1,0 +1,83 @@
+---
+permalink: revert/task_disabling_qtrees_in_flexgroup_volumes_before_reverting.html 
+sidebar: sidebar 
+keywords: ontap, revert, reverting, reversion, disable, disabling, qtree, functionality, function, flexgroup, volumes 
+summary: I qtree per i volumi FlexGroup non sono supportati prima di ONTAP 9.3. È necessario disattivare la funzionalità qtree sui volumi FlexGroup prima di passare da ONTAP 9.3 a una versione precedente di ONTAP. 
+---
+= Disattivare la funzionalità qtree nei volumi FlexGroup prima di eseguire il ripristino
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+I qtree per i volumi FlexGroup non sono supportati prima di ONTAP 9.3. È necessario disattivare la funzionalità qtree sui volumi FlexGroup prima di passare da ONTAP 9.3 a una versione precedente di ONTAP.
+
+La funzionalità qtree viene attivata quando si crea un qtree o se si modificano gli attributi Security-style e oplock-mode del qtree predefinito.
+
+. Identificare ed eliminare tutti i qtree non predefiniti in ogni volume FlexGroup abilitati con la funzionalità qtree:
++
+.. Accedere al livello di privilegio avanzato: `set -privilege advanced`
+.. Verificare se un volume FlexGroup è abilitato con la funzionalità qtree.
++
+Per ONTAP 9.6 o versioni successive, utilizzare: `volume show -is-qtree-caching-enabled true`
+
++
+Per ONTAP 9.5 o versioni precedenti, utilizzare: `volume show -is-flexgroup-qtree-enabled true`
+
++
+[listing]
+----
+cluster1::*> volume show -is-flexgroup-qtree-enabled true
+Vserver   Volume       Aggregate    State      Type       Size  Available Used%
+--------- ------------ ------------ ---------- ---- ---------- ---------- -----
+vs0       fg           -            online     RW        320MB    220.4MB   31%
+----
+.. Eliminare tutti i qtree non predefiniti in ogni volume FlexGroup abilitati con la funzionalità qtree: `volume qtree delete -vserver svm_name -volume volume_name -qtree qtree_name`
++
+Se la funzionalità qtree è attivata perché sono stati modificati gli attributi del qtree predefinito e se non si dispone di qtree, è possibile saltare questo passaggio.
+
++
+[listing]
+----
+cluster1::*> volume qtree delete -vserver vs0 -volume fg -qtree qtree4
+WARNING: Are you sure you want to delete qtree qtree4 in volume fg vserver vs0?  {y|n}: y
+[Job 38] Job is queued: Delete qtree qtree4 in volume fg vserver vs0.
+----
+
+
+. Disattivare la funzionalità qtree su ogni volume FlexGroup: `volume flexgroup qtree-disable -vserver svm_name -volume volume_name`
++
+[listing]
+----
+cluster1::*> volume flexgroup qtree-disable -vserver vs0 -volume fg
+----
+. Identificare ed eliminare le copie Snapshot attivate con la funzionalità qtree.
++
+.. Verificare se le copie Snapshot sono attivate con la funzionalità qtree: `volume snapshot show -vserver vserver_name -volume volume_name -fields is-flexgroup-qtree-enabled`
++
+[listing]
+----
+cluster1::*> volume snapshot show -vserver vs0 -volume fg -fields is-flexgroup-qtree-enabled
+vserver volume snapshot is-flexgroup-qtree-enabled
+------- ------ -------- --------------------------
+vs0     fg     fg_snap1 true
+vs0     fg     daily.2017-09-27_0010 true
+vs0     fg     daily.2017-09-28_0010 true
+vs0     fg     snapmirror.0241f354-a865-11e7-a1c0-00a098a71764_2147867740.2017-10-04_124524 true
+----
+.. Eliminare tutte le copie Snapshot attivate con la funzionalità qtree: `volume snapshot delete -vserver svm_name -volume volume_name -snapshot snapshot_name -force true -ignore-owners true`
++
+Le copie Snapshot che devono essere eliminate includono le copie Snapshot regolari e le copie Snapshot eseguite per le relazioni SnapMirror. Se è stata creata una relazione SnapMirror per i volumi FlexGroup con un cluster di destinazione che esegue ONTAP 9.2 o versioni precedenti, è necessario eliminare tutte le copie Snapshot eseguite quando il volume FlexGroup di origine è stato abilitato per la funzionalità qtree.
+
++
+[listing]
+----
+cluster1::> volume snapshot delete -vserver vs0 -volume fg -snapshot daily.2017-09-27_0010 -force true -ignore-owners true
+----
+
+
+
+
+.Informazioni correlate
+link:../flexgroup/index.html["Gestione dei volumi FlexGroup"]

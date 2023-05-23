@@ -1,0 +1,44 @@
+---
+permalink: system-admin/enable-sp-bmc-automatic-network-config-task.html 
+sidebar: sidebar 
+keywords: enable, sp, bmc, automatic, network, configuration 
+summary: 'È preferibile abilitare l"SP per l"utilizzo della configurazione di rete automatica rispetto alla configurazione manuale della rete SP. Poiché la configurazione automatica della rete SP è estesa a tutto il cluster, non è necessario gestire manualmente la rete SP per i singoli nodi.' 
+---
+= Attivare la configurazione automatica di rete SP/BMC
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È preferibile abilitare l'SP per l'utilizzo della configurazione di rete automatica rispetto alla configurazione manuale della rete SP. Poiché la configurazione automatica della rete SP è estesa a tutto il cluster, non è necessario gestire manualmente la rete SP per i singoli nodi.
+
+[NOTE]
+====
+Questa attività si applica sia all'SP che al BMC.
+
+====
+* La subnet che si desidera utilizzare per la configurazione automatica della rete SP deve essere già definita nel cluster e non deve presentare conflitti di risorse con l'interfaccia di rete SP.
++
+Il `network subnet show` il comando visualizza le informazioni sulla subnet del cluster.
+
++
+Il parametro che forza l'associazione della subnet (il `-force-update-lif-associations` del parametro `network subnet` ) è supportato solo su LIF di rete e non sull'interfaccia di rete SP.
+
+* Se si desidera utilizzare le connessioni IPv6 per l'SP, IPv6 deve essere già configurato e abilitato per ONTAP.
++
+Il `network options ipv6 show` Il comando visualizza lo stato corrente delle impostazioni IPv6 per ONTAP.
+
+
+
+.Fasi
+. Specificare la famiglia di indirizzi IPv4 o IPv6 e il nome della subnet che si desidera utilizzare con l'SP `system service-processor network auto-configuration enable` comando.
+. Visualizzare la configurazione di rete automatica SP utilizzando `system service-processor network auto-configuration show` comando.
+. Se in seguito si desidera disattivare o riabilitare l'interfaccia di rete SP IPv4 o IPv6 per tutti i nodi che si trovano in quorum, utilizzare `system service-processor network modify` con il `-address-family` [`IPv4`|`IPv6`] e. `-enable` [`true`|`false`].
++
+Quando la configurazione di rete automatica SP è attivata, non è possibile modificare l'indirizzo IP SP per un nodo che si trova in quorum. È possibile attivare o disattivare solo l'interfaccia di rete SP IPv4 o IPv6.
+
++
+Se un nodo non ha raggiunto il quorum, è possibile modificare la configurazione di rete SP del nodo, incluso l'indirizzo IP SP, eseguendo `system service-processor network modify` Dal nodo e confermando che si desidera eseguire l'override della configurazione di rete automatica SP per il nodo. Tuttavia, quando il nodo si unisce al quorum, viene eseguita la riconfigurazione automatica dell'SP per il nodo in base alla subnet specificata.
+
+

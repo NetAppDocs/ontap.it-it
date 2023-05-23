@@ -1,0 +1,59 @@
+---
+permalink: disks-aggregates/add-storage-ssd-pool-task.html 
+sidebar: sidebar 
+keywords: add, ssd, storage, pool 
+summary: 'Quando si aggiungono dischi a stato solido (SSD) a un pool di storage SSD, si aumentano le dimensioni fisiche e utilizzabili del pool di storage e le dimensioni dell"unità di allocazione. Le dimensioni maggiori dell"unità di allocazione influiscono anche sulle unità di allocazione che sono già state allocate ai Tier locali (aggregati) di Flash Pool.' 
+---
+= Aggiungi SSD a un pool di storage SSD
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si aggiungono dischi a stato solido (SSD) a un pool di storage SSD, si aumentano le dimensioni fisiche e utilizzabili del pool di storage e le dimensioni dell'unità di allocazione. La dimensione dell'unità di allocazione maggiore influisce anche sulle unità di allocazione che sono già state allocate ai Tier locali (aggregati).
+
+.Di cosa hai bisogno
+È necessario determinare che questa operazione non causerà il superamento del limite di cache per la coppia ha. ONTAP non impedisce di superare il limite di cache quando si aggiungono SSD a un pool di storage SSD, rendendo la capacità di storage aggiunta di recente non disponibile per l'utilizzo.
+
+.A proposito di questa attività
+Quando si aggiungono SSD a un pool di storage SSD esistente, gli SSD devono essere di proprietà di un nodo o dell'altro della stessa coppia ha che possedeva già gli SSD esistenti nel pool di storage. È possibile aggiungere SSD di proprietà di entrambi i nodi della coppia ha.
+
+L'SSD aggiunto al pool di storage deve avere le stesse dimensioni del disco attualmente utilizzato nel pool di storage.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.12.1, puoi utilizzare Gestione sistema per aggiungere SSD a un pool di storage SSD.
+
+.Fasi
+. Fare clic su *Storage > Tier* e individuare la sezione *Storage Pools*.
+. Individuare il pool di storage, fare clic su image:icon_kabob.gif["icona kabob"]E selezionare *Aggiungi dischi*.
+. Scegliere il tipo di disco e selezionare il numero di dischi.
+. Esaminare la dimensione stimata della cache.
+
+
+--
+.CLI
+--
+.Fasi
+. *Opzionale:* Visualizza le dimensioni correnti dell'unità di allocazione e lo storage disponibile per il pool di storage:
++
+`storage pool show -instance _sp_name_`
+
+. Trova gli SSD disponibili:
++
+`storage disk show -container-type spare -type SSD`
+
+. Aggiungere gli SSD al pool di storage:
++
+`storage pool add -storage-pool sp_name -disk-list _disk1,disk2…_`
+
++
+Il sistema visualizza le dimensioni degli aggregati di Flash Pool aumentate in base a questa operazione e alla quantità di dati e richiede di confermare l'operazione.
+
+
+
+--
+====

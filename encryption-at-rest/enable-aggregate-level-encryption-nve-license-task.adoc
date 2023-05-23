@@ -1,0 +1,109 @@
+---
+permalink: encryption-at-rest/enable-aggregate-level-encryption-nve-license-task.html 
+sidebar: sidebar 
+keywords: enabling, aggregate-level, encryption, nve, ve license, license 
+summary: 'A partire da ONTAP 9.7, gli aggregati e i volumi appena creati vengono crittografati per impostazione predefinita quando si dispone della licenza VE e della gestione delle chiavi integrata o esterna. A partire da ONTAP 9.6, è possibile utilizzare la crittografia a livello di aggregato per assegnare le chiavi all"aggregato contenente per i volumi da crittografare. I volumi creati nell"aggregato vengono crittografati per impostazione predefinita. È possibile ignorare l"impostazione predefinita quando si crittografa il volume.' 
+---
+= Abilitare la crittografia a livello aggregato con la licenza VE
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.7, gli aggregati e i volumi appena creati vengono crittografati per impostazione predefinita quando si dispone della licenza VE e della gestione delle chiavi integrata o esterna. A partire da ONTAP 9.6, è possibile utilizzare la crittografia a livello di aggregato per assegnare le chiavi all'aggregato contenente per i volumi da crittografare.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+.A proposito di questa attività
+Se si intende eseguire la deduplica a livello di aggregato inline o in background, è necessario utilizzare la crittografia a livello di aggregato. La deduplica a livello di aggregato non è altrimenti supportata da NVE.
+
+Un aggregato abilitato per la crittografia a livello di aggregato è denominato _aggregato NAE_ (per NetApp aggregate Encryption). Tutti i volumi in un aggregato NAE devono essere crittografati con crittografia NAE o NVE. Con la crittografia a livello di aggregato, i volumi creati nell'aggregato vengono crittografati con la crittografia NAE per impostazione predefinita. È possibile eseguire l'override del valore predefinito per utilizzare la crittografia NVE.
+
+I volumi di testo normale non sono supportati negli aggregati NAE.
+
+.Fasi
+. Attivare o disattivare la crittografia a livello di aggregato:
++
+[cols="40,60"]
+|===
+
+
+| Per... | Utilizzare questo comando... 
+
+
+ a| 
+Creare un aggregato NAE con ONTAP 9.7 o versione successiva
+ a| 
+`storage aggregate create -aggregate _aggregate_name_ -node _node_name_`
+
+
+
+ a| 
+Crea un aggregato NAE con ONTAP 9.6
+ a| 
+`storage aggregate create -aggregate _aggregate_name_ -node _node_name_ -encrypt-with-aggr-key true`
+
+
+
+ a| 
+Convertire un aggregato non NAE in un aggregato NAE
+ a| 
+`storage aggregate modify -aggregate _aggregate_name_ -node _node_name_ -encrypt-with-aggr-key true`
+
+
+
+ a| 
+Convertire un aggregato NAE in un aggregato non NAE
+ a| 
+`storage aggregate modify -aggregate _aggregate_name_ -node _node_name_ -encrypt-with-aggr-key false`
+
+|===
++
+Per la sintassi completa dei comandi, vedere le pagine man.
+
++
+Il seguente comando attiva la crittografia a livello di aggregato `aggr1`:
+
++
+** ONTAP 9.7 o versione successiva:
++
+[listing]
+----
+cluster1::> storage aggregate create -aggregate aggr1
+----
+** ONTAP 9.6 o versioni precedenti:
++
+[listing]
+----
+cluster1::> storage aggregate create -aggregate aggr1 -encrypt-with-aggr-key true
+----
+
+
+. Verificare che l'aggregato sia abilitato per la crittografia:
++
+`storage aggregate show -fields encrypt-with-aggr-key`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Il seguente comando verifica `aggr1` è abilitato per la crittografia:
+
++
+[listing]
+----
+cluster1::> storage aggregate show -fields encrypt-with-aggr-key
+aggregate            encrypt-aggr-key
+-------------------- ----------------
+aggr0_vsim4          false
+aggr1                true
+2 entries were displayed.
+----
+
+
+.Al termine
+Eseguire `volume create` per creare i volumi crittografati.
+
+Se si utilizza un server KMIP per memorizzare le chiavi di crittografia di un nodo, ONTAP "`invia automaticamente`" una chiave di crittografia al server quando si crittografa un volume.

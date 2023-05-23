@@ -1,0 +1,28 @@
+---
+permalink: disks-aggregates/flash-pool-ssd-partitioning-aggregates-concept.html 
+sidebar: sidebar 
+keywords: flash pool, ssd partitioning, work, aggregate, storage pool, local tier 
+summary: 'Se si fornisce la cache a due o più Tier locali di Flash Pool (aggregati), è necessario utilizzare la partizione SSD (Solid state Drive) di Flash Pool. Il partizionamento degli SSD Flash Pool consente di condividere gli SSD con tutti i Tier locali che utilizzano Flash Pool. In questo modo, il costo di parità viene diffuso su più Tier locali, la flessibilità di allocazione della cache SSD aumenta e le performance SSD massimizzano.' 
+---
+= Partizione SSD di Flash Pool per Tier locali (aggregati) di Flash Pool utilizzando pool di storage
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se si fornisce la cache a due o più Tier locali di Flash Pool (aggregati), è necessario utilizzare la partizione SSD (Solid state Drive) di Flash Pool. Il partizionamento degli SSD Flash Pool consente di condividere gli SSD con tutti i Tier locali che utilizzano Flash Pool. In questo modo, il costo di parità viene diffuso su più Tier locali, la flessibilità di allocazione della cache SSD aumenta e le performance SSD massimizzano.
+
+Affinché un SSD possa essere utilizzato in un Tier locale di Flash Pool, l'SSD deve essere collocato in un pool di storage. Non è possibile utilizzare SSD partizionati per la partizione dei dati root in un pool di storage. Una volta inserito l'SSD nel pool di storage, l'SSD non può più essere gestito come disco standalone e non può essere rimosso dal pool di storage a meno che non si distruggano i Tier locali associati a Flash Pool e si distrugga il pool di storage.
+
+I pool di storage SSD sono suddivisi in quattro unità di allocazione uguali. Gli SSD aggiunti al pool di storage sono suddivisi in quattro partizioni e una partizione viene assegnata a ciascuna delle quattro unità di allocazione. Gli SSD nel pool di storage devono essere di proprietà della stessa coppia ha. Per impostazione predefinita, a ciascun nodo della coppia ha vengono assegnate due unità di allocazione. Le unità di allocazione devono essere di proprietà del nodo proprietario del Tier locale che sta servendo. Se per i Tier locali su uno dei nodi è necessaria una maggiore cache Flash, è possibile spostare il numero predefinito di unità di allocazione per diminuire il numero su un nodo e aumentare il numero sul nodo partner.
+
+Si utilizzano SSD di riserva per aggiungerli a un pool di storage SSD. Se il pool di storage fornisce unità di allocazione ai Tier locali di Flash Pool di proprietà di entrambi i nodi della coppia ha, allora gli SSD spare possono essere di proprietà di entrambi i nodi. Tuttavia, se il pool di storage fornisce unità di allocazione solo ai Tier locali di Flash Pool di proprietà di uno dei nodi della coppia ha, le unità di riserva SSD devono essere di proprietà dello stesso nodo.
+
+La figura seguente mostra un esempio di partizione SSD Flash Pool. Il pool di storage SSD fornisce cache a due livelli locali di Flash Pool:
+
+image::../media/shared-ssds-overview.gif[Questa immagine viene descritta dal testo circostante.]
+
+Lo Storage Pool SP1 è composto da cinque SSD e un SSD hot spare. Due delle unità di allocazione del pool di storage vengono allocate a Flash Pool FP1 e due a Flash Pool FP2. FP1 ha un tipo RAID cache di RAID4. Pertanto, le unità di allocazione fornite a FP1 contengono una sola partizione designata per la parità. FP2 ha un tipo di RAID-DP per la cache. Pertanto, le unità di allocazione fornite a FP2 includono una partizione di parità e una partizione di doppia parità.
+
+In questo esempio, due unità di allocazione vengono allocate a ciascun Tier locale di Flash Pool. Tuttavia, se un livello locale di Flash Pool richiedeva una cache più grande, è possibile allocare tre unità di allocazione a quel livello locale di Flash Pool e una sola all'altra.

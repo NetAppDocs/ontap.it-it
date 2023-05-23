@@ -1,0 +1,148 @@
+---
+permalink: smb-admin/configure-central-access-policies-secure-data-task.html 
+sidebar: sidebar 
+keywords: secure, access, data, cifs, server, central, access, policies, policy, dynamic, access, control, dac, gpo, configure central access policies to secure data on cifs servers 
+summary: 'Per proteggere l"accesso ai dati sul server CIFS mediante criteri di accesso centrali, è necessario eseguire diversi passaggi, tra cui l"attivazione del controllo dinamico dell"accesso (DAC) sul server CIFS, la configurazione dei criteri di accesso centrale in Active Directory, l"applicazione dei criteri di accesso centrale ai container Active Directory con GPO, E abilitazione degli oggetti Criteri di gruppo sul server CIFS.' 
+---
+= Configurare le policy di accesso centrale per proteggere i dati sui server CIFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per proteggere l'accesso ai dati sul server CIFS mediante criteri di accesso centrali, è necessario eseguire diversi passaggi, tra cui l'attivazione del controllo dinamico dell'accesso (DAC) sul server CIFS, la configurazione dei criteri di accesso centrale in Active Directory, l'applicazione dei criteri di accesso centrale ai container Active Directory con GPO, E abilitazione degli oggetti Criteri di gruppo sul server CIFS.
+
+.Prima di iniziare
+* Active Directory deve essere configurato per utilizzare criteri di accesso centrali.
+* È necessario disporre di un accesso sufficiente sui domain controller di Active Directory per creare criteri di accesso centrali e per creare e applicare gli oggetti Criteri di gruppo ai container che contengono i server CIFS.
+* Per eseguire i comandi necessari, è necessario disporre di un accesso amministrativo sufficiente sulla macchina virtuale di storage (SVM).
+
+
+.A proposito di questa attività
+I criteri di accesso centrale vengono definiti e applicati agli oggetti Criteri di gruppo (GPO) in Active Directory. Per istruzioni sulla configurazione dei criteri di accesso centrale e degli oggetti Criteri di gruppo, consultare la Microsoft TechNet Library.
+
+http://technet.microsoft.com/library/["Microsoft TechNet Library"]
+
+.Fasi
+. Attivare Dynamic Access Control (controllo dinamico degli accessi) su SVM se non è già attivato utilizzando `vserver cifs options modify` comando.
++
+`vserver cifs options modify -vserver vs1 -is-dac-enabled true`
+
+. Abilitare gli oggetti Criteri di gruppo (GPO) sul server CIFS se non sono già abilitati mediante `vserver cifs group-policy modify` comando.
++
+`vserver cifs group-policy modify -vserver vs1 -status enabled`
+
+. Creare regole di accesso centrali e policy di accesso centrali in Active Directory.
+. Creare un oggetto Criteri di gruppo (GPO) per implementare i criteri di accesso centrale in Active Directory.
+. Applicare l'oggetto Criteri di gruppo al container in cui si trova l'account del computer del server CIFS.
+. Aggiornare manualmente gli oggetti Criteri di gruppo applicati al server CIFS utilizzando `vserver cifs group-policy update` comando.
++
+`vserver cifs group-policy update -vserver vs1`
+
+. Verificare che il criterio di accesso centrale dell'oggetto Criteri di gruppo sia applicato alle risorse sul server CIFS utilizzando `vserver cifs group-policy show-applied` comando.
++
+L'esempio seguente mostra che il criterio di dominio predefinito dispone di due criteri di accesso centrali applicati al server CIFS:
+
++
+`vserver cifs group-policy show-applied`
+
++
+[listing]
+----
+Vserver: vs1
+-----------------------------
+    GPO Name: Default Domain Policy
+       Level: Domain
+      Status: enabled
+  Advanced Audit Settings:
+      Object Access:
+          Central Access Policy Staging: failure
+  Registry Settings:
+      Refresh Time Interval: 22
+      Refresh Random Offset: 8
+      Hash Publication Mode for BranchCache: per-share
+      Hash Version Support for BranchCache: all-versions
+  Security Settings:
+      Event Audit and Event Log:
+          Audit Logon Events: none
+          Audit Object Access: success
+          Log Retention Method: overwrite-as-needed
+          Max Log Size: 16384
+      File Security:
+          /vol1/home
+          /vol1/dir1
+      Kerberos:
+          Max Clock Skew: 5
+          Max Ticket Age: 10
+          Max Renew Age:  7
+      Privilege Rights:
+          Take Ownership: usr1, usr2
+          Security Privilege: usr1, usr2
+          Change Notify: usr1, usr2
+      Registry Values:
+          Signing Required: false
+      Restrict Anonymous:
+          No enumeration of SAM accounts: true
+          No enumeration of SAM accounts and shares: false
+          Restrict anonymous access to shares and named pipes: true
+          Combined restriction for anonymous user: no-access
+      Restricted Groups:
+          gpr1
+          gpr2
+  Central Access Policy Settings:
+      Policies: cap1
+                cap2
+
+    GPO Name: Resultant Set of Policy
+       Level: RSOP
+  Advanced Audit Settings:
+      Object Access:
+          Central Access Policy Staging: failure
+  Registry Settings:
+      Refresh Time Interval: 22
+      Refresh Random Offset: 8
+      Hash Publication Mode for BranchCache: per-share
+      Hash Version Support for BranchCache: all-versions
+  Security Settings:
+      Event Audit and Event Log:
+          Audit Logon Events: none
+          Audit Object Access: success
+          Log Retention Method: overwrite-as-needed
+          Max Log Size: 16384
+      File Security:
+          /vol1/home
+          /vol1/dir1
+      Kerberos:
+          Max Clock Skew: 5
+          Max Ticket Age: 10
+          Max Renew Age:  7
+      Privilege Rights:
+          Take Ownership: usr1, usr2
+          Security Privilege: usr1, usr2
+          Change Notify: usr1, usr2
+      Registry Values:
+          Signing Required: false
+      Restrict Anonymous:
+          No enumeration of SAM accounts: true
+          No enumeration of SAM accounts and shares: false
+          Restrict anonymous access to shares and named pipes: true
+          Combined restriction for anonymous user: no-access
+      Restricted Groups:
+          gpr1
+          gpr2
+  Central Access Policy Settings:
+      Policies: cap1
+                cap2
+2 entries were displayed.
+----
+
+
+.Informazioni correlate
+xref:display-gpo-config-task.adoc[Visualizzazione delle informazioni sulle configurazioni dell'oggetto Criteri di gruppo]
+
+xref:display-central-access-policies-task.adoc[Visualizzazione di informazioni sui criteri di accesso centrale]
+
+xref:display-central-access-policy-rules-task.adoc[Visualizzazione delle informazioni sulle regole dei criteri di accesso centrale]
+
+xref:enable-disable-dynamic-access-control-task.adoc[Attivazione o disattivazione del controllo dinamico degli accessi]

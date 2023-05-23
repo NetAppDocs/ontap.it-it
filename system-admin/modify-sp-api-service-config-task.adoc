@@ -1,0 +1,78 @@
+---
+permalink: system-admin/modify-sp-api-service-config-task.html 
+sidebar: sidebar 
+keywords: modify, sp, api, service, configuration, network 
+summary: 'L"API SP è un"API di rete sicura che consente a ONTAP di comunicare con l"SP sulla rete. È possibile modificare la porta utilizzata dal servizio API SP, rinnovare i certificati utilizzati dal servizio per la comunicazione interna o disattivare completamente il servizio. È necessario modificare la configurazione solo in situazioni rare.' 
+---
+= Modificare la configurazione del servizio API SP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'API SP è un'API di rete sicura che consente a ONTAP di comunicare con l'SP sulla rete. È possibile modificare la porta utilizzata dal servizio API SP, rinnovare i certificati utilizzati dal servizio per la comunicazione interna o disattivare completamente il servizio. È necessario modificare la configurazione solo in situazioni rare.
+
+.A proposito di questa attività
+* Il servizio API SP utilizza la porta `50000` per impostazione predefinita.
++
+È possibile modificare il valore della porta se, ad esempio, ci si trova in un'impostazione di rete dove porta `50000` Viene utilizzato per la comunicazione da parte di un'altra applicazione di rete oppure si desidera differenziare tra il traffico proveniente da altre applicazioni e il traffico generato dal servizio API SP.
+
+* I certificati SSL e SSH utilizzati dal servizio API SP sono interni al cluster e non distribuiti esternamente.
++
+Nell'improbabile eventualità che i certificati vengano compromessi, è possibile rinnovarli.
+
+* Il servizio API SP è attivato per impostazione predefinita.
++
+È necessario disattivare il servizio API SP solo in situazioni rare, ad esempio in una LAN privata in cui l'SP non è configurato o utilizzato e si desidera disattivare il servizio.
+
++
+Se il servizio API SP è disattivato, l'API non accetta connessioni in entrata. Inoltre, funzionalità come gli aggiornamenti del firmware SP basati sulla rete e la raccolta di log SP "`dOwn System`" basata sulla rete non sono più disponibili. Il sistema passa all'utilizzo dell'interfaccia seriale.
+
+
+
+.Fasi
+. Passare al livello di privilegio avanzato utilizzando `set -privilege advanced` comando.
+. Modificare la configurazione del servizio API SP:
++
+|===
+| Se si desidera... | Utilizzare il seguente comando... 
+
+
+ a| 
+Modificare la porta utilizzata dal servizio API SP
+ a| 
+`system service-processor api-service modify` con `-port` {`49152`..`65535`} parametro
+
+
+
+ a| 
+Rinnovare i certificati SSL e SSH utilizzati dal servizio API SP per la comunicazione interna
+ a| 
+** Per ONTAP 9.5 o versioni successive `system service-processor api-service renew-internal-certificate`
+** Per ONTAP 9.4 e versioni precedenti
+** `system service-processor api-service renew-certificates`
++
+Se non viene specificato alcun parametro, vengono rinnovati solo i certificati host (inclusi i certificati client e server).
+
++
+Se il `-renew-all true` Viene specificato il parametro, i certificati host e il certificato CA principale vengono rinnovati.
+
+
+
+
+
+ a| 
+com
+ a| 
+
+
+
+ a| 
+Disattivare o riabilitare il servizio API SP
+ a| 
+`system service-processor api-service modify` con `-is-enabled` {`true`|`false`} parametro
+
+|===
+. Visualizzare la configurazione del servizio API SP utilizzando `system service-processor api-service show` comando.
+

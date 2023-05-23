@@ -1,0 +1,104 @@
+---
+permalink: disks-aggregates/correct-misaligned-spare-partitions-task.html 
+sidebar: sidebar 
+keywords: correct, misaligned, partition, disk 
+summary: 'Quando si aggiungono dischi partizionati a un Tier locale (aggregato), è necessario lasciare un disco con sia la partizione root che quella di dati disponibili come spare per ogni nodo. In caso contrario, ONTAP non è in grado di eseguire il dump del core nella partizione dei dati di riserva.' 
+---
+= Correggere le partizioni spare disallineate
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si aggiungono dischi partizionati a un Tier locale (aggregato), è necessario lasciare un disco con sia la partizione root che quella di dati disponibili come spare per ogni nodo. In caso contrario, ONTAP non è in grado di eseguire il dump del core nella partizione dei dati di riserva.
+
+.Di cosa hai bisogno
+È necessario disporre di una partizione di dati spare e di una partizione root spare sullo stesso tipo di disco di proprietà dello stesso nodo.
+
+.Fasi
+. Usando la CLI, visualizzare le partizioni spare per il nodo:
++
+`storage aggregate show-spare-disks -original-owner _node_name_`
+
++
+Si noti quale disco ha una partizione di dati spare (spare_data) e quale disco ha una partizione root spare (spare_root). La partizione spare mostra un valore diverso da zero sotto `Local Data Usable` oppure `Local Root Usable` colonna.
+
+. Sostituire il disco con una partizione di dati spare con il disco con la partizione root spare:
++
+`storage disk replace -disk _spare_data_ -replacement _spare_root_ -action start`
+
++
+È possibile copiare i dati in entrambe le direzioni; tuttavia, il completamento della copia della partizione root richiede meno tempo.
+
+. Monitorare l'avanzamento della sostituzione del disco:
++
+`storage aggregate show-status -aggregate _aggr_name_`
+
+. Una volta completata l'operazione di sostituzione, visualizzare nuovamente le parti di ricambio per confermare che si dispone di un disco libero completo:
++
+`storage aggregate show-spare-disks -original-owner _node_name_`
+
++
+In "`Local Data usable`" (dati locali utilizzabili) e nella sezione viene visualizzato un disco spare con spazio utilizzabile `Local Root Usable`.
+
+
+
+.Esempio
+Visualizzare le partizioni spare per il nodo c1-01 e verificare che le partizioni spare non siano allineate:
+
+[listing]
+----
+c1::> storage aggregate show-spare-disks -original-owner c1-01
+
+Original Owner: c1-01
+ Pool0
+  Shared HDD Spares
+                              Local    Local
+                               Data     Root  Physical
+ Disk    Type   RPM Checksum Usable   Usable      Size
+ ------- ----- ---- -------- ------- ------- --------
+ 1.0.1   BSAS  7200 block    753.8GB     0B   828.0GB
+ 1.0.10  BSAS  7200 block         0B 73.89GB  828.0GB
+----
+Viene avviato il processo di sostituzione del disco:
+
+[listing]
+----
+c1::> storage disk replace -disk 1.0.1 -replacement 1.0.10 -action start
+----
+Durante l'attesa del completamento dell'operazione di sostituzione, viene visualizzato il seguente stato di avanzamento:
+
+[listing]
+----
+c1::> storage aggregate show-status -aggregate aggr0_1
+
+Owner Node: c1-01
+ Aggregate: aggr0_1 (online, raid_dp) (block checksums)
+  Plex: /aggr0_1/plex0 (online, normal, active, pool0)
+   RAID Group /aggr0_1/plex0/rg0 (normal, block checksums)
+                                    Usable Physical
+ Position Disk    Pool Type   RPM     Size     Size Status
+ -------- ------- ---- ---- ----- -------- -------- ----------
+ shared   1.0.1    0   BSAS  7200  73.89GB  828.0GB (replacing,copy in progress)
+ shared   1.0.10   0   BSAS  7200  73.89GB  828.0GB (copy 63% completed)
+ shared   1.0.0    0   BSAS  7200  73.89GB  828.0GB (normal)
+ shared   1.0.11   0   BSAS  7200  73.89GB  828.0GB (normal)
+ shared   1.0.6    0   BSAS  7200  73.89GB  828.0GB (normal)
+ shared   1.0.5    0   BSAS  7200  73.89GB  828.0GB (normal)
+----
+Una volta completata l'operazione di sostituzione, verificare di disporre di un disco libero completo:
+
+[listing]
+----
+ie2220::> storage aggregate show-spare-disks -original-owner c1-01
+
+Original Owner: c1-01
+ Pool0
+  Shared HDD Spares
+                             Local    Local
+                              Data     Root  Physical
+ Disk   Type   RPM Checksum Usable   Usable      Size
+ ------ ----- ---- -------- -------- ------- --------
+ 1.0.1  BSAS  7200 block    753.8GB  73.89GB  828.0GB
+----

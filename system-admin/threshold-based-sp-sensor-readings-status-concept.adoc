@@ -1,0 +1,87 @@
+---
+permalink: system-admin/threshold-based-sp-sensor-readings-status-concept.html 
+sidebar: sidebar 
+keywords: understand, threshold, sp, sensor, readings, status, value, command, output, periodic, operating, conditions 
+summary: I sensori basati su soglie rilevano periodicamente una vasta gamma di componenti del sistema. SP confronta la lettura di un sensore basato su soglia con i limiti di soglia preimpostati che definiscono le condizioni operative accettabili di un componente. 
+---
+= Informazioni sulle letture del sensore SP basate sulla soglia e sui valori di stato dell'output del comando dei sensori di sistema
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+I sensori basati su soglie rilevano periodicamente una vasta gamma di componenti del sistema. SP confronta la lettura di un sensore basato su soglia con i suoi limiti di soglia prefissati che definiscono le condizioni operative accettabili di un componente.
+
+In base alla lettura del sensore, l'SP visualizza lo stato del sensore per consentire il monitoraggio delle condizioni del componente.
+
+Esempi di sensori basati su soglia includono sensori per temperature, tensioni, correnti e velocità delle ventole del sistema. L'elenco specifico dei sensori basati su soglia dipende dalla piattaforma.
+
+I sensori basati su soglia presentano le seguenti soglie, visualizzate nell'output dell'SP `system sensors` comando:
+
+* LCR (Lower Critical)
+* LNC (Lower non-critical)
+* Uncritical superiore (UNC)
+* Superiore critico (UCR)
+
+
+Un valore del sensore tra LNC e LCR o tra UNC e UCR indica che il componente mostra segni di un problema e che potrebbe verificarsi un guasto al sistema. Pertanto, è consigliabile pianificare presto il servizio di componenti.
+
+Un valore del sensore inferiore a LCR o superiore a UCR indica che il componente non funziona correttamente e che si sta per verificare un guasto al sistema. Pertanto, il componente richiede un'attenzione immediata.
+
+Il seguente diagramma illustra gli intervalli di severità specificati dalle soglie:
+
+image::../media/sp-sensor-thresholds.png[Questo grafico è descritto dal testo circostante.]
+
+La lettura di un sensore basato su soglia si trova sotto `Current` nella colonna `system sensors` output del comando. Il `system sensors get` `sensor_name` il comando visualizza ulteriori dettagli per il sensore specificato. Quando la lettura di un sensore basato su soglia supera gli intervalli di soglia non critici e critici, il sensore segnala un problema di gravità crescente. Quando il valore supera un limite di soglia, lo stato del sensore in `system sensors` l'output del comando cambia da `ok` a. `nc` (non critico) o. `cr` (Critico) a seconda del superamento della soglia e della registrazione di un messaggio di evento nel registro eventi SEL.
+
+Alcuni sensori basati su soglia non hanno tutti e quattro i livelli di soglia. Per questi sensori, vengono visualizzate le soglie mancanti `na` come i loro limiti in `system sensors` Output del comando, che indica che il sensore specifico non presenta alcun problema di limite o gravità per la soglia data e che l'SP non monitora il sensore per tale soglia.
+
+.Esempio di output del comando dei sensori di sistema
+Nell'esempio riportato di seguito vengono illustrate alcune informazioni visualizzate da `system sensors` Nell'interfaccia CLI SP:
+
+[listing]
+----
+SP node1> system sensors
+
+Sensor Name      | Current    | Unit       | Status| LCR       | LNC       | UNC       | UCR
+-----------------+------------+------------+-------+-----------+-----------+-----------+-----------
+CPU0_Temp_Margin | -55.000    | degrees C  | ok    | na        | na        | -5.000    | 0.000
+CPU1_Temp_Margin | -56.000    | degrees C  | ok    | na        | na        | -5.000    | 0.000
+In_Flow_Temp     | 32.000     | degrees C  | ok    | 0.000     | 10.000    | 42.000    | 52.000
+Out_Flow_Temp    | 38.000     | degrees C  | ok    | 0.000     | 10.000    | 59.000    | 68.000
+CPU1_Error       | 0x0        | discrete   | 0x0180| na        | na        | na        | na
+CPU1_Therm_Trip  | 0x0        | discrete   | 0x0180| na        | na        | na        | na
+CPU1_Hot         | 0x0        | discrete   | 0x0180| na        | na        | na        | na
+IO_Mid1_Temp     | 30.000     | degrees C  | ok    | 0.000     | 10.000    | 55.000    | 64.000
+IO_Mid2_Temp     | 30.000     | degrees C  | ok    | 0.000     | 10.000    | 55.000    | 64.000
+CPU_VTT          | 1.106      | Volts      | ok    | 1.028     | 1.048     | 1.154     | 1.174
+CPU0_VCC         | 1.154      | Volts      | ok    | 0.834     | 0.844     | 1.348     | 1.368
+3.3V             | 3.323      | Volts      | ok    | 3.053     | 3.116     | 3.466     | 3.546
+5V               | 5.002      | Volts      | ok    | 4.368     | 4.465     | 5.490     | 5.636
+STBY_1.8V        | 1.794      | Volts      | ok    | 1.678     | 1.707     | 1.892     | 1.911
+…
+----
+.Esempio di output del comando SENSOR_NAME dei sensori di sistema per un sensore basato su soglia
+L'esempio seguente mostra il risultato dell'immissione `system sensors get` `sensor_name` Nella CLI SP per il sensore basato su soglia 5V:
+
+[listing]
+----
+SP node1> system sensors get 5V
+
+Locating sensor record...
+Sensor ID              : 5V (0x13)
+ Entity ID             : 7.97
+ Sensor Type (Analog)  : Voltage
+ Sensor Reading        : 5.002 (+/- 0) Volts
+ Status                : ok
+ Lower Non-Recoverable : na
+ Lower Critical        : 4.246
+ Lower Non-Critical    : 4.490
+ Upper Non-Critical    : 5.490
+ Upper Critical        : 5.758
+ Upper Non-Recoverable : na
+ Assertion Events      :
+ Assertions Enabled    : lnc- lcr- ucr+
+ Deassertions Enabled  : lnc- lcr- ucr+
+----

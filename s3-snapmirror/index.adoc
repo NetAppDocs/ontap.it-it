@@ -1,0 +1,127 @@
+---
+sidebar: sidebar 
+permalink: s3-snapmirror/index.html 
+keywords: s3 snapmirror buckets, snapmirror buckets SVM, s3 snapmirror data protection, hybrid cloud bundle, s3 snapmirror relationship, VM peering, cluster and storage VM peering, s3 SnapMirror considerations and restrictions, Fan-in deployments, data protection relationships, s3 snapmirror policy, peering 
+summary: A partire da ONTAP 9.10.1, è possibile proteggere i bucket negli archivi di oggetti di ONTAP S3 utilizzando le familiari funzionalità di mirroring e backup di SnapMirror 
+---
+= Panoramica di S3 SnapMirror
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+:toc-position: content
+
+
+[role="lead"]
+A partire da ONTAP 9.10.1, è possibile proteggere i bucket negli archivi di oggetti di ONTAP S3 utilizzando le familiari funzionalità di mirroring e backup di SnapMirror. Inoltre, a differenza di SnapMirror standard, S3 SnapMirror può avere destinazioni non NetApp.
+
+S3 SnapMirror supporta mirror attivi e Tier di backup dai bucket ONTAP S3 alle seguenti destinazioni:
+
+[cols="50,25,25"]
+|===
+| Destinazione | Supporta mirror attivi e Takeover? | Supporta backup e ripristino? 
+
+
+ a| 
+ONTAP S3
+
+* Bucket nella stessa SVM
+* Bucket in diverse SVM sullo stesso cluster
+* Bucket in SVM su cluster diversi
+
+| image:status-enabled-perf-config.gif["selezionare"] | image:status-enabled-perf-config.gif["selezionare"] 
+
+
+| StorageGRID |  | image:status-enabled-perf-config.gif["selezionare"] 
+
+
+| AWS S3 |  | image:status-enabled-perf-config.gif["selezionare"] 
+
+
+| Cloud Volumes ONTAP per Azure |  | image:status-enabled-perf-config.gif["selezionare"] 
+|===
+È possibile proteggere i bucket esistenti sui server ONTAP S3 o creare nuovi bucket con la protezione dei dati attivata immediatamente.
+
+S3 SnapMirror supporta le relazioni fan-out e cascata. Per una panoramica, vedere link:../data-protection/supported-deployment-config-concept.html["Implementazioni di protezione dei dati fan-out e cascata"].
+
+
+
+== Requisiti di S3 SnapMirror
+
+* ONTAP versione ONTAP 9.10.1 o successiva deve eseguire cluster di origine e di destinazione.
+* Licenze i seguenti bundle di licenze sono richiesti sui sistemi di origine e destinazione ONTAP:
++
+** Bundle principale per protocollo e storage ONTAP S3.
+** Bundle per la protezione dei dati per S3 SnapMirror destinato ad altri archivi di oggetti NetApp (ONTAP S3, StorageGRID e Cloud Volumes ONTAP).
+** Data Protection Bundle e Hybrid Cloud Bundle per S3 SnapMirror destinati a archivi di oggetti di terze parti (AWS S3).
+
+
+* ONTAP S3
++
+** I server ONTAP S3 devono eseguire SVM di origine e di destinazione.
+** Si consiglia, ma non è obbligatorio, di installare i certificati CA per l'accesso TLS sui sistemi che ospitano server S3.
++
+*** I certificati CA utilizzati per firmare i certificati dei server S3 devono essere installati nella VM di storage amministrativa dei cluster che ospitano server S3.
+*** È possibile utilizzare un certificato CA autofirmato o un certificato firmato da un fornitore CA esterno.
+*** Se le VM di storage di origine o di destinazione non sono in ascolto su HTTPS, non è necessario installare i certificati CA.
+
+
+
+
+* Peering (per target ONTAP S3)
++
+** È necessario configurare le LIF di intercluster (per le destinazioni ONTAP remote).
+** I cluster di origine e di destinazione vengono peering (per le destinazioni ONTAP remote).
+** Le VM storage di origine e di destinazione sono in peering (per tutte le destinazioni ONTAP).
+
+
+* Policy di SnapMirror
++
+** Per tutte le relazioni di S3 SnapMirror è necessario un criterio SnapMirror specifico di S3, ma è possibile utilizzare lo stesso criterio per più relazioni.
+** È possibile creare un criterio personalizzato o accettare il criterio *continuo* predefinito, che include i seguenti valori:
++
+*** Throttle (limite superiore di throughput/larghezza di banda) - illimitato.
+*** Tempo per l'obiettivo del punto di ripristino: 1 ora (3600 secondi).
+
+
+
+
+* Le chiavi utente root Storage VM root sono necessarie per le relazioni S3 SnapMirror; ONTAP non le assegna per impostazione predefinita. La prima volta che si crea una relazione SnapMirror S3, è necessario verificare che le chiavi esistano sia sulle macchine virtuali storage di origine che di destinazione e rigenerarle in caso contrario. Se è necessario rigenerarli, è necessario assicurarsi che tutti i client e tutte le configurazioni dell'archivio di oggetti SnapMirror che utilizzano la coppia di chiavi di accesso e segrete siano aggiornati con le nuove chiavi.
+
+
+Per informazioni sulla configurazione del server S3, consultare i seguenti argomenti:
+
+* link:../task_object_provision_enable_s3_server.html["Abilitare un server S3 su una VM di storage"]
+* link:../s3-config/index.html["Informazioni sul processo di configurazione S3"]
+
+
+Per informazioni sul peering delle macchine virtuali di storage e cluster, consultare il seguente argomento:
+
+* link:../task_dp_prepare_mirror.html["Preparazione per il mirroring e il vaulting (System Manager, fasi 1-6)"]
+* link:../peering/index.html["Peering cluster e SVM (CLI)"]
+
+
+
+
+== Considerazioni e limitazioni su SnapMirror S3
+
+Quando si creano nuovi bucket, è possibile controllare l'accesso creando utenti e gruppi. Per ulteriori informazioni, consulta i seguenti argomenti:
+
+* link:../task_object_provision_add_s3_users_groups.html["Aggiunta di utenti e gruppi S3 (System Manager)"]
+* link:../s3-config/create-s3-user-task.html["Creazione di un utente S3 (CLI)"]
+* link:../s3-config/create-modify-groups-task.html["Creare o modificare gruppi S3 (CLI)"]
+
+
+La seguente funzionalità SnapMirror standard non è supportata nella versione corrente di S3 SnapMirror:
+
+* Implementazioni fan-in (relazioni di protezione dei dati tra più bucket di origine e un singolo bucket di destinazione)
++
+S3 SnapMirror può supportare più mirror bucket da più cluster a un singolo cluster secondario, ma ogni bucket di origine deve avere un proprio bucket di destinazione sul cluster secondario.
+
+

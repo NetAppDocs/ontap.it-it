@@ -1,0 +1,46 @@
+---
+permalink: smb-admin/allow-users-groups-bypass-directory-traverse-task.html 
+sidebar: sidebar 
+keywords: traverse, directories, directory, path, file, permission, sechangenotifyprivilege, privilege, local, smb, user, svm, bypass, traverse, check, allow users or groups to bypass directory traverse checking 
+summary: 'Se si desidera che un utente sia in grado di attraversare tutte le directory nel percorso di un file anche se l"utente non dispone delle autorizzazioni per una directory attraversata, è possibile aggiungere il privilegio SeChangeNotifyPrivilege agli utenti SMB locali o ai gruppi sulle macchine virtuali di storage (SVM). Per impostazione predefinita, gli utenti possono ignorare il controllo incrociato della directory.' 
+---
+= Consenti a utenti o gruppi di ignorare il controllo incrociato della directory
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se si desidera che un utente sia in grado di attraversare tutte le directory del percorso verso un file anche se non dispone delle autorizzazioni per una directory attraversata, è possibile aggiungere `SeChangeNotifyPrivilege` Privilegio per utenti o gruppi SMB locali su macchine virtuali storage (SVM). Per impostazione predefinita, gli utenti possono ignorare il controllo incrociato della directory.
+
+.Prima di iniziare
+* Un server SMB deve essere presente sulla SVM.
+* È necessario attivare l'opzione server SMB per utenti e gruppi locali.
+* L'utente o il gruppo locale o di dominio in cui si utilizza `SeChangeNotifyPrivilege` il privilegio verrà aggiunto deve essere già esistente.
+
+
+.A proposito di questa attività
+Quando si aggiungono privilegi a un utente o a un gruppo di dominio, ONTAP può validare l'utente o il gruppo di dominio contattando il controller di dominio. Il comando potrebbe non riuscire se ONTAP non riesce a contattare il controller di dominio.
+
+.Fasi
+. Abilitare il controllo incrociato bypass aggiungendo `SeChangeNotifyPrivilege` privilegio per un utente o un gruppo locale o di dominio: `vserver cifs users-and-groups privilege add-privilege -vserver _vserver_name_ -user-or-group-name _name_ -privileges SeChangeNotifyPrivilege`
++
+Il valore di `-user-or-group-name` il parametro è un utente o un gruppo locale o un utente o un gruppo di dominio.
+
+. Verificare che l'utente o il gruppo specificato abbia attivato il controllo incrociato bypass: `vserver cifs users-and-groups privilege show -vserver _vserver_name_ ‑user-or-group-name _name_`
+
+
+.Esempio
+Il seguente comando consente agli utenti che appartengono al gruppo "`EXAMPLE`" di ignorare il controllo incrociato della directory aggiungendo il `SeChangeNotifyPrivilege` privilegio per il gruppo:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege add-privilege -vserver vs1 -user-or-group-name EXAMPLE\eng -privileges SeChangeNotifyPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- ---------------
+vs1       EXAMPLE\eng           SeChangeNotifyPrivilege
+----
+.Informazioni correlate
+xref:disallow-users-groups-bypass-directory-traverse-task.adoc[Non consentire a utenti o gruppi di ignorare il controllo incrociato della directory]

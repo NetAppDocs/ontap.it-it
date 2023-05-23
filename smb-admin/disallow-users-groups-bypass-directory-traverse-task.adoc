@@ -1,0 +1,48 @@
+---
+permalink: smb-admin/disallow-users-groups-bypass-directory-traverse-task.html 
+sidebar: sidebar 
+keywords: user, traverse, directories, directory, path, file, permission, sechangenotifyprivilege, privilege, local, smb, group, storage, virtual, machine, svm, disallow users or groups from bypassing directory traverse checking 
+summary: 'Se non si desidera che un utente attraversi tutte le directory nel percorso di un file perché l"utente non dispone delle autorizzazioni per la directory attraversata, è possibile rimuovere il privilegio SeChangeNotifyPrivilege dagli utenti SMB locali o dai gruppi sulle macchine virtuali di storage (SVM).' 
+---
+= Non consentire a utenti o gruppi di ignorare il controllo incrociato della directory
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se non si desidera che un utente attraversi tutte le directory nel percorso di un file perché l'utente non dispone delle autorizzazioni per la directory attraversata, è possibile rimuovere `SeChangeNotifyPrivilege` Privilegio di utenti o gruppi SMB locali su macchine virtuali storage (SVM).
+
+.Prima di iniziare
+L'utente o il gruppo locale o di dominio da cui verranno rimossi i privilegi deve già esistere.
+
+.A proposito di questa attività
+Quando si rimuovono i privilegi da un utente o gruppo di dominio, ONTAP può validare l'utente o il gruppo di dominio contattando il controller di dominio. Il comando potrebbe non riuscire se ONTAP non riesce a contattare il controller di dominio.
+
+.Fasi
+. Non consentire il controllo incrociato del bypass: `vserver cifs users-and-groups privilege remove-privilege -vserver _vserver_name_ -user-or-group-name _name_ -privileges SeChangeNotifyPrivilege`
++
+Il comando rimuove `SeChangeNotifyPrivilege` privilegio dell'utente o del gruppo locale o di dominio specificato con il valore per `-user-or-group-name _name_` parametro.
+
+. Verificare che l'utente o il gruppo specificato abbia disattivato il controllo incrociato bypass: `vserver cifs users-and-groups privilege show -vserver _vserver_name_ ‑user-or-group-name _name_`
+
+
+.Esempio
+Il seguente comando non consente agli utenti che appartengono al gruppo "`EXAMPLE`" di ignorare il controllo incrociato della directory:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- -----------------------
+vs1       EXAMPLE\eng           SeChangeNotifyPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege remove-privilege -vserver vs1 -user-or-group-name EXAMPLE\eng -privileges SeChangeNotifyPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- -----------------------
+vs1       EXAMPLE\eng           -
+----
+.Informazioni correlate
+xref:allow-users-groups-bypass-directory-traverse-task.adoc[Consentire a utenti o gruppi di ignorare il controllo incrociato della directory]

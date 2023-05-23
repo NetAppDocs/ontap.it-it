@@ -1,0 +1,53 @@
+---
+permalink: disks-aggregates/determine-modify-caching-policy-flash-pool-task.html 
+sidebar: sidebar 
+keywords: modify, cache, policy, flash pool, aggregate, local tier 
+summary: 'È possibile assegnare criteri di conservazione della cache ai volumi nei Tier locali (aggregati) di Flash Pool per determinare la durata dei dati del volume nella cache di Flash Pool. Tuttavia, in alcuni casi, la modifica del criterio di conservazione della cache potrebbe non influire sul tempo in cui i dati del volume rimangono nella cache.' 
+---
+= Determinare se modificare la policy di caching dei Tier locali (aggregati) di Flash Pool
+:allow-uri-read: 
+
+
+[role="lead"]
+È possibile assegnare criteri di conservazione della cache ai volumi nei Tier locali (aggregati) di Flash Pool per determinare la durata dei dati del volume nella cache di Flash Pool. Tuttavia, in alcuni casi, la modifica del criterio di conservazione della cache potrebbe non influire sul tempo in cui i dati del volume rimangono nella cache.
+
+.A proposito di questa attività
+Se i dati soddisfano una delle seguenti condizioni, la modifica della policy di conservazione della cache potrebbe non avere alcun impatto:
+
+* Il carico di lavoro è sequenziale.
+* Il carico di lavoro non rileggerà i blocchi casuali memorizzati nella cache dei dischi a stato solido (SSD).
+* La dimensione della cache del volume è troppo piccola.
+
+
+.Fasi
+I seguenti passaggi verificano le condizioni che devono essere soddisfatte dai dati. L'attività deve essere eseguita utilizzando la CLI in modalità avanzata con privilegi.
+
+. Utilizzare la CLI per visualizzare il volume del carico di lavoro:
++
+`statistics start -object workload_volume`
+
+. Determinare il modello di carico di lavoro del volume:
++
+`statistics show -object workload_volume -instance _volume-workload_ -counter sequential_reads`
+
+. Determinare la percentuale di hit del volume:
++
+`statistics show -object wafl_hya_vvol -instance _volume_ -counter read_ops_replaced_pwercent|wc_write_blks_overwritten_percent`
+
+. Determinare il `Cacheable Read` e. `Project Cache Alloc` del volume:
++
+`system node run -node node_name wafl awa start _aggr_name_`
+
+. Visualizzare il riepilogo AWA:
++
+`system node run -node node_name wafl awa print _aggr_name_`
+
+. Confronta la percentuale di hit del volume con `Cacheable Read`.
++
+Se la percentuale di hit del volume è maggiore di `Cacheable Read`, Quindi, il carico di lavoro non rileggerà i blocchi casuali memorizzati nella cache degli SSD.
+
+. Confrontare le dimensioni correnti della cache del volume con `Project Cache Alloc`.
++
+Se la dimensione corrente della cache del volume è maggiore di `Project Cache Alloc`, quindi la dimensione della cache del volume è troppo piccola.
+
+

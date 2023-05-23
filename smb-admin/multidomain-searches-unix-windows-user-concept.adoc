@@ -1,0 +1,94 @@
+---
+permalink: smb-admin/multidomain-searches-unix-windows-user-concept.html 
+sidebar: sidebar 
+keywords: ontap, support, multidomain, search, map, unix, user, windows, discover, trust, domain, match, replacement, alternative, replacement, prefer, multidomain searches for unix user to windows user name mappings 
+summary: 'ONTAP supporta le ricerche su più domini durante la mappatura degli utenti UNIX agli utenti Windows. In tutti i domini attendibili rilevati vengono ricercate le corrispondenze del modello di sostituzione fino a quando non viene restituito un risultato corrispondente. In alternativa, è possibile configurare un elenco di domini attendibili preferiti, che viene utilizzato al posto dell"elenco di domini attendibili rilevati e che viene ricercato in ordine fino a quando non viene restituito un risultato corrispondente.' 
+---
+= Multidominio ricerca le mappature dei nomi utente da UNIX a Windows
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP supporta le ricerche su più domini durante la mappatura degli utenti UNIX agli utenti Windows. In tutti i domini attendibili rilevati vengono ricercate le corrispondenze del modello di sostituzione fino a quando non viene restituito un risultato corrispondente. In alternativa, è possibile configurare un elenco di domini attendibili preferiti, che viene utilizzato al posto dell'elenco di domini attendibili rilevati e che viene ricercato in ordine fino a quando non viene restituito un risultato corrispondente.
+
+
+
+== Il modo in cui i trust di dominio influiscono sulle ricerche di mappatura dei nomi utente da UNIX a Windows
+
+Per comprendere il funzionamento della mappatura dei nomi utente multidominio, è necessario comprendere il funzionamento dei trust di dominio con ONTAP. Le relazioni di trust di Active Directory con il dominio principale del server CIFS possono essere un trust bidirezionale o possono essere uno dei due tipi di trust unidirezionali, un trust inbound o un trust outbound. Il dominio principale è il dominio a cui appartiene il server CIFS sulla SVM.
+
+* _Fiducia bidirezionale_
++
+Con trust bidirezionali, entrambi i domini si fidano l'uno dell'altro. Se il dominio principale del server CIFS ha un trust bidirezionale con un altro dominio, il dominio principale può autenticare e autorizzare un utente appartenente al dominio attendibile e viceversa.
+
++
+Le ricerche di associazione dei nomi utente da UNIX a Windows possono essere eseguite solo su domini con trust bidirezionali tra il dominio principale e l'altro dominio.
+
+* _Fiducia in uscita_
++
+Con un trust in uscita, il dominio principale considera attendibile l'altro dominio. In questo caso, il dominio principale può autenticare e autorizzare un utente appartenente al dominio trusted in uscita.
+
++
+Un dominio con un trust in uscita con il dominio principale viene _not_ ricercato quando si eseguono ricerche di mappatura da utente UNIX a nome utente Windows.
+
+* _Fiducia in entrata_
++
+Con un trust inbound, l'altro dominio considera attendibile il dominio principale del server CIFS. In questo caso, il dominio principale non può autenticare o autorizzare un utente appartenente al dominio trusted in entrata.
+
++
+Un dominio con un trust in entrata con il dominio principale viene _not_ ricercato quando si eseguono ricerche di associazione tra utenti UNIX e nomi utente Windows.
+
+
+
+
+
+== Modalità di utilizzo dei caratteri jolly (*) per configurare le ricerche su più domini per la mappatura dei nomi
+
+Le ricerche di mappatura dei nomi multidominio sono facilitate dall'utilizzo di caratteri jolly nella sezione dominio del nome utente di Windows. Nella tabella seguente viene illustrato come utilizzare i caratteri jolly nella parte di dominio di una voce di mappatura dei nomi per abilitare le ricerche su più domini:
+
+|===
+| Schema | Sostituzione | Risultato 
+
+
+ a| 
+root
+ a| 
+amministratore
+ a| 
+L'utente UNIX "`root`" viene mappato all'utente "`Administrator`". Tutti i domini attendibili vengono ricercati in ordine fino a quando non viene trovato il primo utente corrispondente "`Administrator`".
+
+
+
+ a| 
+*
+ a| 
+*
+ a| 
+Gli utenti UNIX validi vengono mappati ai corrispondenti utenti Windows. Tutti i domini attendibili vengono ricercati in ordine fino a quando non viene trovato il primo utente corrispondente a tale nome.
+
+[NOTE]
+====
+Il modello è valido solo per la mappatura dei nomi da UNIX a Windows, non viceversa.
+
+====
+|===
+
+
+== Come vengono eseguite le ricerche di nomi multidominio
+
+È possibile scegliere uno dei due metodi per determinare l'elenco di domini attendibili utilizzati per la ricerca di nomi di più domini:
+
+* Utilizzare l'elenco di attendibilità bidirezionale rilevato automaticamente compilato da ONTAP
+* Utilizzare l'elenco di domini attendibili preferito compilato
+
+
+Se un utente UNIX viene mappato a un utente Windows con un carattere jolly utilizzato per la sezione di dominio del nome utente, l'utente Windows viene ricercato in tutti i domini attendibili nel modo seguente:
+
+* Se viene configurato un elenco di domini attendibili preferito, l'utente Windows mappato viene ricercato solo in questo elenco di ricerca, in ordine.
+* Se un elenco preferito di domini attendibili non è configurato, l'utente Windows viene ricercato in tutti i domini attendibili bidirezionali del dominio principale.
+* Se non esistono domini trusted bidirezionalmente per il dominio principale, l'utente viene ricercato nel dominio principale.
+
+
+Se un utente UNIX viene mappato a un utente Windows senza una sezione di dominio nel nome utente, l'utente Windows viene ricercato nel dominio principale.

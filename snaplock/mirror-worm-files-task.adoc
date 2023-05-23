@@ -1,0 +1,155 @@
+---
+permalink: snaplock/mirror-worm-files-task.html 
+sidebar: sidebar 
+keywords: mirror, worm, file, snapmirror, replicate, volume, compliance, enterprise, snaplock 
+summary: 'È possibile utilizzare SnapMirror per replicare i file WORM in un"altra posizione geografica per il disaster recovery e altri scopi. Sia il volume di origine che il volume di destinazione devono essere configurati per SnapLock e entrambi i volumi devono avere la stessa modalità SnapLock, Compliance o Enterprise. Vengono replicate tutte le principali proprietà SnapLock del volume e dei file.' 
+---
+= Mirroring dei file WORM per il disaster recovery
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare SnapMirror per replicare i file WORM in un'altra posizione geografica per il disaster recovery e altri scopi. Sia il volume di origine che il volume di destinazione devono essere configurati per SnapLock e entrambi i volumi devono avere la stessa modalità SnapLock, Compliance o Enterprise. Vengono replicate tutte le principali proprietà SnapLock del volume e dei file.
+
+.Prerequisiti
+I volumi di origine e di destinazione devono essere creati in cluster peered con SVM peered. Per ulteriori informazioni, vedere https://docs.netapp.com/us-en/ontap-sm-classic/peering/index.html["Peering di cluster e SVM"].
+
+.A proposito di questa attività
+* A partire da ONTAP 9.5, è possibile replicare i file WORM con la relazione SnapMirror di tipo XDP (Extended Data Protection) piuttosto che con la relazione di tipo DP (Data Protection). La modalità XDP è indipendente dalla versione di ONTAP ed è in grado di differenziare i file memorizzati nello stesso blocco, semplificando notevolmente la risincronizzazione dei volumi replicati in modalità Compliance. Per informazioni su come convertire una relazione di tipo DP esistente in una relazione di tipo XDP, vedere link:../data-protection/index.html["Protezione dei dati"].
+* Un'operazione di risincronizzazione su una relazione SnapMirror di tipo DP non riesce per un volume in modalità di conformità se SnapLock determina che causerà una perdita di dati. Se un'operazione di risincronizzazione non riesce, è possibile utilizzare `volume clone create` per creare un clone del volume di destinazione. È quindi possibile risincronizzare il volume di origine con il clone.
+* Una relazione SnapMirror di tipo XDP tra volumi compatibili con SnapLock supporta una risincronizzazione dopo un'interruzione anche se i dati sulla destinazione sono stati diversi dall'origine dopo l'interruzione.
++
+In una risincronizzazione, quando viene rilevata una divergenza di dati tra l'origine e la destinazione oltre lo snapshot comune, viene tagliata una nuova istantanea sulla destinazione per acquisire questa divergenza. Il nuovo snapshot e lo snapshot comune sono entrambi bloccati con un tempo di conservazione come segue:
+
++
+** Il tempo di scadenza del volume della destinazione
+** Se il tempo di scadenza del volume è passato o non è stato impostato, lo snapshot viene bloccato per un periodo di 30 giorni
+** Se la destinazione dispone di conservazione a fini giudiziari, il periodo di scadenza del volume effettivo viene mascherato e visualizzato come '`indefinito`', tuttavia lo snapshot viene bloccato per la durata del periodo di scadenza del volume effettivo.
+
+
+
+
+Se il volume di destinazione ha un periodo di scadenza successivo a quello di origine, il periodo di scadenza di destinazione viene mantenuto e non viene sovrascritto dal periodo di scadenza del volume di origine successivo alla risincronizzazione.
+
+Se sulla destinazione sono presenti legal-stive che differiscono dall'origine, non è consentita una risincronizzazione. L'origine e la destinazione devono avere le stesse disposizioni legali o tutte le disposizioni legali sulla destinazione devono essere rilasciate prima di tentare una risincronizzazione.
+
+Una copia Snapshot bloccata sul volume di destinazione creato per acquisire i dati divergenti può essere copiata nell'origine utilizzando la CLI eseguendo `snapmirror update -s snapshot` comando. Una volta copiata, l'istantanea continuerà a essere bloccata anche all'origine.
+
+* Le relazioni di protezione dei dati SVM non sono supportate.
+* Le relazioni di protezione dei dati di condivisione del carico non sono supportate.
+
+
+La seguente illustrazione mostra la procedura per inizializzare una relazione SnapMirror:
+
+image::../media/snapmirror_steps_clustered.png[Questa illustrazione mostra la procedura per l'inizializzazione di una relazione SnapMirror: Identificazione del cluster di destinazione,creating a destination volume,creating a SnapMirror relationship between the volumes]
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.12.1, è possibile utilizzare Gestione di sistema per impostare la replica di SnapMirror dei file WORM.
+
+.Fasi
+. Selezionare *Storage > Volumes* (Storage > volumi).
+. Fare clic su *Mostra/Nascondi* e selezionare *tipo SnapLock* per visualizzare la colonna nella finestra *volumi*.
+. Individuare un volume SnapLock.
+. Fare clic su image:icon_kabob.gif["alt=Opzioni di menu"] E selezionare *Protect*.
+. Scegliere il cluster di destinazione e la VM di storage di destinazione.
+. Fare clic su *altre opzioni*.
+. Selezionare *Mostra policy legacy* e selezionare *DPDefault (legacy)*.
+. Nella sezione *Destination Configuration details* (Dettagli configurazione destinazione), selezionare *Override transfer schedule* (Ignora pianificazione trasferimento) e selezionare *Hourly* (orario).
+. Fare clic su *Save* (Salva).
+. A sinistra del nome del volume di origine, fare clic sulla freccia per espandere i dettagli del volume, quindi a destra della pagina, esaminare i dettagli della protezione di SnapMirror remoto.
+. Sul cluster remoto, accedere a *Relazioni di protezione*.
+. Individuare la relazione e fare clic sul nome del volume di destinazione per visualizzare i dettagli della relazione.
+. Verificare che il tipo SnapLock del volume di destinazione e altre informazioni SnapLock siano disponibili.
+
+
+--
+.CLI
+--
+. Identificare il cluster di destinazione.
+. Sul cluster di destinazione, installare la licenza SnapLock, inizializzare ComplianceClock e, se si utilizza una versione di ONTAP precedente alla 9.10.1, creare un aggregato SnapLock.
+. Nel cluster di destinazione, creare un volume di destinazione SnapLock di tipo `DP` di dimensioni uguali o superiori al volume di origine:
++
+`*volume create -vserver _SVM_name_ -volume _volume_name_ -aggregate _aggregate_name_ -snaplock-type compliance|enterprise -type DP -size _size_*`
+
++
+
+NOTE: A partire da ONTAP 9.10.1, i volumi SnapLock e non SnapLock possono esistere sullo stesso aggregato; pertanto, non è più necessario creare un aggregato SnapLock separato se si utilizza ONTAP 9.10.1. Utilizzare l'opzione volume -snaplock-type per specificare un tipo di volume Compliance o Enterprise SnapLock. Nelle versioni di ONTAP precedenti a ONTAP 9.10.1, la modalità SnapLock (Compliance o Enterprise) viene ereditata dall'aggregato. I volumi di destinazione flessibili in base alla versione non sono supportati. L'impostazione della lingua del volume di destinazione deve corrispondere all'impostazione della lingua del volume di origine.
+
++
+Il seguente comando crea un SnapLock da 2 GB `Compliance` volume denominato `dstvolB` poll `SVM2` sull'aggregato `node01_aggr`:
+
++
+[listing]
+----
+cluster2::> volume create -vserver SVM2 -volume dstvolB -aggregate node01_aggr -snaplock-type compliance -type DP -size 2GB
+----
+. Sulla SVM di destinazione, creare un criterio SnapMirror:
++
+`*snapmirror policy create -vserver _SVM_name_ -policy _policy_name_*`
+
++
+Il seguente comando crea il criterio a livello di SVM `SVM1-mirror`:
+
++
+[listing]
+----
+SVM2::> snapmirror policy create -vserver SVM2 -policy SVM1-mirror
+----
+. Sulla SVM di destinazione, creare una pianificazione SnapMirror:
++
+`*job schedule cron create -name _schedule_name_ -dayofweek _day_of_week_ -hour _hour_ -minute _minute_*`
+
++
+Il comando seguente crea una pianificazione SnapMirror denominata `weekendcron`:
+
++
+[listing]
+----
+SVM2::> job schedule cron create -name weekendcron -dayofweek "Saturday, Sunday" -hour 3 -minute 0
+----
+. Sulla SVM di destinazione, creare una relazione SnapMirror:
++
+`*snapmirror create -source-path _source_path_ -destination-path _destination_path_ -type XDP|DP -policy _policy_name_ -schedule _schedule_name_*`
+
++
+Il comando seguente crea una relazione SnapMirror tra il volume di origine `srcvolA` acceso `SVM1` e il volume di destinazione `dstvolB` acceso `SVM2`e assegna il criterio `SVM1-mirror` e il calendario `weekendcron`:
+
++
+[listing]
+----
+SVM2::> snapmirror create -source-path SVM1:srcvolA -destination-path SVM2:dstvolB -type XDP -policy SVM1-mirror -schedule weekendcron
+----
++
+
+NOTE: Il tipo di XDP è disponibile in ONTAP 9.5 e versioni successive. È necessario utilizzare il tipo di DP in ONTAP 9.4 e versioni precedenti.
+
+. Sulla SVM di destinazione, inizializzare la relazione SnapMirror:
++
+`*snapmirror initialize -destination-path _destination_path_*`
+
++
+Il processo di inizializzazione esegue un _trasferimento baseline_ al volume di destinazione. SnapMirror crea una copia Snapshot del volume di origine, quindi trasferisce la copia e tutti i blocchi di dati a cui fa riferimento al volume di destinazione. Inoltre, trasferisce al volume di destinazione tutte le altre copie Snapshot presenti nel volume di origine.
+
++
+Il seguente comando inizializza la relazione tra il volume di origine `srcvolA` acceso `SVM1` e il volume di destinazione `dstvolB` acceso `SVM2`:
+
++
+[listing]
+----
+SVM2::> snapmirror initialize -destination-path SVM2:dstvolB
+----
+
+
+--
+====
+.Informazioni correlate
+https://docs.netapp.com/us-en/ontap-sm-classic/peering/index.html["Peering di cluster e SVM"]
+
+https://docs.netapp.com/us-en/ontap-sm-classic/volume-disaster-prep/index.html["Preparazione al disaster recovery dei volumi"]
+
+link:../data-protection/index.html["Protezione dei dati"]

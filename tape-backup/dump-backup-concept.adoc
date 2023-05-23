@@ -1,0 +1,67 @@
+---
+permalink: tape-backup/dump-backup-concept.html 
+sidebar: sidebar 
+keywords: dump, backup, qtree, file, system, data 
+summary: Un backup dump scrive i dati del file system da disco a nastro utilizzando un processo predefinito. È possibile eseguire il backup di un volume, di un qtree o di un sottostruttura che non è né un intero volume né un intero qtree. 
+---
+= Come funziona un backup dump
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un backup dump scrive i dati del file system da disco a nastro utilizzando un processo predefinito. È possibile eseguire il backup di un volume, di un qtree o di un sottostruttura che non è né un intero volume né un intero qtree.
+
+La seguente tabella descrive il processo utilizzato da ONTAP per eseguire il backup dell'oggetto indicato dal percorso di dump:
+
+[cols="1,4"]
+|===
+| Fase | Azione 
+
+
+ a| 
+1
+ a| 
+Per un volume inferiore a quello completo o per i backup qtree completi, ONTAP attraversa le directory per identificare i file di cui eseguire il backup. Se si esegue il backup di un intero volume o qtree, ONTAP combina questa fase con la fase 2.
+
+
+
+ a| 
+2
+ a| 
+Per un backup completo di un volume o di un qtree completo, ONTAP identifica le directory nei volumi o qtree di cui eseguire il backup.
+
+
+
+ a| 
+3
+ a| 
+ONTAP scrive le directory su nastro.
+
+
+
+ a| 
+4
+ a| 
+ONTAP scrive i file su nastro.
+
+
+
+ a| 
+5
+ a| 
+ONTAP scrive le informazioni dell'ACL (se applicabili) su nastro.
+
+|===
+Il backup del dump utilizza una copia Snapshot dei dati per il backup. Pertanto, non è necessario portare il volume offline prima di iniziare il backup.
+
+Il backup del dump assegna un nome a ogni copia Snapshot creata `snapshot_for_backup.n`, dove `n` è un numero intero che inizia a 0. Ogni volta che il backup dump crea una copia Snapshot, il numero intero viene incrementato di 1. Il valore intero viene reimpostato su 0 dopo il riavvio del sistema di storage. Una volta completata l'operazione di backup, il motore di dump elimina questa copia Snapshot.
+
+Quando ONTAP esegue più backup di dump contemporaneamente, il motore di dump crea più copie Snapshot. Ad esempio, se ONTAP esegue due backup di dump contemporaneamente, nei volumi da cui viene eseguito il backup dei dati vengono trovate le seguenti copie Snapshot: `snapshot_for_backup.0` e. `snapshot_for_backup.1`.
+
+[NOTE]
+====
+Quando si esegue il backup da una copia Snapshot, il motore di dump non crea una copia Snapshot aggiuntiva.
+
+====

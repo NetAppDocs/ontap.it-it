@@ -1,0 +1,246 @@
+---
+permalink: upgrade/task_verify_cluster_after_upgrade.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, upgrade, verify, status, health, post, after 
+summary: 'Dopo l"aggiornamento, verificare il cluster.' 
+---
+= Verifica del cluster post-upgrade
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dopo l'aggiornamento, è necessario verificare la versione del cluster, lo stato del cluster e lo stato dello storage.
+
+.Prima di iniziare
+
+NOTE: Se si utilizza una configurazione MetroCluster FC, è inoltre necessario verificare che il cluster sia abilitato per lo switchover automatico non pianificato.
+
+
+
+== Verificare la versione del cluster
+
+Dopo aver aggiornato tutte le coppie ha, è necessario utilizzare il comando version per verificare che tutti i nodi eseguano la release di destinazione.
+
+La versione del cluster è la versione più bassa di ONTAP in esecuzione su qualsiasi nodo del cluster. Se la versione del cluster non è la release ONTAP di destinazione, è possibile aggiornare il cluster.
+
+. Verificare che la versione del cluster sia la release ONTAP di destinazione:
++
+`version`
+
+. Se la versione del cluster non è la release ONTAP di destinazione, è possibile verificare lo stato di aggiornamento di tutti i nodi:
++
+`system node upgrade-revert show`
+
+
+
+
+
+== Verificare lo stato del cluster
+
+Dopo aver aggiornato un cluster, è necessario verificare che i nodi siano integri e idonei a partecipare al cluster e che il cluster sia in quorum.
+
+. Verificare che i nodi del cluster siano online e idonei a partecipare al cluster:
++
+`cluster show`
+
++
+[listing]
+----
+cluster1::> cluster show
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node0                 true    true
+node1                 true    true
+----
++
+Se un nodo non è integro o non è idoneo, controllare i registri EMS per verificare la presenza di errori e intraprendere un'azione correttiva.
+
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+`set -privilege advanced`
+
++
+Immettere "`y`" per continuare.
+
+. Verificare i dettagli di configurazione per ciascun processo RDB.
++
+** L'epoca del database relazionale e l'epoca del database devono corrispondere per ciascun nodo.
+** Il master del quorum per squillo deve essere lo stesso per tutti i nodi.
++
+Si noti che ogni squillo potrebbe avere un master di quorum diverso.
+
++
+|===
+
+
+| Per visualizzare questo processo RDB... | Immettere questo comando... 
+
+
+ a| 
+Applicazione di gestione
+ a| 
+`cluster ring show -unitname mgmt`
+
+
+
+ a| 
+Database di posizioni dei volumi
+ a| 
+`cluster ring show -unitname vldb`
+
+
+
+ a| 
+Virtual-Interface Manager
+ a| 
+`cluster ring show -unitname vifmgr`
+
+
+
+ a| 
+Daemon di gestione SAN
+ a| 
+`cluster ring show -unitname bcomd`
+
+|===
++
+Questo esempio mostra il processo del database di localizzazione del volume:
+
+
+
++
+[listing]
+----
+cluster1::*> cluster ring show -unitname vldb
+Node      UnitName Epoch    DB Epoch DB Trnxs Master    Online
+--------- -------- -------- -------- -------- --------- ---------
+node0     vldb     154      154      14847    node0     master
+node1     vldb     154      154      14847    node0     secondary
+node2     vldb     154      154      14847    node0     secondary
+node3     vldb     154      154      14847    node0     secondary
+4 entries were displayed.
+----
+. Se si opera in un ambiente SAN, verificare che ciascun nodo si trovi in un quorum SAN: `event log show  -severity informational -message-name scsiblade.*`
++
+Il messaggio di evento scsiblade più recente per ciascun nodo dovrebbe indicare che il blade scsi è in quorum.
+
++
+[listing]
+----
+cluster1::*> event log show  -severity informational -message-name scsiblade.*
+Time             Node       Severity       Event
+---------------  ---------- -------------- ---------------------------
+MM/DD/YYYY TIME  node0      INFORMATIONAL  scsiblade.in.quorum: The scsi-blade ...
+MM/DD/YYYY TIME  node1      INFORMATIONAL  scsiblade.in.quorum: The scsi-blade ...
+----
+
+
+.Informazioni correlate
+link:../system-admin/index.html["Amministrazione del sistema"]
+
+
+
+== Verificare che sia attivato lo switchover automatico non pianificato
+
+Dopo aver aggiornato un cluster, verificare che sia attivato lo switchover automatico non pianificato.
+
+.A proposito di questa attività
+
+NOTE: Questa procedura viene eseguita solo per le configurazioni MetroCluster FC. Se si utilizza una configurazione IP MetroCluster, ignorare questa procedura.
+
+.Fasi
+. Controllare se è attivato lo switchover automatico non pianificato:
++
+`metrocluster show`
+
++
+Se è attivato lo switchover automatico non pianificato, nell'output del comando viene visualizzata la seguente istruzione:
+
++
+[listing]
+----
+AUSO Failure Domain  auso-on-cluster-disaster
+----
+. Se l'istruzione non viene visualizzata, attivare uno switchover automatico non pianificato:
++
+`metrocluster modify -auto-switchover-failure-domain auso-on-cluster-disaster`
+
+. Verificare che sia stato attivato uno switchover automatico non pianificato ripetendo il passaggio 1.
+
+
+
+
+== Verificare lo stato dello storage
+
+Dopo aver aggiornato un cluster, verificare lo stato di dischi, aggregati e volumi.
+
+. Verificare lo stato del disco:
++
+|===
+
+
+| Per verificare la presenza di... | Eseguire questa operazione... 
+
+
+ a| 
+Dischi rotti
+ a| 
+.. Visualizzare eventuali dischi rotti:
++
+`storage disk show -state broken`
+
+.. Rimuovere o sostituire eventuali dischi rotti.
+
+
+
+
+ a| 
+Dischi in fase di manutenzione o ricostruzione
+ a| 
+.. Visualizzare i dischi in stato di manutenzione, in sospeso o di ricostruzione:
++
+`storage disk show -state maintenance|pending|reconstructing`
+
+.. Prima di procedere, attendere il completamento dell'operazione di manutenzione o ricostruzione.
+
+
+|===
+. Verificare che tutti gli aggregati siano online visualizzando lo stato dello storage fisico e logico, inclusi gli aggregati di storage:
++
+`storage aggregate show -state !online`
+
++
+Questo comando visualizza gli aggregati _non_ online. Tutti gli aggregati devono essere online prima e dopo l'esecuzione di un aggiornamento o di una revisione importante.
+
++
+[listing]
+----
+cluster1::> storage aggregate show -state !online
+There are no entries matching your query.
+----
+. Verificare che tutti i volumi siano online visualizzando tutti i volumi _non_ online:
++
+`volume show -state !online`
+
++
+Tutti i volumi devono essere online prima e dopo l'esecuzione di un aggiornamento o di una revisione importante.
+
++
+[listing]
+----
+cluster1::> volume show -state !online
+There are no entries matching your query.
+----
+. Verificare che non vi siano volumi incoerenti:
++
+`volume show -is-inconsistent true`
+
++
+Consultare l'articolo della Knowledge base link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Volume_Showing_WAFL_Inconsistent["Volume che mostra WAFL incoerente"] su come affrontare i volumi incoerenti.
+
+
+
+.Informazioni correlate
+link:../disks-aggregates/index.html["Gestione di dischi e aggregati"]

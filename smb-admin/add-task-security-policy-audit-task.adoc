@@ -1,0 +1,80 @@
+---
+permalink: smb-admin/add-task-security-policy-audit-task.html 
+sidebar: sidebar 
+keywords: create, creating, add, policy, task, security, configuring, configure, apply, acl, file, svm, associate, task, entries, add a task to the security policy 
+summary: 'La creazione e l"aggiunta di un"attività di policy a un criterio di sicurezza è la quarta fase della configurazione e dell"applicazione degli ACL a file o cartelle in SVM. Quando si crea l"attività relativa ai criteri, l"attività viene associata a un criterio di protezione. È possibile aggiungere una o più voci di attività a un criterio di protezione.' 
+---
+= Aggiungere un'attività alla policy di sicurezza
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La creazione e l'aggiunta di un'attività di policy a un criterio di sicurezza è la quarta fase della configurazione e dell'applicazione degli ACL a file o cartelle in SVM. Quando si crea l'attività relativa ai criteri, l'attività viene associata a un criterio di protezione. È possibile aggiungere una o più voci di attività a un criterio di protezione.
+
+.A proposito di questa attività
+La policy di sicurezza è un container per un'attività. Un'attività si riferisce a una singola operazione che può essere eseguita da un criterio di protezione a file o cartelle con NTFS o protezione mista (o a un oggetto volume se si configura Storage-Level Access Guard).
+
+Esistono due tipi di attività:
+
+* Attività di file e directory
++
+Consente di specificare le attività che applicano i descrittori di protezione a file e cartelle specifici. Gli ACL applicati attraverso le attività di file e directory possono essere gestiti con client SMB o CLI ONTAP.
+
+* Attività di Access Guard a livello di storage
++
+Consente di specificare le attività che applicano i descrittori di protezione di Storage-Level Access Guard a un volume specificato. Gli ACL applicati tramite le attività di Access Guard a livello di storage possono essere gestiti solo tramite l'interfaccia utente di ONTAP.
+
+
+
+Un'attività contiene le definizioni per la configurazione di sicurezza di un file (o di una cartella) o di un set di file (o di cartelle). Ogni attività di una policy è identificata in modo univoco dal percorso. Un'unica attività per percorso può essere presente all'interno di un singolo criterio. Un criterio non può avere voci di attività duplicate.
+
+Linee guida per l'aggiunta di un'attività a un criterio:
+
+* È possibile includere un massimo di 10,000 voci di attività per policy.
+* Un criterio può contenere una o più attività.
++
+Anche se un criterio può contenere più attività, non è possibile configurare un criterio in modo che contenga sia le attività file-directory che Storage-Level Access Guard. Un criterio deve contenere tutte le attività Storage-Level Access Guard o tutte le attività di file-directory.
+
+* Storage-Level Access Guard viene utilizzato per limitare le autorizzazioni.
++
+Non assegnerà mai autorizzazioni di accesso aggiuntive.
+
+
+
+È possibile personalizzare la configurazione del descrittore di protezione utilizzando i seguenti parametri opzionali:
+
+* Tipo di sicurezza
+* Modalità di propagazione
+* Posizione dell'indice
+* Tipo di controllo dell'accesso
+
+
+Il valore di qualsiasi parametro opzionale viene ignorato per Storage-Level Access Guard. Per ulteriori informazioni, consulta le pagine man.
+
+.Fasi
+. Aggiungere un'attività con un descrittore di protezione associato al criterio di protezione: `vserver security file-directory policy task add -vserver vserver_name -policy-name policy_name -path path -ntfs-sd SD_nameoptional_parameters`
++
+`file-directory` è il valore predefinito di `-access-control` parametro. La specifica del tipo di controllo dell'accesso durante la configurazione delle attività di accesso a file e directory è facoltativa.
+
++
+`vserver security file-directory policy task add -vserver vs1 -policy-name policy1 -path /home/dir1 -security-type ntfs -ntfs-mode propagate -ntfs-sd sd2 -index-num 1 -access-control file-directory`
+
+. Verificare la configurazione dell'attività del criterio: `vserver security file-directory policy task show -vserver vserver_name -policy-name policy_name -path path`
++
+`vserver security file-directory policy task show`
+
++
+[listing]
+----
+
+Vserver: vs1
+Policy: policy1
+
+Index    File/Folder    Access           Security   NTFS       NTFS Security
+         Path           Control          Type       Mode       Descriptor Name
+-----    --------       -----------      --------   ------     ----------------
+1        /home/dir1     file-directory   ntfs       propagate  sd2
+----
+

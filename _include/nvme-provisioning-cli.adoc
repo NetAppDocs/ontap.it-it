@@ -1,0 +1,50 @@
+= 
+:allow-uri-read: 
+
+
+.Fasi
+. Verificare che la SVM sia configurata per NVMe:
++
+`vserver show -vserver _SVM_name_ -fields allowed-protocols`
+
++
+`NVMe` dovrebbe essere visualizzato sotto `allowed-protocols` colonna.
+
+. Creare lo spazio dei nomi NVMe:
++
+`vserver nvme namespace create -vserver _SVM_name_ -path _path_ -size _size_of_namespace_ -ostype _OS_type_`
+
+. Creare il sottosistema NVMe:
++
+`vserver nvme subsystem create -vserver _SVM_name_ -subsystem _name_of_subsystem_ -ostype _OS_type_`
+
++
+Il nome del sottosistema NVMe rileva la distinzione tra maiuscole e minuscole. Deve contenere da 1 a 96 caratteri. Sono consentiti caratteri speciali.
+
+. Verificare che il sottosistema sia stato creato:
++
+`vserver nvme subsystem show -vserver _SVM_name_`
+
++
+Il `nvme` il sottosistema deve essere visualizzato sotto `Subsystem` colonna.
+
+. Ottenere l'NQN dall'host.
+. Aggiungere l'NQN host al sottosistema:
++
+`vserver nvme subsystem host add -vserver _SVM_name_ -subsystem _subsystem_name_ -host-nqn _Host_NQN_:subsystem._subsystem_name_`
+
+. Mappare lo spazio dei nomi nel sottosistema:
++
+`vserver nvme subsystem map add -vserver _SVM_name_ -subsystem _subsystem_name_ -path _path_`
+
++
+Uno spazio dei nomi può essere mappato solo a un singolo sottosistema.
+
+. Verificare che lo spazio dei nomi sia mappato al sottosistema:
++
+`vserver nvme namespace show -vserver _SVM_name_ -instance`
+
++
+Il sottosistema deve essere elencato come `Attached subsystem`.
+
+

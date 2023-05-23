@@ -1,0 +1,67 @@
+---
+permalink: system-admin/upload-core-dump-files-task.html 
+sidebar: sidebar 
+keywords: upload, core, dump, file, autosupport, device, send, messages, email 
+summary: 'Quando viene salvato un file core dump, viene generato un messaggio di evento. Se il servizio AutoSupport è abilitato e configurato per l"invio di messaggi al supporto NetApp, viene trasmesso un messaggio AutoSupport e viene inviato un messaggio e-mail di conferma automatico.' 
+---
+= Caricare i file core dump
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando viene salvato un file core dump, viene generato un messaggio di evento. Se il servizio AutoSupport è abilitato e configurato per l'invio di messaggi al supporto NetApp, viene trasmesso un messaggio AutoSupport e viene inviato un messaggio e-mail di conferma automatico.
+
+.Di cosa hai bisogno
+* È necessario configurare AutoSupport con le seguenti impostazioni:
++
+** AutoSupport è attivato sul nodo.
+** AutoSupport è configurato per inviare messaggi al supporto tecnico.
+** AutoSupport è configurato per utilizzare il protocollo di trasporto HTTP o HTTPS.
++
+Il protocollo di trasporto SMTP non è supportato quando si inviano messaggi che includono file di grandi dimensioni, come i file core dump.
+
+
+
+
+
+.A proposito di questa attività
+È inoltre possibile caricare il file core dump tramite il servizio AutoSupport su HTTPS utilizzando `system node autosupport invoke-core-upload` Comando, se richiesto dal supporto NetApp.
+
+https://kb.netapp.com/Advice_and_Troubleshooting/Miscellaneous/How_to_upload_a_file_to_NetApp["Come caricare un file su NetApp"]
+
+.Fasi
+. Visualizzare i file di dump principali per un nodo utilizzando `system node coredump show` comando.
++
+Nell'esempio seguente, i file core dump vengono visualizzati per il nodo locale:
+
++
+[listing]
+----
+cluster1::> system node coredump show -node local
+Node:Type Core Name Saved Panic Time
+--------- ------------------------------------------- ----- -----------------
+node:kernel
+core.4073000068.2013-09-11.15_05_01.nz true 9/11/2013 15:05:01
+----
+. Generare un messaggio AutoSupport e caricare un file core dump utilizzando `system node autosupport invoke-core-upload` comando.
++
+Nell'esempio seguente, viene generato un messaggio AutoSupport e inviato alla posizione predefinita, ovvero il supporto tecnico, e il file core dump viene caricato nella posizione predefinita, ovvero il sito di supporto NetApp:
+
++
+[listing]
+----
+cluster1::> system node autosupport invoke-core-upload -core-filename
+core.4073000068.2013-09-11.15_05_01.nz -node local
+----
++
+Nell'esempio seguente, viene generato e inviato un messaggio AutoSupport nella posizione specificata nell'URI e il file dump core viene caricato nell'URI:
+
++
+[listing]
+----
+cluster1::> system node autosupport invoke-core-upload -uri https//files.company.com -core-filename
+core.4073000068.2013-09-11.15_05_01.nz -node local
+----
+

@@ -1,0 +1,50 @@
+---
+sidebar: sidebar 
+permalink: networking/create_a_failover_group.html 
+keywords: create, creation, creating, add, adding, failover, fail, over, group, create a failover group, failover group of network ports automatically migrate a lif to a different port when a link failure occurs, failover-groups create, ifgrps 
+summary: Creare un gruppo di failover di porte di rete per migrare automaticamente una LIF a una porta diversa in caso di guasto del collegamento 
+---
+= Creare un gruppo di failover
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Si crea un gruppo di failover di porte di rete in modo che una LIF possa migrare automaticamente a una porta diversa se si verifica un errore di collegamento sulla porta corrente della LIF. Questo consente al sistema di reindirizzare il traffico di rete ad altre porte disponibili nel cluster.
+
+.A proposito di questa attività
+Si utilizza `network interface failover-groups create` per creare il gruppo e aggiungere le porte al gruppo.
+
+* Le porte aggiunte a un gruppo di failover possono essere porte di rete, VLAN o gruppi di interfacce (ifgrps).
+* Tutte le porte aggiunte al gruppo di failover devono appartenere allo stesso dominio di broadcast.
+* Una singola porta può risiedere in più gruppi di failover.
+* Se si dispone di LIF in diverse VLAN o domini di broadcast, è necessario configurare i gruppi di failover per ogni VLAN o dominio di broadcast.
+* I gruppi di failover non si applicano negli ambienti SAN iSCSI o FC.
+
+
+.Fase
+Creare un gruppo di failover:
+
+`network interface failover-groups create -vserver _vserver_name_ -failover-group _failover_group_name_ -targets _ports_list_`
+
+* `_vserver_name_` È il nome della SVM che può utilizzare il gruppo di failover.
+* `_failover_group_name_` è il nome del gruppo di failover che si desidera creare.
+* `_ports_list_` è l'elenco delle porte che verranno aggiunte al gruppo di failover. Le porte vengono aggiunte nel formato _node_name>:<port_number>_, ad esempio node1:e0c.
+
+
+Il seguente comando crea il gruppo di failover fg3 per SVM vs3 e aggiunge due porte:
+
+....
+network interface failover-groups create -vserver vs3 -failover-group fg3 -targets cluster1-01:e0e,cluster1-02:e0e
+....
+.Al termine
+* Ora che il gruppo di failover è stato creato, è necessario applicare il gruppo di failover a una LIF.
+* L'applicazione di un gruppo di failover che non fornisce una destinazione di failover valida per una LIF genera un messaggio di avviso.
++
+Se un LIF che non dispone di una destinazione di failover valida tenta di eseguire il failover, potrebbe verificarsi un'interruzione.
+
+

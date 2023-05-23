@@ -1,0 +1,87 @@
+---
+permalink: nas-audit/auditing-process-concept.html 
+sidebar: sidebar 
+keywords: ontap, audit process, works 
+summary: Il processo di controllo di ONTAP è diverso dal processo di controllo di Microsoft. Prima di configurare il controllo, è necessario comprendere il funzionamento del processo di controllo di ONTAP. 
+---
+= Come funziona il processo di audit di ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il processo di controllo di ONTAP è diverso dal processo di controllo di Microsoft. Prima di configurare il controllo, è necessario comprendere il funzionamento del processo di controllo di ONTAP.
+
+I record di audit vengono inizialmente memorizzati in file di staging binari su singoli nodi. Se il controllo è attivato su una SVM, ogni nodo membro mantiene i file di staging per tale SVM. Periodicamente, vengono consolidati e convertiti in registri eventi leggibili dall'utente, memorizzati nella directory del registro eventi di controllo per SVM.
+
+
+
+== Processo quando il controllo è attivato su una SVM
+
+Il controllo può essere attivato solo sulle SVM. Quando l'amministratore dello storage abilita il controllo sulla SVM, il sottosistema di controllo verifica se sono presenti volumi di staging. Per ogni aggregato che contiene volumi di dati di proprietà di SVM deve esistere un volume di staging. Il sottosistema di auditing crea tutti i volumi di staging necessari, se non esistono.
+
+Il sottosistema di auditing completa anche altre attività prerequisite prima che sia attivato il controllo:
+
+* Il sottosistema di controllo verifica che il percorso della directory di log sia disponibile e non contenga symlink.
++
+La directory di log deve già esistere come percorso all'interno dello spazio dei nomi SVM. Si consiglia di creare un nuovo volume o qtree per contenere i file di log dell'audit. Il sottosistema di controllo non assegna una posizione predefinita per il file di log. Se il percorso della directory di log specificato nella configurazione di controllo non è un percorso valido, il controllo della creazione della configurazione non riesce con `The specified path "/path" does not exist in the namespace belonging to Vserver "Vserver_name"` errore.
+
++
+La creazione della configurazione non riesce se la directory esiste ma contiene collegamenti simbolici.
+
+* Il controllo pianifica l'attività di consolidamento.
++
+Una volta pianificata questa attività, viene attivato il controllo. La configurazione di controllo SVM e i file di log rimangono durante un riavvio o se i server NFS o SMB vengono arrestati o riavviati.
+
+
+
+
+
+== Consolidamento del registro eventi
+
+Il consolidamento dei log è un'attività pianificata che viene eseguita di routine fino alla disattivazione del controllo. Quando il controllo è disattivato, l'attività di consolidamento verifica che tutti i log rimanenti siano consolidati.
+
+
+
+== Auditing garantito
+
+Per impostazione predefinita, il controllo è garantito. ONTAP garantisce la registrazione di tutti gli eventi di accesso ai file verificabili (come specificato dagli ACL dei criteri di controllo configurati), anche se un nodo non è disponibile. Un'operazione di file richiesta non può essere completata fino a quando il record di audit per tale operazione non viene salvato nel volume di staging sullo storage persistente. Se non è possibile eseguire il commit dei record di audit sul disco nei file di staging, a causa di spazio insufficiente o a causa di altri problemi, le operazioni del client vengono negate.
+
+[NOTE]
+====
+Un amministratore, o un utente di account con accesso a livello di privilegio, può ignorare l'operazione di registrazione dell'audit del file utilizzando NetApp Manageability SDK o API REST. È possibile determinare se sono state eseguite azioni sui file utilizzando NetApp Manageability SDK o API REST esaminando i log della cronologia dei comandi memorizzati in `audit.log` file.
+
+Per ulteriori informazioni sui registri di audit della cronologia dei comandi, vedere la sezione "Gestione della registrazione dell'audit per le attività di gestione" in link:../system-admin/index.html["Amministrazione del sistema"].
+
+====
+
+
+== Processo di consolidamento quando un nodo non è disponibile
+
+Se un nodo contenente volumi appartenenti a una SVM con il controllo attivato non è disponibile, il comportamento dell'attività di consolidamento del controllo dipende dalla disponibilità del partner di storage failover (SFO) del nodo (o del partner ha nel caso di un cluster a due nodi):
+
+* Se il volume di staging è disponibile tramite il partner SFO, l'ultima scansione dei volumi di staging segnalati dal nodo viene eseguita e il consolidamento procede normalmente.
+* Se il partner SFO non è disponibile, l'attività crea un file di log parziale.
++
+Quando un nodo non è raggiungibile, l'attività di consolidamento consolida i record di audit degli altri nodi disponibili di tale SVM. Per identificare che non è completo, l'attività aggiunge il suffisso `.partial` al nome del file consolidato.
+
+* Una volta disponibile il nodo non disponibile, i record di audit in quel nodo vengono consolidati con i record di audit degli altri nodi in quel momento.
+* Tutti i record di audit vengono conservati.
+
+
+
+
+== Rotazione del registro eventi
+
+I file di log degli eventi di audit vengono ruotati quando raggiungono una dimensione di log di soglia configurata o in base a una pianificazione configurata. Quando un file di registro eventi viene ruotato, l'attività di consolidamento pianificata rinomina prima il file convertito attivo in un file di archivio con data e ora, quindi crea un nuovo file di registro eventi convertito attivo.
+
+
+
+== Processo quando il controllo è disattivato su SVM
+
+Quando il controllo viene disattivato sulla SVM, l'attività di consolidamento viene attivata una volta finale. Tutti i record di audit registrati in sospeso vengono registrati in un formato leggibile dall'utente. I registri eventi esistenti memorizzati nella directory del registro eventi non vengono cancellati quando il controllo viene disattivato sulla SVM e sono disponibili per la visualizzazione.
+
+Una volta consolidati tutti i file di staging esistenti per la SVM, l'attività di consolidamento viene rimossa dalla pianificazione. La disattivazione della configurazione di controllo per SVM non rimuove la configurazione di controllo. Un amministratore dello storage può riabilitare il controllo in qualsiasi momento.
+
+Il processo di consolidamento di controllo, creato quando viene attivato il controllo, monitora l'attività di consolidamento e la ricrea se l'attività di consolidamento viene chiusa a causa di un errore. In precedenza, gli utenti potevano eliminare il processo di consolidamento di controllo utilizzando comandi di gestione dei lavori come `job delete`. Agli utenti non è più consentito eliminare il processo di consolidamento del controllo.

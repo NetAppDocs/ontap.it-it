@@ -1,0 +1,102 @@
+---
+permalink: smb-admin/create-home-directory-config-w-d-variables-task.html 
+sidebar: sidebar 
+keywords: 'create, home, directory, configuration, variable, user, connect, share, dynamic, create, share, %w, %d, create a home directory configuration using the %w and %d variables' 
+summary: 'È possibile creare una configurazione della home directory utilizzando le variabili %w e %d. Gli utenti possono quindi connettersi alla propria home share utilizzando condivisioni create dinamicamente.' 
+---
+= Creare una configurazione della home directory utilizzando le variabili %w e %d.
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare una configurazione della home directory utilizzando `%w` e. `%d` variabili. Gli utenti possono quindi connettersi alla propria home share utilizzando condivisioni create dinamicamente.
+
+.Fasi
+. Creare un qtree per contenere le home directory dell'utente: `volume qtree create -vserver vserver_name -qtree-path qtree_path`
+. Verificare che il qtree utilizzi lo stile di protezione corretto: `volume qtree show`
+. Se qtree non utilizza lo stile di protezione desiderato, modificare lo stile di protezione utilizzando `volume qtree security` comando.
+. Aggiunta di una condivisione home directory: `+vserver cifs share create -vserver vserver -share-name %w -path %d/%w -share-properties homedirectory\[,...\]+`
++
+`-vserver` `vserver` Specifica la SVM (Storage Virtual Machine) abilitata per CIFS su cui aggiungere il percorso di ricerca.
+
++
+`-share-name` `%w` specifica il nome di condivisione della home directory. ONTAP crea dinamicamente il nome di condivisione quando ogni utente si connette alla propria home directory. Il nome della condivisione avrà il formato _Windows_User_NAME_.
+
++
+`-path` `%d/%w` specifica il percorso relativo alla home directory. Il percorso relativo viene creato dinamicamente quando ciascun utente si connette alla propria home directory e avrà la forma _domain/Windows_user_name_.
+
++
+`-share-properties homedirectory[,...]+` specifica le proprietà di condivisione per tale condivisione. Specificare `homedirectory` valore. È possibile specificare ulteriori proprietà di condivisione utilizzando un elenco delimitato da virgole.
+
+. Verificare che la condivisione abbia la configurazione desiderata utilizzando `vserver cifs share show` comando.
+. Aggiungere un percorso di ricerca della home directory: `vserver cifs home-directory search-path add -vserver vserver -path path`
++
+`-vserver _vserver-name_` Specifica la SVM abilitata per CIFS su cui aggiungere il percorso di ricerca.
+
++
+`-path _path_` specifica il percorso assoluto della directory per il percorso di ricerca.
+
+. Verificare di aver aggiunto correttamente il percorso di ricerca utilizzando `vserver cifs home-directory search-path show` comando.
+. Per gli utenti con una home directory, creare una directory corrispondente nel qtree o nel volume designato per contenere home directory.
++
+Ad esempio, se è stato creato un qtree con il percorso di `/vol/vol1/users` e il nome utente di cui si desidera creare la directory è mydomain.user1, si crea una directory con il seguente percorso: `/vol/vol1/users/mydomain/user1`.
+
++
+Se è stato creato un volume denominato "`home1`" montato in `/home1`, creare una directory con il seguente percorso: `/home1/mydomain/user1`.
+
+. Verificare che un utente possa connettersi correttamente alla home share mappando un disco o connettendosi utilizzando il percorso UNC.
++
+Ad esempio, se l'utente mydomain/user1 desidera connettersi alla directory creata nella fase 8 che si trova su SVM vs1, l'utente 1 si connette utilizzando il percorso UNC `\\vs1\user1`.
+
+
+
+.Esempio
+I comandi dell'esempio seguente creano una configurazione della home directory con le seguenti impostazioni:
+
+* Il nome della condivisione è %w.
+* Il percorso relativo della home directory è %d/%W.
+* Il percorso di ricerca utilizzato per contenere le home directory, `/home1`, È un volume configurato con lo stile di protezione NTFS.
+* La configurazione viene creata su SVM vs1.
+
+
+È possibile utilizzare questo tipo di configurazione della home directory quando gli utenti accedono alle home directory dagli host Windows. È possibile utilizzare questo tipo di configurazione anche quando gli utenti accedono alle proprie home directory da host Windows e UNIX e l'amministratore del file system utilizza utenti e gruppi basati su Windows per controllare l'accesso al file system.
+
+[listing]
+----
+cluster::> vserver cifs share create -vserver vs1 -share-name %w -path %d/%w -share-properties oplocks,browsable,changenotify,homedirectory
+
+cluster::> vserver cifs share show -vserver vs1 -share-name %w
+
+                      Vserver: vs1
+                        Share: %w
+     CIFS Server NetBIOS Name: VS1
+                         Path: %d/%w
+             Share Properties: oplocks
+                               browsable
+                               changenotify
+                               homedirectory
+           Symlink Properties: enable
+      File Mode Creation Mask: -
+ Directory Mode Creation Mask: -
+                Share Comment: -
+                    Share ACL: Everyone / Full Control
+File Attribute Cache Lifetime: -
+                  Volume Name: -
+                Offline Files: manual
+Vscan File-Operations Profile: standard
+
+cluster::> vserver cifs home-directory search-path add -vserver vs1 ‑path /home1
+
+cluster::> vserver cifs home-directory search-path show
+Vserver     Position Path
+----------- -------- -----------------
+vs1         1        /home1
+----
+.Informazioni correlate
+xref:configure-home-directories-u-variable-task.adoc[Configurazione delle home directory utilizzando la variabile %u]
+
+xref:home-directory-config-concept.adoc[Configurazioni aggiuntive della home directory]
+
+xref:display-user-home-directory-path-task.adoc[Visualizzazione delle informazioni sul percorso home directory di un utente SMB]

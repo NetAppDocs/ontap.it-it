@@ -1,0 +1,111 @@
+---
+permalink: fabricpool/determine-data-inactive-reporting-task.html 
+sidebar: sidebar 
+keywords: determining, how, much, data, volume, inactive, using, data reporting, fabricpool 
+summary: La visualizzazione della quantità di dati inattivi in un volume consente di utilizzare correttamente i Tier di storage. Le informazioni nel reporting dei dati inattivi consentono di decidere quale aggregato utilizzare per FabricPool, se spostare un volume in FabricPool o da esso o se modificare il criterio di tiering di un volume. 
+---
+= Determinare la quantità di dati inattivi in un volume utilizzando il reporting dei dati inattivi
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La visualizzazione della quantità di dati inattivi in un volume consente di utilizzare correttamente i Tier di storage. Le informazioni nel reporting dei dati inattivi consentono di decidere quale aggregato utilizzare per FabricPool, se spostare un volume in FabricPool o da esso o se modificare il criterio di tiering di un volume.
+
+.Di cosa hai bisogno
+Per utilizzare la funzionalità di reporting dei dati inattivi, è necessario eseguire ONTAP 9.4 o versioni successive.
+
+.A proposito di questa attività
+* Alcuni aggregati non supportano il reporting dei dati inattivi.
++
+Non è possibile attivare la funzione di reporting dei dati inattivi quando non è possibile attivare FabricPool, incluse le seguenti istanze:
+
++
+** Aggregati root
+** Aggregati MetroCluster con versioni di ONTAP precedenti alla 9.7
+** Flash Pool (aggregati ibridi o aggregati SnapLock)
+
+
+* Il reporting dei dati inattivi è attivato per impostazione predefinita sugli aggregati in cui è attivata la compressione adattiva per tutti i volumi.
+* Per impostazione predefinita, il reporting dei dati inattivi è attivato su tutti gli aggregati SSD in ONTAP 9.6.
+* Per impostazione predefinita, la funzione di reporting dei dati inattivi è attivata nell'aggregato FabricPool in ONTAP 9.4 e ONTAP 9.5.
+* È possibile abilitare la creazione di report dei dati inattivi su aggregati non FabricPool utilizzando l'interfaccia CLI di ONTAP, inclusi gli aggregati di dischi rigidi, a partire da ONTAP 9.6.
+
+
+
+
+== Procedura
+
+È possibile determinare la quantità di dati inattivi con Gestore di sistema di ONTAP o l'interfaccia utente di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Scegliere una delle seguenti opzioni:
++
+** Una volta esistenti aggregati HDD, selezionare *Storage > Tier* e fare clic su image:icon_kabob.gif["alt=Opzioni di menu"] per l'aggregato su cui si desidera attivare il reporting dei dati inattivi.
+** Se non sono configurati Tier cloud, accedere a *Dashboard* e fare clic sul collegamento *Enable inactive data reporting* sotto *Capacity*.
+
+
+
+
+--
+.CLI
+--
+.Per attivare la creazione di report dei dati inattivi con la CLI:
+. Se l'aggregato per il quale si desidera visualizzare il reporting dei dati inattivi non viene utilizzato in FabricPool, attivare il reporting dei dati inattivi per l'aggregato utilizzando `storage aggregate modify` con il `-is-inactive-data-reporting-enabled` `true` parametro.
++
+[listing]
+----
+cluster1::> storage aggregate modify -aggregate aggr1 -is-inactive-data-reporting-enabled true
+----
++
+È necessario attivare esplicitamente la funzionalità di reporting dei dati inattivi su un aggregato non utilizzato per FabricPool.
+
++
+Non è possibile e non è necessario attivare il reporting dei dati inattivi su un aggregato abilitato a FabricPool perché l'aggregato è già dotato di report dei dati inattivi. Il `-is-inactive-data-reporting-enabled` Il parametro non funziona sugli aggregati abilitati per FabricPool.
+
++
+Il `-fields is-inactive-data-reporting-enabled` del parametro `storage aggregate show` il comando indica se il reporting dei dati inattivi è attivato su un aggregato.
+
+. Per visualizzare la quantità di dati inattivi su un volume, utilizzare `volume show` con il `-fields performance-tier-inactive-user-data,performance-tier-inactive-user-data-percent` parametro.
++
+[listing]
+----
+cluster1::> volume show -fields performance-tier-inactive-user-data,performance-tier-inactive-user-data-percent
+
+vserver volume performance-tier-inactive-user-data performance-tier-inactive-user-data-percent
+------- ------ ----------------------------------- -------------------------------------------
+vsim1   vol0   0B                                  0%
+vs1     vs1rv1 0B                                  0%
+vs1     vv1    10.34MB                             0%
+vs1     vv2    10.38MB                             0%
+4 entries were displayed.
+----
++
+** Il `performance-tier-inactive-user-data` campo visualizza la quantità di dati utente memorizzati nell'aggregato non attivi.
+** Il `performance-tier-inactive-user-data-percent` Visualizza la percentuale di dati inattivi nel file system attivo e nelle copie Snapshot.
+** Per un aggregato non utilizzato per FabricPool, il reporting dei dati inattivi utilizza la policy di tiering per stabilire la quantità di dati da riportare come cold.
++
+*** Per `none` policy di tiering, 31 giorni.
+*** Per `snapshot-only` e. `auto`, utilizza il reporting dei dati inattivi `tiering-minimum-cooling-days`.
+*** Per `ALL` policy, il reporting dei dati inattivi presuppone che i dati verranno tier entro un giorno.
++
+Fino al raggiungimento del punto, l'output mostra "`-`" per la quantità di dati inattivi invece di un valore.
+
+
+
+** Su un volume che fa parte di FabricPool, i report di ONTAP come inattivi dipendono dal criterio di tiering impostato su un volume.
++
+*** Per `none` Policy di tiering, ONTAP riporta la quantità di volume intero che è inattivo per almeno 31 giorni. Non è possibile utilizzare `-tiering-minimum-cooling-days` con il `none` policy di tiering.
+*** Per `ALL`, `snapshot-only`, e. `auto` policy di tiering, il reporting dei dati inattivi non è supportato.
+
+
+
+
+
+
+--
+====

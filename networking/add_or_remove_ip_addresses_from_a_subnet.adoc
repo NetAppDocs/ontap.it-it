@@ -1,0 +1,91 @@
+---
+sidebar: sidebar 
+permalink: networking/add_or_remove_ip_addresses_from_a_subnet.html 
+keywords: adding, add, create, creating, remove, removing, delete, deleting, ip, internet, protocol, address, addresses, subnet, add or remove ip addresses from a subnet, force update lif associations, network subnet add ranges, network subnet remove ranges 
+summary: Aggiungere indirizzi IP durante la creazione di una subnet o aggiungere o rimuovere indirizzi IP a una subnet in uscita 
+---
+= Aggiungere o rimuovere indirizzi IP da una subnet
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+È possibile aggiungere indirizzi IP durante la creazione iniziale di una subnet oppure aggiungere indirizzi IP a una subnet già esistente. È inoltre possibile rimuovere gli indirizzi IP da una subnet esistente. In questo modo è possibile allocare solo gli indirizzi IP richiesti per le SVM.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*A partire da ONTAP 9.12.0, è possibile utilizzare Gestione sistema per aggiungere o rimuovere indirizzi IP da o verso una subnet*
+
+.Fasi
+. Selezionare *rete > Panoramica > subnet*.
+. Selezionare image:icon_kabob.gif["icona del kebob"] *> Modifica* accanto alla subnet che si desidera modificare.
+. Aggiungere o rimuovere indirizzi IP.
+. Salvare le modifiche.
++
+.. Se l'indirizzo IP o l'intervallo immesso è già utilizzato da un'interfaccia, viene visualizzato il seguente messaggio:
+`An IP address in this range is already in use by a LIF. Associate the LIF with this subnet?`
+.. Facendo clic su *OK*, la LIF esistente viene associata alla subnet.
+
+
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per aggiungere o rimuovere indirizzi IP da o verso una subnet*
+
+.A proposito di questa attività
+Quando si aggiungono indirizzi IP, viene visualizzato un errore se un processore di servizio o un'interfaccia di rete utilizza gli indirizzi IP dell'intervallo aggiunto. Se si desidera associare qualsiasi interfaccia indirizzata manualmente alla subnet corrente, è possibile impostare `-force-update-lif-associations` opzione a. `true`.
+
+Quando si rimuovono gli indirizzi IP, viene visualizzato un messaggio di errore se un processore di servizio o un'interfaccia di rete utilizza gli indirizzi IP da rimuovere. Se si desidera che le interfacce continuino a utilizzare gli indirizzi IP dopo che sono state rimosse dalla subnet, è possibile impostare `-force-update-lif-associations` opzione a. `true`.
+
+.Fase
+Aggiungere o rimuovere indirizzi IP da una subnet:
+
+[cols="30,70"]
+|===
+
+
+| Se si desidera... | Utilizzare questo comando... 
+
+
+ a| 
+Aggiungere indirizzi IP a una subnet
+ a| 
+subnet add-range di rete
+
+
+
+ a| 
+Rimuovere gli indirizzi IP da una subnet
+ a| 
+remove-ranges subnet di rete
+
+|===
+Per ulteriori informazioni su questi comandi, consulta le pagine man.
+
+Il seguente comando aggiunge gli indirizzi IP da 192.0.2.82 a 192.0.2.85 alla subnet sub1:
+
+....
+network subnet add-ranges -subnet-name <sub1> -ip-ranges <192.0.2.82-192.0.2.85>
+....
+Il seguente comando rimuove l'indirizzo IP 198.51.100.9 dalla subnet sub3:
+
+....
+network subnet remove-ranges -subnet-name <sub3> -ip-ranges <198.51.100.9>
+....
+Se l'intervallo corrente include da 1 a 10 e da 20 a 40 e si desidera aggiungere da 11 a 19 e da 41 a 50 (consentendo in pratica da 1 a 50), è possibile sovrapporre l'intervallo di indirizzi esistente utilizzando il comando seguente. Questo comando aggiunge solo i nuovi indirizzi e non influisce sugli indirizzi esistenti:
+
+....
+network subnet add-ranges -subnet-name <sub3> -ip-ranges <198.51.10.1-198.51.10.50>
+....
+--
+====

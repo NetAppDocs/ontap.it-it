@@ -1,0 +1,279 @@
+---
+permalink: nas-audit/plan-auditing-config-concept.html 
+sidebar: sidebar 
+keywords: plan, audit, configuration, svm, rotate, logs, size, schedule, rotation, dr, disaster recovery 
+summary: Prima di configurare il controllo sulle macchine virtuali di storage, è necessario comprendere quali opzioni di configurazione sono disponibili e pianificare i valori che si desidera impostare per ciascuna opzione. Queste informazioni possono aiutarti a configurare la configurazione di controllo che soddisfa le tue esigenze di business. 
+---
+= Pianificare la configurazione di controllo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di configurare il controllo sulle macchine virtuali di storage, è necessario comprendere quali opzioni di configurazione sono disponibili e pianificare i valori che si desidera impostare per ciascuna opzione. Queste informazioni possono aiutarti a configurare la configurazione di controllo che soddisfa le tue esigenze di business.
+
+Alcuni parametri di configurazione sono comuni a tutte le configurazioni di controllo.
+
+Inoltre, è possibile utilizzare alcuni parametri per specificare i metodi da utilizzare durante la rotazione dei registri di controllo consolidati e convertiti. Quando si configura il controllo, è possibile specificare uno dei tre metodi seguenti:
+
+* Ruotare i registri in base alle dimensioni del registro
++
+Questo è il metodo predefinito utilizzato per ruotare i registri.
+
+* Ruotare i registri in base a una pianificazione
+* Rotazione dei registri in base alle dimensioni e alla pianificazione del registro (a seconda dell'evento che si verifica per primo)
+
+
+[NOTE]
+====
+È necessario impostare almeno uno dei metodi per la rotazione del log.
+
+====
+
+
+== Parametri comuni a tutte le configurazioni di controllo
+
+Sono necessari due parametri da specificare quando si crea la configurazione di controllo. Sono inoltre disponibili tre parametri opzionali che è possibile specificare:
+
+[cols="40,30,10,10,10"]
+|===
+
+
+| Tipo di informazione | Opzione | Obbligatorio | Includi | I tuoi valori 
+
+
+ a| 
+_Nome SVM_
+
+Nome della SVM su cui creare la configurazione di controllo. La SVM deve già esistere.
+ a| 
+`-vserver` `vserver_name`
+ a| 
+Sì
+ a| 
+Sì
+ a| 
+
+
+
+ a| 
+_Percorso di destinazione del registro_
+
+Specifica la directory in cui sono memorizzati i log di audit convertiti, in genere un volume dedicato o un qtree. Il percorso deve già esistere nello spazio dei nomi SVM.
+
+Il percorso può contenere fino a 864 caratteri e deve disporre di permessi di lettura/scrittura.
+
+Se il percorso non è valido, il comando di configurazione del controllo non riesce.
+
+Se SVM è un'origine di disaster recovery SVM, il percorso di destinazione del log non può trovarsi sul volume root. Questo perché il contenuto del volume root non viene replicato nella destinazione del disaster recovery.
+
+Non è possibile utilizzare un volume FlexCache come destinazione del registro (ONTAP 9.7 e versioni successive).
+ a| 
+`-destination` `text`
+ a| 
+Sì
+ a| 
+Sì
+ a| 
+
+
+
+ a| 
+_Categorie di eventi da controllare_
+
+Specifica le categorie di eventi da controllare. È possibile verificare le seguenti categorie di eventi:
+
+* Eventi di accesso al file (SMB e NFSv4)
+* Eventi di logon e logoff SMB
+* Eventi di staging dei criteri di accesso centrale
++
+Gli eventi di staging dei criteri di accesso centrale sono un nuovo evento di audit avanzato disponibile a partire dai domini Active Directory di Windows 2012. Gli eventi di staging dei criteri di accesso centrale registrano le informazioni sulle modifiche ai criteri di accesso centrale configurati in Active Directory.
+
+* Eventi categoria condivisione file
+* Eventi di modifica delle policy di audit
+* Eventi di gestione dell'account utente locale
+* Eventi di gestione dei gruppi di sicurezza
+* Eventi di modifica del criterio di autorizzazione
+
+
+Per impostazione predefinita, viene eseguito il controllo dell'accesso al file e degli eventi di logon e logoff SMB.
+
+*Nota:* prima di poter specificare `cap-staging` Come categoria di evento, un server SMB deve esistere sulla SVM. Sebbene sia possibile attivare lo staging dei criteri di accesso centrale nella configurazione di controllo senza attivare il controllo dinamico degli accessi sul server SMB, gli eventi di staging dei criteri di accesso centrale vengono generati solo se è attivato il controllo dinamico degli accessi. Il controllo dinamico degli accessi viene attivato tramite un'opzione server SMB. Non è attivato per impostazione predefinita.
+ a| 
+`-events` {`file-ops`|`cifs-logon-logoff`|`cap-staging`|`file-share`|`audit-policy-change`|`user-account`|`security-group`|`authorization-policy-change`}
+ a| 
+No
+ a| 
+ a| 
+
+
+
+ a| 
+_Formato di output del file di log_
+
+Determina il formato di output dei registri di controllo. Il formato di output può essere specifico di ONTAP `XML` O Microsoft Windows `EVTX` formato del log. Per impostazione predefinita, il formato di output è `EVTX`.
+ a| 
+`-format` {`xml`|`evtx`}
+ a| 
+No
+ a| 
+ a| 
+
+
+
+ a| 
+_Limite di rotazione dei file di log_
+
+Determina il numero di file di log di audit da conservare prima di estrarre il file di log più vecchio. Ad esempio, se si immette un valore di `5`, vengono conservati gli ultimi cinque file di log.
+
+Un valore di `0` indica che tutti i file di log vengono conservati. Il valore predefinito è 0.
+ a| 
+`-rotate-limit` `integer`
+ a| 
+No
+ a| 
+ a| 
+
+|===
+
+
+== Parametri utilizzati per determinare quando ruotare i registri degli eventi di audit
+
+*Ruota i registri in base alle dimensioni del registro*
+
+L'impostazione predefinita prevede la rotazione dei registri di controllo in base alle dimensioni.
+
+* La dimensione predefinita del registro è 100 MB
+* Se si desidera utilizzare il metodo di rotazione del log predefinito e la dimensione del log predefinita, non è necessario configurare alcun parametro specifico per la rotazione del log.
+* Se si desidera ruotare i registri di controllo solo in base alle dimensioni del registro, utilizzare il comando seguente per annullare l'impostazione di `-rotate-schedule-minute` parametro: `vserver audit modify -vserver vs0 -destination / -rotate-schedule-minute -`
+
+
+Se non si desidera utilizzare la dimensione predefinita del registro, è possibile configurare `-rotate-size` parametro per specificare una dimensione di log personalizzata:
+
+[cols="40,30,10,10,10"]
+|===
+
+
+| Tipo di informazione | Opzione | Obbligatorio | Includi | I tuoi valori 
+
+
+ a| 
+_Limite dimensioni file di log_
+
+Determina il limite delle dimensioni del file di log di audit.
+ a| 
+`-rotate-size` {`integer`[KB|MB|GB|TB|PB]}
+ a| 
+No
+ a| 
+ a| 
+
+|===
+*Rotazione dei registri in base a una pianificazione*
+
+Se si sceglie di ruotare i registri di controllo in base a una pianificazione, è possibile pianificare la rotazione dei registri utilizzando i parametri di rotazione basati sul tempo in qualsiasi combinazione.
+
+* Se si utilizza la rotazione basata sul tempo, il `-rotate-schedule-minute` il parametro è obbligatorio.
+* Tutti gli altri parametri di rotazione basati sul tempo sono opzionali.
+* Il programma di rotazione viene calcolato utilizzando tutti i valori relativi al tempo.
++
+Ad esempio, se si specifica solo il `-rotate-schedule-minute` i file di log di audit vengono ruotati in base ai minuti specificati in tutti i giorni della settimana, durante tutte le ore in tutti i mesi dell'anno.
+
+* Se si specificano solo uno o due parametri di rotazione basati sul tempo (ad esempio, `-rotate-schedule-month` e. `-rotate-schedule-minutes`), i file di log vengono ruotati in base ai valori dei minuti specificati in tutti i giorni della settimana, durante tutte le ore, ma solo durante i mesi specificati.
++
+Ad esempio, è possibile specificare che il registro di controllo deve essere ruotato durante i mesi di gennaio, marzo e agosto tutti i lunedì, mercoledì e sabato alle 10:30
+
+* Se si specificano i valori per entrambi `-rotate-schedule-dayofweek` e. `-rotate-schedule-day`, sono considerati indipendenti.
++
+Ad esempio, se si specifica `-rotate-schedule-dayofweek` Come venerdì e. `-rotate-schedule-day` Come 13, i registri di audit verrebbero ruotati ogni venerdì e il 13° giorno del mese specificato, non solo ogni venerdì 13.
+
+* Se si desidera ruotare i registri di controllo solo in base a una pianificazione, utilizzare il comando seguente per annullare l'impostazione di `-rotate-size` parametro: `vserver audit modify -vserver vs0 -destination / -rotate-size -`
+
+
+È possibile utilizzare il seguente elenco di parametri di controllo disponibili per determinare i valori da utilizzare per la configurazione di una pianificazione per le rotazioni del registro eventi di controllo:
+
+[cols="40,30,10,10,10"]
+|===
+
+
+| Tipo di informazione | Opzione | Obbligatorio | Includi | I tuoi valori 
+
+
+ a| 
+_Programma di rotazione del log: Mese_
+
+Determina la pianificazione mensile per la rotazione dei registri di audit.
+
+I valori validi sono `January` attraverso `December`, e. `all`. Ad esempio, è possibile specificare che il registro di controllo deve essere ruotato nei mesi di gennaio, marzo e agosto.
+ a| 
+`-rotate-schedule-month` `chron_month`
+ a| 
+No
+ a| 
+ a| 
+
+
+
+ a| 
+_Programma di rotazione del log: Giorno della settimana_
+
+Determina la pianificazione giornaliera (giorno della settimana) per la rotazione dei registri di audit.
+
+I valori validi sono `Sunday` attraverso `Saturday`, e. `all`. Ad esempio, è possibile specificare che il registro di controllo deve essere ruotato il martedì e il venerdì o durante tutti i giorni di una settimana.
+ a| 
+`-rotate-schedule-dayofweek` `chron_dayofweek`
+ a| 
+No
+ a| 
+ a| 
+
+
+
+ a| 
+_Programma di rotazione del log: Giorno_
+
+Determina il giorno della pianificazione del mese per la rotazione del registro di audit.
+
+I valori validi sono compresi tra `1` attraverso `31`. Ad esempio, è possibile specificare che il registro di controllo deve essere ruotato il 10° e il 20° giorno di un mese o tutti i giorni di un mese.
+ a| 
+`-rotate-schedule-day` `chron_dayofmonth`
+ a| 
+No
+ a| 
+ a| 
+
+
+
+ a| 
+_Programma di rotazione del log: Ora_
+
+Determina la pianificazione oraria per la rotazione del registro di audit.
+
+I valori validi sono compresi tra `0` (mezzanotte) a. `23` (11:00). Specificare `all` ruota i registri di controllo ogni ora. Ad esempio, è possibile specificare che il registro di controllo deve essere ruotato alle 6 (6:00) e alle 18 (18:00).
+ a| 
+`-rotate-schedule-hour` `chron_hour`
+ a| 
+No
+ a| 
+ a| 
+
+
+
+ a| 
+_Log Rotation schedule: Minute_
+
+Determina la pianificazione dei minuti per la rotazione del registro di controllo.
+
+I valori validi sono compresi tra `0` a. `59`. Ad esempio, è possibile specificare che il registro di controllo deve essere ruotato al 30° minuto.
+ a| 
+`-rotate-schedule-minute` `chron_minute`
+ a| 
+Sì, se si configura la rotazione del log in base alla pianificazione; in caso contrario, no
+ a| 
+ a| 
+
+|===
+*Rotazione dei registri in base alle dimensioni e alla pianificazione dei registri*
+
+È possibile scegliere di ruotare i file di log in base alle dimensioni e alla pianificazione del log impostando entrambi i campi `-rotate-size` e i parametri di rotazione basati sul tempo in qualsiasi combinazione. Ad esempio: Se `-rotate-size` È impostato su 10 MB e. `-rotate-schedule-minute` È impostato su 15, i file di log ruotano quando le dimensioni del file di log raggiungono i 10 MB o al 15° minuto di ogni ora (a seconda dell'evento che si verifica per primo).

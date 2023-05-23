@@ -1,0 +1,100 @@
+---
+permalink: smb-admin/file-directory-policies-local-users-groups-concept.html 
+sidebar: sidebar 
+keywords: guideline, mind, apply, file-directory, policies, policy, storage, virtual, machine, svm, disaster, recovery, destination, id, discard, configuration, local, user, dacl, sacl, entries, entry, guidelines for applying file-directory policies that use local users of groups on the svm disaster recovery destination 
+summary: 'Prima di applicare i criteri di directory dei file alla destinazione di disaster recovery SVM (Storage Virtual Machine) in una configurazione di eliminazione dell"ID, è necessario tenere presenti alcune linee guida se la configurazione dei criteri di directory dei file utilizza utenti o gruppi locali nel descrittore di protezione o nelle voci DACL o SACL.' 
+---
+= Linee guida per l'applicazione di policy di directory di file che utilizzano utenti o gruppi locali sulla destinazione di disaster recovery SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di applicare i criteri di directory dei file alla destinazione di disaster recovery SVM (Storage Virtual Machine) in una configurazione di eliminazione dell'ID, è necessario tenere presenti alcune linee guida se la configurazione dei criteri di directory dei file utilizza utenti o gruppi locali nel descrittore di protezione o nelle voci DACL o SACL.
+
+È possibile configurare una configurazione di disaster recovery per una SVM in cui la SVM di origine sul cluster di origine replica i dati e la configurazione dalla SVM di origine a una SVM di destinazione su un cluster di destinazione.
+
+È possibile configurare uno dei due tipi di disaster recovery SVM:
+
+* Identità preservata
++
+Con questa configurazione, l'identità di SVM e del server CIFS viene preservata.
+
+* Identità scartata
++
+Con questa configurazione, l'identità di SVM e del server CIFS non viene preservata. In questo scenario, il nome di SVM e del server CIFS sulla SVM di destinazione è diverso da SVM e dal nome del server CIFS sulla SVM di origine.
+
+
+
+
+
+== Linee guida per le configurazioni di identità scartate
+
+In una configurazione con eliminazione dell'identità, per un'origine SVM che contiene configurazioni di utente, gruppo e privilegi locali, il nome del dominio locale (nome del server CIFS locale) deve essere modificato in modo che corrisponda al nome del server CIFS sulla destinazione SVM. Ad esempio, se il nome SVM di origine è "`vs1`" e il nome del server CIFS è "`CIFS1`" e il nome SVM di destinazione è "`vs1_dst`" e il nome del server CIFS è "`CIFS1_DST`", il nome del dominio locale di un utente locale denominato "`CIFS1` user1`" viene automaticamente modificato in "`CIFST_DVM_1".
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups local-user show -vserver vs1_dst
+
+Vserver      User Name                Full Name      Description
+------------ ------------------------ -------------- -------------
+vs1          CIFS1\Administrator                     Built-in administrator account
+vs1          CIFS1\user1              -              -
+
+cluster1dst::> vserver cifs users-and-groups local-user show -vserver vs1_dst
+
+Vserver      User Name                Full Name      Description
+------------ ------------------------ -------------- -------------
+vs1_dst      CIFS1_DST\Administrator                 Built-in administrator account
+vs1_dst      CIFS1_DST\user1          -              -
+----
+Anche se i nomi degli utenti e dei gruppi locali vengono modificati automaticamente nei database degli utenti e dei gruppi locali, i nomi degli utenti o dei gruppi locali non vengono modificati automaticamente nelle configurazioni dei criteri delle directory dei file (criteri configurati sulla CLI tramite `vserver security file-directory` famiglia di comandi).
+
+Ad esempio, per "`vs1`", se è stata configurata una voce DACL in cui si trova `-account` Il parametro è impostato su "`CIFS1` user1", l'impostazione non viene modificata automaticamente sulla SVM di destinazione per riflettere il nome del server CIFS di destinazione.
+
+[listing]
+----
+cluster1::> vserver security file-directory ntfs dacl show -vserver vs1
+
+Vserver: vs1
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access             Apply To
+                     Type     Rights
+    --------------   -------  -------            -----------
+    CIFS1\user1      allow    full-control      this-folder
+
+cluster1::> vserver security file-directory ntfs dacl show -vserver vs1_dst
+
+Vserver: vs1_dst
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access             Apply To
+                     Type     Rights
+    --------------   -------  -------            -----------
+    **CIFS1**\user1          allow    full-control      this-folder
+----
+È necessario utilizzare `vserver security file-directory modify` Comandi per modificare manualmente il nome del server CIFS nel nome del server CIFS di destinazione.
+
+
+
+== Componenti di configurazione dei criteri di directory dei file che contengono parametri dell'account
+
+Esistono tre componenti di configurazione dei criteri di directory dei file che possono utilizzare le impostazioni dei parametri che possono contenere utenti o gruppi locali:
+
+* Descrittore di sicurezza
++
+È possibile specificare il proprietario del descrittore di protezione e il gruppo primario del proprietario del descrittore di protezione. Se il descrittore di protezione utilizza un utente o un gruppo locale per le voci del proprietario e del gruppo primario, è necessario modificare il descrittore di protezione per utilizzare la SVM di destinazione nel nome dell'account. È possibile utilizzare `vserver security file-directory ntfs modify` per apportare le modifiche necessarie ai nomi degli account.
+
+* Voci DACL
++
+Ogni voce DACL deve essere associata a un account. Per utilizzare il nome SVM di destinazione, è necessario modificare tutti i DACL che utilizzano account utente o di gruppo locali. Poiché non è possibile modificare il nome dell'account per le voci DACL esistenti, è necessario rimuovere eventuali voci DACL con utenti o gruppi locali dai descrittori di protezione, creare nuove voci DACL con i nomi account di destinazione corretti e associare queste nuove voci DACL ai descrittori di protezione appropriati.
+
+* Voci SACL
++
+Ogni voce SACL deve essere associata a un account. Per utilizzare il nome SVM di destinazione, è necessario modificare tutti i SACL che utilizzano account utente o di gruppo locali. Poiché non è possibile modificare il nome dell'account per le voci SACL esistenti, è necessario rimuovere eventuali voci SACL con utenti o gruppi locali dai descrittori di protezione, creare nuove voci SACL con i nomi account di destinazione corretti e associare queste nuove voci SACL ai descrittori di protezione appropriati.
+
+
+
+Prima di applicare il criterio, è necessario apportare le modifiche necessarie agli utenti o ai gruppi locali utilizzati nella configurazione del criterio della directory dei file; in caso contrario, il processo di applicazione non riesce.

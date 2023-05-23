@@ -1,0 +1,46 @@
+---
+permalink: smb-admin/change-branchcache-server-key-task.html 
+sidebar: sidebar 
+keywords: change, branchcache, server, key, modify, configuration, storage, virtual, machine, svm, change the branchcache server key 
+summary: 'È possibile modificare la chiave del server BranchCache modificando la configurazione BranchCache sulla macchina virtuale di storage (SVM) e specificando una chiave server diversa.' 
+---
+= Modificare la chiave del server BranchCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile modificare la chiave del server BranchCache modificando la configurazione BranchCache sulla macchina virtuale di storage (SVM) e specificando una chiave server diversa.
+
+.A proposito di questa attività
+È possibile impostare la chiave del server su un valore specifico in modo che, se più server forniscono dati BranchCache per gli stessi file, i client possano utilizzare gli hash da qualsiasi server utilizzando la stessa chiave del server.
+
+Quando si modifica la chiave del server, è necessario svuotare anche la cache hash. Dopo aver eseguito il flushing degli hash, ONTAP crea nuovi hash man mano che i client abilitati a BranchCache inoltrano nuove richieste.
+
+.Fasi
+. Modificare la chiave del server utilizzando il seguente comando: `vserver cifs branchcache modify -vserver vserver_name -server-key text -flush-hashes true`
++
+Quando si configura una nuova chiave server, è necessario specificare anche `-flush-hashes` e impostare il valore su `true`.
+
+. Verificare che la configurazione di BranchCache sia corretta utilizzando `vserver cifs branchcache show` comando.
+
+
+.Esempio
+Nell'esempio seguente viene impostata una nuova chiave server che contiene spazi e svuota la cache hash su SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs branchcache modify -vserver vs1 -server-key "new vserver secret" -flush-hashes true
+
+cluster1::> vserver cifs branchcache show -vserver vs1
+
+                                 Vserver: vs1
+          Supported BranchCache Versions: enable_all
+                      Path to Hash Store: /hash_data
+          Maximum Size of the Hash Store: 20GB
+Encryption Key Used to Secure the Hashes: -
+        CIFS BranchCache Operating Modes: per_share
+----
+.Informazioni correlate
+xref:reasons-invalidates-branchcache-hashes-concept.adoc[Motivi per cui ONTAP invalida gli hash di BranchCache]

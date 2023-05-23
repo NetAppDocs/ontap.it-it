@@ -1,0 +1,48 @@
+---
+permalink: volumes/default-tree-quotas-volume-create-concept.html 
+sidebar: sidebar 
+keywords: how, default, tree quotas, flexvol volume, create, derived tree quotas 
+summary: Quando si crea una quota tree predefinita su un volume FlexVol, le quote tree derivate corrispondenti vengono create automaticamente per ogni qtree di quel volume. 
+---
+= Come le quote ad albero predefinite su un volume FlexVol creano quote ad albero derivate
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si crea una quota tree predefinita su un volume FlexVol, le quote tree derivate corrispondenti vengono create automaticamente per ogni qtree di quel volume.
+
+Queste quote derivate hanno gli stessi limiti della quota ad albero predefinita. Se non esistono quote aggiuntive, i limiti hanno i seguenti effetti:
+
+* Gli utenti possono utilizzare lo spazio in un qtree pari a quello assegnato per l'intero volume (a condizione che non superino il limite per il volume utilizzando lo spazio nella root o in un altro qtree).
+* Ciascuno dei qtree può crescere per consumare l'intero volume.
+
+
+L'esistenza di una quota ad albero predefinita su un volume continua a influire su tutti i nuovi qtree aggiunti al volume. Ogni volta che viene creato un nuovo qtree, viene creata anche una quota di albero derivata.
+
+Come tutte le quote derivate, le quote derivate dell'albero presentano i seguenti comportamenti:
+
+* Vengono creati solo se la destinazione non dispone già di una quota esplicita.
+* Vengono visualizzati nei report delle quote ma non quando si visualizzano le regole delle quote con `volume quota policy rule show` comando.
+
+
+.Esempio di quote di albero derivate
+Si dispone di un volume con tre qtree (proj1, proj2 e proj3) e l'unica quota ad albero è una quota esplicita sul qtree proj1 che limita le sue dimensioni del disco a 10 GB. Se si crea una quota ad albero predefinita sul volume e si reinizializzano le quote sul volume, il report delle quote ora contiene quattro quote ad albero:
+
+[listing]
+----
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol1     proj1     tree    1           0B   10GB       1       -   proj1
+vol1               tree    *           0B   20GB       0       -   *
+vol1     proj2     tree    2           0B   20GB       1       -   proj2
+vol1     proj3     tree    3           0B   20GB       1       -   proj3
+...
+----
+La prima riga mostra la quota esplicita originale sul qtree proj1. Tale quota rimane invariata.
+
+La seconda riga mostra la nuova quota ad albero predefinita sul volume. L'asterisco (*) specifier di quota indica che si tratta di una quota predefinita. Questa quota è il risultato della regola di quota creata.
+
+Le ultime due righe mostrano le nuove quote di albero derivate per i qtree proj2 e proj3. ONTAP ha creato automaticamente queste quote come risultato della quota ad albero predefinita sul volume. Queste quote derivate della struttura hanno lo stesso limite di 20 GB di disco della quota predefinita della struttura nel volume. ONTAP non ha creato una quota tree derivata per il qtree proj1 perché il qtree proj1 aveva già una quota esplicita.

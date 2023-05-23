@@ -1,0 +1,143 @@
+---
+permalink: system-admin/restore-cluster-config-from-existing-task.html 
+sidebar: sidebar 
+keywords: restore, cluster, configuration, existing, configuration, failure, recovering, node, rejoin, cluster 
+summary: Per ripristinare una configurazione del cluster da una configurazione esistente in seguito a un errore del cluster, ricrearlo utilizzando la configurazione del cluster scelta e resa disponibile al nodo di ripristino, quindi riconnettersi ciascun nodo aggiuntivo al nuovo cluster. 
+---
+= Ripristinare una configurazione del cluster da una configurazione esistente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per ripristinare una configurazione del cluster da una configurazione esistente in seguito a un errore del cluster, ricrearlo utilizzando la configurazione del cluster scelta e resa disponibile al nodo di ripristino, quindi riconnettersi ciascun nodo aggiuntivo al nuovo cluster.
+
+.A proposito di questa attività
+Questa attività deve essere eseguita solo per il ripristino da un disastro che ha causato la perdita della configurazione del cluster.
+
+[NOTE]
+====
+Se si sta ricreando il cluster da un file di backup della configurazione, contattare il supporto tecnico per risolvere eventuali discrepanze tra il file di backup della configurazione e la configurazione presente nel cluster.
+
+Se si sta ripristinando il cluster da un file di backup della configurazione, le modifiche apportate alla configurazione dopo l'esecuzione del backup andranno perse. Dopo il ripristino, è necessario risolvere eventuali discrepanze tra il file di backup della configurazione e la configurazione attuale. Consultare l'articolo della Knowledge base https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/ONTAP_Configuration_Backup_Resolution_Guide["Guida alla risoluzione dei problemi per il backup della configurazione di ONTAP"].
+
+====
+.Fasi
+. Disattivare il failover dello storage per ciascuna coppia ha:
++
+`*storage failover modify -node _node_name_ -enabled false*`
+
++
+È necessario disattivare il failover dello storage una sola volta per ogni coppia ha. Quando si disattiva il failover dello storage per un nodo, anche il failover dello storage viene disattivato sul partner del nodo.
+
+. Arrestare ciascun nodo ad eccezione del nodo di ripristino:
++
+`*system node halt -node _node_name_ -reason "text"*`
+
++
+[listing]
+----
+cluster1::*> system node halt -node node0 -reason "recovering cluster"
+
+Warning: Are you sure you want to halt the node? {y|n}: y
+----
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+`*set -privilege advanced*`
+
+. Nel nodo di ripristino, utilizzare `*system configuration recovery cluster recreate*` per ricreare il cluster.
++
+In questo esempio viene ricreato il cluster utilizzando le informazioni di configurazione memorizzate nel nodo di ripristino:
+
++
+[listing]
+----
+cluster1::*> configuration recovery cluster recreate -from node
+
+Warning: This command will destroy your existing cluster. It will
+         rebuild a new single-node cluster consisting of this node
+         and its current configuration. This feature should only be
+         used to recover from a disaster. Do not perform any other
+         recovery operations while this operation is in progress.
+Do you want to continue? {y|n}: y
+----
++
+Viene creato un nuovo cluster sul nodo di ripristino.
+
+. Se si sta ricreando il cluster da un file di backup della configurazione, verificare che il ripristino del cluster sia ancora in corso:
++
+`*system configuration recovery cluster show*`
+
++
+Non è necessario verificare lo stato di ripristino del cluster se si sta ricreando il cluster da un nodo integro.
+
++
+[listing]
+----
+cluster1::*> system configuration recovery cluster show
+ Recovery Status: in-progress
+ Is Recovery Status Persisted: false
+----
+. Avviare ogni nodo che deve essere ricongiungersi al cluster ricreato.
++
+È necessario riavviare i nodi uno alla volta.
+
+. Per ogni nodo che deve essere Unito al cluster ricreato, procedere come segue:
++
+.. Da un nodo integro nel cluster ricreato, ricongiungersi al nodo di destinazione:
++
+`*system configuration recovery cluster rejoin -node _node_name_*`
+
++
+Questo esempio ricongiunge il nodo di destinazione "`node2`" al cluster ricreato:
+
++
+[listing]
+----
+cluster1::*> system configuration recovery cluster rejoin -node node2
+
+Warning: This command will rejoin node "node2" into the local
+         cluster, potentially overwriting critical cluster
+         configuration files. This command should only be used
+         to recover from a disaster. Do not perform any other
+         recovery operations while this operation is in progress.
+         This command will cause node "node2" to reboot.
+Do you want to continue? {y|n}: y
+----
++
+Il nodo di destinazione viene riavviato e quindi Unito al cluster.
+
+.. Verificare che il nodo di destinazione sia integro e che abbia formato il quorum con gli altri nodi del cluster:
++
+`*cluster show -eligibility true*`
+
++
+Il nodo di destinazione deve riconnettersi al cluster ricreato prima di poter riconnettersi a un altro nodo.
+
++
+[listing]
+----
+cluster1::*> cluster show -eligibility true
+Node                 Health  Eligibility   Epsilon
+-------------------- ------- ------------  ------------
+node0                true    true          false
+node1                true    true          false
+2 entries were displayed.
+----
+
+
+. Se il cluster è stato ricreato da un file di backup della configurazione, impostare lo stato di ripristino su complete (completo):
++
+`*system configuration recovery cluster modify -recovery-status complete*`
+
+. Tornare al livello di privilegio admin:
++
+`*set -privilege admin*`
+
+. Se il cluster è costituito da due soli nodi, utilizzare `*cluster ha modify*` Comando per riabilitare il cluster ha.
+. Utilizzare `*storage failover modify*` Comando per riabilitare il failover dello storage per ogni coppia ha.
+
+
+.Al termine
+Se il cluster dispone di relazioni peer SnapMirror, è necessario ricrearle. Per ulteriori informazioni, vedere link:../data-protection/index.html["Protezione dei dati"].

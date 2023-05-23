@@ -1,0 +1,138 @@
+---
+permalink: smb-hyper-v-sql/smb-share-config-worksheet-reference.html 
+sidebar: sidebar 
+keywords: complete, smb, share, configuration, worksheet, information, settings 
+summary: Utilizzare questo foglio di lavoro per registrare i valori necessari per la creazione di condivisioni SMB continuamente disponibili per le configurazioni SQL Server e Hyper-V su SMB. 
+---
+= Completare il foglio di lavoro per la configurazione della condivisione SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Utilizzare questo foglio di lavoro per registrare i valori necessari per la creazione di condivisioni SMB continuamente disponibili per le configurazioni SQL Server e Hyper-V su SMB.
+
+
+
+== Informazioni sulle proprietà delle condivisioni SMB e sulle impostazioni di configurazione
+
+Per ciascuna condivisione, è necessario specificare le seguenti informazioni:
+
+* Nome SVM (Storage Virtual Machine)
++
+Il nome SVM è lo stesso per tutte le condivisioni
+
+* Nome di condivisione
+* Percorso
+* Condividere le proprietà
++
+È necessario configurare le seguenti due proprietà di condivisione:
+
++
+** `oplocks`
+** `continuously-available`
+
+
+
+
+Le seguenti proprietà di condivisione non devono essere impostate:
+
+* `homedirectory attributecache`
+* `branchcache`
+* `access-based-enumeration`
++
+[NOTE]
+====
+Con la notifica delle modifiche disattivata, Windows 2012 Server non aggiorna la finestra di Esplora risorse, causando una visualizzazione non coerente del contenuto della directory.
+
+====
++
+** I collegamenti simbolici devono essere disattivati (il valore per `-symlink-properties` il parametro deve essere nullo [""]).
+
+
+
+
+
+
+== Informazioni sui percorsi di condivisione
+
+Se si utilizza il VSS remoto per eseguire il backup dei file Hyper-V, è importante scegliere i percorsi di condivisione da utilizzare per le connessioni SMB dai server Hyper-V alle posizioni di storage in cui sono memorizzati i file delle macchine virtuali. Sebbene sia possibile creare condivisioni in qualsiasi punto dello spazio dei nomi, i percorsi per le condivisioni utilizzati dai server Hyper-V non devono contenere volumi congiunti. Le operazioni di copia shadow non possono essere eseguite su percorsi di condivisione che contengono punti di giunzione.
+
+SQL Server non è in grado di incrociare le giunzioni durante la creazione della struttura di directory del database. Non creare percorsi di condivisione per SQL Server che contengono punti di giunzione.
+
+Ad esempio, dato lo spazio dei nomi mostrato, se si desidera memorizzare i file di macchine virtuali o i file di database sui volumi "`vol1`", "`vol2`", "`vol3`" e "`vol4`", è necessario creare condivisioni per i server applicazioni nei seguenti percorsi: `/data1/vol1`, `/data1/vol2`, `/data2/vol3`, e. `/data2/vol4`.
+
+[listing]
+----
+
+                     Junction                       Junction
+Vserver Volume       Active   Junction Path         Path Source
+------- ------------ -------- -------------------   -----------
+vs1     data1         true     /data1               RW_volume
+vs1     vol1          true     /data1/vol1          RW_volume
+vs1     vol2          true     /data1/vol2          RW_volume
+vs1     data2         true     /data2               RW_volume
+vs1     vol3          true     /data2/vol3          RW_volume
+vs1     vol4          true     /data2/vol4          RW_volume
+----
+[NOTE]
+====
+Sebbene sia possibile creare condivisioni su `/data1` e. `/data2` percorsi per la gestione amministrativa, non è necessario configurare i server applicazioni per utilizzare tali condivisioni per memorizzare i dati.
+
+====
+
+
+== Foglio di lavoro per la pianificazione
+
+|===
+| Tipi di informazioni | Valori 
+
+
+ a| 
+_Volume 1: Nome e percorso della condivisione SMB_
+ a| 
+
+
+
+ a| 
+_Volume 2: Nome e percorso della condivisione SMB_
+ a| 
+
+
+
+ a| 
+_Volume 3: Nome e percorso della condivisione SMB_
+ a| 
+
+
+
+ a| 
+_Volume 4: Nome e percorso della condivisione SMB_
+ a| 
+
+
+
+ a| 
+_Volume 5: Nome e percorso della condivisione SMB_
+ a| 
+
+
+
+ a| 
+_Volume 6: Nome e percorso della condivisione SMB_
+ a| 
+
+
+
+ a| 
+_Volume 7: Nome e percorso della condivisione SMB_
+ a| 
+
+
+
+ a| 
+_Volumi aggiuntivi: Nomi e percorsi di condivisione SMB_
+ a| 
+
+|===

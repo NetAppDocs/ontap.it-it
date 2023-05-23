@@ -1,0 +1,76 @@
+---
+permalink: smb-admin/configure-bypass-traverse-checking-concept.html 
+sidebar: sidebar 
+keywords: bypass, traverse, user, privilege, permission, directory, allow, check, configure, storage, virtual, machine, svm, configure bypass traverse checking 
+summary: 'Il controllo incrociato bypass è un diritto utente (noto anche come privilegio) che determina se un utente può attraversare tutte le directory nel percorso verso un file anche se l"utente non dispone delle autorizzazioni per la directory attraversata. È necessario comprendere cosa accade quando si consente o non si consente il controllo incrociato del bypass e come configurare il controllo incrociato del bypass per gli utenti sulle macchine virtuali di storage (SVM).' 
+---
+= Configurare la panoramica del controllo incrociato del bypass
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il controllo incrociato del bypass è un diritto utente (noto anche come _privilegio_) che determina se un utente può attraversare tutte le directory nel percorso verso un file anche se l'utente non dispone delle autorizzazioni per la directory attraversata. È necessario comprendere cosa accade quando si consente o non si consente il controllo incrociato del bypass e come configurare il controllo incrociato del bypass per gli utenti sulle macchine virtuali di storage (SVM).
+
+
+
+== Cosa accade quando si consente o si non si consente il controllo incrociato del bypass
+
+* Se consentito, quando un utente tenta di accedere a un file, ONTAP non controlla l'autorizzazione di attraversamento per le directory intermedie quando determina se concedere o negare l'accesso al file.
+* Se non consentito, ONTAP controlla l'autorizzazione di traslazione (esecuzione) per tutte le directory nel percorso del file.
++
+Se una qualsiasi delle directory intermedie non dispone di "`X`" (autorizzazione trasversale), ONTAP nega l'accesso al file.
+
+
+
+
+
+== Configurare il controllo incrociato del bypass
+
+È possibile configurare il controllo incrociato di bypass utilizzando l'interfaccia utente di ONTAP o configurando i criteri di gruppo di Active Directory con questo diritto utente.
+
+Il `SeChangeNotifyPrivilege` il privilegio controlla se gli utenti sono autorizzati a ignorare il controllo incrociato.
+
+* L'aggiunta a utenti o gruppi SMB locali sulla SVM o a utenti o gruppi di dominio consente di evitare il controllo incrociato.
+* La sua rimozione da utenti o gruppi SMB locali sulla SVM o da utenti o gruppi di dominio non consente di ignorare il controllo incrociato.
+
+
+Per impostazione predefinita, i seguenti gruppi BUILTIN su SVM hanno il diritto di ignorare il controllo incrociato:
+
+* `BUILTIN\Administrators`
+* `BUILTIN\Power Users`
+* `BUILTIN\Backup Operators`
+* `BUILTIN\Users`
+* `Everyone`
+
+
+Se non si desidera consentire ai membri di uno di questi gruppi di ignorare il controllo incrociato, è necessario rimuovere questo privilegio dal gruppo.
+
+Durante la configurazione del bypass, è necessario tenere presente quanto segue per gli utenti e i gruppi SMB locali sulla SVM utilizzando la CLI:
+
+* Se si desidera consentire ai membri di un gruppo locale o di dominio personalizzato di ignorare il controllo incrociato, è necessario aggiungere `SeChangeNotifyPrivilege` privilegio per quel gruppo.
+* Se si desidera consentire a un singolo utente locale o di dominio di ignorare il controllo incrociato e tale utente non è membro di un gruppo con tale privilegio, è possibile aggiungere `SeChangeNotifyPrivilege` privilegio per l'account utente.
+* È possibile disattivare il controllo incrociato bypass per utenti o gruppi locali o di dominio rimuovendo `SeChangeNotifyPrivilege` privilegio in qualsiasi momento.
++
+[NOTE]
+====
+Per disattivare la funzione di bypass travers per utenti o gruppi locali o di dominio specifici, è necessario rimuovere anche `SeChangeNotifyPrivilege` privilegio di `Everyone` gruppo.
+
+====
+
+
+.Informazioni correlate
+xref:allow-users-groups-bypass-directory-traverse-task.adoc[Consenti a utenti o gruppi di ignorare il controllo incrociato della directory]
+
+xref:disallow-users-groups-bypass-directory-traverse-task.adoc[Non consentire a utenti o gruppi di ignorare il controllo incrociato della directory]
+
+xref:configure-character-mappings-file-name-translation-task.adoc[Configurare la mappatura dei caratteri per la conversione dei nomi file SMB sui volumi]
+
+xref:create-share-access-control-lists-task.html[Creare elenchi di controllo degli accessi di condivisione SMB]
+
+xref:secure-file-access-storage-level-access-guard-concept.html[Proteggere l'accesso ai file utilizzando Storage-Level Access Guard]
+
+xref:list-supported-privileges-reference.adoc[Elenco dei privilegi supportati]
+
+xref:add-privileges-local-domain-users-groups-task.html[Aggiungere privilegi a utenti o gruppi locali o di dominio]

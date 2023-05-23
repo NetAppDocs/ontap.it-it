@@ -1,0 +1,28 @@
+---
+permalink: san-admin/svms-interact-isns-server-concept.html 
+sidebar: sidebar 
+keywords: how, svms, interact, isns, server 
+summary: 'Il server iSNS comunica con ciascuna macchina virtuale di storage (SVM) attraverso la LIF di gestione SVM. La LIF di gestione registra tutte le informazioni relative a nome, alias e portale del nodo di destinazione iSCSI con il servizio iSNS per una SVM specifica.' 
+---
+= Come le SVM interagiscono con un server iSNS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il server iSNS comunica con ciascuna macchina virtuale di storage (SVM) attraverso la LIF di gestione SVM. La LIF di gestione registra tutte le informazioni relative a nome, alias e portale del nodo di destinazione iSCSI con il servizio iSNS per una SVM specifica.
+
+Nell'esempio seguente, SVM VS1 utilizza la LIF di gestione SVM vs1_Mgmt_Lif per registrarsi con il server iSNS. Durante la registrazione iSNS, una SVM invia tutte le LIF iSCSI attraverso la LIF di gestione SVM al server iSNS. Una volta completata la registrazione iSNS, il server iSNS dispone di un elenco di tutti i LIF che servono iSCSI in VS1. Se un cluster contiene più SVM, ciascuna SVM deve registrarsi singolarmente con il server iSNS per utilizzare il servizio iSNS.
+
+image::../media/bsag_c-mode_iSNS_register.png[Registro iSNS bsag c mode]
+
+Nell'esempio successivo, dopo che il server iSNS ha completato la registrazione con la destinazione, l'host A è in grado di rilevare tutte le LIF per VS1 attraverso il server iSNS, come indicato nella fase 1. Dopo che l'host A ha completato il rilevamento dei LIF per VS1, l'host A può stabilire una connessione con uno qualsiasi dei LIF in VS1, come mostrato nella fase 2. L'host A non è a conoscenza di alcuna LIF in VS2 fino a quando la LIF di gestione VS2_Mgmt_LIF per VS2 non si registra con il server iSNS.
+
+image::../media/bsag_c-mode_iSNS_connect.png[bsag c mode iSNS Connect]
+
+Tuttavia, se si definiscono gli elenchi di accesso all'interfaccia, l'host può utilizzare solo i LIF definiti nell'elenco di accesso all'interfaccia per accedere alla destinazione.
+
+Una volta configurato iSNS, ONTAP aggiorna automaticamente il server iSNS quando cambiano le impostazioni di configurazione di SVM.
+
+Tra il momento in cui vengono apportate le modifiche alla configurazione e il momento in cui ONTAP invia l'aggiornamento al server iSNS può verificarsi un ritardo di alcuni minuti. Forzare un aggiornamento immediato delle informazioni iSNS sul server iSNS: `vserver iscsi isns update`

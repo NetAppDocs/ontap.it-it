@@ -1,0 +1,56 @@
+---
+permalink: ndmp/enable-svm-scoped-ndmp-cluster-task.html 
+sidebar: sidebar 
+keywords: enable, svm, scope, ndmp, cluster 
+summary: 'Se il DMA supporta l"estensione CAB (Cluster Aware Backup), è possibile eseguire il backup di tutti i volumi ospitati su diversi nodi di un cluster attivando NDMP con ambito SVM, attivando il servizio NDMP sul cluster (SVM amministrativa) e configurando i LIF per la connessione dati e di controllo.' 
+---
+= Abilitare NDMP con ambito SVM sul cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se il DMA supporta l'estensione CAB (Cluster Aware Backup), è possibile eseguire il backup di tutti i volumi ospitati su diversi nodi di un cluster attivando NDMP con ambito SVM, attivando il servizio NDMP sul cluster (SVM amministrativa) e configurando i LIF per la connessione dati e di controllo.
+
+.Di cosa hai bisogno
+L'estensione DELLA CABINA deve essere supportata dal DMA.
+
+.A proposito di questa attività
+La disattivazione della modalità NDMP con ambito nodo attiva la modalità NDMP con ambito SVM sul cluster.
+
+.Fasi
+. Attivare la modalità NDMP con ambito SVM utilizzando `system services ndmp` con il `node-scope-mode` parametro.
++
+[listing]
+----
+cluster1::> system services ndmp node-scope-mode off
+NDMP node-scope-mode is disabled.
+----
+. Attivare il servizio NDMP sulla SVM amministrativa utilizzando `vserver services ndmp on` comando.
++
+[listing]
+----
+cluster1::> vserver services ndmp on -vserver cluster1
+----
++
+Il tipo di autenticazione è impostato su `challenge` per impostazione predefinita, l'autenticazione in chiaro è disattivata.
+
++
+[NOTE]
+====
+Per una comunicazione sicura, è necessario disattivare l'autenticazione in chiaro.
+
+====
+. Verificare che il servizio NDMP sia attivato utilizzando `vserver services ndmp show` comando.
++
+[listing]
+----
+cluster1::> vserver services ndmp show
+
+Vserver       Enabled   Authentication type
+------------- --------- -------------------
+cluster1      true      challenge
+vs1           false     challenge
+----
+

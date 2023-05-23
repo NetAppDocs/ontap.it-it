@@ -1,0 +1,120 @@
+---
+sidebar: sidebar 
+permalink: task_nas_secure_client_access_with_kerberos.html 
+keywords: netapp, ontap, kerberos, security, client access, group permissions, user permissions, UNIX permissions, name mapping, NAS client, storage access 
+summary: 'Abilitare Kerberos per proteggere l"accesso allo storage per i client NAS.' 
+---
+= Accesso client sicuro con Kerberos
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Abilitare Kerberos per proteggere l'accesso allo storage per i client NAS.
+
+Questa procedura consente di configurare Kerberos su una VM di storage esistente abilitata per link:task_nas_enable_linux_nfs.html["NFS"] oppure link:task_nas_enable_windows_smb.html["PMI"].
+
+Prima di iniziare, è necessario aver configurato DNS, NTP e. link:task_nas_provide_client_access_with_name_services.html["LDAP"] sul sistema storage.
+
+image:workflow_nas_secure_client_access_with_kerberos.gif["Workflow per la protezione dell'accesso client con Kerberos"]
+
+.Fasi
+. Nella riga di comando di ONTAP, impostare le autorizzazioni UNIX per il volume root della VM di storage.
++
+.. Visualizzare le autorizzazioni pertinenti sul volume root della VM di storage: `volume show -volume _root_vol_name_-fields user,group,unix-permissions`
++
+Il volume root della VM di storage deve avere la seguente configurazione:
+
++
+[cols="2"]
+|===
+| Nome... | Impostazione in corso... 
+
+
+| UID | Root o ID 0 
+
+
+| GID | Root o ID 0 
+
+
+| Autorizzazioni UNIX | 755 
+|===
+.. Se questi valori non vengono visualizzati, utilizzare `volume modify` per aggiornarli.
+
+
+. Impostare le autorizzazioni utente per il volume root della VM di storage.
++
+.. Visualizzare gli utenti UNIX locali: `vserver services name-service unix-user show -vserver _vserver_name_`
++
+Per la macchina virtuale di storage devono essere configurati i seguenti utenti UNIX:
+
++
+[cols="3"]
+|===
+| Nome utente | ID utente | ID gruppo primario 
+
+
+| nfs | 500 | 0 
+
+
+| root | 0 | 0 
+|===
++
+*Nota:* l'utente NFS non è richiesto se esiste una mappatura nome Kerberos-UNIX per l'SPN dell'utente client NFS; vedere il passaggio 5.
+
+.. Se questi valori non vengono visualizzati, utilizzare `vserver services name-service unix-user modify` per aggiornarli.
+
+
+. Impostare le autorizzazioni di gruppo per il volume root della VM di storage.
++
+.. Visualizzare i gruppi UNIX locali: `vserver services name-service unix-group show -vserver _vserver_name_`
++
+La macchina virtuale di storage deve avere i seguenti gruppi UNIX configurati:
+
++
+[cols="2"]
+|===
+| Nome del gruppo | ID gruppo 
+
+
+| daemon | 1 
+
+
+| root | 0 
+|===
+.. Se questi valori non vengono visualizzati, utilizzare `vserver services name-service unix-group modify` per aggiornarli.
+
+
+. Passare a System Manager per configurare Kerberos
+. In System Manager, fare clic su *Storage > Storage VM* e selezionare la VM di storage.
+. Fare clic su *Impostazioni*.
+. Fare clic su image:icon_arrow.gif["freccia"] In Kerberos.
+. Fare clic su *Add* (Aggiungi) sotto Kerberos Realm (Area autenticazione Kerberos) e completare le seguenti sezioni:
++
+** Aggiungi area di autenticazione Kerberos
++
+Inserire i dettagli di configurazione in base al vendor KDC.
+
+** Aggiungi interfaccia di rete a Realm
++
+Fare clic su *Aggiungi* e selezionare un'interfaccia di rete.
+
+
+
+. Se lo si desidera, aggiungere i mapping dai nomi principali Kerberos ai nomi utente locali.
++
+.. Fare clic su *Storage > Storage VM* (Storage VM) e selezionare la VM di storage.
+.. Fare clic su *Impostazioni*, quindi su image:icon_arrow.gif["freccia"] Sotto *mappatura nome*.
+.. In *Kerberos to UNIX*, aggiungere modelli e sostituzioni utilizzando espressioni regolari.
+
+
+

@@ -1,0 +1,183 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/respond-abnormal-task.html 
+keywords: abnormal activity, data entropy, unusual file extensions, potential ransomware attack, false positive, ransomware attack, abnormal activity notification, ransomware alert, detected abnormal volume, suspected file types, attack report, anti-ransomware attack, ransomware ems 
+summary: 'Quando la protezione ransomware autonoma (ARP) rileva attività anomale in un volume protetto, emette un avviso. È necessario valutare la notifica per determinare se l"attività è prevista e accettabile o se è in corso un attacco.' 
+---
+= Rispondere ad attività anomale
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Quando la protezione ransomware autonoma (ARP) rileva attività anomale in un volume protetto, emette un avviso. È necessario valutare la notifica per determinare se l'attività è prevista e accettabile o se è in corso un attacco.
+
+.A proposito di questa attività
+ARP visualizza un elenco di file sospetti quando rileva una combinazione di elevata entropia dei dati, attività anomale del volume con crittografia dei dati e estensioni di file insolite.
+
+Quando viene visualizzato l'avviso, è possibile rispondere contrassegnando l'attività del file in uno dei due modi seguenti:
+
+* Falso positivo
++
+Il tipo di file identificato è previsto nel carico di lavoro e può essere ignorato.
+
+* Potenziale attacco ransomware
++
+Il tipo di file identificato non è previsto nel carico di lavoro e deve essere trattato come un potenziale attacco.
+
+
+
+In entrambi i casi, il normale monitoraggio riprende dopo l'aggiornamento e la cancellazione degli avvisi. ARP registra la tua valutazione per la valutazione delle minacce, aggiorna i log con i nuovi tipi di file e li utilizza per analisi future.
+
+In caso di attacco sospetto, è necessario determinare se si tratta di un attacco, rispondere al caso in cui si tratti e ripristinare i dati protetti prima di cancellare le notifiche. link:index.html#how-to-recover-data-in-ontap-after-a-ransomware-attack["Scopri di più su come eseguire il ripristino da un attacco ransomware"].
+
+
+NOTE: Non ci sono avvisi da cancellare se è stato ripristinato un intero volume.
+
+.Prima di iniziare
+* ARP deve essere in esecuzione in modalità attiva.
+
+
+.Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Quando si riceve una notifica di "attività anomale", fare clic sul collegamento o accedere alla scheda *Security* (sicurezza) della panoramica *Volumes* (volumi).
++
+Gli avvisi vengono visualizzati nel riquadro Panoramica della finestra Eventi.
+
+. Quando viene visualizzato il messaggio "rilevata attività anomala del volume", visualizzare i file sospetti.
++
+Nella scheda *sicurezza*, fare clic su Visualizza *tipi di file sospetti*.
+
+. Nella finestra di dialogo *tipi di file sospetti*, esaminare ciascun tipo di file e contrassegnarlo come "falso positivo" o "potenziale attacco ransomware".
+
+
+[cols="25,75"]
+|===
+
+
+| Se si seleziona questo valore... | Eseguire questa azione… 
+
+
+| Falso positivo  a| 
+Fare clic su *Update* (Aggiorna) e *Clear Suspect file Types* (Cancella tipi di file sospetti) per registrare la decisione e riprendere il normale monitoraggio ARP.
+
+
+NOTE: A partire da ONTAP 9.13.1, se si utilizza MAV per proteggere le impostazioni ARP, l'operazione che si sospetta venga richiesta l'approvazione di uno o più amministratori aggiuntivi. link:../multi-admin-verify/request-operation-task.html["L'approvazione deve essere ricevuta da tutti gli amministratori"] Associato al gruppo di approvazione MAV o l'operazione non riuscirà.
+
+
+
+| Potenziale attacco ransomware | Rispondere all'attacco e ripristinare i dati protetti. Quindi fare clic su *Update* (Aggiorna) e *Clear Suspect file Types* (Cancella tipi di file sospetti) per registrare la decisione e riprendere il normale monitoraggio ARP. + non esistono tipi di file sospetti da eliminare se è stato ripristinato un intero volume. 
+|===
+--
+.CLI
+--
+. Quando ricevi una notifica di un attacco ransomware sospetto, verifica l'ora e la gravità dell'attacco:
++
+`security anti-ransomware volume show -vserver _svm_name_ -volume _vol_name_`
+
++
+Output di esempio:
+
++
+....
+Vserver Name: vs0
+Volume Name: vol1
+State: enabled
+Attack Probability: moderate
+Attack Timeline: 9/14/2021 01:03:23
+Number of Attacks: 1
+....
++
+È inoltre possibile controllare i messaggi EMS:
+
++
+`event log show -message-name callhome.arw.activity.seen`
+
+. Generare un report sugli attacchi e prendere nota della posizione di output:
++
+`security anti-ransomware volume attack generate-report -volume _vol_name_ -dest-path _file_location_/`
+
++
+Output di esempio:
+
++
+`Report "report_file_vs0_vol1_14-09-2021_01-21-08" available at path "vs0:vol1/"`
+
+. Visualizzare il report su un sistema client di amministrazione. Ad esempio:
++
+....
+[root@rhel8 mnt]# cat report_file_vs0_vol1_14-09-2021_01-21-08
+
+19  "9/14/2021 01:03:23"   test_dir_1/test_file_1.jpg.lckd
+20  "9/14/2021 01:03:46"   test_dir_2/test_file_2.jpg.lckd
+21  "9/14/2021 01:03:46"   test_dir_3/test_file_3.png.lckd`
+....
+. Eseguire una delle seguenti operazioni in base alla valutazione delle estensioni dei file:
++
+** Falso positivo
++
+Immettere il seguente comando per registrare la decisione, aggiungere il nuovo interno all'elenco di quelli consentiti e riprendere il normale monitoraggio anti-ransomware:
+`anti-ransomware volume attack clear-suspect -vserver _svm_name_ -volume _vol_name_ [_extension identifiers_] -false-positive true`
+
++
+Per identificare gli interni, utilizzare uno dei seguenti parametri:
+`[-seq-no _integer_]` Numero di sequenza del file nell'elenco dei file sospetti.
+`[-extension _text_, … ]` Estensioni di file
+`[-start-time _date_time_ -end-time _date_time_]` Orari di inizio e fine dell'intervallo di file da cancellare, nel formato "MM/GG/AAAA HH:MM:SS".
+
+** Potenziale attacco ransomware
++
+Rispondere all'attacco e. link:../anti-ransomware/recover-data-task.html["Recuperare i dati dallo snapshot di backup creato da ARP"]. Una volta ripristinati i dati, immettere il seguente comando per registrare la decisione e riprendere il normale monitoraggio ARP:
+
++
+`anti-ransomware volume attack clear-suspect -vserver _svm_name_ -volume _vol_name_ [_extension identifiers_] -false-positive false`
+
++
+Per identificare gli interni, utilizzare uno dei seguenti parametri:
+`[-seq-no _integer_]` Numero di sequenza del file nell'elenco dei file sospetti
+`[-extension _text_, … ]` Estensione del file
+`[-start-time _date_time_ -end-time _date_time_]` Orari di inizio e fine dell'intervallo di file da cancellare, nel formato "MM/GG/AAAA HH:MM:SS".
+
++
+Non esistono tipi di file sospetti da eliminare se è stato ripristinato un intero volume. Lo snapshot di backup creato da ARP verrà rimosso e il report dell'attacco verrà cancellato.
+
+
+
+. Se si sta utilizzando MAV e un previsto `clear-suspect` L'operazione richiede approvazioni aggiuntive, ogni responsabile dell'approvazione del gruppo MAV esegue le seguenti operazioni:
++
+.. Mostra la richiesta:
++
+`security multi-admin-verify request show`
+
+.. Approvare la richiesta di riprendere il normale monitoraggio anti-ransomware:
++
+`security multi-admin-verify request approve -index[_number returned from show request_]`
+
++
+La risposta dell'ultimo responsabile dell'approvazione del gruppo indica che il volume è stato modificato e che viene registrato un falso positivo.
+
+
+
+. Se si utilizza MAV e si è un responsabile dell'approvazione del gruppo MAV, è anche possibile rifiutare una richiesta con un sospetto chiaro:
++
+`security multi-admin-verify request veto -index[_number returned from show request_]`
+
+
+
+--
+====
+.Ulteriori informazioni
+* link:https://kb.netapp.com/onprem%2Fontap%2Fda%2FNAS%2FUnderstanding_Autonomous_Ransomware_Protection_attacks_and_the_Autonomous_Ransomware_Protection_snapshot#["KB: Comprendere gli attacchi di protezione ransomware autonoma e lo snapshot di protezione ransomware autonoma"^].
+

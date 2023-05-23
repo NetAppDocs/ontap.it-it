@@ -1,0 +1,58 @@
+---
+permalink: upgrade/task_verifying_that_deduplicated_volumes_and_aggregates_contain_sufficient_free_space.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, verify, verifying, deduplication, deduplicated, volumes, aggregates, sufficient, enough, free, space 
+summary: 'Prima di aggiornare ONTAP, è necessario verificare che tutti i volumi deduplicati e gli aggregati che li contengono dispongano di spazio libero sufficiente per i metadati di deduplica. Se lo spazio libero è insufficiente, la deduplica verrà disattivata al termine dell"aggiornamento di ONTAP.' 
+---
+= Verificare che i volumi deduplicati e gli aggregati contengano spazio libero sufficiente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di aggiornare ONTAP, è necessario verificare che tutti i volumi deduplicati e gli aggregati che li contengono dispongano di spazio libero sufficiente per i metadati di deduplica. Se lo spazio libero è insufficiente, la deduplica verrà disattivata al termine dell'aggiornamento di ONTAP.
+
+Ogni volume deduplicato deve contenere almeno il 4% di spazio libero. Ogni aggregato che contiene un volume deduplicato deve contenere almeno il 3% di spazio libero.
+
+. Determinare i volumi deduplicati: `volume efficiency show`
+. Determinare lo spazio libero disponibile su ciascun volume identificato: `vol show -vserver Vserver_name -volume volume_name -fields volume, size, used, available, percent-used, junction-path`
++
+Ogni volume deduplicato non deve contenere più del 96% di capacità utilizzata. Se necessario, è possibile aumentare le dimensioni dei volumi che superano questa capacità.
+
++
+link:../volumes/index.html["Gestione dello storage logico"]
+
++
+In questo esempio, il campo percentuale di utilizzo visualizza la percentuale di spazio utilizzato sul volume deduplicato:
+
++
+[listing]
+----
+vserver    volume size    junction-path available used   percent-used
+----------- ------ ------- -------------
+cluster1-01 vol0   22.99GB -             14.11GB      7.73GB 35%
+cluster1-02 vol0   22.99GB -             12.97GB      8.87GB    40%
+2 entries were displayed.
+----
+. Identificare lo spazio libero disponibile su ciascun aggregato che contiene un volume deduplicato: `aggr show -aggregate aggregate_name -fields aggregate, size, usedsize, availsize, percent-used`
++
+Ogni aggregato non deve contenere più del 97% di capacità utilizzata. Se necessario, è possibile aumentare le dimensioni degli aggregati che superano questa capacità.
+
++
+link:../disks-aggregates/index.html["Gestione di dischi e aggregati"]
+
++
+In questo esempio, il campo percentuale utilizzata visualizza la percentuale di spazio utilizzato sull'aggregato contenente il volume deduplicato (aggr_2):
+
++
+[listing]
+----
+aggr show -aggregate aggregate_name -fields aggregate,size,usedsize,availsize,percent-used
+aggregate         availsize percent-used size    usedsize
+----------------- --------- ------------    ------- --------
+aggr0_cluster1_01    1.11GB    95%          24.30GB 23.19GB
+aggr0_cluster1_02 1022MB    96%          24.30GB    23.30GB
+2 entries were displayed.
+----
+

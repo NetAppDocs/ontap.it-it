@@ -1,0 +1,52 @@
+---
+sidebar: sidebar 
+permalink: networking/modify_network_port_attributes.html 
+keywords: change, changing, modify, modifying, network, port, attributes, modify network port attributes, change the autonegotiation, duplex, flow control, speed, and health settings of a physical network port 
+summary: Modificare le impostazioni di negoziazione automatica, duplex, controllo di flusso, velocità e stato di una porta di rete fisica 
+---
+= Modificare gli attributi delle porte di rete
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+È possibile modificare le impostazioni di negoziazione automatica, duplex, controllo di flusso, velocità e stato di una porta di rete fisica.
+
+.Prima di iniziare
+La porta che si desidera modificare non deve ospitare le LIF.
+
+.A proposito di questa attività
+* Si sconsiglia di modificare le impostazioni amministrative delle interfacce di rete 100 GbE, 40 GbE, 10 GbE o 1 GbE.
++
+I valori impostati per la modalità duplex e la velocità della porta vengono definiti impostazioni amministrative. A seconda delle limitazioni di rete, le impostazioni amministrative possono differire dalle impostazioni operative (ovvero, la modalità duplex e la velocità effettivamente utilizzate dalla porta).
+
+* Si sconsiglia di modificare le impostazioni amministrative delle porte fisiche sottostanti in un gruppo di interfacce.
++
+Il `-up-admin` parameter (disponibile a livello di privilegio avanzato) modifica le impostazioni amministrative della porta.
+
+* Si sconsiglia di impostare `-up-admin` Impostazione amministrativa su false per tutte le porte su un nodo o per la porta che ospita l'ultimo LIF del cluster operativo su un nodo.
+* Si sconsiglia di modificare le dimensioni MTU della porta di gestione, `e0M`.
+* La dimensione MTU di una porta in un dominio di trasmissione non può essere modificata dal valore MTU impostato per il dominio di trasmissione.
+* Le dimensioni MTU di una VLAN non possono superare il valore delle dimensioni MTU della porta di base.
+
+
+.Fasi
+. Modificare gli attributi di una porta di rete:
++
+`network port modify`
+
+. È possibile impostare `-ignore-health-status` campo su vero per specificare che il sistema può ignorare lo stato di integrità della porta di rete di una porta specificata.
++
+Lo stato di integrità della porta di rete viene modificato automaticamente da degradato a integro e questa porta può essere utilizzata per ospitare i file LIF. Impostare il controllo di flusso delle porte del cluster su `none`. Per impostazione predefinita, il controllo di flusso è impostato su `full`.
+
+
+
+Il seguente comando disattiva il controllo di flusso sulla porta e0b impostando il controllo di flusso su NONE:
+
+....
+network port modify -node cluster-1-01 -port e0b -flowcontrol-admin none
+....

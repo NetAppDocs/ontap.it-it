@@ -1,0 +1,57 @@
+---
+permalink: smb-hyper-v-sql/server-volume-requirements-sql-serve-concept.html 
+sidebar: sidebar 
+keywords: smb, cifs, server, volume, requirement, sql, nondisruptive, operation, snapcenter plug-in 
+summary: Quando si creano configurazioni SQL Server su SMB per operazioni senza interruzioni, è necessario essere a conoscenza di determinati requisiti di volume e server SMB. 
+---
+= Requisiti di volume e server SMB per SQL Server su SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si creano configurazioni SQL Server su SMB per operazioni senza interruzioni, è necessario essere a conoscenza di determinati requisiti di volume e server SMB.
+
+
+
+== Requisiti dei server SMB
+
+* SMB 3.0 deve essere attivato.
++
+Questa opzione è attivata per impostazione predefinita.
+
+* L'opzione predefinita del server CIFS dell'utente UNIX deve essere configurata con un account utente UNIX valido.
++
+I server applicazioni utilizzano l'account del computer quando creano una connessione SMB. Poiché tutti gli accessi SMB richiedono che l'utente Windows si meda correttamente a un account utente UNIX o all'account utente UNIX predefinito, ONTAP deve essere in grado di mappare l'account del computer dell'application server all'account utente UNIX predefinito.
+
++
+Inoltre, SQL Server utilizza un utente di dominio come account del servizio SQL Server. L'account di servizio deve anche essere associato all'utente UNIX predefinito.
+
+* I riferimenti automatici dei nodi devono essere disattivati (questa funzionalità è disattivata per impostazione predefinita).
++
+Se si desidera utilizzare riferimenti automatici ai nodi per l'accesso a dati diversi dai file di database di SQL Server, è necessario creare una SVM separata per tali dati.
+
+* All'account utente Windows utilizzato per l'installazione di SQL Server su ONTAP deve essere assegnato il privilegio SeSecurityPrivilege.
++
+Questo privilegio viene assegnato al gruppo BUILTIN/Administrators locale del server SMB.
+
+
+
+
+
+== Requisiti di volume
+
+* I volumi utilizzati per memorizzare i file delle macchine virtuali devono essere creati come volumi di sicurezza NTFS.
++
+Per fornire NDOS ai server applicazioni che utilizzano connessioni SMB a disponibilità continua, il volume contenente la condivisione deve essere un volume NTFS. Inoltre, deve sempre essere un volume NTFS. Non è possibile modificare un volume misto di sicurezza o un volume UNIX di sicurezza in un volume NTFS di sicurezza e utilizzarlo direttamente per le condivisioni NDOS su SMB. Se si modifica un volume misto di sicurezza in un volume di sicurezza NTFS e si intende utilizzarlo per le condivisioni NDOS su SMB, è necessario inserire manualmente un ACL nella parte superiore del volume e propagare tale ACL a tutti i file e cartelle contenuti. In caso contrario, le migrazioni delle macchine virtuali o le esportazioni e le importazioni dei file di database in cui i file vengono spostati in un altro volume possono non riuscire se i volumi di origine o di destinazione sono stati inizialmente creati come volumi misti o UNIX di sicurezza e successivamente modificati in stile di sicurezza NTFS.
+
+* Sebbene il volume contenente i file di database possa contenere giunzioni, SQL Server non si incrocia durante la creazione della struttura di directory del database.
+* Per eseguire correttamente le operazioni di backup del plug-in SnapCenter per SQL Server, è necessario disporre di spazio disponibile sufficiente sul volume.
++
+Il volume su cui risiedono i file di database di SQL Server deve essere sufficientemente grande da contenere la struttura di directory del database e tutti i file contenuti che risiedono nella condivisione.
+
+
+
+.Informazioni correlate
+http://technet.microsoft.com/en-us/library/["Microsoft TechNet Library: technet.microsoft.com/en-us/library/"]

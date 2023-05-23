@@ -1,0 +1,99 @@
+---
+sidebar: sidebar 
+permalink: networking/add_broadcast_domain.html 
+keywords: broadcast, domain, adding, add, network, ports, cluster, svm, IPspace, mtu 
+summary: I domini di broadcast raggruppano le porte di rete nel cluster che appartengono alla stessa rete Layer 2. Le porte possono quindi essere utilizzate dalle SVM. 
+---
+= Aggiungere un dominio di broadcast
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+I domini di broadcast raggruppano le porte di rete nel cluster che appartengono alla stessa rete Layer 2. Le porte possono quindi essere utilizzate dalle SVM.
+
+A partire da ONTAP 9.8, i domini di broadcast vengono creati automaticamente durante l'operazione di creazione o Unione del cluster. A partire da ONTAP 9.12.0, oltre ai domini di broadcast creati automaticamente, è possibile aggiungere manualmente un dominio di broadcast in Gestore di sistema.
+
+.Prima di iniziare
+Le porte che si desidera aggiungere al dominio di trasmissione non devono appartenere a un altro dominio di trasmissione. Se le porte che si desidera utilizzare appartengono a un altro dominio di trasmissione, ma non sono utilizzate, rimuoverle dal dominio di trasmissione originale.
+
+.A proposito di questa attività
+* Tutti i nomi di dominio di trasmissione devono essere univoci all'interno di un IPSpace.
+* Le porte aggiunte a un dominio di broadcast possono essere porte di rete fisiche, VLAN o gruppi di aggregazione di collegamenti/gruppi di interfacce (LAG/ifgrps).
+* L'MTU (Maximum Transmission Unit) delle porte aggiunte a un dominio di broadcast viene aggiornato al valore MTU impostato nel dominio di broadcast.
+* Il valore MTU deve corrispondere a tutti i dispositivi connessi a tale rete Layer 2, ad eccezione del traffico di gestione della porta e0M.
+* Se non si specifica un nome IPSpace, il dominio di trasmissione viene creato nell'IPSpace "predefinito".
+
+
+Per semplificare la configurazione del sistema, viene creato automaticamente un gruppo di failover con lo stesso nome che contiene le stesse porte.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Selezionare *rete > Panoramica > Broadcast domain*.
+. Fare clic su image:icon_add.gif["icona add (aggiungi)"]
+. Assegnare un nome al dominio di trasmissione.
+. Impostare la MTU.
+. Selezionare IPSpace.
+. Salvare il dominio di trasmissione.
+
+
+È possibile modificare o eliminare un dominio di trasmissione dopo averlo aggiunto.
+
+--
+.CLI
+--
+In ONTAP 9.7 o versioni precedenti, è possibile creare manualmente un dominio di broadcast.
+
+.Fasi
+. Visualizzare le porte non attualmente assegnate a un dominio di trasmissione:
++
+`network port show`
+
++
+Se il display è grande, utilizzare `network port show -broadcast-domain` per visualizzare solo le porte non assegnate.
+
+. Creare un dominio di broadcast:
++
+`network port broadcast-domain create -broadcast-domain _broadcast_domain_name_ -mtu _mtu_value_ [-ipspace _ipspace_name_] [-ports _ports_list_]`
+
++
+.. `broadcast_domain_name` è il nome del dominio di trasmissione che si desidera creare.
+.. `mtu_value` È la dimensione MTU per i pacchetti IP; 1500 e 9000 sono valori tipici.
++
+Questo valore viene applicato a tutte le porte aggiunte a questo dominio di trasmissione.
+
+.. `ipspace_name` È il nome dell'IPSpace a cui verrà aggiunto questo dominio di trasmissione.
++
+L'IPSpace "predefinito" viene utilizzato a meno che non si specifichi un valore per questo parametro.
+
+.. `ports_list` è l'elenco delle porte che verranno aggiunte al dominio di trasmissione.
++
+Le porte vengono aggiunte nel formato `node_name:port_number`, ad esempio, `node1:e0c`.
+
+
+
+. Verificare che il dominio di trasmissione sia stato creato come desiderato:
++
+`network port show -instance -broadcast-domain new_domain`
+
+
+
+.Esempio
+Il seguente comando crea il dominio di trasmissione bcast1 nell'IPSpace predefinito, imposta la MTU su 1500 e aggiunge quattro porte:
+
+`network port broadcast-domain create -broadcast-domain _bcast1_ -mtu _1500_ -ports _cluster1-01:e0e,cluster1-01:e0f,cluster1-02:e0e,cluster1-02:e0f_`
+
+.Al termine
+È possibile definire il pool di indirizzi IP che saranno disponibili nel dominio di trasmissione creando una subnet oppure assegnare SVM e interfacce a IPSpace in questo momento. Per ulteriori informazioni, vedere link:https://docs.netapp.com/us-en/ontap/peering/index.html["Peering di cluster e SVM"].
+
+Se è necessario modificare il nome di un dominio di trasmissione esistente, utilizzare `network port broadcast-domain rename` comando.
+
+--
+====

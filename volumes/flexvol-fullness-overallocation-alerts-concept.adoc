@@ -1,0 +1,99 @@
+---
+permalink: volumes/flexvol-fullness-overallocation-alerts-concept.html 
+sidebar: sidebar 
+keywords: how to, address, flexvol, volume, fullness, overallocation, alerts 
+summary: 'ONTAP emette messaggi EMS quando i volumi FlexVol stanno esaurendo lo spazio, in modo da poter intraprendere azioni correttive fornendo più spazio per l"intero volume. Conoscere i tipi di avvisi e come risolverli aiuta a garantire la disponibilità dei dati.' 
+---
+= Risolvere gli avvisi di riempimento e di overallocation dei volumi FlexVol
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP emette messaggi EMS quando i volumi FlexVol stanno esaurendo lo spazio, in modo da poter intraprendere azioni correttive fornendo più spazio per l'intero volume. Conoscere i tipi di avvisi e come risolverli aiuta a garantire la disponibilità dei dati.
+
+Quando un volume viene descritto come _full_, significa che la percentuale dello spazio nel volume disponibile per l'utilizzo da parte del file system attivo (dati utente) è scesa al di sotto di una soglia (configurabile). Quando un volume viene _overallocato_, lo spazio utilizzato da ONTAP per i metadati e per supportare l'accesso ai dati di base è esaurito. A volte lo spazio normalmente riservato ad altri scopi può essere utilizzato per mantenere il volume funzionante, ma la riserva di spazio o la disponibilità dei dati possono essere a rischio.
+
+L'allocazione in eccesso può essere logica o fisica. _Overallocation logica_ significa che lo spazio riservato per onorare gli impegni futuri in termini di spazio, come la prenotazione dello spazio, è stato utilizzato per un altro scopo. _Overallocation fisica_ significa che il volume sta esaurendo i blocchi fisici da utilizzare. I volumi in questo stato sono a rischio di rifiutare le scritture, di andare offline o di causare un'interruzione del controller.
+
+Un volume può essere pieno oltre il 100% a causa dello spazio utilizzato o riservato dai metadati. Tuttavia, un volume che è pieno oltre il 100% potrebbe essere o meno overallocato. Se le condivisioni a livello di qtree e di volume sono presenti nello stesso pool di FlexVol o SCVMM, le qtree vengono visualizzate come directory nella condivisione di FlexVol. Pertanto, è necessario fare attenzione a non eliminarle accidentalmente.
+
+La seguente tabella descrive gli avvisi di riempimento e overallocation del volume, le azioni che è possibile intraprendere per risolvere il problema e i rischi di non intraprendere azioni:
+
+[cols="6*"]
+|===
+| Tipo di avviso | Livello EMS | Configurabile? | Definizione | Modi per risolvere il caso | Rischio se non viene intrapresa alcuna azione 
+
+
+ a| 
+Quasi pieno
+ a| 
+Debug
+ a| 
+Y
+ a| 
+Il file system ha superato la soglia impostata per questo avviso (il valore predefinito è 95%). La percentuale è `Used` Totale meno la dimensione della riserva di Snapshot.
+ a| 
+* Aumento delle dimensioni del volume
+* Riduzione dei dati degli utenti
+
+ a| 
+Nessun rischio di operazioni di scrittura o disponibilità dei dati.
+
+
+
+ a| 
+Completo
+ a| 
+Debug
+ a| 
+Y
+ a| 
+Il file system ha superato la soglia impostata per questo avviso (il valore predefinito è 98%). La percentuale è `Used` Totale meno la dimensione della riserva di Snapshot.
+ a| 
+* Aumento delle dimensioni del volume
+* Riduzione dei dati degli utenti
+
+ a| 
+Non esiste ancora alcun rischio per operazioni di scrittura o disponibilità dei dati, ma il volume si sta avvicinando alla fase in cui le operazioni di scrittura potrebbero essere a rischio.
+
+
+
+ a| 
+Allocato logicamente in eccesso
+ a| 
+Errore SVC
+ a| 
+N
+ a| 
+Oltre al file system pieno, lo spazio nel volume utilizzato per i metadati è stato esaurito.
+ a| 
+* Aumento delle dimensioni del volume
+* Eliminazione delle copie Snapshot
+* Riduzione dei dati degli utenti
+* Disattivazione della riserva di spazio per file o LUN
+
+ a| 
+Le operazioni di scrittura su file non riservati potrebbero non riuscire.
+
+
+
+ a| 
+Fisicamente allocato in eccesso
+ a| 
+Errore del nodo
+ a| 
+N
+ a| 
+Il volume sta esaurendo i blocchi fisici su cui può scrivere.
+ a| 
+* Aumento delle dimensioni del volume
+* Eliminazione delle copie Snapshot
+* Riduzione dei dati degli utenti
+
+ a| 
+Le operazioni di scrittura sono a rischio, così come la disponibilità dei dati; il volume potrebbe andare offline.
+
+|===
+Ogni volta che viene superata una soglia per un volume, sia che la percentuale di pienezza sia in aumento o in diminuzione, viene generato un messaggio EMS. Quando il livello di riempimento del volume scende al di sotto di una soglia, viene visualizzato un `volume ok` Viene generato il messaggio EMS.

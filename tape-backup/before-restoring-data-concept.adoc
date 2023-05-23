@@ -1,0 +1,53 @@
+---
+permalink: tape-backup/before-restoring-data-concept.html 
+sidebar: sidebar 
+keywords: considerations, restore, file, data, original, path, destination, operation, required, space 
+summary: 'È possibile ripristinare i dati di backup nel percorso originale o in una destinazione diversa. Se si ripristinano i dati di cui si è eseguito il backup in una destinazione diversa, è necessario preparare la destinazione per l"operazione di ripristino.' 
+---
+= Considerazioni prima del ripristino dei dati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile ripristinare i dati di backup nel percorso originale o in una destinazione diversa. Se si ripristinano i dati di cui si è eseguito il backup in una destinazione diversa, è necessario preparare la destinazione per l'operazione di ripristino.
+
+Prima di ripristinare i dati nel percorso originale o in una destinazione diversa, è necessario disporre delle seguenti informazioni e soddisfare i seguenti requisiti:
+
+* Il livello del ripristino
+* Il percorso in cui si stanno ripristinando i dati
+* Il fattore di blocco utilizzato durante il backup
+* Se si esegue un ripristino incrementale, tutti i nastri devono trovarsi nella catena di backup
+* Unità a nastro disponibile e compatibile con il nastro da cui eseguire il ripristino
+
+
+Prima di ripristinare i dati in una destinazione diversa, è necessario eseguire le seguenti operazioni:
+
+* Se si sta ripristinando un volume, è necessario crearne uno nuovo.
+* Se si sta ripristinando un qtree o una directory, è necessario rinominare o spostare i file che hanno probabilmente lo stesso nome dei file che si stanno ripristinando.
+
+
+[NOTE]
+====
+In ONTAP 9, i nomi qtree supportano il formato Unicode. Le versioni precedenti di ONTAP non supportano questo formato. Se un qtree con nomi Unicode in ONTAP 9 viene copiato in una release precedente di ONTAP utilizzando `ndmpcopy` Comando o tramite il ripristino da un'immagine di backup in un nastro, il qtree viene ripristinato come una normale directory e non come un qtree con formato Unicode.
+
+====
+[NOTE]
+====
+Se un file ripristinato ha lo stesso nome di un file esistente, il file esistente viene sovrascritto dal file ripristinato. Tuttavia, le directory non vengono sovrascritte.
+
+====
+Per rinominare un file, una directory o un qtree durante il ripristino senza utilizzare DAR, è necessario impostare la variabile di ambiente DI ESTRAZIONE su `E`.
+
+
+
+== Spazio richiesto sul sistema di storage di destinazione
+
+Sono necessari circa 100 MB di spazio in più sul sistema di storage di destinazione rispetto alla quantità di dati da ripristinare.
+
+[NOTE]
+====
+L'operazione di ripristino verifica lo spazio del volume e la disponibilità di inode sul volume di destinazione all'avvio dell'operazione di ripristino. Impostazione della variabile di ambiente FORCE su `Y` fa in modo che l'operazione di ripristino salti i controlli dello spazio del volume e della disponibilità di inode sul percorso di destinazione. Se lo spazio del volume o gli inode disponibili sul volume di destinazione non sono sufficienti, l'operazione di ripristino ripristina la quantità di dati consentita dallo spazio del volume di destinazione e dalla disponibilità dell'inode. L'operazione di ripristino si interrompe quando non rimane più spazio o inode del volume.
+
+====

@@ -1,0 +1,125 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_manual_takeover.html 
+keywords: ontap, high, availability, ha, pair, manual, takeover, moving, move, epislon, manually, initiated 
+summary: È possibile eseguire un takeover manualmente quando è necessaria la manutenzione del partner e in altre situazioni simili. 
+---
+= Comandi manuali di Takeover
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+È possibile eseguire un takeover manualmente quando è necessaria la manutenzione del partner e in altre situazioni simili. A seconda dello stato del partner, il comando utilizzato per eseguire il takeover varia.
+
+|===
+
+
+| Se si desidera... | Utilizzare questo comando... 
+
+
+| Assumere il controllo del nodo partner | `storage failover takeover` 
+
+
+| Monitorare l'avanzamento dell'acquisizione man mano che gli aggregati del partner vengono spostati nel nodo che esegue l'acquisizione | `storage failover show‑takeover` 
+
+
+| Visualizzare lo stato di failover dello storage per tutti i nodi del cluster | `storage failover show` 
+
+
+| Assumere il controllo del nodo partner senza migrare i LIF | `storage failover takeover ‑skip‑lif‑migration‑before‑takeover true` 
+
+
+| Assumere il controllo del nodo partner anche in caso di mancata corrispondenza del disco | `storage failover takeover ‑skip‑lif‑migration‑before‑takeover true` 
+
+
+| Assumere il controllo del nodo partner anche in caso di mancata corrispondenza della versione di ONTAP *Nota:* questa opzione viene utilizzata solo durante il processo di aggiornamento di ONTAP senza interruzioni. | `storage failover takeover ‑option allow‑version‑mismatch` 
+
+
+| Assumere il controllo del nodo partner senza eseguire il trasferimento dell'aggregato | `storage failover takeover ‑bypass‑optimization true` 
+
+
+| Assumere il controllo del nodo partner prima che il partner abbia il tempo di chiudere correttamente le proprie risorse di storage | `storage failover takeover ‑option immediate` 
+|===
+[NOTE]
+====
+Prima di eseguire il comando di failover dello storage con l'opzione immediate, è necessario migrare i file LIF dei dati in un altro nodo utilizzando il seguente comando: `network interface migrate-all -node _node_`
+
+Se si specifica `storage failover takeover ‑option immediate` Senza prima eseguire la migrazione dei dati LIF, la migrazione dei dati LIF dal nodo viene ritardata in modo significativo anche se `skip‑lif‑migration‑before‑takeover` opzione non specificata.
+
+Analogamente, se si specifica l'opzione immediata, l'ottimizzazione del Takeover negoziato viene ignorata anche se l'opzione di ottimizzazione bypass‑è impostata su _false_.
+
+====
+
+
+== Spostamento di epsilon per alcuni takeover avviati manualmente
+
+È consigliabile spostare epsilon se si prevede che eventuali operazioni di takeover avviate manualmente potrebbero causare un guasto inaspettato del nodo del sistema storage, lontano da una perdita di quorum a livello di cluster.
+
+.A proposito di questa attività
+Per eseguire la manutenzione pianificata, è necessario assumere il controllo di uno dei nodi di una coppia ha. È necessario mantenere il quorum a livello di cluster per evitare interruzioni non pianificate dei dati dei client per i nodi rimanenti. In alcuni casi, l'esecuzione del takeover può causare un cluster che rappresenta un guasto inaspettato del nodo a causa della perdita di quorum a livello di cluster.
+
+Questo può verificarsi se il nodo che viene sostituito contiene epsilon o se il nodo con epsilon non è integro. Per mantenere un cluster più resiliente, è possibile trasferire epsilon a un nodo integro che non viene sostituito. In genere, questo sarebbe il partner ha.
+
+Solo i nodi sani e idonei partecipano al voto del quorum. Per mantenere il quorum a livello di cluster, sono richiesti più di N/2 voti (dove _N_ rappresenta la somma dei nodi online sani e idonei). Nei cluster con un numero pari di nodi online, epsilon aggiunge ulteriore peso di voto per mantenere il quorum per il nodo a cui è assegnato.
+
+
+NOTE: Sebbene il voto di formazione del cluster possa essere modificato utilizzando `cluster modify ‑eligibility false` evitare questo problema, ad eccezione di situazioni come il ripristino della configurazione del nodo o la manutenzione prolungata del nodo. Se si imposta un nodo come non idoneo, questo interrompe la fornitura dei dati SAN fino a quando il nodo non viene reimpostato su idoneo e riavviato. Anche l'accesso ai dati NAS al nodo potrebbe essere compromesso quando il nodo non è idoneo.
+
+.Fasi
+. Verificare lo stato del cluster e verificare che epsilon sia mantenuto da un nodo integro che non viene sostituito:
++
+.. Passare al livello di privilegio avanzato, confermando che si desidera continuare quando viene visualizzato il prompt della modalità avanzata (*>):
++
+`set -privilege advanced`
+
+.. Determinare quale nodo contiene epsilon:
++
+`cluster show`
+
++
+Nell'esempio seguente, Node1 contiene epsilon:
+
++
+|===
+
+
+| Nodo | Salute | Idoneità | Epsilon 
+
+
+ a| 
+Node1 Node2
+ a| 
+vero vero
+ a| 
+vero vero
+ a| 
+vero falso
+
+|===
++
+Se il nodo che si desidera sostituire non include epsilon, passare alla fase 4.
+
+
+
+. Rimuovere epsilon dal nodo che si desidera sostituire:
++
+`cluster modify -node Node1 -epsilon false`
+
+. Assegnare epsilon al nodo partner (in questo esempio, Node2):
++
+`cluster modify -node Node2 -epsilon true`
+
+. Eseguire l'operazione di takeover:
++
+`storage failover takeover -ofnode _node_name_`
+
+. Tornare al livello di privilegio admin:
++
+`set -privilege admin`
+
+

@@ -1,0 +1,100 @@
+---
+sidebar: sidebar 
+permalink: task_nas_file_system_analytics_enable.html 
+keywords: capacity analytics, data visualization, File System Analytics 
+summary: 'Per raccogliere e visualizzare i dati di utilizzo, ad esempio l"analisi della capacità, devi attivare l"analisi del file system.' 
+---
+= Abilita analisi del file system
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Per raccogliere e visualizzare i dati di utilizzo, ad esempio l'analisi della capacità, è necessario attivare l'analisi del file system su un volume.
+
+.A proposito di questa attività
+* A partire da ONTAP 9.8, è possibile attivare l'analisi del file system su un volume nuovo o esistente. Se si aggiorna un sistema a ONTAP 9.8 o versioni successive, assicurarsi che tutti i processi di aggiornamento siano stati completati prima di attivare l'analisi del file system.
+* A seconda delle dimensioni e dei contenuti del volume, l'abilitazione delle analisi potrebbe richiedere tempo mentre ONTAP elabora i dati esistenti nel volume. System Manager visualizza l'avanzamento e presenta i dati di analisi una volta completati. Per informazioni più precise sull'avanzamento dell'inizializzazione, utilizzare il comando ONTAP CLI `volume analytics show`.
+
+
+.A proposito di questa attività
+A seconda delle dimensioni e dei contenuti del volume, l'abilitazione delle analisi potrebbe richiedere tempo mentre ONTAP elabora i dati esistenti nel volume. System Manager visualizza l'avanzamento e presenta i dati di analisi una volta completati. Per informazioni più precise sull'avanzamento dell'inizializzazione, utilizzare il comando ONTAP CLI `volume analytics show`.
+
+Per ulteriori considerazioni relative alla scansione di inizializzazione, vedere xref:./file-system-analytics/considerations-concept.html#scan-considerations[Considerazioni sulla scansione].
+
+.Fasi
+È possibile attivare l'analisi del file system con Gestione di sistema di ONTAP o l'interfaccia CLI.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+|===
+| In ONTAP 9.8 e 9.9.1 | A partire da ONTAP 9.10.1 
+
+
+| 1. Selezionare *Storage > Volumes* (archiviazione > volumi). 2. Selezionare il volume desiderato, quindi selezionare *Explorer*. 3. Selezionare *Enable Analytics* (attiva analisi) o *Disable Analytics* (Disattiva analisi). | 1. Selezionare *Storage > Volumes* (archiviazione > volumi). 2. Selezionare il volume desiderato. Dal menu dei singoli volumi, selezionare *file System > Explorer*. 3. Selezionare *Enable Analytics* (attiva analisi) o *Disable Analytics* (Disattiva analisi). 
+|===
+--
+.CLI
+--
+.Abilitare l'analisi del file system con la CLI
+. Eseguire il seguente comando:
+`volume analytics on -vserver _svm_name_ -volume _volume_name_ [-foreground {true|false}]`Per impostazione predefinita, il comando viene eseguito in primo piano; ONTAP visualizza l'avanzamento e presenta i dati di analisi al termine. Per informazioni più precise, è possibile eseguire il comando in background utilizzando `-foreground false` e quindi utilizzare `volume analytics show` Per visualizzare l'avanzamento dell'inizializzazione nella CLI.
+. Dopo aver attivato correttamente l'analisi del file system, utilizzare Gestione sistema o l'API REST di ONTAP per visualizzare i dati analitici.
+
+
+--
+====
+
+
+== Modificare le impostazioni predefinite di file System Analytics
+
+A partire da ONTAP 9.13.1, è possibile modificare le impostazioni SVM o cluster per attivare l'analisi del file system per impostazione predefinita sui nuovi volumi.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Se si utilizza System Manager, è possibile modificare le impostazioni della macchina virtuale dello storage o del cluster per abilitare l'analisi della capacità e il monitoraggio delle attività alla creazione del volume per impostazione predefinita. L'abilitazione predefinita si applica solo ai volumi creati dopo la modifica delle impostazioni, non ai volumi esistenti.
+
+.Modificare le impostazioni di analisi del file system su un cluster
+. In System Manager, accedere a **Impostazioni cluster**.
+. In **Impostazioni cluster**, esaminare la scheda Impostazioni file system. Per modificare le impostazioni, selezionare image:icon_gear.gif["Impostazioni ingranaggio"] icona.
+. Nel campo **monitoraggio attività**, immettere i nomi delle SVM per cui attivare il monitoraggio attività per per impostazione predefinita. Se si lascia il campo vuoto, il monitoraggio attività viene disattivato su tutte le SVM.
++
+Deselezionare la casella **Enable on new storage vms** (attiva sulle nuove macchine virtuali storage) per disattivare il monitoraggio delle attività per impostazione predefinita sulle nuove macchine virtuali storage.
+
+. Nel campo **Analytics**, immettere i nomi delle VM di storage per le quali si desidera abilitare l'analisi della capacità per impostazione predefinita. Lasciando il campo vuoto, l'analisi della capacità viene disattivata su tutte le SVM.
++
+Deselezionare la casella **Enable on new storage VM** (attiva sulle nuove macchine virtuali storage) per disattivare l'analisi della capacità per impostazione predefinita sulle nuove macchine virtuali storage.
+
+. Selezionare **Salva**.
+
+
+.Modificare le impostazioni di analisi del file system su una SVM
+. Selezionare la SVM che si desidera modificare, quindi **Impostazioni Storage VM**.
+. Nella scheda **analisi del file system**, utilizzare i pulsanti per attivare o disattivare il monitoraggio delle attività e l'analisi della capacità per tutti i nuovi volumi sulla VM di storage.
+
+
+--
+.CLI
+--
+È possibile configurare la VM di storage per abilitare l'analisi del file system per impostazione predefinita sui nuovi volumi utilizzando l'interfaccia CLI di ONTAP.
+
+.Abilitare l'analisi del file system per impostazione predefinita su una SVM
+. Modificare la SVM per attivare l'analisi della capacità e il monitoraggio delle attività per impostazione predefinita su tutti i volumi appena creati:
+`vserver modify -vserver _svm_name_ -auto-enable-activity-tracking true -auto-enable-analytics true`
+
+
+--
+====

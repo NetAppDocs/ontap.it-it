@@ -1,0 +1,112 @@
+---
+permalink: encryption-at-rest/enable-onboard-key-management-95-earlier-nve-task.html 
+sidebar: sidebar 
+keywords: enabling, onboard key management, ontap 9.5, earlier, nve 
+summary: È possibile utilizzare Onboard Key Manager per proteggere le chiavi utilizzate dal cluster per accedere ai dati crittografati. È necessario attivare Onboard Key Manager su ogni cluster che accede a un volume crittografato o a un disco con crittografia automatica. 
+---
+= Abilitare la gestione delle chiavi integrata in ONTAP 9.5 e versioni precedenti (NVE)
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare Onboard Key Manager per proteggere le chiavi utilizzate dal cluster per accedere ai dati crittografati. È necessario attivare Onboard Key Manager su ogni cluster che accede a un volume crittografato o a un disco con crittografia automatica.
+
+.Di cosa hai bisogno
+* Se si utilizza NSE con un server KMIP (Key Management) esterno, è necessario eliminare il database del gestore delle chiavi esterno.
++
+link:delete-key-management-database-task.html["Passaggio alla gestione delle chiavi integrata dalla gestione delle chiavi esterna"]
+
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+* È necessario configurare l'ambiente MetroCluster prima di configurare il Gestore chiavi integrato.
+
+
+.A proposito di questa attività
+È necessario eseguire `security key-manager setup` ogni volta che si aggiunge un nodo al cluster.
+
+Se si dispone di una configurazione MetroCluster, consultare le seguenti linee guida:
+
+* In ONTAP 9.5, è necessario eseguire `security key-manager setup` sul cluster locale e. `security key-manager setup -sync-metrocluster-config yes` sul cluster remoto, utilizzando la stessa passphrase su ciascuno di essi.
+* Prima di ONTAP 9.5, è necessario eseguire `security key-manager setup` sul cluster locale, attendere circa 20 secondi, quindi eseguire `security key-manager setup` sul cluster remoto, utilizzando la stessa passphrase su ciascuno di essi.
+
+
+Per impostazione predefinita, non è necessario immettere la passphrase del gestore delle chiavi quando si riavvia un nodo. A partire da ONTAP 9.4, è possibile utilizzare `-enable-cc-mode yes` opzione per richiedere agli utenti di inserire la passphrase dopo un riavvio.
+
+Per NVE, se si imposta `-enable-cc-mode yes`, volumi creati con `volume create` e. `volume move start` i comandi vengono crittografati automaticamente. Per `volume create`, non è necessario specificare `-encrypt true`. Per `volume move start`, non è necessario specificare `-encrypt-destination true`.
+
+[NOTE]
+====
+Dopo un tentativo di passphrase non riuscito, riavviare nuovamente il nodo.
+
+====
+.Fasi
+. Avviare la configurazione di Key Manager:
++
+`security key-manager setup -enable-cc-mode yes|no`
+
++
+[NOTE]
+====
+A partire da ONTAP 9.4, è possibile utilizzare `-enable-cc-mode yes` opzione per richiedere agli utenti di inserire la passphrase del gestore delle chiavi dopo un riavvio. Per NVE, se si imposta `-enable-cc-mode yes`, volumi creati con `volume create` e. `volume move start` i comandi vengono crittografati automaticamente.
+
+====
++
+Nell'esempio seguente viene avviata l'impostazione del gestore delle chiavi sul cluster1 senza che sia necessario inserire la passphrase dopo ogni riavvio:
+
++
+[listing]
+----
+cluster1::> security key-manager setup
+Welcome to the key manager setup wizard, which will lead you through
+the steps to add boot information.
+
+...
+
+Would you like to use onboard key-management? {yes, no} [yes]:
+Enter the cluster-wide passphrase:    <32..256 ASCII characters long text>
+Reenter the cluster-wide passphrase:    <32..256 ASCII characters long text>
+----
+. Invio `yes` quando viene richiesto di configurare la gestione delle chiavi integrata.
+. Al prompt della passphrase, immettere una passphrase compresa tra 32 e 256 caratteri oppure, per "`cc-mode`", una passphrase compresa tra 64 e 256 caratteri.
++
+[NOTE]
+====
+Se la passphrase "`cc-mode`" specificata è inferiore a 64 caratteri, si verifica un ritardo di cinque secondi prima che l'operazione di configurazione del gestore delle chiavi visualizzi nuovamente il prompt della passphrase.
+
+====
+. Al prompt di conferma della passphrase, immettere nuovamente la passphrase.
+. Verificare che le chiavi siano configurate per tutti i nodi:
++
+`security key-manager key show`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[listing]
+----
+cluster1::> security key-manager key show
+
+Node: node1
+Key Store: onboard
+Key ID                                                           Used By
+---------------------------------------------------------------- --------
+0000000000000000020000000000010059851742AF2703FC91369B7DB47C4722 NSE-AK
+000000000000000002000000000001008C07CC0AF1EF49E0105300EFC83004BF NSE-AK
+
+Node: node2
+Key Store: onboard
+Key ID                                                           Used By
+---------------------------------------------------------------- --------
+0000000000000000020000000000010059851742AF2703FC91369B7DB47C4722 NSE-AK
+000000000000000002000000000001008C07CC0AF1EF49E0105300EFC83004BF NSE-AK
+----
+
+
+.Al termine
+Copiare la passphrase in una posizione sicura all'esterno del sistema di storage per utilizzarla in futuro.
+
+Viene eseguito automaticamente il backup di tutte le informazioni di gestione delle chiavi nel database replicato (RDB) del cluster.
+
+Ogni volta che si configura la passphrase di Onboard Key Manager, è necessario eseguire il backup manuale delle informazioni in una posizione sicura all'esterno del sistema di storage per l'utilizzo in caso di disastro. Vedere link:backup-key-management-information-manual-task.html["Eseguire il backup manuale delle informazioni di gestione delle chiavi integrate"].

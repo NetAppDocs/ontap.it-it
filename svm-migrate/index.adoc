@@ -1,0 +1,209 @@
+---
+permalink: svm-migrate/index.html 
+sidebar: sidebar 
+keywords: svm, migrate, workflow, relocate, prerequisites, data mobility 
+summary: A partire da ONTAP 9.10.1, gli amministratori dei cluster possono trasferire senza interruzioni una SVM da un cluster di origine a un cluster di destinazione per gestire il bilanciamento di capacità e carico, oppure per consentire aggiornamenti delle apparecchiature o il consolidamento dei data center. A partire da ONTAP 9.12.1, questa funzionalità è supportata sulle piattaforme FAS e AFF e sugli aggregati ibridi. 
+---
+= Panoramica sulla mobilità dei dati SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.10.1, gli amministratori del cluster possono spostare senza interruzioni una SVM da un cluster di origine a un cluster di destinazione per gestire il bilanciamento della capacità e del carico, oppure per abilitare gli aggiornamenti delle apparecchiature o il consolidamento del data center utilizzando la CLI ONTAP.
+
+Questa funzionalità di trasferimento SVM senza interruzioni è supportata sulle piattaforme AFF in ONTAP 9.10.1 e 9.11.1. A partire da ONTAP 9.12.1, questa funzionalità è supportata su piattaforme FAS e AFF e su aggregati ibridi.
+
+Il nome e l'UUID di SVM rimangono invariati dopo la migrazione, oltre al nome LIF dei dati, all'indirizzo IP e ai nomi degli oggetti, come il nome del volume. L'UUID degli oggetti nella SVM sarà diverso.
+
+
+
+== Workflow di migrazione SVM
+
+Il diagramma illustra il tipico flusso di lavoro per una migrazione SVM. Viene avviata una migrazione SVM dal cluster di destinazione. È possibile monitorare la migrazione dall'origine o dalla destinazione. È possibile eseguire un cutover manuale o automatico. Per impostazione predefinita viene eseguito un cutover automatico.
+
+image::../media/workflow_svm_migrate.gif[Workflow di migrazione SVM]
+
+
+
+== Configurazioni supportate
+
+La tabella indica le configurazioni supportate e le versioni ONTAP in cui è disponibile il supporto.
+
+[cols="3,1,1,1,1"]
+|===
+
+
+| Configurazione supportata in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 | ONTAP 9.13.1 
+
+
+| Array AFF | Sì | Sì | Sì | Sì 
+
+
+| Piattaforme FAS e piattaforme miste (AFF-FAS, FAS-AFF, AFF-FAS con aggregati ibridi) | No | No | Sì | Sì 
+
+
+| Array totali/coppie di nodi | 1 | 3 | 3 | 6 
+
+
+| Migrare all'interno di un data center e ottenere una latenza di rete massima di: | 2 ms. | 2 ms. | 10 ms. | 10 ms. 
+|===
+
+NOTE: Durante la migrazione da un cluster AFF a un cluster FAS con aggregati ibridi, il posizionamento automatico del volume tenterà di eseguire una corrispondenza simile a quella degli aggregati. Ad esempio, se il cluster di origine ha 60 volumi, il posizionamento del volume tenterà di trovare un aggregato AFF sulla destinazione per posizionare i volumi. Quando non c'è spazio sufficiente sugli aggregati AFF, i volumi vengono collocati su aggregati con dischi non flash.
+
+
+
+== Prerequisiti
+
+* Devi essere un amministratore del cluster
+* I cluster di origine e di destinazione devono eseguire il peering reciproco
++
+link:https://review.docs.netapp.com/us-en/ontap_main/peering/create-cluster-relationship-93-later-task.html["Creare una relazione peer del cluster"]
+
+* I cluster di origine e di destinazione devono avere la licenza Data Protection Bundle installata
+* Tutti i nodi nel cluster di origine devono eseguire ONTAP 9.10.1 o versione successiva
+* Tutti i nodi nel cluster di origine devono eseguire la stessa versione di ONTAP
+* Tutti i nodi nel cluster di destinazione devono eseguire la stessa versione di ONTAP
+* Il cluster di destinazione deve essere uguale o più recente alla versione effettiva del cluster (ECV) del cluster di origine
+* I cluster di origine e di destinazione devono supportare la stessa subnet IP per l'accesso ai dati LIF
+* La rete che collega i cluster di origine e destinazione deve avere un tempo di andata e ritorno massimo (RTT) inferiore a 10 ms.
+* La SVM di origine deve contenere un numero inferiore al numero massimo di volumi di dati supportati per la release. Il numero massimo di volumi di dati supportati è il seguente:
++
+** Array AFF: 200 volumi di dati con cluster che eseguono ONTAP 9.13.1 e versioni successive e 100 volumi di dati con cluster che eseguono ONTAP 9.12.1 e versioni precedenti.
+** Piattaforme FAS: 80 volumi di dati
+
+
+* Sulla destinazione deve essere disponibile uno spazio sufficiente per il posizionamento del volume
+* Onboard Key Manager deve essere configurato sulla destinazione se la SVM di origine ha volumi crittografati
+
+
+
+
+== Operazioni in conflitto
+
+È necessario controllare le operazioni che possono entrare in conflitto con una migrazione SVM:
+
+* Non sono in corso operazioni di failover
+* WAFLIRON non può essere in esecuzione
+* Impronta digitale non in corso
+* Vol move, rehosting, cloning, create, convert o analytics non sono in esecuzione
+
+
+
+
+== Funzionalità supportate
+
+La tabella indica le funzionalità di ONTAP supportate dalla mobilità dei dati SVM e le release di ONTAP in cui è disponibile il supporto.
+
+[cols="3,1,1,1,1,4"]
+|===
+
+
+| Funzionalità supportata in... | ONTAP 9.10.1 | ONTAP 9.11.1 | ONTAP 9.12.1 | ONTAP 9.13.1 | Ulteriori informazioni 
+
+
+| Relazioni asincrone SnapMirror copy-to-cloud | No | No | Sì | Sì | A partire da ONTAP 9.12.1, quando si esegue la migrazione di una SVM con le relazioni di SnapMirror Copy nel cloud, il cluster di destinazione della migrazione deve avere la licenza copia nel cloud installata e deve disporre di capacità sufficiente per supportare lo spostamento della capacità nei volumi che vengono sottoposti a mirroring nel cloud. 
+
+
+| Destinazione SnapMirror asincrona | No | No | Sì | Sì |  
+
+
+| Origine SnapMirror asincrona | No | Sì | Sì | Sì  a| 
+* I trasferimenti possono continuare normalmente sulle relazioni di FlexVol SnapMirror durante la maggior parte della migrazione.
+* Eventuali trasferimenti in corso vengono annullati durante il cutover e i nuovi trasferimenti falliscono durante il cutover e non possono essere riavviati fino al completamento della migrazione.
+* I trasferimenti pianificati annullati o persi durante la migrazione non vengono avviati automaticamente al termine della migrazione.
++
+[NOTE]
+====
+Quando viene eseguita la migrazione di un'origine SnapMirror, ONTAP non impedisce l'eliminazione del volume dopo la migrazione fino a quando non viene eseguito l'aggiornamento. Questo accade perché le informazioni relative a SnapMirror per i volumi di origine migrati di SnapMirror sono note solo dopo il primo aggiornamento dopo il completamento della migrazione.
+
+====
+
+
+
+
+| Protezione ransomware autonoma | No | No | Sì | Sì |  
+
+
+| Gestore delle chiavi esterno | No | Sì | Sì | Sì |  
+
+
+| FabricPool | No | Sì | Sì | Sì  a| 
+Scopri di più xref:FabricPool support[Supporto FabricPool].
+
+
+
+| Relazioni fanout (l'origine della migrazione dispone di un volume di origine SnapMirror con più di una destinazione) | No | Sì | Sì | Sì |  
+
+
+| Flash Pool | No | No | Sì | Sì |  
+
+
+| Replica della pianificazione del processo | No | Sì | Sì | Sì | In ONTAP 9.10.1, le pianificazioni dei processi non vengono replicate durante la migrazione e devono essere create manualmente sulla destinazione. A partire da ONTAP 9.11.1, le pianificazioni dei processi utilizzate dall'origine vengono replicate automaticamente durante la migrazione. 
+
+
+| Crittografia dei volumi NetApp | Sì | Sì | Sì | Sì |  
+
+
+| Registrazione dell'audit NFS e SMB | No | No | No | Sì  a| 
+Prima della migrazione SVM:
+
+* Il reindirizzamento del log di audit deve essere attivato sul cluster di destinazione.
+* Il percorso di destinazione del registro di controllo dalla SVM di origine deve essere creato nel cluster di destinazione.
+
+
+
+
+| NFS v3, NFS v4.1 e NFS v4.2 | Sì | Sì | Sì | Sì |  
+
+
+| NFS v4.0 | No | No | Sì | Sì |  
+
+
+| Protocollo NFS v4.0 | No | No | Sì | Sì |  
+
+
+| Protocollo SMB | No | No | Sì | Sì  a| 
+A partire da ONTAP 9.12.1, la migrazione SVM include una migrazione dirompente con le PMI.
+
+
+
+| Peering SVM per applicazioni SnapMirror | No | Sì | Sì | Sì |  
+|===
+
+
+=== Supporto FabricPool
+
+La migrazione SVM è supportata con i volumi su FabricPools per le seguenti piattaforme:
+
+* Piattaforma Azure NetApp Files. Sono supportati tutti i criteri di tiering (solo snapshot, automatico, tutti e nessuno).
+* Piattaforma on-premise. È supportato solo il criterio di tiering del volume "nessuno".
+
+
+
+
+== Funzionalità non supportate
+
+Le seguenti funzionalità non sono supportate con la migrazione SVM:
+
+* Cloud Volumes ONTAP
+* Volumi FlexCache
+* Volumi FlexGroup
+* Policy IPSec
+* LIF IPv6
+* Carichi di lavoro iSCSI
+* Mirror per la condivisione del carico
+* MetroCluster
+* NDMP
+* SAN, NVMe su fibra, VSCAN, vStorage, replica S3
+* SMTape
+* SnapLock
+* SVM-DR
+* Migrazione SVM quando Onboard Key Manager (OKM) del cluster di origine ha attivato la modalità Common Criteria (CC)
+* SnapMirror sincrono, SnapMirror Business Continuity
+* Qtree, quota
+* LIF VIP/BGP
+* Virtual Storage Console per VMware vSphere (VSC fa parte di https://docs.netapp.com/us-en/ontap-tools-vmware-vsphere/index.html["Strumenti ONTAP per appliance virtuali VMware vSphere"^] A partire da VSC 7.0).
+* Cloni di volume
+

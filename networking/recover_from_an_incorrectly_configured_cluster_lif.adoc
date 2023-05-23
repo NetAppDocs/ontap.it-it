@@ -1,0 +1,49 @@
+---
+sidebar: sidebar 
+permalink: networking/recover_from_an_incorrectly_configured_cluster_lif.html 
+keywords: misconfigured, misconfigurations, incorrect, incorrectly, switch, switches, switched, cable, physical, wiring, wired, reachability, port, cluster, ontap 9.8 and later, recover from an incorrectly configured cluster lif, how to identify and correct a cluster that has been misconfigured, cluster create, network port, reachability show -detail, reset the home port 
+summary: Come identificare e correggere un cluster che è stato configurato in modo errato 
+---
+= ONTAP 9.8 e versioni successive: Ripristino da una LIF del cluster configurata in modo errato
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Non è possibile creare un cluster quando la rete del cluster è cablata a uno switch, ma non tutte le porte configurate in Cluster IPSpace possono raggiungere le altre porte configurate in Cluster IPSpace.
+
+.A proposito di questa attività
+In un cluster con switch, se un'interfaccia di rete del cluster (LIF) è configurata sulla porta errata o se una porta del cluster è collegata alla rete errata, il `cluster create` il comando può non riuscire e visualizzare il seguente errore:
+
+....
+Not all local cluster ports have reachability to one another.
+Use the "network port reachability show -detail" command for more details.
+....
+I risultati di `network port show` Il comando potrebbe indicare che diverse porte vengono aggiunte a Cluster IPSpace perché sono connesse a una porta configurata con una LIF del cluster. Tuttavia, i risultati di `network port` `reachability show -detail` il comando rivela quali porte non dispongono di connettività l'una con l'altra.
+
+Per eseguire il ripristino da una LIF del cluster configurata su una porta non raggiungibile con le altre porte configurate con le LIF del cluster, attenersi alla seguente procedura:
+
+.Fasi
+. Ripristinare la porta home del LIF del cluster alla porta corretta:
++
+....
+network port modify -home-port
+....
+. Rimuovere dal dominio di trasmissione del cluster le porte che non hanno LIF del cluster configurate:
++
+....
+network port broadcast-domain remove-ports
+....
+. Creare il cluster:
++
+....
+cluster create
+....
+
+
+.Risultato
+Una volta completata la creazione del cluster, il sistema rileva la configurazione corretta e inserisce le porte nei domini di trasmissione corretti.

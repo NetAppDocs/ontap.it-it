@@ -1,0 +1,160 @@
+---
+sidebar: sidebar 
+permalink: networking/configure_vlans_over_physical_ports.html 
+keywords: configure, configuration, configuring, setup, setting, set, up, vlan, virtual, local, area, network, physical, port, logical, segmentation, configure vlans over physical ports, vlans provide logical segmentation of networks, create a vlan, network port vlan create, delete a vlan, network port vlan delete 
+summary: Le VLAN forniscono una segmentazione logica delle reti 
+---
+= Configurare VLAN su porte fisiche
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Le VLAN forniscono una segmentazione logica delle reti creando domini di trasmissione separati definiti sulla base della porta dello switch rispetto ai domini di trasmissione tradizionali, definiti sui confini fisici.
+
+Una VLAN può estendersi su più segmenti di rete fisici. Le stazioni finali appartenenti a una VLAN sono correlate in base alla funzione o all'applicazione.
+
+Ad esempio, le stazioni finali in una VLAN possono essere raggruppate in base a reparti, ad esempio tecnici e contabili, o in base a progetti, ad esempio release1 e release2. Poiché la prossimità fisica delle stazioni finali non è essenziale in una VLAN, è possibile disperdere le stazioni finali geograficamente e contenere ancora il dominio di trasmissione in una rete commutata.
+
+È possibile gestire le VLAN creando, eliminando o visualizzando le relative informazioni.
+
+
+NOTE: Non creare una VLAN su un'interfaccia di rete con lo stesso identificativo della VLAN nativa dello switch. Ad esempio, se l'interfaccia di rete e0b si trova sulla VLAN nativa 10, non creare una VLAN e0b-10 su tale interfaccia.
+
+
+
+== Creare una VLAN
+
+È possibile creare una VLAN per mantenere domini di trasmissione separati all'interno dello stesso dominio di rete utilizzando System Manager o l' `network port vlan create` comando.
+
+.Prima di iniziare
+Verificare che siano soddisfatti i seguenti requisiti:
+
+* Gli switch implementati nella rete devono essere conformi agli standard IEEE 802.1Q o disporre di un'implementazione delle VLAN specifica del vendor.
+* Per supportare più VLAN, una stazione finale deve essere configurata staticamente per appartenere a una o più VLAN.
+* La VLAN non è collegata a una porta che ospita una LIF del cluster.
+* La VLAN non è collegata alle porte assegnate a Cluster IPSpace.
+* La VLAN non viene creata su una porta del gruppo di interfacce che non contiene porte membro.
+
+
+.A proposito di questa attività
+La creazione di una VLAN collega la VLAN alla porta di rete di un nodo specificato in un cluster.
+
+Quando si configura una VLAN su una porta per la prima volta, la porta potrebbe spegnersi, causando una disconnessione temporanea della rete. Le successive aggiunte di VLAN alla stessa porta non influiscono sullo stato della porta.
+
+
+NOTE: Non creare una VLAN su un'interfaccia di rete con lo stesso identificativo della VLAN nativa dello switch. Ad esempio, se l'interfaccia di rete e0b si trova sulla VLAN nativa 10, non creare una VLAN e0b-10 su tale interfaccia.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per creare una VLAN*
+
+A partire da ONTAP 9.12.0, è possibile selezionare automaticamente il dominio di trasmissione o manualmente dall'elenco. In precedenza, i domini di broadcast venivano sempre selezionati automaticamente in base alla connettività di livello 2. Se si seleziona manualmente un dominio di trasmissione, viene visualizzato un avviso che indica che la selezione manuale di un dominio di trasmissione potrebbe causare la perdita di connettività.
+
+.Fasi
+. Selezionare *Network > Ethernet port > + VLAN*.
+. Selezionare il nodo dall'elenco a discesa.
+. Scegliere tra le seguenti opzioni:
++
+.. ONTAP (Seleziona dominio broadcast) per *selezionare automaticamente il dominio di broadcast (scelta consigliata)*.
+.. Per selezionare manualmente un dominio di trasmissione dall'elenco.
+
+
+. Selezionare le porte per la VLAN.
+. Specificare l'ID VLAN.
+. Salvare le modifiche.
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per creare una VLAN*
+
+In alcuni casi, se si desidera creare la porta VLAN su una porta degradata senza correggere il problema hardware o la configurazione errata del software, è possibile impostare `-ignore-health-status` del parametro `network port modify` comando as `true`.
+
+.Fasi
+. Utilizzare `network port vlan create` Per creare una VLAN.
+. Specificare il `vlan-name` o il `port` e. `vlan-id` Opzioni per la creazione di una VLAN. Il nome della VLAN è una combinazione del nome della porta (o del gruppo di interfacce) e dell'identificatore della VLAN dello switch di rete, con un trattino nel mezzo. Ad esempio, `e0c-24` e. `e1c-80` Sono nomi VLAN validi.
+
+
+Nell'esempio seguente viene illustrato come creare una VLAN `e1c-80` collegato alla porta di rete `e1c` sul nodo `cluster-1-01`:
+
+....
+network port vlan create -node cluster-1-01 -vlan-name e1c-80
+....
+A partire da ONTAP 9.8, le VLAN vengono automaticamente collocate nei domini di trasmissione appropriati circa un minuto dopo la loro creazione. Se non si desidera che ONTAP esegua questa operazione e si preferisce inserire manualmente la VLAN in un dominio di trasmissione, specificare `-skip-broadcast-domain-placement` come parte di `vlan create` comando.
+
+Per ulteriori informazioni su questo comando, vedere http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^].
+
+--
+====
+
+
+== Modificare una VLAN
+
+È possibile modificare il dominio di trasmissione o disattivare una VLAN.
+
+.Utilizzare System Manager per modificare una VLAN
+A partire da ONTAP 9.12.0, è possibile selezionare automaticamente il dominio di trasmissione o manualmente dall'elenco. In precedenza, i domini broadcast venivano sempre selezionati automaticamente in base alla connettività di livello 2. Se si seleziona manualmente un dominio di trasmissione, viene visualizzato un avviso che indica che la selezione manuale di un dominio di trasmissione potrebbe causare la perdita di connettività.
+
+.Fasi
+. Selezionare *Network > Ethernet port > VLAN*.
+. Selezionare l'icona di modifica.
+. Effettuare una delle seguenti operazioni:
++
+** Modificare il dominio di trasmissione selezionandone uno diverso dall'elenco.
+** Deselezionare la casella di controllo *Enabled*.
+
+
+. Salvare le modifiche.
+
+
+
+
+== Eliminare una VLAN
+
+Potrebbe essere necessario eliminare una VLAN prima di rimuovere una NIC dal relativo slot. Quando si elimina una VLAN, questa viene automaticamente rimossa da tutte le regole e i gruppi di failover che la utilizzano.
+
+.Prima di iniziare
+Assicurarsi che non vi siano LIF associati alla VLAN.
+
+.A proposito di questa attività
+L'eliminazione dell'ultima VLAN da una porta potrebbe causare la disconnessione temporanea della rete dalla porta.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per eliminare una VLAN*
+
+.Fasi
+. Selezionare *Network > Ethernet port > VLAN*.
+. Selezionare la VLAN che si desidera rimuovere.
+. Fare clic su *Delete* (Elimina).
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per eliminare una VLAN*
+
+.Fase
+Utilizzare `network port vlan delete` Comando per eliminare una VLAN.
+
+Nell'esempio seguente viene illustrato come eliminare la VLAN `e1c-80` dalla porta di rete `e1c` sul nodo `cluster-1-01`:
+
+....
+network port vlan delete -node cluster-1-01 -vlan-name e1c-80
+....
+--
+====

@@ -1,0 +1,56 @@
+---
+permalink: nas-audit/steps-setup-fpolicy-config-concept.html 
+sidebar: sidebar 
+keywords: steps, setting, fpolicy configuration 
+summary: 'Prima che FPolicy possa monitorare l"accesso ai file, è necessario creare e abilitare una configurazione FPolicy sulla macchina virtuale di storage (SVM) per la quale sono richiesti i servizi FPolicy.' 
+---
+= Quali sono i passaggi per configurare una configurazione FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima che FPolicy possa monitorare l'accesso ai file, è necessario creare e abilitare una configurazione FPolicy sulla macchina virtuale di storage (SVM) per la quale sono richiesti i servizi FPolicy.
+
+Di seguito sono riportati i passaggi per impostare e abilitare una configurazione FPolicy su SVM:
+
+. Creare un motore esterno FPolicy.
++
+Il motore esterno FPolicy identifica i server FPolicy esterni (server FPolicy) associati a una specifica configurazione FPolicy. Se il motore FPolicy interno "`nativo`" viene utilizzato per creare una configurazione di blocco dei file nativa, non è necessario creare un motore esterno FPolicy.
+
+. Creare un evento FPolicy.
++
+Un evento FPolicy descrive ciò che la policy FPolicy deve monitorare. Gli eventi sono costituiti dai protocolli e dalle operazioni dei file da monitorare e possono contenere un elenco di filtri. Gli eventi utilizzano filtri per limitare l'elenco degli eventi monitorati per i quali il motore esterno FPolicy deve inviare notifiche. Gli eventi specificano anche se il criterio monitora le operazioni del volume.
+
+. Creare una policy FPolicy.
++
+Il criterio FPolicy è responsabile dell'associazione, con l'ambito appropriato, dell'insieme di eventi da monitorare e per i quali le notifiche degli eventi monitorati devono essere inviate al server FPolicy designato (o al motore nativo se non sono configurati server FPolicy). Il criterio definisce inoltre se al server FPolicy è consentito l'accesso privilegiato ai dati per i quali riceve le notifiche. Un server FPolicy ha bisogno di un accesso privilegiato se il server ha bisogno di accedere ai dati. I casi di utilizzo tipici in cui è necessario un accesso privilegiato includono il blocco dei file, la gestione delle quote e la gestione dello storage gerarchico. Il criterio consente di specificare se la configurazione di questo criterio utilizza un server FPolicy o il server FPolicy interno "`nativo`".
+
++
+Un criterio specifica se lo screening è obbligatorio. Se lo screening è obbligatorio e tutti i server FPolicy non sono attivi o non viene ricevuta alcuna risposta dai server FPolicy entro un periodo di timeout definito, l'accesso al file viene negato.
+
++
+I limiti di una policy sono la SVM. Un criterio non può essere applicato a più di una SVM. Tuttavia, una SVM specifica può avere più policy FPolicy, ciascuna con la stessa o diversa combinazione di ambito, evento e configurazioni di server esterni.
+
+. Configurare l'ambito del criterio.
++
+L'ambito di FPolicy determina i volumi, le condivisioni o le policy di esportazione su cui la policy agisce o esclude dal monitoraggio. Un ambito determina anche quali estensioni di file devono essere incluse o escluse dal monitoraggio di FPolicy.
+
++
+[NOTE]
+====
+Gli elenchi di esclusione hanno la precedenza sugli elenchi di inclusione.
+
+====
+. Attivare il criterio FPolicy.
++
+Quando il criterio è attivato, i canali di controllo e, facoltativamente, i canali dati privilegiati sono connessi. Il processo FPolicy sui nodi a cui partecipa SVM inizia a monitorare l'accesso a file e cartelle e, per gli eventi che corrispondono ai criteri configurati, invia notifiche ai server FPolicy (o al motore nativo se non sono configurati server FPolicy).
+
+
+
+[NOTE]
+====
+Se il criterio utilizza il blocco dei file nativi, un motore esterno non viene configurato o associato al criterio.
+
+====

@@ -1,0 +1,41 @@
+---
+permalink: tape-backup/configure-multipath-access-concept.html 
+sidebar: sidebar 
+keywords: considerations, configuring, multipath, tape, access 
+summary: È possibile configurare due percorsi dal sistema di storage per accedere alle unità a nastro in una libreria di nastri. In caso di guasto di un percorso, il sistema di storage può utilizzare gli altri percorsi per accedere alle unità a nastro senza dover riparare immediatamente il percorso guasto. In questo modo è possibile riavviare le operazioni su nastro. 
+---
+= Considerazioni per la configurazione dell'accesso su nastro multipath
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare due percorsi dal sistema di storage per accedere alle unità a nastro in una libreria di nastri. In caso di guasto di un percorso, il sistema di storage può utilizzare gli altri percorsi per accedere alle unità a nastro senza dover riparare immediatamente il percorso guasto. In questo modo è possibile riavviare le operazioni su nastro.
+
+Quando si configura l'accesso su nastro multipath dal sistema storage, è necessario prendere in considerazione quanto segue:
+
+* Nelle librerie su nastro che supportano la mappatura LUN, per l'accesso multipath a un gruppo LUN, la mappatura LUN deve essere simmetrica su ciascun percorso.
++
+Le unità a nastro e i media changer vengono assegnati ai gruppi LUN (set di LUN che condividono lo stesso set di percorsi iniziatori) in una libreria di nastri. Tutte le unità a nastro di un gruppo LUN devono essere disponibili per le operazioni di backup e ripristino su tutti i percorsi multipli.
+
+* È possibile configurare un massimo di due percorsi dal sistema di storage per accedere alle unità a nastro in una libreria di nastri.
+* L'accesso su nastro multipath supporta il bilanciamento del carico. Il bilanciamento del carico è disattivato per impostazione predefinita.
+
+
+Nell'esempio seguente, il sistema di storage accede al gruppo LUN 0 attraverso due percorsi iniziatori: 0b e 0d. In entrambi i percorsi, il gruppo LUN ha lo stesso numero LUN, 0, e numero LUN, 5. Il sistema storage accede al gruppo LUN 1 attraverso un solo percorso iniziatore, 3d.
+
+[listing]
+----
+
+STSW-3070-2_cluster::> storage tape library config show
+
+Node                    LUN Group   LUN Count  Library Name  Library Target Port  Initiator
+----------------------- ----------- ---------- ------------- -------------------- -----
+STSW-3070-2_cluster-01        0      5         IBM 3573-TL_1  510a09800000412d     0b
+                                                                                  	0d
+                              1      2         IBM 3573-TL_2  50050763124b4d6f     3d
+
+3 entries were displayed
+----
+Per ulteriori informazioni, consulta le pagine man.

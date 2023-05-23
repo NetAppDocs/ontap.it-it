@@ -1,0 +1,54 @@
+---
+permalink: fabricpool/modify-tiering-policy-cooling-period-task.html 
+sidebar: sidebar 
+keywords: managing, storage, tiering, modifying, volume, tiering, policy, tiering, minimum, cooling period 
+summary: 'È possibile modificare la policy di tiering di un volume per controllare se i dati vengono spostati nel Tier cloud quando diventano inattivi (freddo). Per un volume con policy di solo snapshot o di tiering automatico, è anche possibile specificare il periodo di raffreddamento minimo di tiering per cui i dati utente devono rimanere inattivi prima di essere spostati nel Tier cloud.' 
+---
+= Gestire il tiering dello storage modificando la policy di tiering di un volume o il periodo minimo di raffreddamento del tiering
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile modificare la policy di tiering di un volume per controllare se i dati vengono spostati nel Tier cloud quando diventano inattivi (_cold_). Per un volume con `snapshot-only` oppure `auto` policy di tiering, puoi anche specificare il periodo minimo di raffreddamento del tiering in base al quale i dati dell'utente devono rimanere inattivi prima di essere spostati nel tier cloud.
+
+.Di cosa hai bisogno
+Modifica di un volume in `auto` La policy di tiering o la modifica del periodo di raffreddamento minimo di tiering richiede ONTAP 9.4 o versione successiva.
+
+.A proposito di questa attività
+La modifica della policy di tiering di un volume modifica solo il successivo comportamento di tiering del volume. Non sposta retroattivamente i dati nel Tier cloud.
+
+La modifica della policy di tiering potrebbe influire sul tempo necessario affinché i dati diventino freddi e vengano spostati al livello cloud.
+
+link:tiering-policies-concept.html#what-happens-when-you-modify-the-tiering-policy-of-a-volume-in-fabricpool["Cosa accade quando si modifica il criterio di tiering di un volume in FabricPool"]
+
+.Fasi
+. Modificare il criterio di tiering per un volume esistente utilizzando `volume modify` con il `-tiering-policy` parametro:
++
+È possibile specificare uno dei seguenti criteri di tiering:
+
++
+** `snapshot-only` (impostazione predefinita)
+** `auto`
+** `all`
+** `none`
++
+link:tiering-policies-concept.html#types-of-fabricpool-tiering-policies["Tipi di policy di tiering FabricPool"]
+
+
+
+. Se il volume utilizza `snapshot-only` oppure `auto` policy di tiering e si desidera modificare il periodo di raffreddamento minimo di tiering, utilizzare `volume modify` con il `-tiering-minimum-cooling-days` parametro facoltativo nel livello di privilegio avanzato.
++
+È possibile specificare un valore compreso tra 2 e 183 per i giorni di raffreddamento minimi di tiering. Se si utilizza una versione di ONTAP precedente alla 9.8, è possibile specificare un valore compreso tra 2 e 63 per i giorni di raffreddamento minimi di tiering.
+
+
+
+.Esempio di modifica della policy di tiering e del periodo minimo di raffreddamento di tiering di un volume
+Nell'esempio seguente viene modificata la policy di tiering del volume "`myvol`" in SVM "`vs1`" in `auto` e il periodo di raffreddamento minimo di tiering fino a 45 giorni:
+
+[listing]
+----
+cluster1::> volume modify -vserver vs1 -volume myvol
+-tiering-policy auto -tiering-minimum-cooling-days 45
+----

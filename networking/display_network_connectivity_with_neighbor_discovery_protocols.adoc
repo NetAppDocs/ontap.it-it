@@ -1,0 +1,688 @@
+---
+sidebar: sidebar 
+permalink: networking/display_network_connectivity_with_neighbor_discovery_protocols.html 
+keywords: display, view, show, network, connectivity, neighbor, discovery, protocol, ndp, cdp, cisco, link, layer, lldp, display network connectivity with neighbor discovery protocols, use neighbor discovery protocols to view network connectivity between a pair of physical or virtual systems and their network interfaces, use cdp to detect network connectivity, considerations for using cdp, enable or disable cdp, view cdp neighbor information, example of showing and clearing statistics, use lldp to detect network connectivity, enable or disable lldp, view lldp neighbor information, adjust the interval for transmitting lldp advertisements 
+summary: Utilizzare i protocolli neighbor Discovery per visualizzare la connettività di rete tra una coppia di sistemi fisici o virtuali e le relative interfacce di rete 
+---
+= Visualizzare la connettività di rete con i protocolli di rilevamento neighbor
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+In un data center, è possibile utilizzare i protocolli neighbor Discovery per visualizzare la connettività di rete tra una coppia di sistemi fisici o virtuali e le relative interfacce di rete. ONTAP supporta due protocolli di rilevamento neighbor: Protocollo di rilevamento Cisco (CDP) e protocollo di rilevamento link Layer (LLDP).
+
+.A proposito di questa attività
+I protocolli neighbor Discovery consentono di rilevare e visualizzare automaticamente informazioni sui dispositivi abilitati al protocollo collegati direttamente in una rete. Ogni dispositivo comunica informazioni di identificazione, funzionalità e connettività. Queste informazioni vengono trasmesse in frame Ethernet a un indirizzo MAC multicast e vengono ricevute da tutti i dispositivi abilitati per il protocollo vicini.
+
+Affinché due dispositivi diventino vicini, ciascuno deve avere un protocollo abilitato e configurato correttamente. La funzionalità del protocollo di rilevamento è limitata alle reti direttamente connesse. I dispositivi adiacenti possono includere dispositivi abilitati al protocollo, come switch, router, bridge e così via. ONTAP supporta due protocolli di rilevamento neighbor, che possono essere utilizzati singolarmente o insieme.
+
+*Cisco Discovery Protocol (CDP)*
+
+CDP è un protocollo di link Layer proprietario sviluppato da Cisco Systems. È attivato per impostazione predefinita in ONTAP per le porte del cluster, ma deve essere attivato esplicitamente per le porte dati.
+
+*Link Layer Discovery Protocol (LLDP)*
+
+LLDP è un protocollo indipendente dal vendor specificato nel documento standard IEEE 802.1AB. Deve essere attivato esplicitamente per tutte le porte.
+
+
+
+== Utilizzare CDP per rilevare la connettività di rete
+
+L'utilizzo di CDP per rilevare la connettività di rete consiste nell'esaminare le considerazioni di implementazione, abilitarla sulle porte dati, visualizzare i dispositivi adiacenti e regolare i valori di configurazione CDP in base alle necessità. CDP è attivato per impostazione predefinita sulle porte del cluster.
+
+Per poter visualizzare le informazioni relative ai dispositivi adiacenti, è necessario abilitare il protocollo CDP anche su switch e router.
+
+[cols="30,70"]
+|===
+
+
+| Release di ONTAP | Descrizione 
+
+
+ a| 
+9.10.1 e versioni precedenti
+ a| 
+Il CDP viene utilizzato anche dal monitor di stato dello switch del cluster per rilevare automaticamente gli switch del cluster e della rete di gestione.
+
+
+
+ a| 
+9.11.1 e versioni successive
+ a| 
+Il CDP viene utilizzato anche dal monitor di stato dello switch del cluster per rilevare automaticamente gli switch di cluster, storage e rete di gestione.
+
+|===
+.Informazioni correlate
+link:../system-admin/index.html["Amministrazione del sistema"^]
+
+
+
+=== Considerazioni sull'utilizzo di CDP
+
+Per impostazione predefinita, i dispositivi compatibili con CDP inviano annunci CDPv2. I dispositivi conformi a CDP inviano annunci CDPv1 solo quando ricevono annunci CDPv1. ONTAP supporta solo CDPv1. Pertanto, quando un nodo ONTAP invia annunci CDPv1, i dispositivi adiacenti conformi a CDP restituiscono annunci CDPv1.
+
+Prima di attivare CDP su un nodo, è necessario prendere in considerazione le seguenti informazioni:
+
+* CDP è supportato per tutte le porte.
+* Gli annunci CDP vengono inviati e ricevuti dalle porte in stato attivo.
+* Per inviare e ricevere annunci CDP, è necessario attivare CDP sia sui dispositivi trasmittenti che su quelli riceventi.
+* Gli annunci CDP vengono inviati a intervalli regolari ed è possibile configurare l'intervallo di tempo.
+* Quando gli indirizzi IP vengono modificati per un LIF, il nodo invia le informazioni aggiornate nel successivo annuncio CDP.
+* ONTAP 9.10.1 e versioni precedenti:
++
+** CDP è sempre attivato sulle porte del cluster.
+** CDP è disattivato, per impostazione predefinita, su tutte le porte non cluster.
+
+
+* ONTAP 9.11.1 e versioni successive:
++
+** CDP è sempre abilitato sulle porte del cluster e dello storage.
+** CDP è disattivato, per impostazione predefinita, su tutte le porte non cluster e non storage.
+
+
+
+
+
+NOTE: A volte, quando i LIF vengono modificati sul nodo, le informazioni CDP non vengono aggiornate sul lato del dispositivo ricevente (ad esempio, uno switch). In caso di problemi di questo tipo, configurare l'interfaccia di rete del nodo sullo stato inattivo e quindi su.
+
+* Solo gli indirizzi IPv4 vengono pubblicizzati negli annunci CDP.
+* Per le porte di rete fisiche con VLAN, vengono annunciate tutte le LIF configurate sulle VLAN su tale porta.
+* Per le porte fisiche che fanno parte di un gruppo di interfacce, tutti gli indirizzi IP configurati su quel gruppo di interfacce vengono annunciati su ciascuna porta fisica.
+* Per un gruppo di interfacce che ospita VLAN, tutte le LIF configurate sul gruppo di interfacce e le VLAN vengono pubblicizzate su ciascuna porta di rete.
+* Poiché i pacchetti CDP sono limitati a non più di 1500 byte, sulle porte configurate con un elevato numero di LIF è possibile che sullo switch adiacente venga riportato solo un sottoinsieme di questi indirizzi IP.
+
+
+
+
+=== Attiva o disattiva CDP
+
+Per rilevare e inviare annunci pubblicitari a dispositivi adiacenti conformi a CDP, è necessario attivare CDP su ciascun nodo del cluster.
+
+Per impostazione predefinita in ONTAP 9.10.1 e versioni precedenti, CDP è attivato su tutte le porte cluster di un nodo e disattivato su tutte le porte non cluster di un nodo.
+
+Per impostazione predefinita, in ONTAP 9.11.1 e versioni successive, CDP viene attivato su tutte le porte di cluster e storage di un nodo e disattivato su tutte le porte non di cluster e non di storage di un nodo.
+
+.A proposito di questa attività
+Il `cdpd.enable` L'opzione controlla se CDP è attivato o disattivato sulle porte di un nodo:
+
+* Per ONTAP 9.10.1 e versioni precedenti, ON attiva CDP su porte non cluster.
+* Per ONTAP 9.11.1 e versioni successive, on attiva CDP su porte non cluster e non storage.
+* Per ONTAP 9.10.1 e versioni precedenti, Off disattiva il CDP sulle porte non cluster; non è possibile disattivare il CDP sulle porte cluster.
+* Per ONTAP 9.11.1 e versioni successive, Off disattiva il CDP sulle porte non cluster e non storage; non è possibile disattivare il CDP sulle porte cluster.
+
+
+Quando CDP è disattivato su una porta collegata a un dispositivo conforme a CDP, il traffico di rete potrebbe non essere ottimizzato.
+
+.Fasi
+. Visualizza l'impostazione CDP corrente per un nodo o per tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per visualizzare l'impostazione CDP di... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run - node <node_name> options cdpd.enable`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options cdpd.enable`
+
+|===
+. Abilitare o disabilitare CDP su tutte le porte di un nodo o su tutte le porte di tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per attivare o disattivare CDP on... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run -node node_name options cdpd.enable {on or off}`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options cdpd.enable {on or off}`
+
+|===
+
+
+
+
+=== Visualizzare le informazioni CDP neighbor
+
+È possibile visualizzare informazioni sui dispositivi vicini collegati a ciascuna porta dei nodi del cluster, a condizione che la porta sia collegata a un dispositivo conforme a CDP. È possibile utilizzare `network device-discovery show -protocol cdp` per visualizzare le informazioni sui vicini.
+
+.A proposito di questa attività
+In ONTAP 9.10.1 e versioni precedenti, poiché CDP è sempre abilitato per le porte del cluster, le informazioni CDP neighbor vengono sempre visualizzate per tali porte. Il CDP deve essere attivato sulle porte non del cluster per visualizzare le informazioni sulle porte vicine.
+
+In ONTAP 9.11.1 e versioni successive, poiché CDP è sempre abilitato per le porte del cluster e dello storage, le informazioni relative alle porte CDP adiacenti vengono sempre visualizzate per tali porte. Il CDP deve essere attivato sulle porte non cluster e non storage per visualizzare le informazioni sulle porte vicine.
+
+.Fase
+Visualizza informazioni su tutti i dispositivi compatibili con CDP collegati alle porte di un nodo del cluster:
+
+....
+network device-discovery show -node node -protocol cdp
+....
+Il seguente comando mostra i vicini collegati alle porte sul nodo sti2650-212:
+
+....
+network device-discovery show -node sti2650-212 -protocol cdp
+Node/       Local  Discovered
+Protocol    Port   Device (LLDP: ChassisID)  Interface         Platform
+----------- ------ ------------------------- ----------------  ----------------
+sti2650-212/cdp
+            e0M    RTP-LF810-510K37.gdl.eng.netapp.com(SAL1942R8JS)
+                                             Ethernet1/14      N9K-C93120TX
+            e0a    CS:RTP-CS01-510K35        0/8               CN1610
+            e0b    CS:RTP-CS01-510K36        0/8               CN1610
+            e0c    RTP-LF350-510K34.gdl.eng.netapp.com(FDO21521S76)
+                                             Ethernet1/21      N9K-C93180YC-FX
+            e0d    RTP-LF349-510K33.gdl.eng.netapp.com(FDO21521S4T)
+                                             Ethernet1/22      N9K-C93180YC-FX
+            e0e    RTP-LF349-510K33.gdl.eng.netapp.com(FDO21521S4T)
+                                             Ethernet1/23      N9K-C93180YC-FX
+            e0f    RTP-LF349-510K33.gdl.eng.netapp.com(FDO21521S4T)
+                                             Ethernet1/24      N9K-C93180YC-FX
+....
+L'output elenca i dispositivi Cisco collegati a ciascuna porta del nodo specificato.
+
+
+
+=== Configurare il tempo di attesa per i messaggi CDP
+
+Il tempo di attesa è il periodo di tempo durante il quale gli annunci CDP vengono memorizzati nella cache nelle periferiche compatibili con CDP adiacenti. Il tempo di attesa viene pubblicizzato in ciascun pacchetto CDPv1 e viene aggiornato ogni volta che un pacchetto CDPv1 viene ricevuto da un nodo.
+
+* Il valore di `cdpd.holdtime` L'opzione deve essere impostata sullo stesso valore su entrambi i nodi di una coppia ha.
+* Il valore predefinito del tempo di attesa è 180 secondi, ma è possibile immettere valori compresi tra 10 secondi e 255 secondi.
+* Se un indirizzo IP viene rimosso prima della scadenza del tempo di attesa, le informazioni CDP vengono memorizzate nella cache fino alla scadenza del tempo di attesa.
+
+
+.Fasi
+. Visualizza il tempo di attesa CDP corrente per un nodo o per tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per visualizzare il tempo di attesa di... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run -node node_name options cdpd.holdtime`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options cdpd.holdtime`
+
+|===
+. Configurare il tempo di attesa CDP su tutte le porte di un nodo o su tutte le porte di tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per impostare il tempo di attesa su... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run -node node_name options cdpd.holdtime holdtime`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options cdpd.holdtime holdtime`
+
+|===
+
+
+
+
+=== Impostare l'intervallo per l'invio di annunci CDP
+
+Gli annunci CDP vengono inviati ai vicini CDP a intervalli periodici. È possibile aumentare o ridurre l'intervallo per l'invio di annunci CDP in base al traffico di rete e alle modifiche della topologia di rete.
+
+* Il valore di `cdpd.interval` L'opzione deve essere impostata sullo stesso valore su entrambi i nodi di una coppia ha.
+* L'intervallo predefinito è 60 secondi, ma è possibile immettere un valore compreso tra 5 secondi e 900 secondi.
+
+
+.Fasi
+. Visualizza l'intervallo di tempo corrente per l'annuncio CDP per un nodo o per tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per visualizzare l'intervallo per... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run -node node_name options cdpd.interval`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options cdpd.interval`
+
+|===
+. Configurare l'intervallo per l'invio di annunci CDP per tutte le porte di un nodo o per tutte le porte di tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per impostare l'intervallo per... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run -node node_name options cdpd.interval interval`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options cdpd.interval interval`
+
+|===
+
+
+
+
+=== Visualizzare o cancellare le statistiche CDP
+
+È possibile visualizzare le statistiche CDP per il cluster e le porte non del cluster su ciascun nodo per rilevare potenziali problemi di connettività di rete. Le statistiche CDP sono cumulative rispetto all'ultima cancellazione.
+
+.A proposito di questa attività
+In ONTAP 9.10.1 e versioni precedenti, poiché CDP è sempre abilitato per le porte, le statistiche CDP vengono sempre visualizzate per il traffico su tali porte. Il CDP deve essere attivato sulle porte per visualizzare le statistiche relative a tali porte.
+
+In ONTAP 9.11.1 e versioni successive, poiché CDP è sempre abilitato per le porte di cluster e storage, le statistiche CDP vengono sempre visualizzate per il traffico su tali porte. Il CDP deve essere attivato su porte non cluster o non storage per visualizzare le statistiche relative a tali porte.
+
+.Fase
+Visualizzare o cancellare le statistiche CDP correnti per tutte le porte su un nodo:
+
+[cols="30,70"]
+|===
+
+
+| Se si desidera... | Inserisci... 
+
+
+ a| 
+Visualizzare le statistiche CDP
+ a| 
+`run -node node_name cdpd show-stats`
+
+
+
+ a| 
+Cancellare le statistiche CDP
+ a| 
+`run -node node_name cdpd zero-stats`
+
+|===
+
+
+==== Esempio di visualizzazione e cancellazione delle statistiche
+
+Il comando seguente mostra le statistiche CDP prima che vengano cancellate. L'output visualizza il numero totale di pacchetti inviati e ricevuti dall'ultima cancellazione delle statistiche.
+
+....
+run -node node1 cdpd show-stats
+
+RECEIVE
+ Packets:         9116  | Csum Errors:       0  | Unsupported Vers:  4561
+ Invalid length:     0  | Malformed:         0  | Mem alloc fails:      0
+ Missing TLVs:       0  | Cache overflow:    0  | Other errors:         0
+
+TRANSMIT
+ Packets:         4557  | Xmit fails:        0  | No hostname:          0
+ Packet truncated:   0  | Mem alloc fails:   0  | Other errors:         0
+
+OTHER
+ Init failures:      0
+....
+Il seguente comando cancella le statistiche CDP:
+
+....
+run -node node1 cdpd zero-stats
+....
+....
+run -node node1 cdpd show-stats
+
+RECEIVE
+ Packets:            0  | Csum Errors:       0  | Unsupported Vers:     0
+ Invalid length:     0  | Malformed:         0  | Mem alloc fails:      0
+ Missing TLVs:       0  | Cache overflow:    0  | Other errors:         0
+
+TRANSMIT
+ Packets:            0  | Xmit fails:        0  | No hostname:          0
+ Packet truncated:   0  | Mem alloc fails:   0  | Other errors:         0
+
+OTHER
+ Init failures:      0
+....
+Una volta cancellate, le statistiche iniziano ad accumularsi dopo l'invio o la ricezione del successivo annuncio CDP.
+
+
+
+== Utilizzare LLDP per rilevare la connettività di rete
+
+L'utilizzo di LLDP per rilevare la connettività di rete consiste nell'esaminare le considerazioni di implementazione, abilitarla su tutte le porte, visualizzare i dispositivi adiacenti e regolare i valori di configurazione LLDP in base alle necessità.
+
+LLDP deve essere abilitato anche su qualsiasi switch e router prima di poter visualizzare le informazioni sui dispositivi vicini.
+
+ONTAP attualmente riporta le seguenti strutture TLV (Type-length-value Structures):
+
+* ID chassis
+* ID porta
+* TTL (Time-to-Live)
+* Nome del sistema
++
+Il nome di sistema TLV non viene inviato sui dispositivi CNA.
+
+
+
+Alcuni adattatori di rete convergenti (CNA), come l'adattatore X1143 e le porte integrate UTA2, contengono il supporto di offload per LLDP:
+
+* L'offload LLDP viene utilizzato per il Data Center Bridging (DCB).
+* Le informazioni visualizzate potrebbero differire tra il cluster e lo switch.
++
+I dati relativi all'ID dello chassis e all'ID della porta visualizzati dallo switch potrebbero essere diversi per le porte CNA e non CNA.
+
+
+
+Ad esempio:
+
+* Per porte non CNA:
++
+** L'ID dello chassis è un indirizzo MAC fisso di una delle porte sul nodo
+** Port ID (ID porta) è il nome della porta corrispondente sul nodo
+
+
+* Per le porte CNA:
++
+** ID chassis e ID porta sono gli indirizzi MAC delle rispettive porte sul nodo.
+
+
+
+
+Tuttavia, i dati visualizzati dal cluster sono coerenti per questi tipi di porte.
+
+
+NOTE: La specifica LLDP definisce l'accesso alle informazioni raccolte tramite un MIB SNMP. Tuttavia, ONTAP attualmente non supporta il MIB LDP.
+
+
+
+=== Attiva o disattiva LLDP
+
+Per rilevare e inviare annunci pubblicitari ai dispositivi adiacenti conformi a LLDP, è necessario attivare LLDP su ciascun nodo del cluster. A partire da ONTAP 9.7, LLDP è attivato per impostazione predefinita su tutte le porte di un nodo.
+
+.A proposito di questa attività
+Per ONTAP 9.10.1 e versioni precedenti, la `lldp.enable` L'opzione controlla se LLDP è attivato o disattivato sulle porte di un nodo:
+
+* `on` Attiva LLDP su tutte le porte.
+* `off` Disattiva LLDP su tutte le porte.
+
+
+Per ONTAP 9.11.1 e versioni successive, la `lldp.enable` L'opzione controlla se LLDP è attivato o disattivato sulle porte non cluster e non storage di un nodo:
+
+* `on` Attiva LLDP su tutte le porte non cluster e non storage.
+* `off` Disattiva LLDP su tutte le porte non cluster e non storage.
+
+
+.Fasi
+. Visualizza l'impostazione LLDP corrente per un nodo o per tutti i nodi di un cluster:
++
+** Nodo singolo: `run -node node_name options lldp.enable`
+** All Node (tutti i nodi): Opzioni `lldp.enable`
+
+
+. Attivare o disattivare LLDP su tutte le porte di un nodo o su tutte le porte di tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per attivare o disattivare LLDP on... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run -node node_name options lldp.enable {on|off}`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options lldp.enable {on|off}`
+
+|===
++
+** Nodo singolo:
++
+....
+run -node node_name options lldp.enable {on|off}
+....
+** Tutti i nodi:
++
+....
+options lldp.enable {on|off}
+....
+
+
+
+
+
+
+=== Visualizzare le informazioni LLDP neighbor
+
+È possibile visualizzare informazioni sui dispositivi vicini collegati a ciascuna porta dei nodi del cluster, a condizione che la porta sia collegata a un dispositivo compatibile con LLDP. Il comando network device-Discovery show consente di visualizzare le informazioni sulle periferiche vicine.
+
+.Fase
+. Visualizza informazioni su tutti i dispositivi compatibili con LLDP collegati alle porte di un nodo del cluster:
++
+....
+network device-discovery show -node node -protocol lldp
+....
++
+Il seguente comando mostra i vicini collegati alle porte sul nodo cluster-1_01. L'output elenca i dispositivi abilitati LLDP collegati a ciascuna porta del nodo specificato. Se il `-protocol` Viene omessa, l'output elenca anche i dispositivi abilitati per CDP.
+
++
+....
+network device-discovery show -node cluster-1_01 -protocol lldp
+Node/       Local  Discovered
+Protocol    Port   Device                    Interface         Platform
+----------- ------ ------------------------- ----------------  ----------------
+cluster-1_01/lldp
+            e2a    0013.c31e.5c60            GigabitEthernet1/36
+            e2b    0013.c31e.5c60            GigabitEthernet1/35
+            e2c    0013.c31e.5c60            GigabitEthernet1/34
+            e2d    0013.c31e.5c60            GigabitEthernet1/33
+....
+
+
+
+
+=== Regolare l'intervallo di trasmissione degli annunci LLDP
+
+Gli annunci LLDP vengono inviati ai vicini LLDP a intervalli periodici. È possibile aumentare o ridurre l'intervallo di invio degli annunci LLDP in base al traffico di rete e alle modifiche della topologia di rete.
+
+.A proposito di questa attività
+L'intervallo predefinito consigliato da IEEE è 30 secondi, ma è possibile immettere un valore compreso tra 5 secondi e 300 secondi.
+
+.Fasi
+. Visualizza l'intervallo di tempo di annuncio LLDP corrente per un nodo o per tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.interval
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.interval
+....
+
+
+. Regolare l'intervallo per l'invio di annunci LLDP per tutte le porte di un nodo o per tutte le porte di tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.interval <interval>
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.interval <interval>
+....
+
+
+
+
+
+
+=== Regola il valore del time-to-live per gli annunci LLDP
+
+TTL (Time-to-Live) è il periodo di tempo per il quale gli annunci LLDP vengono memorizzati nella cache nei dispositivi compatibili con LLDP vicini. Il TTL viene pubblicizzato in ciascun pacchetto LLDP e viene aggiornato ogni volta che un pacchetto LLDP viene ricevuto da un nodo. TTL può essere modificato nei frame LLDP in uscita.
+
+.A proposito di questa attività
+* TTL è un valore calcolato, il prodotto dell'intervallo di trasmissione (`lldp.xmit.interval`) e il moltiplicatore hold (`lldp.xmit.hold`) più uno.
+* Il valore predefinito del moltiplicatore Hold è 4, ma è possibile immettere valori compresi tra 1 e 100.
+* Il TTL predefinito è quindi di 121 secondi, come consigliato da IEEE, ma regolando l'intervallo di trasmissione e i valori del moltiplicatore di mantenimento, è possibile specificare un valore per i frame in uscita da 6 secondi a 30001 secondi.
+* Se un indirizzo IP viene rimosso prima della scadenza del TTL, le informazioni LLDP vengono memorizzate nella cache fino alla scadenza del TTL.
+
+
+.Fasi
+. Visualizza il valore del moltiplicatore di mantenimento corrente per un nodo o per tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.hold
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.hold
+....
+
+
+. Regolare il valore del moltiplicatore Hold su tutte le porte di un nodo o su tutte le porte di tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.hold <hold_value>
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.hold <hold_value>
+....
+
+
+
+
+
+
+=== Visualizzare o cancellare le statistiche LLDP
+
+È possibile visualizzare le statistiche LLDP per il cluster e le porte non del cluster su ciascun nodo per rilevare potenziali problemi di connettività di rete. Le statistiche LLDP sono cumulative a partire dall'ultima cancellazione.
+
+.A proposito di questa attività
+Per ONTAP 9.10.1 e versioni precedenti, poiché LLDP è sempre abilitato per le porte del cluster, le statistiche LLDP vengono sempre visualizzate per il traffico su tali porte. LLDP deve essere attivato sulle porte non cluster per visualizzare le statistiche per tali porte.
+
+Per ONTAP 9.11.1 e versioni successive, poiché LLDP è sempre abilitato per le porte di cluster e storage, le statistiche LLDP vengono sempre visualizzate per il traffico su tali porte. LLDP deve essere abilitato sulle porte non cluster e non storage per visualizzare le statistiche per tali porte.
+
+.Fase
+Visualizzare o cancellare le statistiche LLDP correnti per tutte le porte su un nodo:
+
+[cols="40,60"]
+|===
+
+
+| Se si desidera... | Inserisci... 
+
+
+ a| 
+Visualizzare le statistiche LLDP
+ a| 
+`run -node node_name lldp stats`
+
+
+
+ a| 
+Cancellare le statistiche LLDP
+ a| 
+`run -node node_name lldp stats -z`
+
+|===
+
+
+==== Mostra e cancella esempio di statistiche
+
+Il comando seguente mostra le statistiche LLDP prima che vengano cancellate. L'output visualizza il numero totale di pacchetti inviati e ricevuti dall'ultima cancellazione delle statistiche.
+
+....
+cluster-1::> run -node vsim1 lldp stats
+
+RECEIVE
+ Total frames:     190k  | Accepted frames:   190k | Total drops:         0
+TRANSMIT
+ Total frames:     5195  | Total failures:      0
+OTHER
+ Stored entries:      64
+....
+Il seguente comando cancella le statistiche LLDP.
+
+....
+cluster-1::> The following command clears the LLDP statistics:
+run -node vsim1 lldp stats -z
+run -node node1 lldp stats
+
+RECEIVE
+ Total frames:        0  | Accepted frames:     0  | Total drops:         0
+TRANSMIT
+ Total frames:        0  | Total failures:      0
+OTHER
+ Stored entries:      64
+....
+Una volta cancellate, le statistiche iniziano ad accumularsi dopo l'invio o la ricezione del successivo annuncio LLDP.

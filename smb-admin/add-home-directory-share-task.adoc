@@ -1,0 +1,77 @@
+---
+permalink: smb-admin/add-home-directory-share-task.html 
+sidebar: sidebar 
+keywords: smb, home, directory, feature, add, property, share, properties, property, add a home directory share 
+summary: Se si desidera utilizzare la funzione home directory SMB, è necessario aggiungere almeno una condivisione con la proprietà home directory inclusa nelle proprietà di condivisione. 
+---
+= Aggiungere una condivisione della home directory
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se si desidera utilizzare la funzione home directory SMB, è necessario aggiungere almeno una condivisione con la proprietà home directory inclusa nelle proprietà di condivisione.
+
+.A proposito di questa attività
+È possibile creare una condivisione home directory al momento della creazione della condivisione utilizzando `vserver cifs share create` in alternativa, è possibile modificare una condivisione esistente in una condivisione della home directory in qualsiasi momento utilizzando `vserver cifs share modify` comando.
+
+Per creare una condivisione della home directory, è necessario includere `homedirectory` valore in `-share-properties` quando si crea o si modifica una condivisione. È possibile specificare il nome della condivisione e il percorso di condivisione utilizzando variabili espanse dinamicamente quando gli utenti si connettono alle proprie home directory. Le variabili disponibili che è possibile utilizzare nel percorso sono `%w`, `%d`, e. `%u`, Corrispondenti rispettivamente al nome utente, al dominio e al nome utente UNIX mappato di Windows.
+
+.Fasi
+. Aggiungere una condivisione home directory: +
+`vserver cifs share create -vserver _vserver_name_ -share-name _share_name_ -path _path_ -share-properties homedirectory[,...]`
++
+`-vserver` `vserver` Specifica la SVM (Storage Virtual Machine) abilitata per CIFS su cui aggiungere il percorso di ricerca.
+
++
+`-share-name _share-name_` specifica il nome di condivisione della home directory.
+
++
+Oltre a contenere una delle variabili richieste, se il nome della condivisione contiene una delle stringhe letterali `%w`, `%u`, o. `%d`, È necessario precedere la stringa letterale con un carattere % (percentuale) per impedire a ONTAP di trattare la stringa letterale come una variabile (ad esempio, `%%w`).
+
++
+** Il nome della condivisione deve contenere `%w` o il `%u` variabile.
+** Il nome della condivisione può contenere anche `%d` variabile (ad esempio, `%d`/`%w`) o una parte statica nel nome della condivisione (ad esempio, home1_/`%w`).
+** Se la condivisione viene utilizzata dagli amministratori per connettersi alle home directory di altri utenti o per consentire agli utenti di connettersi alle home directory di altri utenti, il modello dinamico di nome della condivisione deve essere preceduto da una tilde (~).
++
+Il `vserver cifs home-directory modify` viene utilizzato per abilitare questo accesso impostando `-is-home-dirs-access-for-admin-enabled` opzione a. `true`) o impostando l'opzione avanzata `-is-home-dirs-access-for-public-enabled` a. `true`.
+
+
+
++
+`-path` `path` specifica il percorso relativo alla home directory.
+
+
+
+`-share-properties homedirectory[,...]` specifica le proprietà di condivisione per tale condivisione. Specificare `homedirectory` valore. È possibile specificare ulteriori proprietà di condivisione utilizzando un elenco delimitato da virgole.
+
+. Verificare che la condivisione della home directory sia stata aggiunta correttamente utilizzando `vserver cifs share show` comando.
+
+
+.Esempio
+Il seguente comando crea una condivisione della home directory denominata `%w`. Il `oplocks`, `browsable`, e. `changenotify` oltre all'impostazione di, vengono impostate le proprietà di condivisione `homedirectory` condividere la proprietà.
+
+[NOTE]
+====
+Questo esempio non visualizza l'output per tutte le condivisioni sulla SVM. L'output viene troncato.
+
+====
+[listing]
+----
+cluster1::> vserver cifs share create -vserver vs1 -share-name %w -path %w -share-properties oplocks,browsable,changenotify,homedirectory
+
+vs1::> vserver cifs share show -vserver vs1
+Vserver    Share    Path         Properties     Comment  ACL
+---------- -------- ------------ -------------- -------- -----------
+vs1        %w       %w           oplocks        -        Everyone / Full Control
+                                 browsable
+                                 changenotify
+                                 homedirectory
+----
+.Informazioni correlate
+xref:add-home-directory-search-path-task.adoc[Aggiunta di un percorso di ricerca della home directory]
+
+xref:requirements-automatic-node-referrals-concept.adoc[Requisiti e linee guida per l'utilizzo dei riferimenti automatici ai nodi]
+
+xref:manage-accessibility-users-home-directories-task.adoc[Gestione dell'accessibilità alle home directory degli utenti]

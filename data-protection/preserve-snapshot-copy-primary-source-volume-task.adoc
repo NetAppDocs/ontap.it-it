@@ -1,0 +1,75 @@
+---
+permalink: data-protection/preserve-snapshot-copy-primary-source-volume-task.html 
+sidebar: sidebar 
+keywords: ensure, snapshot, copy, mirror-vault, deployment 
+summary: 'È possibile utilizzare il comando create di snapmirror snapshot-owner per conservare una copia Snapshot etichettata sul secondario in una distribuzione del vault mirror. In questo modo si garantisce l"esistenza di una copia Snapshot comune per l"aggiornamento della relazione del vault.' 
+---
+= Garantire una copia Snapshot comune in un'implementazione del vault mirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `snapmirror snapshot-owner create` Per conservare una copia Snapshot etichettata sul secondario in una distribuzione con vault mirror. In questo modo si garantisce l'esistenza di una copia Snapshot comune per l'aggiornamento della relazione del vault.
+
+.A proposito di questa attività
+Se si utilizza una combinazione di fan-out del vault mirror o distribuzione a cascata, tenere presente che gli aggiornamenti non avranno esito positivo se non esiste una copia Snapshot comune sui volumi di origine e di destinazione.
+
+Questo non è mai un problema per la relazione del mirror in una distribuzione fan-out o cascata del vault mirror, poiché SnapMirror crea sempre una copia Snapshot del volume di origine prima di eseguire l'aggiornamento.
+
+Tuttavia, potrebbe trattarsi di un problema per la relazione del vault, poiché SnapMirror non crea una copia Snapshot del volume di origine quando aggiorna una relazione del vault. È necessario utilizzare `snapmirror snapshot-owner create` Per garantire la presenza di almeno una copia Snapshot comune sia sull'origine che sulla destinazione della relazione del vault.
+
+.Fasi
+. Sul volume di origine, assegnare un proprietario alla copia Snapshot etichettata che si desidera conservare:
++
+`snapmirror snapshot-owner create -vserver _SVM_ -volume _volume_ -snapshot _snapshot_ -owner _owner_`
+
++
+L'esempio seguente assegna `ApplicationA` in qualità di proprietario di `snap1` Copia Snapshot:
+
++
+[listing]
+----
+clust1::> snapmirror snapshot-owner create -vserver vs1 -volume vol1
+-snapshot snap1 -owner ApplicationA
+----
+. Aggiornare la relazione mirror, come descritto in link:update-replication-relationship-manual-task.html["Aggiornamento manuale di una relazione di replica"].
++
+In alternativa, è possibile attendere l'aggiornamento pianificato della relazione mirror.
+
+. Trasferire la copia Snapshot etichettata nella destinazione del vault:
++
+`snapmirror update -source-path _SVM:volume_|_cluster://SVM/volume_, ... -destination-path _SVM:volume_|_cluster://SVM/volume_, ... -source-snapshot snapshot`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio riportato di seguito viene trasferito il `snap1` Copia Snapshot::
++
+--
+[listing]
+----
+clust1::> snapmirror update -vserver vs1 -volume vol1
+-source-snapshot snap1
+----
+La copia Snapshot etichettata viene mantenuta quando la relazione del vault viene aggiornata.
+
+--
+
+
+. Sul volume di origine, rimuovere il proprietario dalla copia Snapshot etichettata:
++
+`snapmirror snapshot-owner delete -vserver _SVM_ -volume _volume_ -snapshot _snapshot_ -owner _owner_`
+
++
+I seguenti esempi vengono rimossi `ApplicationA` in qualità di proprietario di `snap1` Copia Snapshot:
+
++
+[listing]
+----
+clust1::> snapmirror snapshot-owner delete -vserver vs1 -volume vol1
+-snapshot snap1 -owner ApplicationA
+----
+

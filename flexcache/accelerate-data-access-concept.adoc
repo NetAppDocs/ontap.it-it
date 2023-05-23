@@ -1,0 +1,33 @@
+---
+permalink: flexcache/accelerate-data-access-concept.html 
+sidebar: sidebar 
+keywords: using, flexcache, volumes, accelerate, data, access 
+summary: 'Un volume FlexCache è un volume scarsamente popolato supportato da un volume di origine. Il volume FlexCache può trovarsi sullo stesso cluster di o su un cluster diverso da quello del volume di origine. Il volume FlexCache fornisce l"accesso ai dati nel volume di origine senza richiedere che tutti i dati si trovano nel volume FlexCache.' 
+---
+= Utilizza FlexCache Volumes per accelerare la panoramica dell'accesso ai dati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un volume FlexCache è un volume scarsamente popolato supportato da un volume di origine. Il volume FlexCache può trovarsi sullo stesso cluster di o su un cluster diverso da quello del volume di origine. Il volume FlexCache fornisce l'accesso ai dati nel volume di origine senza richiedere che tutti i dati si trovano nel volume FlexCache.
+
+In ONTAP 9.5, il volume di origine è un volume FlexVol e il volume FlexCache è un volume FlexGroup. Un volume di origine supporta i protocolli NFSv3, NFSv4 e SMB. Un volume FlexCache supporta solo il protocollo NFSv3 in ONTAP 9.5. A partire da ONTAP 9.8, un volume FlexCache supporta anche il protocollo SMB. A partire da ONTAP 9.10.1, un volume FlexCache supporta il protocollo NFSv4. Per un riepilogo delle funzioni supportate in FlexCache Volumes, fare riferimento a. xref:supported-unsupported-features-concept.adoc[Funzionalità supportate e non supportate per FlexCache Volumes].
+
+A partire da ONTAP 9.7, i volumi FlexGroup sono supportati anche come volumi di origine.
+
+[NOTE]
+====
+Nelle release di ONTAP 9 precedenti alla 9.5, i volumi FlexVol di origine possono fornire dati solo ai volumi FlexCache creati su sistemi che eseguono Data ONTAP 8.2.x in modalità 7. A partire da ONTAP 9.5, i volumi FlexVol di origine possono anche fornire dati ai volumi FlexCache sui sistemi ONTAP 9. Per informazioni sulla migrazione da FlexCache 7-mode a ONTAP 9 FlexCache, link:http://www.netapp.com/us/media/tr-4743.pdf["Report tecnico NetApp 4743: FlexCache Volumes in NetApp ONTAP"^].
+
+====
+Un volume FlexCache serve direttamente le richieste di lettura se il volume contiene i dati richiesti dal client. In caso contrario, il volume FlexCache richiede i dati dal volume di origine e li memorizza prima di inviare la richiesta del client. Le successive richieste di lettura dei dati vengono quindi inviate direttamente dal volume FlexCache. Ciò migliora le performance quando si accede ripetutamente agli stessi dati, perché dopo la prima richiesta, i dati non devono più viaggiare attraverso la rete o essere serviti da un sistema sovraccarico.
+
+A partire da ONTAP 9.9.1, i volumi FlexCache memorizzano nella cache un elenco di directory per gli errori "file non trovato" che si verificano quando un file non esiste più nel volume di origine. In questo modo si riduce il traffico di rete eliminando la necessità di inviare più chiamate all'origine quando i client cercano file inesistenti.
+
+A partire da ONTAP 9.10.1, è possibile attivare il blocco globale dei file nei volumi FlexCache per favorire la coerenza, garantendo la distribuzione simultanea delle modifiche a un volume di origine nei volumi FlexCache. Il blocco globale dei file può essere attivato solo dalla CLI.
+
+È possibile utilizzare i volumi FlexCache per accelerare l'accesso ai dati o per trasferire il traffico dai volumi ad accesso elevato. I volumi FlexCache aiutano a migliorare le performance, soprattutto quando i client devono accedere ripetutamente agli stessi dati, perché i dati possono essere gestiti direttamente senza dover accedere al volume di origine. Pertanto, è possibile utilizzare i volumi FlexCache per gestire i carichi di lavoro di sistema che richiedono un utilizzo intensivo della lettura.
+
+Qualsiasi operazione di scrittura viene applicata al volume di origine.

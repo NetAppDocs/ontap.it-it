@@ -1,0 +1,45 @@
+---
+permalink: volumes/default-quotas-concept.html 
+sidebar: sidebar 
+keywords: how, default quotas, work 
+summary: È possibile utilizzare le quote predefinite per applicare una quota a tutte le istanze di un determinato tipo di quota. Ad esempio, una quota utente predefinita influisce su tutti gli utenti del sistema per il volume FlexVol o qtree specificato. Inoltre, le quote predefinite consentono di modificare facilmente le quote. 
+---
+= Come funzionano le quote predefinite
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare le quote predefinite per applicare una quota a tutte le istanze di un determinato tipo di quota. Ad esempio, una quota utente predefinita influisce su tutti gli utenti del sistema per il volume FlexVol o qtree specificato. Inoltre, le quote predefinite consentono di modificare facilmente le quote.
+
+È possibile utilizzare le quote predefinite per applicare automaticamente un limite a un ampio set di destinazioni di quota senza dover creare quote separate per ciascuna destinazione. Ad esempio, se si desidera limitare la maggior parte degli utenti a 10 GB di spazio su disco, è possibile specificare una quota utente predefinita di 10 GB di spazio su disco invece di creare una quota per ciascun utente. Se si dispone di utenti specifici per i quali si desidera applicare un limite diverso, è possibile creare quote esplicite per tali utenti. (Quote esplicite--quote con una destinazione specifica o un elenco di destinazioni--override quote predefinite.)
+
+Inoltre, le quote predefinite consentono di utilizzare il ridimensionamento anziché la reinizializzazione quando si desidera che le modifiche delle quote abbiano effetto. Ad esempio, se si aggiunge una quota utente esplicita a un volume che ha già una quota utente predefinita, è possibile attivare la nuova quota ridimensionando.
+
+Le quote predefinite possono essere applicate a tutti e tre i tipi di destinazione delle quote (utenti, gruppi e qtree).
+
+Le quote predefinite non hanno necessariamente limiti specifici; una quota predefinita può essere una quota di controllo.
+
+Una quota è indicata da una destinazione che è una stringa vuota ("") o un asterisco (*), a seconda del contesto:
+
+* Quando si crea una quota utilizzando `volume quota policy rule create` , impostazione di `-target` parametro su una stringa vuota ("") crea una quota predefinita.
+* In `volume quota policy rule create` il comando `-qtree` parameter specifica il nome del qtree a cui si applica la regola di quota. Questo parametro non è applicabile alle regole del tipo di struttura. Per le regole di tipo utente o gruppo a livello di volume, questo parametro deve contenere "".
+* Nell'output di `volume quota policy rule show` viene visualizzata una quota predefinita con una stringa vuota ("") come destinazione.
+* Nell'output di `volume quota report` Viene visualizzata una quota predefinita con un asterisco (*) come identificatore di ID e quota.
+
+
+
+
+== Esempio di quota utente predefinita
+
+Il seguente file di quote utilizza una quota utente predefinita per applicare un limite di 50 MB a ciascun utente per il vol1:
+
+[listing]
+----
+#Quota target type           disk  files  thold  sdisk  sfile
+#-----------  ----           ----  -----  -----  -----  -----
+*             user@/vol/vol1  50M
+----
+Se un utente del sistema immette un comando che richiederebbe ai dati di quell'utente più di 50 MB in vol1 (ad esempio, scrivendo su un file da un editor), il comando non riesce.

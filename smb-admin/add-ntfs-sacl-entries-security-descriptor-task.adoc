@@ -1,0 +1,56 @@
+---
+permalink: smb-admin/add-ntfs-sacl-entries-security-descriptor-task.html 
+sidebar: sidebar 
+keywords: add, sacl, system, access, control, list, entires, aces, ntfs, audit, policies, policy, file, folder, svm, add ntfs sacl access control entries to the ntfs security descriptor 
+summary: 'L"aggiunta di voci di controllo di accesso (ACE) SACL (elenco di controllo di accesso al sistema) al descrittore di protezione NTFS è la seconda fase della creazione di criteri di controllo NTFS per file o cartelle in SVM. Ogni voce identifica l"utente o il gruppo che si desidera controllare. La voce SACL definisce se si desidera controllare i tentativi di accesso riusciti o non riusciti.' 
+---
+= Aggiungere le voci di controllo dell'accesso NTFS SACL al descrittore di protezione NTFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'aggiunta di voci di controllo di accesso (ACE) SACL (elenco di controllo di accesso al sistema) al descrittore di protezione NTFS è la seconda fase della creazione di criteri di controllo NTFS per file o cartelle in SVM. Ogni voce identifica l'utente o il gruppo che si desidera controllare. La voce SACL definisce se si desidera controllare i tentativi di accesso riusciti o non riusciti.
+
+.A proposito di questa attività
+È possibile aggiungere uno o più ACE al SACL del descrittore di protezione.
+
+Se il descrittore di protezione contiene un SACL con ACE esistenti, il comando aggiunge il nuovo ACE al SACL. Se il descrittore di protezione non contiene un SACL, il comando crea il SACL e aggiunge il nuovo ACE.
+
+È possibile configurare le voci SACL specificando i diritti da controllare per gli eventi di successo o di errore per l'account specificato in `-account` parametro. Esistono tre metodi di esclusione reciproca per specificare i diritti:
+
+* Diritti
+* Diritti avanzati
+* Diritti raw (privilegio avanzato)
+
+
+[NOTE]
+====
+Se non si specificano i diritti per la voce SACL, l'impostazione predefinita è `Full Control`.
+
+====
+È possibile personalizzare le voci SACL specificando come applicare l'ereditarietà con `apply to` parametro. Se non si specifica questo parametro, l'impostazione predefinita prevede l'applicazione di questa voce SACL a questa cartella, sottocartelle e file.
+
+.Fasi
+. Aggiungere una voce SACL a un descrittore di protezione: `vserver security file-directory ntfs sacl add -vserver vserver_name -ntfs-sd SD_name -access-type {failure|success} -account name_or_SIDoptional_parameters`
++
+`vserver security file-directory ntfs sacl add -ntfs-sd sd1 -access-type failure -account domain\joe -rights full-control -apply-to this-folder -vserver vs1`
+
+. Verificare che la voce SACL sia corretta: `vserver security file-directory ntfs sacl show -vserver vserver_name -ntfs-sd SD_name -access-type {failure|success} -account name_or_SID`
++
+`vserver security file-directory ntfs sacl show -vserver vs1 -ntfs-sd sd1 -access-type deny -account domain\joe`
+
++
+[listing]
+----
+                                  Vserver: vs1
+                        Security Descriptor Name: sd1
+         Access type for Specified Access Rights: failure
+                             Account Name or SID: DOMAIN\joe
+                                   Access Rights: full-control
+                          Advanced Access Rights: -
+                                        Apply To: this-folder
+                                   Access Rights: full-control
+----
+

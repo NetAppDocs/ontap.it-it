@@ -1,0 +1,77 @@
+---
+permalink: smb-admin/modify-branchcache-config-task.html 
+sidebar: sidebar 
+keywords: modify, configuration, branchcache, service, svm, store, directory, path, hash, maximum, size, operating, mode, version, modify branchcache configurations 
+summary: 'È possibile modificare la configurazione del servizio BranchCache sulle SVM, tra cui la modifica del percorso della directory dell"archivio hash, la dimensione massima della directory dell"archivio hash, la modalità operativa e le versioni di BranchCache supportate. È inoltre possibile aumentare le dimensioni del volume che contiene l"archivio hash.' 
+---
+= Modificare le configurazioni di BranchCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile modificare la configurazione del servizio BranchCache sulle SVM, tra cui la modifica del percorso della directory dell'archivio hash, la dimensione massima della directory dell'archivio hash, la modalità operativa e le versioni di BranchCache supportate. È inoltre possibile aumentare le dimensioni del volume che contiene l'archivio hash.
+
+.Fasi
+. Eseguire l'azione appropriata:
++
+|===
+| Se si desidera... | Immettere quanto segue... 
+
+
+ a| 
+Modificare le dimensioni della directory dell'archivio hash
+ a| 
+`vserver cifs branchcache modify -vserver vserver_name -hash-store-max-size {integer[KB|MB|GB|TB|PB]}`
+
+
+
+ a| 
+Aumentare le dimensioni del volume che contiene l'archivio hash
+ a| 
+`volume size -vserver vserver_name -volume volume_name -new-size new_size[k|m|g|t]` Se il volume contenente l'archivio hash si riempie, potrebbe essere possibile aumentare le dimensioni del volume. È possibile specificare la nuova dimensione del volume come numero seguito da una designazione dell'unità.
+
+Scopri di più link:../volumes/commands-manage-flexvol-volumes-reference.html["Gestione dei volumi FlexVol"]
+
+
+
+ a| 
+Modificare il percorso della directory dell'archivio hash
+ a| 
+`vserver cifs branchcache modify -vserver vserver_name -hash-store-path path -flush-hashes {true|false}` Se SVM è un'origine di disaster recovery SVM, il percorso hash non può trovarsi sul volume root. Questo perché il volume root non viene replicato nella destinazione del disaster recovery.
+
+Il percorso hash di BranchCache può contenere spazi vuoti e qualsiasi carattere valido per il nome del file.
+
+Se si modifica il percorso hash, `-flush-hashes` È un parametro obbligatorio che specifica se si desidera che ONTAP svuota gli hash dalla posizione dell'archivio hash originale. È possibile impostare i seguenti valori per `-flush-hashes` parametro:
+
+** Se si specifica `true`, ONTAP elimina gli hash nella posizione originale e crea nuovi hash nella nuova posizione man mano che le nuove richieste vengono effettuate dai client abilitati a BranchCache.
+** Se si specifica `false`, gli hash non vengono spazzati via.
++
+In questo caso, è possibile scegliere di riutilizzare gli hash esistenti in un secondo momento modificando il percorso dell'archivio hash nella posizione originale.
+
+
+
+
+
+ a| 
+Modificare la modalità operativa
+ a| 
+`vserver cifs branchcache modify -vserver vserver_name -operating-mode {per-share|all-shares|disable}`
+
+Quando si modifica la modalità operativa, tenere presente quanto segue:
+
+** ONTAP annuncia il supporto di BranchCache per una condivisione quando viene impostata la sessione SMB.
+** I client che hanno già stabilito sessioni quando BranchCache è abilitato devono disconnettersi e riconnettersi per utilizzare il contenuto memorizzato nella cache per questa condivisione.
+
+
+
+
+ a| 
+Modificare il supporto della versione di BranchCache
+ a| 
+`vserver cifs branchcache modify -vserver vserver_name -versions {v1-enable|v2-enable|enable-all}`
+
+|===
+. Verificare le modifiche alla configurazione utilizzando `vserver cifs branchcache show` comando.
+

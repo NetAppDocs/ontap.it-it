@@ -1,0 +1,161 @@
+---
+permalink: s3-audit/plan-config-task.html 
+sidebar: sidebar 
+keywords: s3, audit, create, configure s3 audit 
+summary: Questa attività spiega i parametri utilizzati nel controllo s3. 
+---
+= Pianificare una configurazione di controllo S3
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario specificare una serie di parametri per la configurazione di controllo S3 o accettare le impostazioni predefinite. In particolare, è necessario considerare quali parametri di rotazione del log contribuiranno a garantire un adeguato spazio libero.
+
+Vedere *`vserver object-store-server audit create`* pagina man per i dettagli della sintassi.
+
+
+
+== Parametri generali
+
+Sono necessari due parametri da specificare quando si crea la configurazione di controllo. È possibile specificare anche tre parametri opzionali.
+
+[cols="4,2,1"]
+|===
+
+
+| Tipo di informazione | Opzione | Obbligatorio 
+
+
+ a| 
+_Nome SVM_
+
+Nome della SVM su cui creare la configurazione di controllo.
+
+La SVM deve già esistere ed essere abilitata per S3.
+ a| 
+`-verserver _svm_name_`
+ a| 
+Sì
+
+
+
+ a| 
+_Percorso di destinazione del registro_
+
+Specifica dove sono memorizzati i log di audit convertiti. Il percorso deve già esistere sulla SVM.
+
+Il percorso può contenere fino a 864 caratteri e deve disporre di permessi di lettura/scrittura.
+
+Se il percorso non è valido, il comando di configurazione del controllo non riesce.
+ a| 
+`-destination _text_`
+ a| 
+Sì
+
+
+
+ a| 
+_Categorie di eventi da controllare_
+
+È possibile verificare le seguenti categorie di eventi:
+
+* Eventi Data GetObject, PutObject e DeleteObject
+* Gestione degli eventi Putbucket e Deletebucket
+
+
+L'impostazione predefinita prevede solo l'audit degli eventi dati.
+ a| 
+`-events {data{vbar}management}, ...`
+ a| 
+No
+
+|===
+È possibile inserire uno dei seguenti parametri per controllare il numero di file di log di audit. Se non viene immesso alcun valore, tutti i file di registro vengono conservati.
+
+[cols="4,2,1"]
+|===
+
+
+| Tipo di informazione | Opzione | Obbligatorio 
+
+
+ a| 
+_Limite di rotazione dei file di log_
+
+Determina il numero di file di log di audit da conservare prima di estrarre il file di log più vecchio. Ad esempio, se si immette il valore 5, vengono conservati gli ultimi cinque file di registro.
+
+Il valore 0 indica che tutti i file di log vengono conservati. Il valore predefinito è 0.
+ a| 
+`-rotate-limit _integer_`
+ a| 
+No
+
+
+
+ a| 
+_Limite di durata dei file di log_
+
+Determina per quanto tempo un file di log può essere conservato prima di essere cancellato. Ad esempio, se si immette un valore di 5d0h0m, i registri più vecchi di 5 giorni vengono cancellati.
+
+Il valore 0 indica che tutti i file di log vengono conservati. Il valore predefinito è 0.
+ a| 
+`-retention duration _integer_time_`
+ a| 
+No
+
+|===
+
+
+== Parametri per la rotazione del registro di controllo
+
+È possibile ruotare i registri di audit in base alle dimensioni o alla pianificazione. L'impostazione predefinita prevede la rotazione dei registri di controllo in base alle dimensioni.
+
+
+
+=== Ruotare i registri in base alle dimensioni del registro
+
+Se si desidera utilizzare il metodo di rotazione del log predefinito e la dimensione del log predefinita, non è necessario configurare alcun parametro specifico per la rotazione del log. La dimensione predefinita del registro è 100 MB.
+
+Se non si desidera utilizzare la dimensione predefinita del registro, è possibile configurare `-rotate-size` parametro per specificare una dimensione di log personalizzata.
+
+Se si desidera ripristinare la rotazione solo in base alle dimensioni del log, utilizzare il comando seguente per annullare l'impostazione di `-rotate-schedule-minute` parametro:
+
+`vserver audit modify -vserver _svm_name_ -destination / -rotate-schedule-minute -`
+
+
+
+=== Ruotare i registri in base a una pianificazione
+
+Se si sceglie di ruotare i registri di controllo in base a una pianificazione, è possibile pianificare la rotazione dei registri utilizzando i parametri di rotazione basati sul tempo in qualsiasi combinazione.
+
+* Se si utilizza la rotazione basata sul tempo, il `-rotate-schedule-minute` il parametro è obbligatorio.
+* Tutti gli altri parametri di rotazione basati sul tempo sono opzionali.
++
+** `-rotate-schedule-month`
+** `-rotate-schedule-dayofweek`
+** `-rotate-schedule-day`
+** `-rotate-schedule-hour`
+
+
+* Il programma di rotazione viene calcolato utilizzando tutti i valori relativi al tempo. Ad esempio, se si specifica solo il `-rotate-schedule-minute` i file di log di audit vengono ruotati in base ai minuti specificati in tutti i giorni della settimana, durante tutte le ore in tutti i mesi dell'anno.
+* Se si specificano solo uno o due parametri di rotazione basati sul tempo (ad esempio, `-rotate-schedule-month` e. `-rotate-schedule-minutes`), i file di log vengono ruotati in base ai valori dei minuti specificati in tutti i giorni della settimana, durante tutte le ore, ma solo durante i mesi specificati.
++
+Ad esempio, è possibile specificare che il registro di controllo deve essere ruotato durante i mesi di gennaio, marzo e agosto tutti i lunedì, mercoledì e sabato alle 10:30
+
+* Se si specificano i valori per entrambi `-rotate-schedule-dayofweek` e. `-rotate-schedule-day`, sono considerati indipendenti.
++
+Ad esempio, se si specifica `-rotate-schedule-dayofweek` Come venerdì e. `-rotate-schedule-day` Come 13, i registri di audit verrebbero ruotati ogni venerdì e il 13° giorno del mese specificato, non solo ogni venerdì 13.
+
+* Se si desidera ripristinare la rotazione solo in base a una pianificazione, utilizzare il comando seguente per annullare l'impostazione di `-rotate-size parameter`:
++
+`vserver audit modify -vserver _svm_name_ -destination / -rotate-size -`
+
+
+
+
+
+=== Rotazione dei registri in base alle dimensioni e alla pianificazione dei registri
+
+È possibile scegliere di ruotare i file di log in base alle dimensioni del log e a una pianificazione impostando sia il parametro -rotate-size che i parametri di rotazione basati sul tempo in qualsiasi combinazione. Ad esempio: Se `-rotate-size` È impostato su 10 MB e. `-rotate-schedule-minute` È impostato su 15, i file di log ruotano quando le dimensioni del file di log raggiungono i 10 MB o al 15° minuto di ogni ora (a seconda dell'evento che si verifica per primo).

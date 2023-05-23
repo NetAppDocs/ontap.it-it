@@ -1,0 +1,142 @@
+---
+permalink: smb-admin/configure-unix-symbolic-link-support-shares-task.html 
+sidebar: sidebar 
+keywords: configure, unix, symbol, link, support, smb, share, share-property, setting, create, modify, exist, configure unix symbolic link support, on smb shares 
+summary: 'È possibile configurare il supporto del collegamento simbolico UNIX sulle condivisioni SMB specificando un"impostazione simbolica di proprietà-condivisione del collegamento quando si creano condivisioni SMB o in qualsiasi momento modificando le condivisioni SMB esistenti. Il supporto dei collegamenti simbolici UNIX è attivato per impostazione predefinita. È inoltre possibile disattivare il supporto dei collegamenti simbolici UNIX su una condivisione.' 
+---
+= Configurare il supporto dei collegamenti simbolici UNIX sulle condivisioni SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare il supporto del collegamento simbolico UNIX sulle condivisioni SMB specificando un'impostazione simbolica di proprietà-condivisione del collegamento quando si creano condivisioni SMB o in qualsiasi momento modificando le condivisioni SMB esistenti. Il supporto dei collegamenti simbolici UNIX è attivato per impostazione predefinita. È inoltre possibile disattivare il supporto dei collegamenti simbolici UNIX su una condivisione.
+
+.A proposito di questa attività
+Quando si configura il supporto del collegamento simbolico UNIX per le condivisioni SMB, è possibile scegliere una delle seguenti impostazioni:
+
+|===
+| Impostazione | Descrizione 
+
+
+ a| 
+`enable` (OBSOLETO*)
+ a| 
+Specifica che i collegamenti simbolici sono abilitati per l'accesso in lettura/scrittura.
+
+
+
+ a| 
+`read_only` (OBSOLETO*)
+ a| 
+Specifica che i collegamenti simbolici sono abilitati per l'accesso in sola lettura. Questa impostazione non si applica ai widelink. L'accesso a Widelink è sempre in lettura/scrittura.
+
+
+
+ a| 
+`hide` (OBSOLETO*)
+ a| 
+Specifica che ai client SMB viene impedito di visualizzare i collegamenti simbolici.
+
+
+
+ a| 
+`no-strict-security`
+ a| 
+Specifica che i client seguono collegamenti simbolici al di fuori dei limiti di condivisione.
+
+
+
+ a| 
+`symlinks`
+ a| 
+Specifica che i collegamenti simbolici sono attivati localmente per l'accesso in lettura/scrittura. Gli annunci DFS non vengono generati anche se l'opzione CIFS `is-advertise-dfs-enabled` è impostato su `true`. Questa è l'impostazione predefinita.
+
+
+
+ a| 
+`symlinks-and-widelinks`
+ a| 
+Specifica che sia i collegamenti simbolici locali che i collegamenti widelink per l'accesso in lettura/scrittura. Gli annunci DFS vengono generati sia per symlink locale che per wildelink anche se l'opzione CIFS `is-advertise-dfs-enabled` è impostato su `false`.
+
+
+
+ a| 
+`disable`
+ a| 
+Specifica che i collegamenti simbolici e i collegamenti widelink sono disattivati. Gli annunci DFS non vengono generati anche se l'opzione CIFS `is-advertise-dfs-enabled` è impostato su `true`.
+
+
+
+ a| 
+`""` (nullo, non impostato)
+ a| 
+Disattiva i collegamenti simbolici sulla condivisione.
+
+
+
+ a| 
+`-` (non impostato)
+ a| 
+Disattiva i collegamenti simbolici sulla condivisione.
+
+|===
+[NOTE]
+====
+*I parametri _enable_, _hide_ e _Read-only_ sono deprecati e possono essere rimossi in una release futura di ONTAP.
+
+====
+.Fasi
+. Configurare o disattivare il supporto dei collegamenti simbolici:
++
+|===
+| Se è... | Inserisci... 
+
+
+ a| 
+Una nuova condivisione SMB
+ a| 
+`+vserver cifs share create -vserver vserver_name -share-name share_name -path path -symlink-properties {enable|hide|read-only|""|-|symlinks|symlinks-and-widelinks|disable},...]+`
+
+
+
+ a| 
+Una condivisione SMB esistente
+ a| 
+`+vserver cifs share modify -vserver vserver_name -share-name share_name -symlink-properties {enable|hide|read-only|""|-|symlinks|symlinks-and-widelinks|disable},...]+`
+
+|===
+. Verificare che la configurazione della condivisione SMB sia corretta: `vserver cifs share show -vserver vserver_name -share-name share_name -instance`
+
+
+.Esempio
+Il seguente comando crea una condivisione SMB denominata "`data1`" con la configurazione del collegamento simbolico UNIX impostata su `enable`:
+
+[listing]
+----
+cluster1::> vserver cifs share create -vserver vs1 -share-name data1 -path /data1 -symlink-properties enable
+
+cluster1::> vserver cifs share show -vserver vs1 -share-name data1 -instance
+
+                          Vserver: vs1
+                            Share: data1
+         CIFS Server NetBIOS Name: VS1
+                             Path: /data1
+                 Share Properties: oplocks
+                                   browsable
+                                   changenotify
+               Symlink Properties: enable
+          File Mode Creation Mask: -
+     Directory Mode Creation Mask: -
+                    Share Comment: -
+                        Share ACL: Everyone / Full Control
+    File Attribute Cache Lifetime: -
+                      Volume Name: -
+                    Offline Files: manual
+    Vscan File-Operations Profile: standard
+Maximum Tree Connections on Share: 4294967295
+       UNIX Group for File Create: -
+----
+.Informazioni correlate
+xref:create-symbolic-link-mappings-task.adoc[Creazione di mappature di collegamento simboliche per le condivisioni SMB]

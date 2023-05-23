@@ -1,0 +1,126 @@
+---
+permalink: encryption-at-rest/enable-onboard-key-management-96-later-nse-task.html 
+sidebar: sidebar 
+keywords: enabling, onboard key management, ontap 9.6, later 
+summary: È possibile utilizzare Onboard Key Manager per proteggere le chiavi utilizzate dal cluster per accedere ai dati crittografati. È necessario attivare Onboard Key Manager su ogni cluster che accede a un volume crittografato o a un disco con crittografia automatica. 
+---
+= Attiva la gestione delle chiavi integrata in ONTAP 9.6 e versioni successive
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare Onboard Key Manager per autenticare i nodi del cluster su un disco FIPS o SED. Onboard Key Manager è uno strumento integrato che fornisce chiavi di autenticazione ai nodi dello stesso sistema storage dei dati. Onboard Key Manager è conforme a FIPS-140-2 livello 1.
+
+È possibile utilizzare Onboard Key Manager per proteggere le chiavi utilizzate dal cluster per accedere ai dati crittografati. È necessario attivare Onboard Key Manager su ogni cluster che accede a un volume crittografato o a un disco con crittografia automatica.
+
+.Di cosa hai bisogno
+* Se si utilizza NSE con un server KMIP (Key Management) esterno, è necessario eliminare il database del gestore delle chiavi esterno.
++
+link:delete-key-management-database-task.html["Passaggio alla gestione delle chiavi integrata dalla gestione delle chiavi esterna"]
+
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+* È necessario configurare l'ambiente MetroCluster prima di configurare Onboard Key Manager.
+
+
+.A proposito di questa attività
+È necessario eseguire `security key-manager onboard enable` ogni volta che si aggiunge un nodo al cluster. Nelle configurazioni MetroCluster, è necessario eseguire `security key-manager onboard enable` sul cluster locale, quindi eseguire `security key-manager onboard sync` sul cluster remoto, utilizzando la stessa passphrase su ciascuno di essi.
+
+Per impostazione predefinita, non è necessario immettere la passphrase del gestore delle chiavi quando si riavvia un nodo. Ad eccezione di MetroCluster, è possibile utilizzare `cc-mode-enabled=yes` opzione per richiedere agli utenti di inserire la passphrase dopo un riavvio.
+
+[NOTE]
+====
+Quando Onboard Key Manager è attivato in modalità Common Criteria (Criteri comuni) (`cc-mode-enabled=yes`), il comportamento del sistema viene modificato nei seguenti modi:
+
+* Il sistema monitora i tentativi consecutivi di passphrase del cluster non riusciti quando si opera in modalità Common Criteria.
++
+Se NetApp Storage Encryption (NSE) è attivato e non si riesce a inserire la passphrase del cluster corretta all'avvio, il sistema non può autenticare i propri dischi e si riavvia automaticamente. Per risolvere il problema, al prompt di boot occorre inserire la passphrase del cluster corretta. Una volta avviato, il sistema consente fino a 5 tentativi consecutivi di inserire correttamente la passphrase del cluster in un periodo di 24 ore per qualsiasi comando che richieda la passphrase del cluster come parametro. Se il limite viene raggiunto (ad esempio, non è stato possibile inserire correttamente la passphrase del cluster 5 volte di seguito), è necessario attendere che il periodo di timeout di 24 ore sia trascorso oppure riavviare il nodo per ripristinare il limite.
+
+* Gli aggiornamenti delle immagini di sistema utilizzano il certificato di firma del codice NetApp RSA-3072 insieme ai digest con firma del codice SHA-384 per controllare l'integrità dell'immagine invece del certificato di firma del codice NetApp RSA-2048 e dei digest con firma del codice SHA-256.
++
+Il comando upgrade verifica che il contenuto dell'immagine non sia stato alterato o corrotto controllando varie firme digitali. Se la convalida ha esito positivo, il processo di aggiornamento dell'immagine passa alla fase successiva; in caso contrario, l'aggiornamento dell'immagine non riesce. Per informazioni sugli aggiornamenti di sistema, consultare la pagina man "`cluster image`".
+
+
+
+====
+[NOTE]
+====
+Onboard Key Manager memorizza le chiavi nella memoria volatile. I contenuti della memoria volatile vengono cancellati quando il sistema viene riavviato o arrestato. In condizioni operative normali, il contenuto della memoria volatile viene cancellato entro 30 secondi quando il sistema viene arrestato.
+
+====
+.Fasi
+. Avviare il comando di configurazione del gestore delle chiavi:
++
+`security key-manager onboard enable -cc-mode-enabled yes|no`
+
++
+[NOTE]
+====
+Impostare `cc-mode-enabled=yes` per richiedere agli utenti di inserire la passphrase del gestore delle chiavi dopo un riavvio. Il `- cc-mode-enabled` L'opzione non è supportata nelle configurazioni MetroCluster. Il `security key-manager onboard enable` il comando sostituisce `security key-manager setup` comando.
+
+====
++
+Nell'esempio seguente viene avviato il comando di configurazione del gestore delle chiavi sul cluster1 senza che sia necessario inserire la passphrase dopo ogni riavvio:
+
++
+[listing]
+----
+cluster1::> security key-manager onboard enable
+
+Enter the cluster-wide passphrase for onboard key management in Vserver "cluster1"::    <32..256 ASCII characters long text>
+Reenter the cluster-wide passphrase:    <32..256 ASCII characters long text>
+----
+. Al prompt della passphrase, immettere una passphrase compresa tra 32 e 256 caratteri oppure, per "`cc-mode`", una passphrase compresa tra 64 e 256 caratteri.
++
+[NOTE]
+====
+Se la passphrase "`cc-mode`" specificata è inferiore a 64 caratteri, si verifica un ritardo di cinque secondi prima che l'operazione di configurazione del gestore delle chiavi visualizzi nuovamente il prompt della passphrase.
+
+====
+. Al prompt di conferma della passphrase, immettere nuovamente la passphrase.
+. Verificare che le chiavi di autenticazione siano state create:
++
+`security key-manager key query -node node`
+
++
+[NOTE]
+====
+Il `security key-manager key query` il comando sostituisce `security key-manager query key` comando. Per la sintassi completa dei comandi, vedere la pagina man.
+
+====
++
+Nell'esempio seguente viene verificata la creazione di chiavi di autenticazione per `cluster1`:
+
++
+[listing]
+----
+cluster1::> security key-manager key query
+       Vserver: cluster1
+   Key Manager: onboard
+          Node: node1
+
+Key Tag                               Key Type  Restored
+------------------------------------  --------  --------
+node1                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001000c11b3863f78c2273343d7ec5a67762e0000000000000000
+node1                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001006f4e2513353a674305872a4c9f3bf7970000000000000000
+
+       Vserver: cluster1
+   Key Manager: onboard
+          Node: node2
+
+Key Tag                               Key Type  Restored
+------------------------------------  --------  --------
+node1                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001000c11b3863f78c2273343d7ec5a67762e0000000000000000
+node2                                 NSE-AK    yes
+    Key ID: 000000000000000002000000000001006f4e2513353a674305872a4c9f3bf7970000000000000000
+----
+
+
+.Al termine
+Copiare la passphrase in una posizione sicura all'esterno del sistema di storage per utilizzarla in futuro.
+
+Viene eseguito automaticamente il backup di tutte le informazioni di gestione delle chiavi nel database replicato (RDB) del cluster. È inoltre necessario eseguire il backup manuale delle informazioni per utilizzarle in caso di disastro.

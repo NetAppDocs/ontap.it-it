@@ -1,0 +1,67 @@
+---
+permalink: ndmp/enable-node-scoped-ndmp-cluster-task.html 
+sidebar: sidebar 
+keywords: enable, node, scope, ndmp, cluster 
+summary: 'È possibile configurare NDMP con ambito di nodo attivando NDMP con ambito di nodo sul cluster e il servizio NDMP su tutti i nodi del cluster. È inoltre necessario configurare l"utente root per NDMP quando si attiva il servizio NDMP.' 
+---
+= Abilitare NDMP con ambito di nodo sul cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile eseguire il backup dei volumi ospitati su un singolo nodo attivando NDMP con ambito nodo, attivando il servizio NDMP e configurando una LIF per la connessione dati e di controllo. Questa operazione può essere eseguita per tutti i nodi del cluster.
+
+
+NOTE: NDMP con ambito del nodo è obsoleto in ONTAP 9.
+
+.A proposito di questa attività
+Quando si utilizza NDMP in modalità Node-Scope, l'autenticazione deve essere configurata per nodo. Per ulteriori informazioni, vedere link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Protection_and_Security/NDMP/How_to_configure_NDMP_authentication_in_the_%E2%80%98node-scope%E2%80%99_mode["L'articolo della Knowledge base "come configurare l'autenticazione NDMP in modalità ‘node-scope’""^].
+
+.Fasi
+. Attivare la modalità NDMP con ambito nodo utilizzando `system services ndmp` con il `node-scope-mode` parametro.
++
+[listing]
+----
+cluster1::> system services ndmp node-scope-mode on
+NDMP node-scope-mode is enabled.
+----
+. Attivare il servizio NDMP su tutti i nodi del cluster utilizzando `system services ndmp on` comando.
++
+L'utilizzo del carattere jolly "`*`" attiva il servizio NDMP su tutti i nodi contemporaneamente.
+
++
+Specificare una password per l'autenticazione della connessione NDMP da parte dell'applicazione di backup.
+
++
+[listing]
+----
+cluster1::> system services ndmp on -node *
+
+Please enter password:
+Confirm password:
+2 entries were modified.
+----
+. Disattivare `-clear-text` Opzione per la comunicazione sicura della password NDMP mediante `system services ndmp modify` comando.
++
+Utilizzando il carattere jolly "`*`" disables the `-clear-text` su tutti i nodi contemporaneamente.
+
++
+[listing]
+----
+cluster1::> system services ndmp modify -node * -clear-text false
+2 entries were modified.
+----
+. Verificare che il servizio NDMP sia attivato e il `-clear-text` l'opzione viene disattivata utilizzando `system services ndmp show` comando.
++
+[listing]
+----
+cluster1::> system services ndmp show
+Node                  Enabled   Clear text  User Id
+--------------------- --------- ----------- ---------
+cluster1-1            true      false        root
+cluster1-2            true      false        root
+2 entries were displayed.
+----
+

@@ -1,0 +1,32 @@
+---
+permalink: smbc/resume-protection-fan-out-configuration.html 
+sidebar: sidebar 
+keywords: fan out, asynchronous, restore, third site, MirrorAllSnapshots, MirrorAndVault 
+summary: 'SM-BC supporta configurazioni fan-out. In seguito a un failover sull"endpoint SM-BC, è necessario ripristinare la connessione con l"endpoint fan-out asincrono.' 
+---
+= Ripristino della protezione in una configurazione fan-out con SM-BC
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+SM-BC supporta xref:../data-protection/supported-deployment-config-concept.html[configurazioni fan-out]. È possibile eseguire il mirroring del volume di origine su un endpoint di destinazione SM-BC e su una o più relazioni SnapMirror asincrone.
+
+Le configurazioni fan-out sono supportate con `MirrorAllSnapshots` E, a partire da ONTAP 9.11.1, il `MirrorAndVault` policy. A partire da ONTAP 9.11.1, le configurazioni fan-out in SM-BC non sono supportate con `XDPDefault` policy.
+
+Se si verifica un failover sulla destinazione SM-BC, la destinazione asincrona di SnapMirror diventa inefficace ed è necessario ripristinare manualmente la protezione eliminando e ricreando la relazione con l'endpoint asincrono di SnapMirror.
+
+.Riprendere la protezione in una configurazione fan-out
+. Verificare che il failover sia stato completato correttamente:
+`snapmirror failover show`
+. Nell'endpoint SnapMirror asincrono, eliminare l'endpoint fan-out:
+`snapmirror delete -destination-path _destination_path_`
+. Sul terzo sito, creare relazioni SnapMirror asincrone tra il nuovo volume primario SM-BC e il volume di destinazione fan-out asincrono:
+`snapmirror create -source-path _source_path_ -destination-path _destination_path_ -policy MirrorAllSnapshots -schedule _schedule_`
+. Risincronizzare la relazione:
+`SnapMirror resync -destination-path _destination_path_`
+. Verificare lo stato e la salute della relazione:
+`snapmirror show`
+

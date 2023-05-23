@@ -1,0 +1,71 @@
+---
+permalink: fabricpool/setup-object-stores-mcc-task.html 
+sidebar: sidebar 
+keywords: setting up, object, stores, fabricpool, metrocluster, configuration 
+summary: Se si esegue ONTAP 9.7 o versione successiva, è possibile impostare un FabricPool mirrorato su una configurazione MetroCluster per eseguire il Tier dei dati cold in archivi di oggetti in due diverse zone di errore. 
+---
+= Impostare gli archivi di oggetti per FabricPool in una configurazione MetroCluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se si esegue ONTAP 9.7 o versione successiva, è possibile impostare un FabricPool mirrorato su una configurazione MetroCluster per eseguire il Tier dei dati cold in archivi di oggetti in due diverse zone di errore.
+
+.Di cosa hai bisogno
+* La configurazione di MetroCluster è impostata e configurata correttamente.
+* Nei siti MetroCluster appropriati vengono impostati due archivi di oggetti.
+* I container sono configurati su ciascuno degli archivi di oggetti.
+* Gli spazi IP vengono creati o identificati nelle due configurazioni MetroCluster e i relativi nomi corrispondono.
+
+
+.A proposito di questa attività
+* FabricPool in MetroCluster richiede che l'aggregato mirrorato sottostante e la configurazione dell'archivio di oggetti associata siano di proprietà della stessa configurazione di MetroCluster.
+* Non è possibile associare un aggregato a un archivio di oggetti creato nel sito MetroCluster remoto.
+* È necessario creare configurazioni dell'archivio di oggetti sulla configurazione MetroCluster proprietaria dell'aggregato.
+
+
+.Fase
+. Specificare le informazioni di configurazione dell'archivio di oggetti su ciascun sito MetroCluster utilizzando `storage object-store config create` comando.
++
+In questo esempio, FabricPool è richiesto su un solo cluster nella configurazione MetroCluster. Per quel cluster vengono create due configurazioni di archivio di oggetti, una per ogni bucket di archivio di oggetti.
+
++
+[listing]
+----
+storage aggregate
+    object-store config create -object-store-name mcc1-ostore-config-s1 -provider-type SGWS -server
+    <SGWS-server-1> -container-name <SGWS-bucket-1> -access-key <key> -secret-password <password> -encrypt
+    <true|false> -provider <provider-type> -is-ssl-enabled <true|false> ipspace
+    <IPSpace>
+----
++
+[listing]
+----
+storage aggregate object-store config create -object-store-name mcc1-ostore-config-s2
+    -provider-type SGWS -server <SGWS-server-2> -container-name <SGWS-bucket-2> -access-key <key> -secret-password <password> -encrypt <true|false> -provider <provider-type>
+    -is-ssl-enabled <true|false> ipspace <IPSpace>
+----
++
+Questo esempio imposta FabricPool sul secondo cluster nella configurazione MetroCluster.
+
++
+[listing]
+----
+storage aggregate
+    object-store config create -object-store-name mcc2-ostore-config-s1 -provider-type SGWS -server
+    <SGWS-server-1> -container-name <SGWS-bucket-3> -access-key <key> -secret-password <password> -encrypt
+    <true|false> -provider <provider-type> -is-ssl-enabled <true|false> ipspace
+    <IPSpace>
+----
++
+[listing]
+----
+storage aggregate
+    object-store config create -object-store-name mcc2-ostore-config-s2 -provider-type SGWS -server
+    <SGWS-server-2> -container-name <SGWS-bucket-4> -access-key <key> -secret-password <password> -encrypt
+    <true|false> -provider <provider-type> -is-ssl-enabled <true|false> ipspace
+    <IPSpace>
+----
+

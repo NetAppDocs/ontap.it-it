@@ -1,0 +1,136 @@
+---
+permalink: smb-admin/determine-statistics-objects-counters-available-task.html 
+sidebar: sidebar 
+keywords: obtain, information, cifs, smb, auditing, audit, branchcache, obtain, data, determine, determine which statistics objects and counters are available 
+summary: Prima di ottenere informazioni su CIFS, SMB, audit e statistiche hash BranchCache e monitorare le performance, è necessario sapere quali oggetti e contatori sono disponibili per ottenere i dati. 
+---
+= Determinare quali oggetti e contatori statistici sono disponibili
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di ottenere informazioni su CIFS, SMB, audit e statistiche hash BranchCache e monitorare le performance, è necessario sapere quali oggetti e contatori sono disponibili per ottenere i dati.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
+. Eseguire una delle seguenti operazioni:
++
+|===
+| Se si desidera determinare... | Inserisci... 
+
+
+ a| 
+Quali oggetti sono disponibili
+ a| 
+`statistics catalog object show`
+
+
+
+ a| 
+Oggetti specifici disponibili
+ a| 
+`statistics catalog object show object object_name`
+
+
+
+ a| 
+Quali contatori sono disponibili
+ a| 
+`statistics catalog counter show object object_name`
+
+|===
++
+Per ulteriori informazioni sugli oggetti e i contatori disponibili, consultare le pagine man.
+
+. Tornare al livello di privilegio admin: `set -privilege admin`
+
+
+.Esempi
+Il seguente comando visualizza le descrizioni degli oggetti statistici selezionati relativi all'accesso CIFS e SMB nel cluster, come si vede al livello di privilegio avanzato:
+
+[listing]
+----
+cluster1::> set -privilege advanced
+
+Warning: These advanced commands are potentially dangerous; use them only when directed to do so by support personnel.
+Do you want to continue? {y|n}: y
+
+cluster1::*> statistics catalog object show -object audit
+    audit_ng                    CM object for exporting audit_ng performance counters
+
+cluster1::*> statistics catalog object show -object cifs
+    cifs                        The CIFS object reports activity of the
+                                Common Internet File System protocol
+                                ...
+
+cluster1::*> statistics catalog object show -object nblade_cifs
+    nblade_cifs                 The Common Internet File System (CIFS)
+                                protocol is an implementation of the Server
+                                ...
+
+cluster1::*> statistics catalog object show -object smb1
+    smb1                        These counters report activity from the SMB
+                                revision of the protocol. For information
+                                ...
+
+cluster1::*> statistics catalog object show -object smb2
+    smb2                        These counters report activity from the
+                                SMB2/SMB3 revision of the protocol. For
+                                ...
+
+cluster1::*> statistics catalog object show -object hashd
+    hashd                       The hashd object provides counters to measure
+                                the performance of the BranchCache hash daemon.
+cluster1::*> set -privilege admin
+----
+Il seguente comando visualizza informazioni su alcuni contatori di `cifs` oggetto visto a livello di privilegi avanzati:
+
+[NOTE]
+====
+In questo esempio non vengono visualizzati tutti i contatori disponibili per `cifs` oggetto; l'output è troncato.
+
+====
+[listing]
+----
+cluster1::> set -privilege advanced
+
+Warning: These advanced commands are potentially dangerous; use them only when directed to do so by support personnel.
+Do you want to continue? {y|n}: y
+
+cluster1::*> statistics catalog counter show -object cifs
+
+Object: cifs
+    Counter                     Description
+    --------------------------- ----------------------------------------------
+    active_searches             Number of active searches over SMB and SMB2
+    auth_reject_too_many        Authentication refused after too many
+                                requests were made in rapid succession
+    avg_directory_depth         Average number of directories crossed by SMB
+                                and SMB2 path-based commands
+    ...                         ...
+
+cluster2::> statistics start -object client -sample-id
+Object: client
+    Counter                                                     Value
+    -------------------------------- --------------------------------
+    cifs_ops                                                        0
+    cifs_read_ops                                                   0
+    cifs_read_recv_ops                                              0
+    cifs_read_recv_size                                            0B
+    cifs_read_size                                                 0B
+    cifs_write_ops                                                  0
+    cifs_write_recv_ops                                             0
+    cifs_write_recv_size                                           0B
+    cifs_write_size                                                0B
+    instance_name                             vserver_1:10.72.205.179
+    instance_uuid                                     2:10.72.205.179
+    local_ops                                                       0
+    mount_ops                                                       0
+
+
+[...]
+----
+.Informazioni correlate
+xref:display-statistics-task.adoc[Visualizzazione delle statistiche]

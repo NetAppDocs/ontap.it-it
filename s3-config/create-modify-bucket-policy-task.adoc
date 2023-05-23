@@ -1,0 +1,117 @@
+---
+permalink: s3-config/create-modify-bucket-policy-task.html 
+sidebar: sidebar 
+keywords: modify, bucket, policy 
+summary: 'È possibile aggiungere regole di accesso al criterio bucket predefinito. L"ambito del controllo degli accessi è il bucket contenente, quindi è più appropriato quando è presente un singolo bucket.' 
+---
+= Modificare una policy bucket
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile aggiungere regole di accesso al criterio bucket predefinito. L'ambito del controllo degli accessi è il bucket contenente, quindi è più appropriato quando è presente un singolo bucket.
+
+.Prima di iniziare
+Una SVM abilitata per S3 contenente un server S3 e un bucket deve già esistere.
+
+Prima di concedere le autorizzazioni, è necessario aver già creato utenti o gruppi.
+
+.A proposito di questa attività
+È possibile aggiungere nuove istruzioni per nuovi utenti e gruppi oppure modificare gli attributi delle istruzioni esistenti. Per ulteriori opzioni, vedere `vserver object-store-server bucket policy` pagine man.
+
+Le autorizzazioni per utenti e gruppi possono essere concesse al momento della creazione del bucket o in seguito in base alle necessità. È inoltre possibile modificare la capacità del bucket e l'assegnazione del gruppo di policy QoS.
+
+A partire da ONTAP 9.9.1 e versioni successive, se si intende supportare la funzionalità di tag degli oggetti client AWS con il server ONTAP S3, le azioni vengono eseguite `GetObjectTagging`, `PutObjectTagging`, e. `DeleteObjectTagging` devono essere consentite utilizzando le policy di gruppo o bucket.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Modificare il bucket: Fare clic su *Storage > Bucket*, fare clic sul bucket desiderato, quindi su *Edit* (Modifica). Quando si aggiungono o modificano le autorizzazioni, è possibile specificare i seguenti parametri:
++
+** *Principal*: L'utente o il gruppo a cui viene concesso l'accesso.
+** *Effect*: Consente o nega l'accesso a un utente o a un gruppo.
+** *Azioni*: Azioni consentite nel bucket per un dato utente o gruppo.
+** *Resources*: Percorsi e nomi degli oggetti all'interno del bucket per i quali viene concesso o negato l'accesso.
++
+I valori predefiniti *_bucketname_* e *_bucketname/*_* concedono l'accesso a tutti gli oggetti nel bucket. È inoltre possibile concedere l'accesso a singoli oggetti, ad esempio *_nome_carico di lavoro/_*_readme.txt*.
+
+** *Condizioni* (opzionale): Espressioni che vengono valutate al tentativo di accesso. Ad esempio, è possibile specificare un elenco di indirizzi IP per i quali l'accesso verrà consentito o negato.
+
+
+
+
+--
+.CLI
+--
+.Fasi
+. Aggiungere una dichiarazione a una policy bucket:
++
+`vserver object-store-server bucket policy add-statement -vserver _svm_name_ -bucket _bucket_name_ -effect {allow|deny} -action _object_store_actions_ -principal _user_and_group_names_ -resource _object_store_resources_ [-sid text] [-index integer]`
+
++
+I seguenti parametri definiscono le autorizzazioni di accesso:
+
++
+[cols="1,3"]
+|===
+
+
+ a| 
+`-effect`
+ a| 
+L'istruzione può consentire o negare l'accesso
+
+
+
+ a| 
+`-action`
+ a| 
+È possibile specificare `*` per tutte le azioni o un elenco di una o più delle seguenti azioni: `GetObject, PutObject, DeleteObject, ListBucket, GetBucketAcl,GetObjectAcl, ListBucketMultipartUploads,` e. `ListMultipartUploadParts`.
+
+
+
+ a| 
+`-principal`
+ a| 
+Un elenco di uno o più utenti o gruppi S3.
+
+** È possibile specificare un massimo di 10 utenti o gruppi.
+** Se viene specificato un gruppo S3, deve essere nel modulo `group/group_name.`
+** `*` può essere specificato per indicare l'accesso pubblico, ovvero l'accesso senza chiave di accesso e chiave segreta.
+** Se non viene specificato alcun principal, a tutti gli utenti S3 della SVM viene concesso l'accesso.
+
+
+
+
+ a| 
+`-resource`
+ a| 
+Il bucket e qualsiasi oggetto in esso contenuto. I caratteri jolly `*` e. `?` può essere utilizzato per formare un'espressione regolare per specificare una risorsa.
+
+|===
++
+È possibile specificare una stringa di testo come commento con `-sid` opzione.
+
+
+
+.Esempi
+Nell'esempio seguente viene creata un'istruzione di policy bucket del server archivio oggetti per SVM svm1.example.com e bucket1 che specifica l'accesso consentito a una cartella readme per l'utente dell'utente del server archivio oggetti 1.
+
+[listing]
+----
+cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal user1 -resource bucket1/readme/* -sid "fullAccessToReadmeForUser1"
+----
+Nell'esempio seguente viene creata un'istruzione di policy bucket del server di archiviazione oggetti per SVM svm1.example.com e bucket1 che specifica l'accesso consentito a tutti gli oggetti per il gruppo di server di archiviazione a oggetti 1.
+
+[listing]
+----
+cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal group/group1 -resource bucket1/* -sid "fullAccessForGroup1"
+----
+--
+====

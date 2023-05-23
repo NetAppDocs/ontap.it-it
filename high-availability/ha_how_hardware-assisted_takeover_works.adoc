@@ -1,0 +1,66 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_how_hardware-assisted_takeover_works.html 
+keywords: ontap, high, availability, hardware-assisted, hardware, assisted, takeovers 
+summary: 'Attivata per impostazione predefinita, la funzione di Takeover assistita dall"hardware può accelerare il processo di Takeover utilizzando il dispositivo di gestione remota di un nodo (Service Processor).' 
+---
+= Come funziona il Takeover assistito dall'hardware
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Attivata per impostazione predefinita, la funzione di Takeover assistita dall'hardware può accelerare il processo di Takeover utilizzando il dispositivo di gestione remota di un nodo (Service Processor).
+
+Quando il dispositivo di gestione remota rileva un guasto, avvia rapidamente il rilevamento piuttosto che attendere che ONTAP riconosca che il battito cardiaco del partner si è arrestato. Se si verifica un errore senza che questa funzione sia attivata, il partner attende fino a quando non rileva che il nodo non sta più dando un heartbeat, conferma la perdita di heartbeat, quindi avvia il takeover.
+
+La funzionalità di Takeover assistita dall'hardware utilizza il seguente processo per evitare tale attesa:
+
+. Il dispositivo di gestione remota monitora il sistema locale per rilevare determinati tipi di guasti.
+. Se viene rilevato un errore, il dispositivo di gestione remota invia immediatamente un avviso al nodo partner.
+. Una volta ricevuto l'avviso, il partner avvia la presa in consegna.
+
+
+
+
+== Eventi di sistema che attivano il Takeover assistito dall'hardware
+
+Il nodo partner potrebbe generare un Takeover a seconda del tipo di avviso ricevuto dal dispositivo di gestione remota (Service Processor).
+
+[cols="30,20,50"]
+|===
+
+
+| Avviso | Acquisizione avviata al ricevimento? | Descrizione 
+
+
+| abnormal_reboot | No | Si è verificato un riavvio anomalo del nodo. 
+
+
+| l2_watchdog_reset | Sì | L'hardware del watchdog di sistema ha rilevato un ripristino L2. Il dispositivo di gestione remota ha rilevato una mancanza di risposta dalla CPU di sistema e ha ripristinato il sistema. 
+
+
+| perdita di heartbeat | No | Il dispositivo di gestione remota non riceve più il messaggio heartbeat dal nodo. Questo avviso non fa riferimento ai messaggi heartbeat tra i nodi della coppia ha; si riferisce al heartbeat tra il nodo e il dispositivo di gestione remota locale. 
+
+
+| messaggio_periodico | No | Viene inviato un messaggio periodico durante una normale operazione di Takeover assistita dall'hardware. 
+
+
+| power_cycle_via_sp | Sì | Il dispositivo di gestione remota ha spento e riacceso il sistema. 
+
+
+| power_loss | Sì | Si è verificata una perdita di alimentazione nel nodo. Il dispositivo di gestione remota dispone di un alimentatore che mantiene l'alimentazione per un breve periodo dopo un'interruzione dell'alimentazione, consentendo di segnalare al partner l'interruzione dell'alimentazione. 
+
+
+| power_off_via_sp | Sì | Il dispositivo di gestione remota ha spento il sistema. 
+
+
+| reset_via_sp | Sì | Il dispositivo di gestione remota ripristina il sistema. 
+
+
+| test | No | Viene inviato un messaggio di test per verificare un'operazione di Takeover assistita dall'hardware. 
+|===

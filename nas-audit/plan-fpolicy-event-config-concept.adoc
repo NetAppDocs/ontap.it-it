@@ -1,0 +1,241 @@
+---
+permalink: nas-audit/plan-fpolicy-event-config-concept.html 
+sidebar: sidebar 
+keywords: plan, fpolicy event configuration 
+summary: 'Prima di configurare gli eventi FPolicy, è necessario comprendere il significato di creazione di un evento FPolicy. È necessario determinare quali protocolli si desidera monitorare l"evento, quali eventi monitorare e quali filtri eventi utilizzare. Queste informazioni consentono di pianificare i valori che si desidera impostare.' 
+---
+= Pianificare la panoramica della configurazione degli eventi FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di configurare gli eventi FPolicy, è necessario comprendere il significato di creazione di un evento FPolicy. È necessario determinare quali protocolli si desidera monitorare l'evento, quali eventi monitorare e quali filtri eventi utilizzare. Queste informazioni consentono di pianificare i valori che si desidera impostare.
+
+
+
+== Cosa significa creare un evento FPolicy
+
+La creazione dell'evento FPolicy implica la definizione delle informazioni necessarie al processo FPolicy per determinare quali operazioni di accesso ai file monitorare e per quali notifiche degli eventi monitorati devono essere inviate al server FPolicy esterno. La configurazione degli eventi FPolicy definisce le seguenti informazioni di configurazione:
+
+* Nome SVM (Storage Virtual Machine)
+* Nome dell'evento
+* Quali protocolli monitorare
++
+FPolicy può monitorare le operazioni di accesso ai file SMB, NFSv3 e NFSv4.
+
+* Quali operazioni di file monitorare
++
+Non tutte le operazioni sui file sono valide per ciascun protocollo.
+
+* Quali filtri di file configurare
++
+Sono valide solo alcune combinazioni di operazioni e filtri dei file. Ogni protocollo dispone di un proprio set di combinazioni supportate.
+
+* Se monitorare le operazioni di montaggio e smontaggio del volume
+
+
+[NOTE]
+====
+Esiste una dipendenza con tre parametri (`-protocol`, `-file-operations`, `-filters`). Le seguenti combinazioni sono valide per i tre parametri:
+
+* È possibile specificare `-protocol` e. `-file-operations` parametri.
+* È possibile specificare tutti e tre i parametri.
+* Non è possibile specificare alcun parametro.
+
+
+====
+
+
+== Contenuto della configurazione dell'evento FPolicy
+
+È possibile utilizzare il seguente elenco di parametri di configurazione degli eventi FPolicy disponibili per pianificare la configurazione:
+
+[cols="70,30"]
+|===
+
+
+| Tipo di informazione | Opzione 
+
+
+ a| 
+_SVM_
+
+Specifica il nome SVM che si desidera associare a questo evento FPolicy.
+
+Ogni configurazione FPolicy viene definita all'interno di una singola SVM. Il motore esterno, l'evento del criterio, l'ambito del criterio e il criterio che si combinano insieme per creare una configurazione del criterio FPolicy devono essere tutti associati alla stessa SVM.
+ a| 
+`-vserver` `vserver_name`
+
+
+
+ a| 
+_Nome evento_
+
+Specifica il nome da assegnare all'evento FPolicy. Quando si crea il criterio FPolicy, l'evento FPolicy viene associato al criterio utilizzando il nome dell'evento.
+
+Il nome può contenere fino a 256 caratteri.
+
+[NOTE]
+====
+Se si configura l'evento in una configurazione di disaster recovery MetroCluster o SVM, il nome deve contenere fino a 200 caratteri.
+
+====
+Il nome può contenere qualsiasi combinazione dei seguenti caratteri ASCII:
+
+* `a` attraverso `z`
+* `A` attraverso `Z`
+* `0` attraverso `9`
+* " `_` ", "`-`", and "``"
+
+ a| 
+`-event-name` `event_name`
+
+
+
+ a| 
+_Protocollo_
+
+Specifica quale protocollo configurare per l'evento FPolicy. L'elenco per `-protocol` può includere uno dei seguenti valori:
+
+* `cifs`
+* `nfsv3`
+* `nfsv4`
+
+
+[NOTE]
+====
+Se si specifica `-protocol`, quindi specificare un valore valido in `-file-operations` parametro. Man mano che la versione del protocollo cambia, i valori validi potrebbero cambiare.
+
+==== a| 
+`-protocol` `protocol`
+
+
+
+ a| 
+_Operazioni file_
+
+Specifica l'elenco delle operazioni del file per l'evento FPolicy.
+
+L'evento controlla le operazioni specificate in questo elenco da tutte le richieste client utilizzando il protocollo specificato in `-protocol` parametro. È possibile elencare una o più operazioni sui file utilizzando un elenco delimitato da virgole. L'elenco per `-file-operations` può includere uno o più dei seguenti valori:
+
+* `close` per le operazioni di chiusura del file
+* `create` per le operazioni di creazione dei file
+* `create-dir` per le operazioni di creazione directory
+* `delete` per le operazioni di eliminazione dei file
+* `delete_dir` per le operazioni di eliminazione della directory
+* `getattr` per le operazioni get attribute
+* `link` per le operazioni di collegamento
+* `lookup` per le operazioni di ricerca
+* `open` per le operazioni di apertura dei file
+* `read` per le operazioni di lettura del file
+* `write` per le operazioni di scrittura del file
+* `rename` per le operazioni di ridenominazione dei file
+* `rename_dir` per le operazioni di ridenominazione della directory
+* `setattr` per le operazioni di set attribute
+* `symlink` per operazioni di collegamento simbolico
+
+
+[NOTE]
+====
+Se si specifica `-file-operations`, quindi specificare un protocollo valido in `-protocol` parametro.
+
+==== a| 
+`-file-operations` `file_operations`,...
+
+
+
+ a| 
+_Filtri_
+
+Specifica l'elenco dei filtri per una determinata operazione di file per il protocollo specificato. I valori in `-filters` i parametri vengono utilizzati per filtrare le richieste dei client. L'elenco può includere uno o più dei seguenti elementi:
+
+[NOTE]
+====
+Se si specifica `-filters` quindi specificare valori validi per `-file-operations` e. `-protocol` parametri.
+
+====
+* `monitor-ads` opzione per filtrare la richiesta del client per un flusso di dati alternativo.
+* `close-with-modification` opzione per filtrare la richiesta del client per la chiusura con modifica.
+* `close-without-modification` opzione per filtrare la richiesta del client per la chiusura senza modifiche.
+* `first-read` opzione per filtrare la richiesta del client per la prima lettura.
+* `first-write` opzione per filtrare la richiesta del client per la prima scrittura.
+* `offline-bit` opzione per filtrare la richiesta del client per il set di bit offline.
++
+Impostando questo filtro, il server FPolicy riceve una notifica solo quando si accede ai file offline.
+
+* `open-with-delete-intent` opzione per filtrare la richiesta del client per l'apertura con intento di eliminazione.
++
+Se si imposta questo filtro, il server FPolicy riceve una notifica solo quando si tenta di aprire un file con l'intento di eliminarlo. Questo viene utilizzato dai file system quando `FILE_DELETE_ON_CLOSE` flag specificato.
+
+* `open-with-write-intent` opzione per filtrare la richiesta del client per l'apertura con intento di scrittura.
++
+L'impostazione di questo filtro comporta la ricezione di una notifica da parte del server FPolicy solo quando si tenta di aprire un file con l'intento di scriverne qualcosa.
+
+* `write-with-size-change` opzione per filtrare la richiesta del client per la scrittura con la modifica delle dimensioni.
+
+ a| 
+`-filters` `filter`, ...
+
+
+
+ a| 
+_Filtri_ (continua)
+
+* `setattr-with-owner-change` opzione per filtrare le richieste setattr del client per la modifica del proprietario di un file o di una directory.
+* `setattr-with-group-change` opzione per filtrare le richieste setattr del client per la modifica del gruppo di un file o di una directory.
+* `setattr-with-sacl-change` Opzione per filtrare le richieste setattr del client per la modifica del SACL in un file o in una directory.
++
+Questo filtro è disponibile solo per i protocolli SMB e NFSv4.
+
+* `setattr-with-dacl-change` Opzione per filtrare le richieste setattr del client per la modifica del DACL in un file o in una directory.
++
+Questo filtro è disponibile solo per i protocolli SMB e NFSv4.
+
+* `setattr-with-modify-time-change` opzione per filtrare le richieste setattr del client per modificare l'ora di modifica di un file o di una directory.
+* `setattr-with-access-time-change` opzione per filtrare le richieste setattr del client per modificare l'ora di accesso di un file o di una directory.
+* `setattr-with-creation-time-change` opzione per filtrare le richieste setattr del client per modificare l'ora di creazione di un file o di una directory.
++
+Questa opzione è disponibile solo per il protocollo SMB.
+
+* `setattr-with-mode-change` opzione per filtrare le richieste setattr del client per modificare i bit di modalità su un file o una directory.
+* `setattr-with-size-change` opzione per filtrare le richieste setattr del client per modificare le dimensioni di un file.
+* `setattr-with-allocation-size-change` opzione per filtrare le richieste setattr del client per modificare la dimensione di allocazione di un file.
++
+Questa opzione è disponibile solo per il protocollo SMB.
+
+* `exclude-directory` opzione per filtrare le richieste del client per le operazioni di directory.
++
+Quando viene specificato questo filtro, le operazioni della directory non vengono monitorate.
+
+
+ a| 
+`-filters` `filter`, ...
+
+
+
+ a| 
+_È richiesta l'operazione del volume_
+
+Specifica se il monitoraggio è necessario per le operazioni di montaggio e disinstallazione del volume. L'impostazione predefinita è `false`.
+ a| 
+`-volume-operation` {`true`|`false`}
+
+`-filters` `filter`, ...
+
+
+
+ a| 
+_Notifica accesso FPolicy negata_
+
+A partire da ONTAP 9.13.1, gli utenti possono ricevere notifiche per operazioni di file non riuscite a causa della mancanza di autorizzazioni. Queste notifiche sono preziose per la sicurezza, la protezione ransomware e la governance. Le notifiche verranno generate per l'operazione del file non riuscita a causa della mancanza di autorizzazione, che include:
+
+* Errori dovuti alle autorizzazioni NTFS.
+* Errori dovuti a bit di modalità Unix.
+* Guasti dovuti a ACL NFSv4.
+
+ a| 
+`-monitor-fileop-failure` {`true`|`false`}
+
+|===

@@ -1,0 +1,49 @@
+---
+permalink: smb-admin/enable-client-access-unix-symbolic-links-concept.html 
+sidebar: sidebar 
+keywords: smybol, link, file, create, unix, environment, reference, directory, client, access, redirect, target, absolute, widelinks, local, file, system, how ontap enables you to provide smb client access to unix symbolic links 
+summary: 'Un collegamento simbolico è un file creato in un ambiente UNIX che contiene un riferimento a un altro file o directory. Se un client accede a un collegamento simbolico, il client viene reindirizzato al file o alla directory di destinazione a cui si riferisce il collegamento simbolico. ONTAP supporta collegamenti simbolici relativi e assoluti, inclusi i widelink (collegamenti assoluti con destinazioni esterne al file system locale).' 
+---
+= In che modo ONTAP consente di fornire l'accesso del client SMB ai collegamenti simbolici UNIX
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un collegamento simbolico è un file creato in un ambiente UNIX che contiene un riferimento a un altro file o directory. Se un client accede a un collegamento simbolico, il client viene reindirizzato al file o alla directory di destinazione a cui si riferisce il collegamento simbolico. ONTAP supporta collegamenti simbolici relativi e assoluti, inclusi i widelink (collegamenti assoluti con destinazioni esterne al file system locale).
+
+ONTAP offre ai client SMB la possibilità di seguire i collegamenti simbolici UNIX configurati sulla SVM. Questa funzione è opzionale ed è possibile configurarla in base alle condivisioni, utilizzando `-symlink-properties` opzione di `vserver cifs share create` con una delle seguenti impostazioni:
+
+* Abilitato con accesso in lettura/scrittura
+* Abilitato con accesso di sola lettura
+* Disattivato nascondendo i collegamenti simbolici dai client SMB
+* Disattivato senza accesso ai collegamenti simbolici dai client SMB
+
+
+Se si abilitano i collegamenti simbolici su una condivisione, i collegamenti simbolici relativi funzionano senza ulteriori configurazioni.
+
+Se si abilitano i collegamenti simbolici su una condivisione, i collegamenti simbolici assoluti non funzionano immediatamente. È necessario innanzitutto creare un mapping tra il percorso UNIX del collegamento simbolico e il percorso SMB di destinazione. Quando si creano mappature di collegamento simboliche assolute, è possibile specificare se si tratta di un collegamento locale o di un _widelink_; i widelink possono essere collegamenti a file system su altri dispositivi di storage o collegamenti a file system ospitati in SVM separate sullo stesso sistema ONTAP. Quando si crea un widelink, deve includere le informazioni che il client deve seguire; ovvero, si crea un punto di analisi per il client per rilevare il punto di giunzione della directory. Se si crea un collegamento simbolico assoluto a un file o a una directory all'esterno della condivisione locale ma si imposta la località su locale, ONTAP non consente l'accesso alla destinazione.
+
+[NOTE]
+====
+Se un client tenta di eliminare un collegamento simbolico locale (assoluto o relativo), viene cancellato solo il collegamento simbolico, non il file o la directory di destinazione. Tuttavia, se un client tenta di eliminare un widelink, potrebbe eliminare il file o la directory di destinazione effettiva a cui si riferisce il widelink. ONTAP non ha il controllo su questo dato che il client può aprire esplicitamente il file o la directory di destinazione all'esterno della SVM ed eliminarlo.
+
+====
+* *Reparse point e servizi file system ONTAP*
++
+Un _punto di analisi_ è un oggetto del file system NTFS che può essere facoltativamente memorizzato sui volumi insieme a un file. I reparse point offrono ai client SMB la possibilità di ricevere servizi di file system avanzati o estesi quando si lavora con volumi di stile NTFS. I punti di analisi sono costituiti da tag standard che identificano il tipo di punto di analisi e il contenuto del punto di analisi che può essere recuperato dai client SMB per un'ulteriore elaborazione da parte del client. Dei tipi di oggetti disponibili per la funzionalità estesa del file system, ONTAP implementa il supporto per i collegamenti simbolici NTFS e i punti di giunzione della directory utilizzando tag di punto di analisi. I client SMB che non sono in grado di comprendere il contenuto di un punto di analisi lo ignorano semplicemente e non forniscono il servizio di file system esteso che il punto di analisi potrebbe abilitare.
+
+* *Directory Junction point e supporto ONTAP per link simbolici*
++
+I punti di giunzione della directory sono posizioni all'interno di una struttura di directory del file system che possono fare riferimento a posizioni alternative in cui sono memorizzati i file, su un percorso diverso (collegamenti simbolici) o su un dispositivo di storage separato (widelink). I server SMB di ONTAP espongono i punti di giunzione della directory ai client Windows come punti di analisi, consentendo ai client in grado di ottenere contenuti dei punti di analisi da ONTAP quando viene attraversato un punto di giunzione della directory. In questo modo, possono navigare e connettersi a diversi percorsi o dispositivi di storage come se fossero parte dello stesso file system.
+
+* *Abilitazione del supporto widelink utilizzando le opzioni di reparse point*
++
+Il `-is-use-junctions-as-reparse-points-enabled` L'opzione è attivata per impostazione predefinita in ONTAP 9. Non tutti i client SMB supportano i widelink, pertanto l'opzione per abilitare le informazioni è configurabile in base alla versione per protocollo, consentendo agli amministratori di ospitare client SMB supportati e non supportati. In ONTAP 9.2 e versioni successive, è necessario attivare l'opzione `-widelink-as-reparse-point-versions` Per ogni protocollo client che accede alla condivisione utilizzando i widelink, l'impostazione predefinita è SMB1. Nelle versioni precedenti, sono stati segnalati solo i widelink a cui si accedeva utilizzando SMB1 predefinito e i sistemi che utilizzavano SMB2 o SMB3 non erano in grado di accedere ai widelink.
+
+
+
+Per ulteriori informazioni, consultare la documentazione di Microsoft NTFS.
+
+https://docs.microsoft.com/en-us/windows/win32/fileio/reparse-points["Documentazione Microsoft: Analisi dei punti"]

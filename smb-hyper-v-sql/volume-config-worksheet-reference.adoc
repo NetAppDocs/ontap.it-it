@@ -1,0 +1,108 @@
+---
+permalink: smb-hyper-v-sql/volume-config-worksheet-reference.html 
+sidebar: sidebar 
+keywords: complete, volume, configuration, worksheet, sql, server, hyper, v, smb, configuration 
+summary: Il foglio di lavoro offre un modo semplice per registrare i valori necessari per la creazione di volumi per le configurazioni SQL Server e Hyper-V su SMB. 
+---
+= Completare il foglio di lavoro per la configurazione del volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il foglio di lavoro offre un modo semplice per registrare i valori necessari per la creazione di volumi per le configurazioni SQL Server e Hyper-V su SMB.
+
+Per ciascun volume, è necessario specificare le seguenti informazioni:
+
+* Nome SVM (Storage Virtual Machine)
++
+Il nome SVM è lo stesso per tutti i volumi.
+
+* Nome del volume
+* Nome dell'aggregato
++
+È possibile creare volumi su aggregati situati su qualsiasi nodo del cluster.
+
+* Dimensione
+* Percorso di giunzione
+
+
+Quando si creano volumi utilizzati per memorizzare i dati dell'application server, tenere presente quanto segue:
+
+* Se il volume root non dispone di uno stile di protezione NTFS, è necessario specificare lo stile di protezione come NTFS quando si crea il volume.
++
+Per impostazione predefinita, i volumi ereditano lo stile di sicurezza del volume root SVM.
+
+* I volumi devono essere configurati con la garanzia di spazio del volume predefinita.
+* Facoltativamente, è possibile configurare l'impostazione di gestione automatica dello spazio.
+* Impostare l'opzione che determina la riserva di spazio di copia Snapshot su `0`.
+* Il criterio Snapshot applicato al volume deve essere disattivato.
++
+Se il criterio Snapshot SVM è disattivato, non è necessario specificare un criterio Snapshot per i volumi. I volumi ereditano la policy Snapshot per SVM. Se il criterio Snapshot per SVM non è disattivato ed è configurato per creare copie Snapshot, è necessario specificare un criterio Snapshot a livello di volume e tale criterio deve essere disattivato. I backup abilitati al servizio di copia shadow e i backup di SQL Server gestiscono la creazione e l'eliminazione delle copie Snapshot.
+
+* Non è possibile configurare i mirror di condivisione del carico per i volumi.
+
+
+I percorsi di giunzione su cui si intende creare le condivisioni utilizzate dai server applicazioni devono essere scelti in modo che non vi siano volumi congiunti al di sotto del punto di ingresso della condivisione.
+
+Ad esempio, se si desidera memorizzare i file delle macchine virtuali su quattro volumi denominati "`vol1`", "`vol2`", "`vol3`" e "`vol4`", è possibile creare lo spazio dei nomi mostrato nell'esempio. È quindi possibile creare condivisioni per i server applicazioni nei seguenti percorsi: `/data1/vol1`, `/data1/vol2`, `/data2/vol3`, e. `/data2/vol4`.
+
+[listing]
+----
+
+                     Junction                       Junction
+Vserver Volume       Active   Junction Path         Path Source
+------- ------------ -------- -------------------   -----------
+vs1     data1         true     /data1               RW_volume
+vs1     vol1          true     /data1/vol1          RW_volume
+vs1     vol2          true     /data1/vol2          RW_volume
+vs1     data2         true     /data2               RW_volume
+vs1     vol3          true     /data2/vol3          RW_volume
+vs1     vol4          true     /data2/vol4          RW_volume
+----
+|===
+| Tipi di informazioni | Valori 
+
+
+ a| 
+_Volume 1: Nome del volume, aggregato, dimensione, percorso di giunzione_
+ a| 
+
+
+
+ a| 
+_Volume 2: Nome del volume, aggregato, dimensione, percorso di giunzione_
+ a| 
+
+
+
+ a| 
+_Volume 3: Nome del volume, aggregato, dimensione, percorso di giunzione_
+ a| 
+
+
+
+ a| 
+_Volume 4: Nome del volume, aggregato, dimensione, percorso di giunzione_
+ a| 
+
+
+
+ a| 
+_Volume 5: Nome del volume, aggregato, dimensione, percorso di giunzione_
+ a| 
+
+
+
+ a| 
+_Volume 6: Nome del volume, aggregato, dimensione, percorso di giunzione_
+ a| 
+
+
+
+ a| 
+_Volumi aggiuntivi: Nome del volume, aggregato, dimensione, percorso di giunzione_
+ a| 
+
+|===

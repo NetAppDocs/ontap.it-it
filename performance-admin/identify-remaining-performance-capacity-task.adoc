@@ -1,0 +1,99 @@
+---
+permalink: performance-admin/identify-remaining-performance-capacity-task.html 
+sidebar: sidebar 
+keywords: identify, remaining, performance, capacity 
+summary: La capacità delle performance, o headroom, misura la quantità di lavoro che è possibile posizionare su un nodo o su un aggregato prima che le performance dei carichi di lavoro sulla risorsa comincino ad essere influenzate dalla latenza. La conoscenza della capacità di performance disponibile nel cluster consente di eseguire il provisioning e bilanciare i carichi di lavoro. 
+---
+= Identificare la capacità di performance rimanente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La capacità delle performance, o _headroom_, misura la quantità di lavoro che è possibile posizionare su un nodo o su un aggregato prima che le performance dei carichi di lavoro sulla risorsa comincino ad essere influenzate dalla latenza. La conoscenza della capacità di performance disponibile nel cluster consente di eseguire il provisioning e bilanciare i carichi di lavoro.
+
+.Di cosa hai bisogno
+Per questa attività sono necessari comandi avanzati del livello di privilegio.
+
+.A proposito di questa attività
+È possibile utilizzare i seguenti valori per `-object` opzione per raccogliere e visualizzare le statistiche di headroom:
+
+* Per CPU, `resource_headroom_cpu`.
+* Per gli aggregati, `resource_headroom_aggr`.
+
+
+È inoltre possibile completare questa attività utilizzando Gestione di sistema e Active IQ Unified Manager.
+
+.Fasi
+. Passare al livello di privilegio avanzato:
++
+`set -privilege advanced`
+
+. Avvia la raccolta di statistiche in tempo reale:
++
+`statistics start –object resource_headroom_cpu|aggr`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
+. Visualizzare in tempo reale le informazioni statistiche di headroom:
++
+`statistics show -object resource_headroom_cpu|aggr`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
+. Tornare al privilegio amministrativo:
++
+`set -privilege admin`
+
+
+
+.Esempio
+Nell'esempio seguente vengono visualizzate le statistiche medie orarie del headroom per i nodi del cluster.
+
+È possibile calcolare la capacità di performance disponibile per un nodo sottraendo `current_utilization` contatore da `optimal_point_utilization` contatore. In questo esempio, la capacità di utilizzo per `CPU_sti2520-213` È -14% (72%-86%), il che suggerisce che la CPU è stata in media utilizzata in eccesso nell'ultima ora.
+
+Potrebbe essere stato specificato `ewma_daily`, `ewma_weekly`, o. `ewma_monthly` ottenere le stesse informazioni in media per periodi di tempo più lunghi.
+
+[listing]
+----
+sti2520-2131454963690::*> statistics show -object resource_headroom_cpu -raw -counter ewma_hourly
+  (statistics show)
+
+Object: resource_headroom_cpu
+Instance: CPU_sti2520-213
+Start-time: 2/9/2016 16:06:27
+End-time: 2/9/2016 16:06:27
+Scope: sti2520-213
+
+    Counter                                                     Value
+    -------------------------------- --------------------------------
+    ewma_hourly                                                     -
+                         current_ops                             4376
+                     current_latency                            37719
+                 current_utilization                               86
+                   optimal_point_ops                             2573
+               optimal_point_latency                             3589
+           optimal_point_utilization                               72
+     optimal_point_confidence_factor                                1
+
+Object: resource_headroom_cpu
+Instance: CPU_sti2520-214
+Start-time: 2/9/2016 16:06:27
+End-time: 2/9/2016 16:06:27
+Scope: sti2520-214
+
+    Counter                                                     Value
+    -------------------------------- --------------------------------
+    ewma_hourly                                                     -
+                         current_ops                                0
+                     current_latency                                0
+                 current_utilization                                0
+                   optimal_point_ops                                0
+               optimal_point_latency                                0
+           optimal_point_utilization                               71
+     optimal_point_confidence_factor                                1
+2 entries were displayed.
+----

@@ -1,0 +1,173 @@
+---
+permalink: nas-audit/plan-fpolicy-scope-config-concept.html 
+sidebar: sidebar 
+keywords: plan, fpolicy, scope, configuration 
+summary: 'Prima di configurare l"ambito di FPolicy, è necessario comprendere il significato di creazione di un ambito. È necessario comprendere cosa contiene la configurazione dell"ambito. È inoltre necessario comprendere quali sono le regole di priorità dell"ambito. Queste informazioni consentono di pianificare i valori che si desidera impostare.' 
+---
+= Pianificare la panoramica della configurazione dell'ambito FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di configurare l'ambito di FPolicy, è necessario comprendere il significato di creazione di un ambito. È necessario comprendere cosa contiene la configurazione dell'ambito. È inoltre necessario comprendere quali sono le regole di priorità dell'ambito. Queste informazioni consentono di pianificare i valori che si desidera impostare.
+
+
+
+== Cosa significa creare un ambito FPolicy
+
+La creazione dell'ambito FPolicy significa definire i limiti ai quali si applica il criterio FPolicy. La macchina virtuale per lo storage (SVM) è il limite di base. Quando si crea un ambito per un criterio FPolicy, è necessario definire il criterio FPolicy a cui si applicherà ed è necessario indicare a quale SVM si desidera applicare l'ambito.
+
+Esistono diversi parametri che limitano ulteriormente l'ambito all'interno della SVM specificata. È possibile limitare l'ambito specificando cosa includere nell'ambito o cosa escludere dall'ambito. Dopo aver applicato un ambito a un criterio abilitato, i controlli degli eventi del criterio vengono applicati all'ambito definito da questo comando.
+
+Le notifiche vengono generate per gli eventi di accesso ai file in cui le corrispondenze si trovano nelle opzioni "`include`". Le notifiche non vengono generate per gli eventi di accesso al file in cui sono presenti corrispondenze nelle opzioni "`exclude`".
+
+La configurazione dell'ambito FPolicy definisce le seguenti informazioni di configurazione:
+
+* Nome SVM
+* Nome policy
+* Le condivisioni da includere o escludere da ciò che viene monitorato
+* Le policy di esportazione da includere o escludere da ciò che viene monitorato
+* I volumi da includere o escludere da ciò che viene monitorato
+* Le estensioni di file da includere o escludere da ciò che viene monitorato
+* Se eseguire il controllo dell'estensione del file sugli oggetti di directory
+
+
+[NOTE]
+====
+Esistono considerazioni particolari per l'ambito di applicazione di una policy FPolicy del cluster. Il criterio FPolicy del cluster è un criterio creato dall'amministratore del cluster per la SVM amministrativa. Se l'amministratore del cluster crea anche l'ambito per il criterio FPolicy del cluster, l'amministratore SVM non può creare un ambito per lo stesso criterio. Tuttavia, se l'amministratore del cluster non crea un ambito per il criterio FPolicy del cluster, qualsiasi amministratore SVM può creare l'ambito per tale criterio del cluster. Se l'amministratore di SVM crea un ambito per tale criterio FPolicy del cluster, l'amministratore del cluster non potrà successivamente creare un ambito del cluster per lo stesso criterio del cluster. Questo perché l'amministratore del cluster non può eseguire l'override dell'ambito per lo stesso criterio del cluster.
+
+====
+
+
+== Quali sono le regole di priorità dell'ambito di applicazione
+
+Le seguenti regole di precedenza si applicano alle configurazioni dell'ambito:
+
+* Quando una condivisione è inclusa in `-shares-to-include` il parametro e il volume padre della condivisione sono inclusi in `-volumes-to-exclude` parametro, `-volumes-to-exclude` ha la precedenza `-shares-to-include`.
+* Quando un criterio di esportazione viene incluso in `-export-policies-to-include` il parametro e il volume principale del criterio di esportazione sono inclusi in `-volumes-to-exclude` parametro, `-volumes-to-exclude` ha la precedenza `-export-policies-to-include`.
+* Un amministratore può specificare entrambi `-file-extensions-to-include` e. `-file-extensions-to-exclude` elenchi.
++
+Il `-file-extensions-to-exclude` il parametro viene controllato prima di `-file-extensions-to-include` parametro selezionato.
+
+
+
+
+
+== Contenuto della configurazione FPolicy Scope
+
+È possibile utilizzare il seguente elenco di parametri di configurazione FPolicy Scope disponibili per pianificare la configurazione:
+
+[NOTE]
+====
+Quando si configurano le condivisioni, le policy di esportazione, i volumi e le estensioni dei file da includere o escludere dall'ambito, i parametri include ed exclude possono includere metacaratteri come "`?`" and "`*`". L'utilizzo delle espressioni regolari non è supportato.
+
+====
+[cols="70,30"]
+|===
+
+
+| Tipo di informazione | Opzione 
+
+
+ a| 
+_SVM_
+
+Specifica il nome SVM su cui si desidera creare un ambito FPolicy.
+
+Ogni configurazione FPolicy viene definita all'interno di una singola SVM. Il motore esterno, l'evento del criterio, l'ambito del criterio e il criterio che si combinano insieme per creare una configurazione del criterio FPolicy devono essere tutti associati alla stessa SVM.
+ a| 
+`-vserver` `vserver_name`
+
+
+
+ a| 
+_Nome policy_
+
+Specifica il nome del criterio FPolicy a cui si desidera associare l'ambito. Il criterio FPolicy deve già esistere.
+ a| 
+`-policy-name` `policy_name`
+
+
+
+ a| 
+_Condivisioni da includere_
+
+Specifica un elenco delimitato da virgole di condivisioni da monitorare per il criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-shares-to-include` `share_name`, ...
+
+
+
+ a| 
+_Condivisioni da escludere_
+
+Specifica un elenco delimitato da virgole di condivisioni da escludere dal monitoraggio per il criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-shares-to-exclude` `share_name`, ...
+
+
+
+ a| 
+_Volumi da includere_ specifica un elenco di volumi delimitati da virgole da monitorare per il criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-volumes-to-include` `volume_name`, ...
+
+
+
+ a| 
+_Volumi da escludere_
+
+Specifica un elenco delimitato da virgole di volumi da escludere dal monitoraggio per il criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-volumes-to-exclude` `volume_name`, ...
+
+
+
+ a| 
+_Esporta policy da includere_
+
+Specifica un elenco delimitato da virgole di criteri di esportazione da monitorare per il criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-export-policies-to-include` `export_policy_name`, ...
+
+
+
+ a| 
+_Esporta policy da escludere_
+
+Specifica un elenco delimitato da virgole di criteri di esportazione da escludere dal monitoraggio per il criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-export-policies-to-exclude` `export_policy_name`, ...
+
+
+
+ a| 
+_Estensioni file da includere_
+
+Specifica un elenco delimitato da virgole di estensioni di file da monitorare per il criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-file-extensions-to-include` `file_extensions`, ...
+
+
+
+ a| 
+_Estensione del file da escludere_
+
+Specifica un elenco delimitato da virgole di estensioni di file da escludere dal monitoraggio del criterio FPolicy a cui viene applicato l'ambito.
+ a| 
+`-file-extensions-to-exclude` `file_extensions`, ...
+
+
+
+ a| 
+_Il controllo dell'estensione del file sulla directory è abilitato ?_
+
+Specifica se i controlli dell'estensione del nome file si applicano anche agli oggetti di directory. Se questo parametro è impostato su `true`, gli oggetti di directory sono sottoposti agli stessi controlli di estensione dei file normali. Se questo parametro è impostato su `false`, i nomi delle directory non corrispondono per gli interni e le notifiche vengono inviate per le directory anche se le relative estensioni non corrispondono.
+
+Se il criterio FPolicy a cui è assegnato l'ambito è configurato per utilizzare il motore nativo, questo parametro deve essere impostato su `true`.
+ a| 
+`-is-file-extension-check-on-directories-enabled` {`true`| `false`|}
+
+|===

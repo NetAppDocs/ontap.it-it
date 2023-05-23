@@ -1,0 +1,31 @@
+---
+permalink: smb-admin/signing-multiple-data-lifs-concept.html 
+sidebar: sidebar 
+keywords: enable, disable, require, smb, sign, server, guideline, lifs, configuration, svm, guidelines for smb signing when multiple data lifs are configured 
+summary: Se si attiva o disattiva la firma SMB richiesta sul server SMB, è necessario conoscere le linee guida per le configurazioni LIFS di dati multipli per una SVM. 
+---
+= Linee guida per la firma SMB quando sono configurati LIFS di dati multipli
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se si attiva o disattiva la firma SMB richiesta sul server SMB, è necessario conoscere le linee guida per le configurazioni LIFS di dati multipli per una SVM.
+
+Quando si configura un server SMB, potrebbero essere configurate più LIF di dati. In tal caso, il server DNS contiene più server `A` Registrare le voci per il server CIFS, utilizzando tutti lo stesso nome host del server SMB, ma ciascuna con un indirizzo IP univoco. Ad esempio, un server SMB con due LIF dati configurati potrebbe avere il seguente DNS `A` voci di record:
+
+[listing]
+----
+10.1.1.128 A VS1.IEPUB.LOCAL VS1
+10.1.1.129 A VS1.IEPUB.LOCAL VS1
+----
+Il comportamento normale è che, quando si modifica l'impostazione richiesta per la firma SMB, solo le nuove connessioni dai client vengono influenzate dalla modifica dell'impostazione della firma SMB. Tuttavia, esiste un'eccezione a questo comportamento. Esiste un caso in cui un client dispone di una connessione esistente a una condivisione e il client crea una nuova connessione alla stessa condivisione dopo la modifica dell'impostazione, mantenendo la connessione originale. In questo caso, sia la connessione SMB nuova che quella esistente adottano i nuovi requisiti per la firma SMB.
+
+Si consideri il seguente esempio:
+
+. Client1 si connette a una condivisione senza la firma SMB richiesta utilizzando il percorso `O:\`.
+. L'amministratore dello storage modifica la configurazione del server SMB per richiedere la firma SMB.
+. Client1 si connette alla stessa condivisione con la firma SMB richiesta utilizzando il percorso `S:\` (mantenendo la connessione utilizzando il percorso `O:\`).
+. Il risultato è che la firma SMB viene utilizzata quando si accede ai dati su entrambi `O:\` e. `S:\` dischi.
+

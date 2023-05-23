@@ -1,0 +1,85 @@
+---
+permalink: flexgroup/protect-snapshot-copies-task.html 
+sidebar: sidebar 
+keywords: protect, flexgroup, volume, snapshot, copy, flex group, snap shot, manually, manual, automatically, automatic, policy 
+summary: È possibile creare policy Snapshot che gestiscono automaticamente la creazione di copie Snapshot oppure creare manualmente copie Snapshot per volumi FlexGroup. Una copia Snapshot valida viene creata per un volume FlexGroup solo dopo che ONTAP è in grado di creare una copia Snapshot per ciascun componente del volume FlexGroup. 
+---
+= Proteggere i volumi FlexGroup utilizzando le copie Snapshot
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare policy Snapshot che gestiscono automaticamente la creazione di copie Snapshot oppure creare manualmente copie Snapshot per volumi FlexGroup. Una copia Snapshot valida viene creata per un volume FlexGroup solo dopo che ONTAP è in grado di creare una copia Snapshot per ciascun componente del volume FlexGroup.
+
+.A proposito di questa attività
+* Se si dispone di più volumi FlexGroup associati a un criterio Snapshot, è necessario assicurarsi che le pianificazioni dei volumi FlexGroup non si sovrappongano.
+* A partire da ONTAP 9.8, il numero massimo di copie Snapshot supportate su un volume FlexGroup è 1023.
+
+
+
+NOTE: A partire da ONTAP 9.8, la `volume snapshot show` Command for FlexGroup Volumes (comando per volumi Snapshot) riporta le dimensioni delle copie Snapshot utilizzando blocchi logici, invece di calcolare i blocchi di proprietà più giovani. Questo nuovo metodo di calcolo delle dimensioni potrebbe rendere la dimensione della copia Snapshot più grande rispetto ai calcoli delle versioni precedenti di ONTAP.
+
+.Fasi
+. Creare una policy Snapshot o creare manualmente una copia Snapshot:
++
+|===
+
+
+| Se si desidera creare un... | Immettere questo comando... 
+
+
+ a| 
+Policy di Snapshot
+ a| 
+`volume snapshot policy create`
+
+
+NOTE: Le pianificazioni associate alla policy Snapshot di un volume FlexGroup devono avere un intervallo superiore a 30 minuti.
+
+Quando si crea un volume FlexGroup, il `default` Il criterio Snapshot viene applicato al volume FlexGroup.
+
+
+
+ a| 
+Copia Snapshot manuale
+ a| 
+`volume snapshot create`
+
+
+NOTE: Dopo aver creato una copia Snapshot per un volume FlexGroup, non è possibile modificare gli attributi della copia Snapshot. Se si desidera modificare gli attributi, è necessario eliminare e ricreare la copia Snapshot.
+
+|===
+
+
+Quando viene creata una copia Snapshot, l'accesso del client al volume FlexGroup viene brevemente messo in modalità di disattivazione.
+
+. Verificare che venga creata una copia Snapshot valida per il volume FlexGroup: `volume snapshot show -volume volume_name -fields state`
++
+[listing]
+----
+cluster1::> volume snapshot show -volume fg -fields state
+vserver volume snapshot               state
+------- ------ ---------------------- -----
+fg_vs   fg     hourly.2016-08-23_0505 valid
+----
+. Visualizzare le copie Snapshot per i componenti del volume FlexGroup: `volume snapshot show -is-constituent true`
++
+[listing]
+----
+cluster1::> volume snapshot show -is-constituent true
+                                                                 ---Blocks---
+Vserver  Volume   Snapshot                                  Size Total% Used%
+-------- -------- ------------------------------------- -------- ------ -----
+fg_vs    fg__0001
+                  hourly.2016-08-23_0505                    72MB     0%   27%
+         fg__0002
+                  hourly.2016-08-23_0505                    72MB     0%   27%
+         fg__0003
+                  hourly.2016-08-23_0505                    72MB     0%   27%
+...
+         fg__0016
+                  hourly.2016-08-23_0505                    72MB     0%   27%
+----
+

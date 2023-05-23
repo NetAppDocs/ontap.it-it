@@ -1,0 +1,42 @@
+---
+permalink: san-admin/modify-slm-reporting-nodes-task.html 
+sidebar: sidebar 
+keywords: modify, slm, reporting-nodes, list 
+summary: 'Se si sposta un LUN o un volume contenente LUN in un"altra coppia ad alta disponibilità (ha) all"interno dello stesso cluster, è necessario modificare l"elenco dei nodi di reporting della mappa LUN selettiva (SLM) prima di iniziare lo spostamento per garantire che vengano mantenuti i percorsi LUN attivi e ottimizzati.' 
+---
+= Modificare l'elenco dei nodi di reporting SLM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se si sposta un LUN o un volume contenente LUN in un'altra coppia ad alta disponibilità (ha) all'interno dello stesso cluster, è necessario modificare l'elenco dei nodi di reporting della mappa LUN selettiva (SLM) prima di iniziare lo spostamento per garantire che vengano mantenuti i percorsi LUN attivi e ottimizzati.
+
+.Fasi
+. Aggiungere il nodo di destinazione e il relativo nodo partner all'elenco dei nodi di reporting dell'aggregato o del volume:
++
+`lun mapping add-reporting-nodes -vserver _vserver_name_ -path _lun_path_ -igroup _igroup_name_ [-destination-aggregate _aggregate_name_|-destination-volume _volume_name_]`
+
++
+Se si dispone di una convenzione di denominazione coerente, è possibile modificare più mappature LUN contemporaneamente utilizzando `*-igroup*` invece di `igroup`.
+
+. Eseguire nuovamente la scansione dell'host per rilevare i percorsi aggiunti di recente.
+. Se il sistema operativo lo richiede, aggiungere i nuovi percorsi alla configurazione MPIO (Multipath Network i/o).
+. Eseguire il comando per l'operazione di spostamento desiderata e attendere il completamento dell'operazione.
+. Verificare che l'i/o venga gestito tramite il percorso Active/Optimized:
++
+`lun mapping show -fields reporting-nodes`
+
+. Rimuovere il proprietario del LUN precedente e il relativo nodo partner dall'elenco dei nodi di reporting:
++
+`lun mapping remove-reporting-nodes -vserver _vserver_name_ -path _lun_path_ -igroup _igroup_name_ -remote-nodes`
+
+. Verificare che il LUN sia stato rimosso dalla mappa LUN esistente:
++
+`lun mapping show -fields reporting-nodes`
+
+. Rimuovere eventuali voci di dispositivi obsolete per il sistema operativo host.
+. Modificare eventuali file di configurazione multipathing, se necessario.
+. Eseguire nuovamente la scansione dell'host per verificare la rimozione dei vecchi percorsi. + consultare la documentazione dell'host per istruzioni specifiche su come eseguire nuovamente la scansione degli host.
+

@@ -1,0 +1,46 @@
+---
+permalink: volumes/change-existing-quota-limits-task.html 
+sidebar: sidebar 
+keywords: modify, resize, quota limits 
+summary: Quando si apportano modifiche alle dimensioni delle quote esistenti, è possibile ridimensionare le quote su tutti i volumi interessati, il che è più rapido rispetto alla reinizializzazione delle quote su tali volumi. 
+---
+= Modificare (o ridimensionare) i limiti di quota
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si apportano modifiche alle dimensioni delle quote esistenti, è possibile ridimensionare le quote su tutti i volumi interessati, il che è più rapido rispetto alla reinizializzazione delle quote su tali volumi.
+
+.A proposito di questa attività
+Si dispone di una macchina virtuale per lo storage (SVM, precedentemente nota come Vserver) con quote applicate e si desidera modificare i limiti di dimensione delle quote esistenti o aggiungere o eliminare quote per destinazioni che hanno già quote derivate.
+
+.Fasi
+. Utilizzare `vserver show` con il `-instance` Parametro per determinare il nome del criterio attualmente assegnato a SVM.
+. Modificare le regole di quota eseguendo una delle seguenti operazioni:
++
+** Utilizzare `volume quota policy rule modify` comando per modificare i limiti dei dischi o dei file delle regole di quota esistenti.
+** Utilizzare `volume quota policy rule create` comando per creare regole di quota esplicite per le destinazioni (utenti, gruppi o qtree) che dispongono attualmente di quote derivate.
+** Utilizzare `volume quota policy rule delete` comando per eliminare regole di quota esplicite per destinazioni (utenti, gruppi o qtree) che hanno anche quote predefinite.
+
+
+. Utilizzare `volume quota policy rule show` per verificare che le regole di quota siano configurate correttamente.
+. Utilizzare `volume quota resize` su ogni volume in cui sono state modificate le quote, per attivare le modifiche su ciascun volume.
++
+È possibile monitorare il processo di ridimensionamento in uno dei seguenti modi:
+
++
+** Quando si utilizza `volume quota resize` è possibile aggiungere il comando `-foreground` parametro per eseguire il lavoro di ridimensionamento in primo piano. (Per impostazione predefinita, il processo viene eseguito in background).
++
+Quando il lavoro viene eseguito in background, è possibile monitorarne l'avanzamento utilizzando `job show` comando.
+
+** È possibile utilizzare `volume quota show` comando per monitorare lo stato di ridimensionamento.
+
+
+. Utilizzare `volume quota show -instance` comando per verificare la presenza di errori di ridimensionamento, come ad esempio le regole di quota che non sono riuscite a ridimensionare.
++
+In particolare, controllare gli errori "`new Definition`" che si verificano quando si ridimensionano le quote dopo l'aggiunta di una quota esplicita per una destinazione che non dispone già di una quota derivata.
+
+. Utilizzare `volume quota report` per visualizzare un report delle quote in modo da garantire che le quote applicate corrispondano ai requisiti.
+

@@ -1,0 +1,38 @@
+---
+permalink: smb-admin/gpo-updates-failing-reference.html 
+sidebar: sidebar 
+keywords: circumstance, group, policy, object, gpo, update, windows, domain, controller, fail, visible, central, access, policy, setting, section, output, verserver, cifs, group-policy, show-defined, command, correct, what to do if gpo updates are failing 
+summary: 'In alcuni casi, gli aggiornamenti degli oggetti Criteri di gruppo (GPO) dai controller di dominio di Windows 2012 potrebbero non riuscire, il che comporta la visualizzazione di elementi non visibili nella sezione Impostazioni criteri di accesso centrali dell"output del comando show-defined dei criteri di gruppo vserver cifs. Se si verifica questo problema, è necessario sapere come correggerlo.' 
+---
+= Cosa fare se gli aggiornamenti dei GPO non vengono eseguiti correttamente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+In alcuni casi, gli aggiornamenti degli oggetti Criteri di gruppo (GPO) dai controller di dominio di Windows 2012 potrebbero non riuscire, il che potrebbe causare la visualizzazione di elementi non visibili in `Central Access Policy Settings` della sezione di output per `vserver cifs group-policy show-defined` comando. Se si verifica questo problema, è necessario sapere come correggerlo.
+
+|===
+| Causa sottostante | Rimedio 
+
+
+ a| 
+Quando ONTAP tenta di connettersi al controller di dominio di Windows 2012 per eseguire l'aggiornamento dell'oggetto Criteri di gruppo, la connessione potrebbe non riuscire e causare l'errore `error 0xc00000bd (NT STATUS_DUPLICATE_NAME)`.
+
+Questo errore si verifica quando il nome del server utilizzato per stabilire la connessione è diverso dal nome NetBIOS del server CIFS. Questo potrebbe verificarsi per diversi motivi, tra cui l'utilizzo di alias. Inoltre, ONTAP inserisce il nome NetBIOS utilizzato per la connessione al controller di dominio in modo che la lunghezza del nome sia pari a 15 caratteri. Questo può far apparire che il nome del server CIFS e il nome NetBIOS sono diversi.
+ a| 
+. Disattivare il controllo dei nomi NetBIOS sul server Windows aggiungendo la seguente chiave di registro con il valore impostato su `1`:
++
+`"HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\LanmanServer\Parameters\DisableStrictNameChecking"`
+
++
+Per ulteriori informazioni su questa chiave di registro, contattare il supporto Microsoft.
+
++
+http://support.microsoft.com["Supporto Microsoft"]
+
+. Riavviare il controller di dominio.
+
+
+|===

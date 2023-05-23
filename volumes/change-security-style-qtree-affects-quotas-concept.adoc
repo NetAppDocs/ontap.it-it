@@ -1,0 +1,30 @@
+---
+permalink: volumes/change-security-style-qtree-affects-quotas-concept.html 
+sidebar: sidebar 
+keywords: how, changing, security, style of a qtree, affects, user quotas 
+summary: 'È possibile applicare Access Control List (ACL) su qtree utilizzando NTFS o stili di protezione misti, ma non utilizzando lo stile di protezione UNIX. Pertanto, la modifica dello stile di protezione di un qtree potrebbe influire sul calcolo delle quote. Dopo aver modificato lo stile di sicurezza di un qtree, è necessario reinizializzare le quote.' 
+---
+= In che modo la modifica dello stile di sicurezza di un qtree influisce sulle quote degli utenti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile applicare Access Control List (ACL) su qtree utilizzando NTFS o stili di protezione misti, ma non utilizzando lo stile di protezione UNIX. Pertanto, la modifica dello stile di protezione di un qtree potrebbe influire sul calcolo delle quote. Dopo aver modificato lo stile di sicurezza di un qtree, è necessario reinizializzare le quote.
+
+Se si modifica lo stile di sicurezza di un qtree da NTFS o misto a UNIX, tutti gli ACL dei file in quel qtree vengono ignorati e l'utilizzo del file viene addebitato in base agli ID utente UNIX.
+
+Se si modifica lo stile di protezione di un qtree da UNIX a misto o NTFS, gli ACL precedentemente nascosti diventano visibili. Inoltre, tutti gli ACL ignorati diventano nuovamente efficaci e le informazioni utente NFS vengono ignorate. Se in precedenza non esisteva alcun ACL, le informazioni NFS continuano a essere utilizzate nel calcolo della quota.
+
+[NOTE]
+====
+Per assicurarsi che gli utilizzi delle quote per gli utenti UNIX e Windows vengano calcolati correttamente dopo aver modificato lo stile di protezione di un qtree, è necessario reinizializzare le quote per il volume che contiene tale qtree.
+
+====
+.Esempio
+Nell'esempio seguente viene illustrato come una modifica dello stile di protezione di un qtree comporta l'addebito a un utente diverso dell'utilizzo di un file nel qtree specifico.
+
+Supponiamo che la sicurezza NTFS sia attiva su qtree A e che un ACL dia all'utente Windows corp/joe la proprietà di un file da 5 MB. User corp/joe ha un costo di 5 MB di spazio su disco per qtree A.
+
+Ora si cambia lo stile di sicurezza di qtree A da NTFS a UNIX. Una volta reinizializzate le quote, l'utente di Windows non addebita più questo file all'utente UNIX corrispondente all'UID del file. L'UID potrebbe essere un utente UNIX mappato a corp/joe o all'utente root.

@@ -1,0 +1,151 @@
+---
+permalink: volumes/manage-svm-capacity.html 
+sidebar: sidebar 
+keywords: svm capacity, size, auto size, auto size alert 
+summary: A partire da ONTAP 9.13.1, è possibile impostare i limiti di capacità massima per una SVM. 
+---
+= Gestire i limiti di capacità SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.13.1, è possibile impostare una capacità massima per una VM di storage (SVM). È inoltre possibile configurare gli avvisi quando SVM si avvicina a un livello di capacità di soglia.
+
+.A proposito di questa attività
+La capacità su una SVM viene calcolata come somma di FlexVol, volumi FlexGroup, FlexClone e volumi FlexCache. I volumi influiscono sul calcolo della capacità anche se sono limitati, offline o nella coda di ripristino dopo l'eliminazione. Se si dispone di volumi configurati con la crescita automatica, il valore di dimensionamento automatico massimo del volume viene calcolato in base alle dimensioni SVM; senza la crescita automatica, viene calcolata la dimensione effettiva del volume.
+
+La seguente tabella illustra come `autosize-mode` i parametri influiscono sul calcolo della capacità.
+
+|===
+
+
+| `autosize-mode off` | Il parametro size verrà utilizzato per il calcolo 
+
+
+| `autosize-mode grow` | Il `max-autosize` il parametro verrà utilizzato per il calcolo 
+
+
+| `autosize-mode grow-shrink` | Il `max-autosize` il parametro verrà utilizzato per il calcolo 
+|===
+.Prima di iniziare
+* Per impostare un limite SVM, è necessario essere un amministratore del cluster.
+* I limiti di storage non possono essere configurati per qualsiasi SVM che contiene volumi di protezione dei dati, volumi in una relazione SnapMirror o in una configurazione MetroCluster.
+* Quando si esegue la migrazione di una SVM, la SVM di origine non può avere un limite di storage abilitato. Per completare l'operazione di migrazione, disattivare il limite di storage sull'origine, quindi completare la migrazione.
+* La capacità SVM è distinta da xref:../volumes/quotas-concept.html[quote]. Le quote non possono superare la dimensione massima.
+* Non è possibile impostare un limite di storage quando sono in corso altre operazioni su SVM. Utilizzare `job show vservser _svm_name_` per visualizzare i lavori esistenti. Provare ad eseguire nuovamente il comando una volta completati i lavori.
+
+
+
+
+== Impatto sulla capacità
+
+Una volta raggiunto il limite di capacità, le seguenti operazioni non vengono eseguite correttamente:
+
+* Creazione di un LUN, uno spazio dei nomi o un volume
+* Clonare un LUN, uno spazio dei nomi o un volume
+* Modifica di un LUN, di uno spazio dei nomi o di un volume
+* Aumento delle dimensioni di un LUN, di uno spazio dei nomi o di un volume
+* Espansione di un LUN, di uno spazio dei nomi o di un volume
+* Eseguire il rehosting di un LUN, di uno spazio dei nomi o di un volume
+
+
+
+
+== Impostare un limite di capacità su una nuova SVM
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Selezionare *Storage* > *Storage VM*.
+. Selezionare image:icon_add_blue_bg.gif["icona add (aggiungi)"] Per creare la SVM.
+. Assegnare un nome alla SVM e selezionare un protocollo *Access*.
+. In *Storage VM settings*, selezionare *Enable maximum Capacity limit*.
++
+Fornire una dimensione massima della capacità per SVM.
+
+. Selezionare *Salva*.
+
+
+--
+.CLI
+--
+.Fasi
+. Creare la SVM. Per impostare un limite di storage, fornire un `storage-limit` valore. Per impostare un avviso di soglia per il limite di storage, fornire un valore percentuale per `-storage-limit-threshold-alert`.
++
+`vserver create -vserver _vserver_name_ -aggregate _aggregate_name_ -rootvolume _root_volume_name_ -rootvolume-security-style {unix|ntfs|mixed} -storage-limit _value_ [GiB|TIB] -storage-limit-threshold-alert _percentage_ [-ipspace IPspace_name] [-language <language>] [-snapshot-policy _snapshot_policy_name_] [-quota-policy _quota_policy_name_] [-comment _comment_]`
+
++
+Se non si fornisce un valore di soglia, per impostazione predefinita viene attivato un avviso quando la SVM raggiunge la capacità del 90%. Per disattivare l'avviso di soglia, fornire un valore pari a zero.
+
+. Verificare che la SVM sia stata creata correttamente:
++
+`vserver show -vserver _vserver_name_`
+
+. Se si desidera disattivare il limite di storage, modificare la SVM con `-storage-limit` parametro impostato su zero:
++
+`vserver modify -vserver _vserver_name_ -storage-limit 0`
+
+
+
+--
+====
+
+
+== Impostare o modificare un limite di capacità su una SVM esistente
+
+È possibile impostare un limite di capacità e un avviso di soglia su una SVM esistente o disattivare un limite di capacità.
+
+Una volta impostato il limite di capacità, non è possibile modificarlo su un valore inferiore alla capacità attualmente allocata.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Selezionare *Storage* > *Storage VM*.
+. Selezionare la SVM che si desidera modificare. Accanto al nome della SVM, selezionare image:icon_kabob.gif["icona del kebab"] Quindi *Modifica*.
+. Per attivare un limite di capacità, selezionare la casella accanto a *Enable Capacity Limit* (attiva limite di capacità). Inserire un valore per la *capacità massima* e un valore percentuale per la *soglia di avviso*.
++
+Se si desidera disattivare il limite di capacità, deselezionare la casella accanto a *Enable Capacity Limit* (attiva limite di capacità).
+
+. Selezionare *Salva*.
+
+
+--
+.CLI
+--
+.Fasi
+. Sul cluster che ospita la SVM, eseguire il `vserver modify` comando. Fornire un valore numerico per `-storage-limit` e un valore percentuale per `-storage-limit-threshold-alert`.
++
+`vserver modify -vserver _vserver_name_ -storage-limit _value_ [GiB|TIB] -storage-limit-threshold-alert _percentage_`
+
++
+Se non si fornisce un valore di soglia, viene visualizzato un avviso predefinito al 90% della capacità. Per disattivare l'avviso di soglia, fornire un valore pari a zero.
+
+. Se si desidera disattivare il limite di storage, modificare la SVM con `-storage-limit` impostare su zero:
++
+`vserver modify -vserver _vserver_name_ -storage-limit 0`
+
+
+
+--
+====
+
+
+== Raggiungimento dei limiti di capacità
+
+Una volta raggiunta la capacità massima o la soglia di avviso, consultare `vserver.storage.threshold` Messaggi EMS o utilizzare la pagina *Insights* di System Manager per informazioni sulle possibili azioni. Le possibili risoluzioni includono:
+
+* Modifica dei limiti di capacità massima SVM
+* Eliminazione della coda di recovery dei volumi per liberare spazio
+* Elimina snapshot per fornire spazio al volume
+
+
+.Ulteriori informazioni
+* xref:../concepts/capacity-measurements-in-sm-concept.adoc[Misurazioni della capacità in System Manager]
+* xref:../task_admin_monitor_capacity_in_sm.html[Monitorare la capacità in System Manager]
+

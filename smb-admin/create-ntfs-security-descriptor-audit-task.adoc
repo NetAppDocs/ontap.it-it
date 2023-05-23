@@ -1,0 +1,97 @@
+---
+permalink: smb-admin/create-ntfs-security-descriptor-audit-task.html 
+sidebar: sidebar 
+keywords: create, creating, ntfs, security, descriptor, audit, policy, configure, configuring, apply, access, control, list, acl, file, residing, reside, svm, associate, folder, policy, task, create an ntfs security descriptor 
+summary: 'La creazione di un criterio di audit del descrittore di protezione NTFS è il primo passo nella configurazione e nell"applicazione degli elenchi di controllo di accesso (ACL) NTFS a file e cartelle che risiedono all"interno delle SVM. Il descrittore di protezione verrà associato al percorso del file o della cartella in un"attività di policy.' 
+---
+= Creare un descrittore di protezione NTFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La creazione di un criterio di audit del descrittore di protezione NTFS è il primo passo nella configurazione e nell'applicazione degli elenchi di controllo di accesso (ACL) NTFS a file e cartelle che risiedono all'interno delle SVM. Il descrittore di protezione verrà associato al percorso del file o della cartella in un'attività di policy.
+
+.A proposito di questa attività
+È possibile creare descrittori di protezione NTFS per file e cartelle che risiedono all'interno di volumi di sicurezza NTFS o per file e cartelle che risiedono su volumi misti di tipo sicurezza.
+
+Per impostazione predefinita, quando viene creato un descrittore di protezione, vengono aggiunte quattro voci di controllo di accesso (ACE) DACL (Discretionary Access Control List) a tale descrittore di protezione. Le quattro ACE predefinite sono le seguenti:
+
+|===
+| Oggetto | Tipo di accesso | Diritti di accesso | Dove applicare le autorizzazioni 
+
+
+ a| 
+BUILTIN/amministratori
+ a| 
+Consentire
+ a| 
+Controllo completo
+ a| 
+questa-cartella, sottocartelle, file
+
+
+
+ a| 
+BUILTIN/utenti
+ a| 
+Consentire
+ a| 
+Controllo completo
+ a| 
+questa-cartella, sottocartelle, file
+
+
+
+ a| 
+PROPRIETARIO DEL CREATOR
+ a| 
+Consentire
+ a| 
+Controllo completo
+ a| 
+questa-cartella, sottocartelle, file
+
+
+
+ a| 
+AUTORITÀ/SISTEMA NT
+ a| 
+Consentire
+ a| 
+Controllo completo
+ a| 
+questa-cartella, sottocartelle, file
+
+|===
+È possibile personalizzare la configurazione del descrittore di protezione utilizzando i seguenti parametri opzionali:
+
+* Proprietario del descrittore di protezione
+* Gruppo primario del proprietario
+* Flag di controllo raw
+
+
+Il valore di qualsiasi parametro opzionale viene ignorato per Storage-Level Access Guard. Per ulteriori informazioni, consulta le pagine man.
+
+.Fasi
+. Se si desidera utilizzare i parametri avanzati, impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
+. Creare un descrittore di sicurezza: `vserver security file-directory ntfs create -vserver vserver_name -ntfs-sd SD_nameoptional_parameters`
++
+`vserver security file-directory ntfs create -ntfs-sd sd1 -vserver vs1 -owner DOMAIN\joe`
+
+. Verificare che la configurazione del descrittore di protezione sia corretta: `vserver security file-directory ntfs show -vserver vserver_name -ntfs-sd SD_name`
++
+[listing]
+----
+vserver security file-directory ntfs show -vserver vs1 -ntfs-sd sd1
+----
++
+[listing]
+----
+                                     Vserver: vs1
+                           Security Descriptor Name: sd1
+                   Owner of the Security Descriptor: DOMAIN\joe
+----
+. Se si è nel livello di privilegio avanzato, tornare al livello di privilegio admin: `set -privilege admin`
+

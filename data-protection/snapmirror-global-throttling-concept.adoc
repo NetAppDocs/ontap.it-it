@@ -1,0 +1,84 @@
+---
+permalink: data-protection/snapmirror-global-throttling-concept.html 
+sidebar: sidebar 
+keywords: using snapmirror, global, throttling 
+summary: La funzione di limitazione globale della rete è disponibile per tutti i trasferimenti SnapMirror e SnapVault a livello di nodo. 
+---
+= Utilizzare la funzione di limitazione globale di SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La funzione di limitazione globale della rete è disponibile per tutti i trasferimenti SnapMirror e SnapVault a livello di nodo.
+
+.A proposito di questa attività
+La limitazione globale di SnapMirror limita la larghezza di banda utilizzata dai trasferimenti SnapMirror e SnapVault in entrata e/o in uscita. La restrizione viene applicata a livello di cluster su tutti i nodi del cluster.
+
+Ad esempio, se l'acceleratore in uscita è impostato su 100 Mbps, per ogni nodo del cluster la larghezza di banda in uscita sarà impostata su 100 Mbps. Se la funzione di limitazione globale è disattivata, viene disattivata su tutti i nodi.
+
+Sebbene le velocità di trasferimento dei dati siano spesso espresse in bit per secondo (bps), i valori di accelerazione devono essere immessi in kilobyte per secondo (kbps).
+
+[NOTE]
+====
+In ONTAP 9.9.1 e versioni precedenti, l'acceleratore non ha alcun effetto su `volume move` trasferimenti o trasferimenti mirror di condivisione del carico. A partire da ONTAP 9.10.0, è possibile specificare un'opzione per limitare le operazioni di spostamento di un volume. Per ulteriori informazioni, vedere link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/How_to_throttle_volume_move_in_ONTAP_9.10_or_later["Come ridurre lo spostamento del volume in ONTAP 9.10 e versioni successive."]
+
+====
+La funzione Global Throttling funziona con la funzione di accelerazione per relazione per i trasferimenti SnapMirror e SnapVault. La regolazione per relazione viene applicata fino a quando la larghezza di banda combinata dei trasferimenti per relazione non supera il valore della valvola a farfalla globale, dopodiché viene applicata la valvola a farfalla globale. Un valore di accelerazione `0` implica che la limitazione globale è disattivata.
+
+[NOTE]
+====
+La limitazione globale di SnapMirror non ha alcun effetto sulle relazioni sincrone di SnapMirror quando sono in-Sync. Tuttavia, l'accelerazione influisce sulle relazioni sincrone di SnapMirror quando eseguono una fase di trasferimento asincrona, ad esempio un'operazione di inizializzazione o dopo un evento out of Sync. Per questo motivo, si sconsiglia di attivare la limitazione globale con le relazioni sincroni di SnapMirror.
+
+====
+.Fasi
+. Attivare la limitazione globale:
++
+`options -option-name replication.throttle.enable on|off`
+
++
+Nell'esempio seguente viene illustrato come attivare la funzione di limitazione globale di SnapMirror `cluster_dst`:
+
++
+[listing]
+----
+cluster_dst::> options -option-name replication.throttle.enable on
+----
+. Specificare la larghezza di banda totale massima utilizzata dai trasferimenti in entrata sul cluster di destinazione:
++
+`options -option-name replication.throttle.incoming.max_kbs _KBps_`
+
++
+La larghezza di banda dell'acceleratore minima consigliata è di 4 kbps e la massima è di 2 Tbps. Il valore predefinito per questa opzione è `unlimited`, il che significa che non esiste alcun limite alla larghezza di banda totale utilizzata.
+
++
+L'esempio seguente mostra come impostare la larghezza di banda massima totale utilizzata dai trasferimenti in entrata su 100 Mbps:
+
++
+[listing]
+----
+cluster_dst::> options -option-name replication.throttle.incoming.max_kbs 12500
+----
++
+[NOTE]
+====
+100 Mbps = 12500 kbps
+
+====
+. Specificare la larghezza di banda totale massima utilizzata dai trasferimenti in uscita sul cluster di origine:
++
+`options -option-name replication.throttle.outgoing.max_kbs _KBps_`
+
++
+Kbps è la velocità di trasferimento massima in kilobyte al secondo. I valori validi della velocità di trasferimento vanno da 1 a 125000. Il valore predefinito per questa opzione è `unlimited`, il che significa che non esiste alcun limite alla larghezza di banda totale utilizzata.
+
++
+L'esempio seguente mostra come impostare la larghezza di banda massima totale utilizzata dai trasferimenti in uscita su 100 Mbps:
+
++
+[listing]
+----
+cluster_src::> options -option-name replication.throttle.outgoing.max_kbs 12500
+----
+

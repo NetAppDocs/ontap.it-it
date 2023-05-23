@@ -1,0 +1,137 @@
+---
+permalink: disks-aggregates/manual-assign-ownership-partitioned-disks-task.html 
+sidebar: sidebar 
+keywords: manual, assign, disk, ownership, partition, disks 
+summary: 'È possibile impostare la proprietà del disco container o delle partizioni manualmente o utilizzando l"assegnazione automatica, proprio come avviene per i dischi non partizionati.' 
+---
+= Assegnare manualmente la proprietà dei dischi partizionati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Utilizzando l'interfaccia CLI, è possibile impostare manualmente la proprietà del disco container o delle partizioni oppure utilizzando l'assegnazione automatica, come avviene per i dischi non partizionati.
+
+[NOTE]
+====
+Se un disco container si guasta in uno shelf a metà popolato e viene sostituito, ONTAP non assegnerà automaticamente la proprietà. In questo caso, qualsiasi assegnazione di nuovi dischi dovrà essere eseguita manualmente. Per eseguire l'assegnazione automatica su shelf a metà popolata, posizionare i dischi in modo uguale sulla metà inferiore e 6 sugli alloggiamenti più a destra. Vale a dire, 6 dischi dagli alloggiamenti 0-5 e 6 dischi dagli alloggiamenti 18-23. Una volta assegnato il disco container in un sistema configurato con ADP, il software ONTAP gestirà le assegnazioni di partizioni e partizioni richieste, senza l'intervento dell'utente.
+
+====
+Nella CLI è possibile eseguire le seguenti attività:
+
+.Assegnare manualmente i dischi con partizione dei dati root
+[%collapsible]
+====
+Per la partizione dei dati root, esistono tre entità possedute (il disco container e le due partizioni) collettivamente di proprietà della coppia ha.
+
+Il disco container e le due partizioni non devono essere tutte di proprietà dello stesso nodo della coppia ha, purché siano tutte di proprietà di uno dei nodi della coppia ha. Tuttavia, quando si utilizza una partizione in un Tier locale (aggregato), questa deve essere di proprietà dello stesso nodo proprietario del Tier locale.
+
+.Fasi
+. Utilizzare la CLI per visualizzare la proprietà corrente del disco partizionato:
++
+`storage disk show -disk _disk_name_ -partition-ownership`
+
+. Impostare il livello di privilegio CLI su Advanced (avanzato):
++
+`set -privilege advanced`
+
+. Immettere il comando appropriato, a seconda dell'entità di proprietà per cui si desidera assegnare la proprietà:
++
+[cols="25,75"]
+|===
+
+
+| Se si desidera assegnare la proprietà per... | Utilizzare questo comando... 
+
+
+ a| 
+Disco container
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_`
+
+
+
+ a| 
+Partizione dei dati
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -data true`
+
+
+
+ a| 
+Partizione root
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -root true`
+
+|===
++
+Se una delle entità di proprietà è già di proprietà, devi includere l'opzione "`-force`".
+
+
+
+====
+.Assegnare manualmente i dischi con partizione root-data-data
+[%collapsible]
+====
+Per la partizione root-data-data, esistono quattro entità possedute (il disco container e le tre partizioni) collettivamente di proprietà della coppia ha.
+
+La partizione root-data-data crea una partizione piccola come partizione root e due partizioni più grandi e di pari dimensioni per i dati.
+
+.A proposito di questa attività
+I parametri devono essere utilizzati con `disk assign` comando per assegnare la partizione corretta di un disco partizionato root-data-data. Non è possibile utilizzare questi parametri con dischi che fanno parte di un pool di storage. Il valore predefinito è "`false`".
+
+* Il `-data1 true` il parametro assegna la partizione "`data1`" di un disco partizionato root-data1-data2.
+* Il `-data2 true` il parametro assegna la partizione "`data2`" di un disco partizionato root-data1-data2.
+
+
+.Fasi
+. Utilizzare la CLI per visualizzare la proprietà corrente del disco partizionato:
++
+`storage disk show -disk _disk_name_ -partition-ownership`
+
+. Impostare il livello di privilegio CLI su Advanced (avanzato):
++
+`set -privilege advanced`
+
+. Immettere il comando appropriato, a seconda dell'entità di proprietà per cui si desidera assegnare la proprietà:
++
+[cols="25,75"]
+|===
+
+
+| Se si desidera assegnare la proprietà per... | Utilizzare questo comando... 
+
+
+ a| 
+Disco container
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_`
+
+
+
+ a| 
+Partizione Data1
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -data1 true`
+
+
+
+ a| 
+Partizione Data2
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -data2 true`
+
+
+
+ a| 
+Partizione root
+ a| 
+`storage disk assign -disk _disk_name_ -owner _owner_name_ -root true`
+
+|===
+
+
+Se una delle entità di proprietà è già di proprietà, devi includere l'opzione "`-force`".
+
+====

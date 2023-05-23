@@ -1,0 +1,74 @@
+---
+permalink: disks-aggregates/create-flash-pool-aggregate-physical-ssds-task.html 
+sidebar: sidebar 
+keywords: create, flash, pool, aggregate, local tier, physical, ssds 
+summary: 'È possibile creare un Tier locale (aggregato) di Flash Pool abilitando la funzionalità su un Tier locale esistente composto da gruppi RAID HDD e aggiungendo uno o più gruppi RAID SSD a tale Tier locale. Ciò comporta due set di gruppi RAID per quel livello locale: Gruppi RAID SSD (la cache SSD) e gruppi RAID HDD.' 
+---
+= Creare un Tier locale (aggregato) di Flash Pool utilizzando SSD fisici
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile creare un Tier locale (aggregato) di Flash Pool abilitando la funzionalità su un Tier locale esistente composto da gruppi RAID HDD e aggiungendo uno o più gruppi RAID SSD a tale Tier locale. Ciò comporta due set di gruppi RAID per quel livello locale: Gruppi RAID SSD (la cache SSD) e gruppi RAID HDD.
+
+.Di cosa hai bisogno
+* È necessario aver identificato un Tier locale valido composto da HDD per la conversione in un Tier locale di Flash Pool.
+* È necessario aver determinato l'idoneità del caching in scrittura dei volumi associati al Tier locale e aver completato tutte le procedure necessarie per risolvere i problemi di idoneità.
+* È necessario aver determinato gli SSD da aggiungere e questi SSD devono essere di proprietà del nodo su cui si sta creando il Tier locale di Flash Pool.
+* È necessario aver determinato i tipi di checksum sia degli SSD che si stanno aggiungendo che degli HDD già nel Tier locale.
+* È necessario determinare il numero di SSD da aggiungere e la dimensione ottimale del gruppo RAID per i gruppi RAID SSD.
++
+L'utilizzo di un numero inferiore di gruppi RAID nella cache SSD riduce il numero di dischi di parità richiesti, ma i gruppi RAID più grandi richiedono RAID-DP.
+
+* È necessario determinare il livello RAID che si desidera utilizzare per la cache SSD.
+* È necessario determinare le dimensioni massime della cache per il sistema e determinare che l'aggiunta della cache SSD al Tier locale non causerà il superamento di tale dimensione.
+* È necessario aver acquisito dimestichezza con i requisiti di configurazione per i Tier locali di Flash Pool.
+
+
+.A proposito di questa attività
+Dopo aver aggiunto una cache SSD a un Tier locale per creare un Tier locale di Flash Pool, non è possibile rimuovere la cache SSD per convertire di nuovo il Tier locale nella configurazione originale.
+
+Per impostazione predefinita, il livello RAID della cache SSD è lo stesso del livello RAID dei gruppi RAID HDD. È possibile ignorare questa selezione predefinita specificando l'opzione "`raidtype`" quando si aggiungono i primi gruppi RAID SSD.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.12.1, è possibile utilizzare Gestione sistema per creare un Tier locale di Flash Pool utilizzando SSD fisici.
+
+.Fasi
+. Fare clic su *Storage > Tier* e selezionare un Tier di storage HDD locale esistente.
+. Fare clic su image:icon_kabob.gif["icona kabob"] E selezionare *Add Flash Pool cache*.
+. Selezionare Usa SSD dedicati come cache.
+. Selezionare un tipo di disco e il numero di dischi.
+. Scegliere un tipo di RAID.
+. Fare clic su *Save* (Salva).
+. Individuare il Tier di storage e fare clic su image:icon_kabob.gif["icona kabob"].
+. Selezionare *More Details* (ulteriori dettagli) e verificare che Flash Pool sia visualizzato come *Enabled* (attivato).
+
+
+--
+.CLI
+--
+.Fasi
+. Contrassegna il Tier locale (aggregato) come idoneo per diventare un aggregato di Flash Pool:
++
+`storage aggregate modify -aggregate _aggr_name_ -hybrid-enabled true`
+
++
+Se questo passaggio non riesce, determinare l'idoneità del caching in scrittura per l'aggregato di destinazione.
+
+. Aggiungere gli SSD all'aggregato utilizzando `storage aggregate add` comando.
++
+** È possibile specificare gli SSD in base all'ID o utilizzando `diskcount` e. `disktype` parametri.
+** Se gli HDD e gli SSD non hanno lo stesso tipo di checksum o se l'aggregato è un aggregato di checksum misto, è necessario utilizzare `checksumstyle` parametro per specificare il tipo di checksum dei dischi da aggiungere all'aggregato.
+** È possibile specificare un tipo RAID diverso per la cache SSD utilizzando `raidtype` parametro.
+** Se si desidera che la dimensione del gruppo RAID della cache sia diversa da quella predefinita per il tipo RAID in uso, è necessario modificarla ora utilizzando `-cache-raid-group-size` parametro.
+
+
+
+
+--
+====

@@ -1,0 +1,161 @@
+---
+permalink: encryption-at-rest/encrypt-existing-volume-task.html 
+sidebar: sidebar 
+keywords: enabling, encryption, existing, volume, volume move start, command 
+summary: 'È possibile utilizzare il comando di avvio dello spostamento del volume per attivare la crittografia spostando un volume esistente. È necessario utilizzare l"avvio dello spostamento del volume in ONTAP 9.2 e versioni precedenti. È possibile utilizzare lo stesso aggregato o un aggregato diverso.' 
+---
+= Attivare la crittografia su un volume esistente con il comando di avvio spostamento volume
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `volume move start` per attivare la crittografia spostando un volume esistente. È necessario utilizzare `volume move start` In ONTAP 9.2 e versioni precedenti. È possibile utilizzare lo stesso aggregato o un aggregato diverso.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster o un amministratore SVM al quale l'amministratore del cluster ha delegato l'autorità.
+
+link:delegate-volume-encryption-svm-administrator-task.html["Delega dell'autorizzazione all'esecuzione del comando di spostamento del volume"]
+
+.A proposito di questa attività
+A partire da ONTAP 9.8, è possibile utilizzare `volume move start` Per attivare la crittografia su un volume SnapLock o FlexGroup.
+
+A partire da ONTAP 9.4, se si attiva "`cc-mode`" quando si imposta il Gestore chiavi integrato, i volumi creati con `volume move start` i comandi vengono crittografati automaticamente. Non è necessario specificare `-encrypt-destination true`.
+
+A partire da ONTAP 9.6, è possibile utilizzare la crittografia a livello di aggregato per assegnare le chiavi all'aggregato contenente per i volumi da spostare. Un volume crittografato con una chiave univoca viene chiamato _volume NVE_. Un volume crittografato con una chiave a livello di aggregato viene chiamato _volume NAE_ (per NetApp aggregate Encryption). I volumi non in testo normale non sono supportati negli aggregati NAE.
+
+.Fasi
+. Spostare un volume esistente e specificare se la crittografia è attivata sul volume:
++
+[cols="35,65"]
+|===
+
+
+| Per convertire... | Utilizzare questo comando... 
+
+
+ a| 
+Un volume non crittografato su un volume NVE
+ a| 
+`volume move start -vserver SVM_name -volume volume_name -destination-aggregate aggregate_name -encrypt-destination true`
+
+
+
+ a| 
+Un volume NVE o plaintext su un volume NAE (supponendo che la crittografia a livello di aggregato sia attivata sulla destinazione)
+ a| 
+`volume move start -vserver SVM_name -volume volume_name -destination-aggregate aggregate_name -encrypt-with-aggr-key true`
+
+
+
+ a| 
+Un volume NAE su un volume NVE
+ a| 
+`volume move start -vserver SVM_name -volume volume_name -destination-aggregate aggregate_name -encrypt-with-aggr-key false`
+
+
+
+ a| 
+Un volume NAE su un volume non crittografato
+ a| 
+`volume move start -vserver SVM_name -volume volume_name -destination-aggregate aggregate_name -encrypt-destination false -encrypt-with-aggr-key false`
+
+
+
+ a| 
+Un volume NVE su un volume non crittografato
+ a| 
+`volume move start -vserver SVM_name -volume volume_name -destination-aggregate aggregate_name -encrypt-destination false`
+
+|===
++
+Per la sintassi completa dei comandi, vedere la pagina man del comando.
+
++
+Il seguente comando converte un volume non crittografato denominato `vol1` Su un volume NVE:
+
++
+[listing]
+----
+cluster1::> volume move start -vserver vs1 -volume vol1 -destination-aggregate aggr2 -encrypt-destination true
+----
++
+Supponendo che la crittografia a livello di aggregato sia attivata sulla destinazione, il seguente comando converte un volume NVE o non crittografato denominato `vol1` Su un volume NAE:
+
++
+[listing]
+----
+cluster1::> volume move start -vserver vs1 -volume vol1 -destination-aggregate aggr2 -encrypt-with-aggr-key true
+----
++
+Il seguente comando converte un volume NAE denominato `vol2` Su un volume NVE:
+
++
+[listing]
+----
+cluster1::> volume move start -vserver vs1 -volume vol2 -destination-aggregate aggr2 -encrypt-with-aggr-key false
+----
++
+Il seguente comando converte un volume NAE denominato `vol2` su un volume non crittografato:
+
++
+[listing]
+----
+cluster1::> volume move start -vserver vs1 -volume vol2 -destination-aggregate aggr2 -encrypt-destination false -encrypt-with-aggr-key false
+----
++
+Il seguente comando converte un volume NVE denominato `vol2` su un volume non crittografato:
+
++
+[listing]
+----
+cluster1::> volume move start -vserver vs1 -volume vol2 -destination-aggregate aggr2 -encrypt-destination false
+----
+. Visualizzare il tipo di crittografia dei volumi del cluster:
++
+`volume show -fields encryption-type none|volume|aggregate`
+
++
+Il `encryption-type` Field è disponibile in ONTAP 9.6 e versioni successive.
+
++
+Per la sintassi completa dei comandi, vedere la pagina man del comando.
+
++
+Il seguente comando visualizza il tipo di crittografia dei volumi in `cluster2`:
+
++
+[listing]
+----
+cluster2::> volume show -fields encryption-type
+
+vserver  volume  encryption-type
+-------  ------  ---------------
+vs1      vol1    none
+vs2      vol2    volume
+vs3      vol3    aggregate
+----
+. Verificare che i volumi siano abilitati per la crittografia:
++
+`volume show -is-encrypted true`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man del comando.
+
++
+Il seguente comando visualizza i volumi crittografati su `cluster2`:
+
++
+[listing]
+----
+cluster2::> volume show -is-encrypted true
+
+Vserver  Volume  Aggregate  State  Type  Size  Available  Used
+-------  ------  ---------  -----  ----  -----  --------- ----
+vs1      vol1    aggr2     online    RW  200GB    160.0GB  20%
+----
+
+
+.Risultato
+Se si utilizza un server KMIP per memorizzare le chiavi di crittografia di un nodo, ONTAP "`invia automaticamente`" una chiave di crittografia al server quando si crittografa un volume.

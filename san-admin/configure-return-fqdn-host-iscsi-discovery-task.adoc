@@ -1,0 +1,58 @@
+---
+permalink: san-admin/configure-return-fqdn-host-iscsi-discovery-task.html 
+sidebar: sidebar 
+keywords: configure, iscsi, lifs, return, fqdn, host, sendtargets discovery operation 
+summary: 'A partire da ONTAP 9, è possibile configurare le LIF iSCSI in modo che restituisca un nome di dominio completo (FQDN) quando un sistema operativo host invia un"operazione di rilevamento di iSCSI SendTargets. La restituzione di un FQDN è utile quando è presente un dispositivo NAT (Network Address Translation) tra il sistema operativo host e il servizio di storage.' 
+---
+= Configurare le LIF iSCSI in modo che restituisca FQDN per ospitare l'operazione di rilevamento di iSCSI SendTargets
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9, è possibile configurare le LIF iSCSI in modo che restituisca un nome di dominio completo (FQDN) quando un sistema operativo host invia un'operazione di rilevamento di iSCSI SendTargets. La restituzione di un FQDN è utile quando è presente un dispositivo NAT (Network Address Translation) tra il sistema operativo host e il servizio di storage.
+
+.A proposito di questa attività
+Gli indirizzi IP su un lato del dispositivo NAT non hanno alcun significato dall'altro lato, ma gli FQDN possono avere un significato su entrambi i lati.
+
+[NOTE]
+====
+Il limite di interoperabilità del valore FQDN è di 128 caratteri su tutti i sistemi operativi host.
+
+====
+.Fasi
+. Impostare i privilegi su Advanced (avanzato):
++
+`set -privilege advanced`
+
+. Configurare le LIF iSCSI per restituire FQDN:
++
+`vserver iscsi interface modify -vserver _SVM_name_ -lif _iscsi_LIF_name_ -sendtargets_fqdn FQDN`
+
++
+Nell'esempio seguente, le LIF iSCSI sono configurate per restituire storagehost-005.example.com come FQDN.
+
++
+`vserver iscsi interface modify -vserver vs1 -lif vs1_iscsi1 -sendtargets-fqdn storagehost-005.example.com`
+
+. Verificare che sendtargets sia l'FQDN:
++
+`vserver iscsi interface show -vserver _SVM_name_ -fields sendtargets-fqdn`
+
++
+In questo esempio, storagehost-005.example.com viene visualizzato nel campo di output sendtargets-fqdn.
+
++
+[listing]
+----
+cluster::vserver*> vserver iscsi interface show -vserver vs1 -fields sendtargets-fqdn
+vserver lif        sendtargets-fqdn
+------- ---------- ---------------------------
+vs1     vs1_iscsi1 storagehost-005.example.com
+vs1     vs1_iscsi2 storagehost-006.example.com
+----
+
+
+.Informazioni correlate
+http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^]

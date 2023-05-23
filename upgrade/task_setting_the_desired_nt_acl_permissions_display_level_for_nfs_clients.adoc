@@ -1,0 +1,26 @@
+---
+permalink: upgrade/task_setting_the_desired_nt_acl_permissions_display_level_for_nfs_clients.html 
+sidebar: sidebar 
+keywords: ontap, upgrade, setting, set, desired, nt, acl, permissions, display, level, nfs, clients 
+summary: 'Dopo l"aggiornamento da ONTAP 8.3.0, la gestione predefinita per la visualizzazione delle autorizzazioni ACL NT ai client NFS è stata modificata. Controllare l"impostazione e, se necessario, modificarla in base all"ambiente in uso. Questa attività non si applica se si esegue l"aggiornamento da ONTAP 8.3.1 o versione successiva.' 
+---
+= Impostazione del livello di visualizzazione delle autorizzazioni di NT ACL per i client NFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dopo l'aggiornamento da ONTAP 8.3.0, la gestione predefinita per la visualizzazione delle autorizzazioni ACL NT ai client NFS è stata modificata. Controllare l'impostazione e, se necessario, modificarla in base all'ambiente in uso. Questa attività non si applica se si esegue l'aggiornamento da ONTAP 8.3.1 o versione successiva.
+
+Negli ambienti multiprotocollo, ONTAP visualizza ai client NFS le autorizzazioni dei file e delle directory di sicurezza NTFS in base all'accesso concesso dall'ACL NT a qualsiasi utente. In ONTAP 8.3.0, per impostazione predefinita, ONTAP visualizza ai client NFS l'autorizzazione in base all'accesso massimo concesso dall'ACL NT. Dopo l'aggiornamento, l'impostazione predefinita cambia in autorizzazioni di visualizzazione in base all'accesso minimo concesso dall'ACL NT. Questa modifica si applica alle macchine virtuali di storage (SVM) nuove ed esistenti.
+
+. Impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
+. Verificare l'impostazione per la visualizzazione delle autorizzazioni ACL NT per i client NFS: `vserver nfs show -vserver vserver_name -fields ntacl-display-permissive-perms`
++
+Dopo l'aggiornamento da 8.3.0, il valore per questo nuovo parametro viene disattivato, il che significa che ONTAP visualizza le autorizzazioni minime.
+
+. Se si preferisce visualizzare le autorizzazioni massime, modificare l'impostazione singolarmente per ogni SVM come desiderato: `vserver nfs modify -vserver vserver_name -ntacl-display-permissive-perms enabled`
+. Verificare che la modifica abbia avuto effetto: `vserver nfs show -vserver vserver_name -fields ntacl-display-permissive-perms`
+. Tornare al livello di privilegio admin: `set -privilege admin`
+

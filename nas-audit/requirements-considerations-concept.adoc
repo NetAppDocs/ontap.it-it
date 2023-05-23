@@ -1,0 +1,64 @@
+---
+permalink: nas-audit/requirements-considerations-concept.html 
+sidebar: sidebar 
+keywords: audit, requirements, considerations 
+summary: 'Prima di configurare e abilitare l"auditing sulla macchina virtuale di storage (SVM), è necessario essere a conoscenza di determinati requisiti e considerazioni.' 
+---
+= Requisiti e considerazioni per il controllo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di configurare e abilitare l'auditing sulla macchina virtuale di storage (SVM), è necessario essere a conoscenza di determinati requisiti e considerazioni.
+
+* Il numero massimo di SVM abilitate all'auditing supportati in un cluster è 50.
+* Il controllo non è legato alle licenze SMB o NFS.
++
+È possibile configurare e abilitare il controllo anche se le licenze SMB e NFS non sono installate nel cluster.
+
+* Il controllo NFS supporta ACE di sicurezza (tipo U).
+* Per il controllo NFS, non esiste alcuna mappatura tra i bit di modalità e le ACE di controllo.
++
+Quando si convertono gli ACL in bit di modalità, gli ACE di controllo vengono ignorati. Quando si convertono i bit di modalità in ACL, non vengono generati ACE di controllo.
+
+* La directory specificata nella configurazione di controllo deve esistere.
++
+Se non esiste, il comando per creare la configurazione di controllo non riesce.
+
+* La directory specificata nella configurazione di controllo deve soddisfare i seguenti requisiti:
++
+** La directory non deve contenere collegamenti simbolici.
++
+Se la directory specificata nella configurazione di controllo contiene collegamenti simbolici, il comando per creare la configurazione di controllo non riesce.
+
+** Specificare la directory utilizzando un percorso assoluto.
++
+Non specificare un percorso relativo, ad esempio `/vs1/../`.
+
+
+
+* Il controllo dipende dalla disponibilità di spazio nei volumi di staging.
++
+È necessario conoscere e disporre di un piano per garantire che vi sia spazio sufficiente per i volumi di staging negli aggregati che contengono volumi sottoposti a audit.
+
+* Il controllo dipende dalla disponibilità di spazio nel volume contenente la directory in cui sono memorizzati i registri degli eventi convertiti.
++
+È necessario conoscere e disporre di un piano per garantire che vi sia spazio sufficiente nei volumi utilizzati per memorizzare i registri degli eventi. È possibile specificare il numero di registri eventi da conservare nella directory di controllo utilizzando `-rotate-limit` parametro durante la creazione di una configurazione di controllo, che può aiutare a garantire che vi sia spazio disponibile sufficiente per i registri degli eventi nel volume.
+
+* Sebbene sia possibile attivare lo staging dei criteri di accesso centrale nella configurazione di controllo senza attivare il controllo dinamico degli accessi sul server SMB, il controllo dinamico degli accessi deve essere abilitato per generare eventi di staging dei criteri di accesso centrale.
++
+Dynamic Access Control non è attivato per impostazione predefinita.
+
+
+
+
+
+== Aggregare le considerazioni sullo spazio quando si abilita il controllo
+
+Quando viene creata una configurazione di audit e viene attivato il controllo su almeno una macchina virtuale di storage (SVM) nel cluster, il sottosistema di audit crea volumi di staging su tutti gli aggregati esistenti e su tutti i nuovi aggregati creati. Quando si abilita il controllo sul cluster, è necessario tenere conto di alcune considerazioni relative allo spazio aggregato.
+
+La creazione del volume di staging potrebbe non riuscire a causa della non disponibilità di spazio in un aggregato. Questo potrebbe verificarsi se si crea una configurazione di controllo e gli aggregati esistenti non dispongono di spazio sufficiente per contenere il volume di staging.
+
+Prima di attivare il controllo su una SVM, è necessario assicurarsi che vi sia spazio sufficiente sugli aggregati esistenti per i volumi di staging.

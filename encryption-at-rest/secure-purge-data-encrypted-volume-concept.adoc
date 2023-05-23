@@ -1,0 +1,67 @@
+---
+permalink: encryption-at-rest/secure-purge-data-encrypted-volume-concept.html 
+sidebar: sidebar 
+keywords: secure, purge, scrub, data, encrypted, volume, nve, netapp 
+summary: 'A partire da ONTAP 9.4, è possibile utilizzare l"eliminazione sicura per eseguire lo scrubbing dei dati senza interruzioni su volumi abilitati per NVE. Lo scrubbing dei dati su un volume crittografato garantisce che non sia possibile ripristinarli dal supporto fisico, ad esempio in caso di `spillage,` dove le tracce dei dati potrebbero essere state lasciate indietro quando i blocchi sono stati sovrascritti o per eliminare in modo sicuro i dati di un tenant vacante.' 
+---
+= Elimina in modo sicuro i dati su una panoramica dei volumi crittografati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.4, è possibile utilizzare l'eliminazione sicura per eseguire lo scrubbing dei dati senza interruzioni su volumi abilitati per NVE. Lo scrubbing dei dati su un volume crittografato garantisce che non sia possibile ripristinarli dal supporto fisico, ad esempio in caso di "`ssaccheggio`", in cui le tracce dei dati potrebbero essere state lasciate indietro quando i blocchi sono stati sovrascritti o per eliminare in modo sicuro i dati di un tenant vuoto.
+
+L'eliminazione sicura funziona solo per i file precedentemente cancellati sui volumi abilitati per NVE. Non è possibile eseguire lo scrubbing di un volume non crittografato. È necessario utilizzare i server KMIP per fornire le chiavi, non il gestore delle chiavi integrato.
+
+
+
+== Considerazioni per l'utilizzo della rimozione sicura
+
+* I volumi creati in un aggregato abilitato per NetApp aggregate Encryption (NAE) non supportano l'eliminazione sicura.
+* L'eliminazione sicura funziona solo per i file precedentemente cancellati sui volumi abilitati per NVE.
+* Non è possibile eseguire lo scrubbing di un volume non crittografato.
+* È necessario utilizzare i server KMIP per fornire le chiavi, non il gestore delle chiavi integrato.
+
+
+L'eliminazione sicura funziona in modo diverso a seconda della versione di ONTAP in uso.
+
+[role="tabbed-block"]
+====
+.ONTAP 9.8 e versioni successive
+--
+* L'eliminazione sicura è supportata da MetroCluster e FlexGroup.
+* Se il volume da rimuovere è l'origine di una relazione SnapMirror, non è necessario interrompere la relazione SnapMirror per eseguire un'eliminazione sicura.
+* Il metodo di ricEncryption è diverso per i volumi che utilizzano la protezione dei dati SnapMirror rispetto ai volumi che non utilizzano la protezione dei dati SnapMirror o quelli che utilizzano la protezione estesa dei dati SnapMirror.
++
+** Per impostazione predefinita, i volumi che utilizzano la modalità di protezione dati SnapMirror (DP) crittografano nuovamente i dati utilizzando il metodo di ricifratura dello spostamento del volume.
+** Per impostazione predefinita, i volumi che non utilizzano la protezione dei dati SnapMirror o i volumi che utilizzano la modalità XDP (Extended Data Protection) di SnapMirror utilizzano il metodo di riscrittazione in-place.
+** È possibile modificare queste impostazioni predefinite utilizzando `secure purge re-encryption-method [volume-move|in-place-rekey]` comando.
+
+
+* Per impostazione predefinita, tutte le copie Snapshot nei volumi FlexVol vengono eliminate automaticamente durante l'operazione di eliminazione sicura. Per impostazione predefinita, le istantanee nei volumi e nei volumi FlexGroup che utilizzano la protezione dei dati SnapMirror non vengono eliminate automaticamente durante l'operazione di eliminazione sicura. È possibile modificare queste impostazioni predefinite utilizzando `secure purge delete-all-snapshots [true|false]` comando.
+
+
+--
+.ONTAP 9.7 e versioni precedenti:
+--
+* L'eliminazione sicura non supporta quanto segue:
++
+** FlexClone
+** SnapVault
+** FabricPool
+
+
+* Se il volume da rimuovere è l'origine di una relazione SnapMirror, è necessario interrompere la relazione SnapMirror prima di poter eliminare il volume.
++
+Se nel volume sono presenti copie Snapshot occupate, è necessario rilasciare le copie Snapshot prima di poter eliminare il volume. Ad esempio, potrebbe essere necessario separare un volume FlexClone dal volume padre.
+
+* Il corretto richiamo della funzione di eliminazione sicura attiva uno spostamento del volume che crittografa nuovamente i dati rimanenti non eliminati con una nuova chiave.
++
+Il volume spostato rimane nell'aggregato corrente. La vecchia chiave viene automaticamente distrutta, garantendo che i dati rimossi non possano essere ripristinati dal supporto di storage.
+
+
+
+--
+====

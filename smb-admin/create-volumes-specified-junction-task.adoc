@@ -1,0 +1,56 @@
+---
+permalink: smb-admin/create-volumes-specified-junction-task.html 
+sidebar: sidebar 
+keywords: specify, junction, point, create, data, volume, resultant, automatic, mount, configure, nas, access, create data volumes with specified junction points 
+summary: 'È possibile specificare il punto di giunzione quando si crea un volume di dati. Il volume risultante viene montato automaticamente nel punto di giunzione ed è immediatamente disponibile per la configurazione dell"accesso NAS.' 
+---
+= Creare volumi di dati con punti di giunzione specificati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile specificare il punto di giunzione quando si crea un volume di dati. Il volume risultante viene montato automaticamente nel punto di giunzione ed è immediatamente disponibile per la configurazione dell'accesso NAS.
+
+.Prima di iniziare
+L'aggregato in cui si desidera creare il volume deve già esistere.
+
+[NOTE]
+====
+I seguenti caratteri non possono essere utilizzati nel percorso di giunzione: * N. " > < | ? .
+
+Inoltre, la lunghezza del percorso di giunzione non può superare i 255 caratteri.
+
+====
+.Fasi
+. Creare il volume con un punto di giunzione: `volume create -vserver _vserver_name_ -volume _volume_name_ -aggregate _aggregate_name_ -size {integer[KB|MB|GB|TB|PB]} -security-style {ntfs|unix|mixed} -junction-path _junction_path_`
++
+Il percorso di giunzione deve iniziare con root (/) e può contenere sia directory che volumi congiunti. Il percorso di giunzione non deve contenere il nome del volume. I percorsi di giunzione sono indipendenti dal nome del volume.
+
++
+Specificare uno stile di sicurezza del volume è facoltativo. Se non si specifica uno stile di protezione, ONTAP crea il volume con lo stesso stile di protezione applicato al volume root della macchina virtuale di storage (SVM). Tuttavia, lo stile di sicurezza del volume root potrebbe non corrispondere allo stile di sicurezza che si desidera applicare al volume di dati creato. Si consiglia di specificare lo stile di protezione quando si crea il volume per ridurre al minimo i problemi di accesso ai file difficili da risolvere.
+
++
+Il percorso di giunzione è privo di maiuscole e minuscole; `/ENG` è uguale a. `/eng`. Se si crea una condivisione CIFS, Windows considera il percorso di giunzione come se fosse sensibile alla distinzione tra maiuscole e minuscole. Ad esempio, se la giunzione è `/ENG`, Il percorso di una condivisione CIFS deve iniziare con `/ENG`, non `/eng`.
+
++
+Per personalizzare un volume di dati, è possibile utilizzare molti parametri opzionali. Per ulteriori informazioni, consultare le pagine man del `volume create` comando.
+
+. Verificare che il volume sia stato creato con il punto di giunzione desiderato: `volume show -vserver _vserver_name_ -volume _volume_name_ -junction`
+
+
+.Esempio
+Nell'esempio riportato di seguito viene creato un volume denominato "`home4`" situato su SVM vs1 con un percorso di giunzione `/eng/home`:
+
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume home4 -aggregate aggr1 -size 1g -junction-path /eng/home
+[Job 1642] Job succeeded: Successful
+
+cluster1::> volume show -vserver vs1 -volume home4 -junction
+                  Junction                 Junction
+Vserver   Volume  Active   Junction Path   Path Source
+--------- ------- -------- --------------- -----------
+vs1       home4   true     /eng/home       RW_volume
+----

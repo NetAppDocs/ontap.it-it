@@ -1,0 +1,96 @@
+---
+permalink: s3-config/create-bucket-lifecycle-rule-task.html 
+sidebar: sidebar 
+keywords: s3, bucket, cli, lifecycle, rule 
+summary: 'A partire da ONTAP 9.13.1, è possibile implementare la scadenza dell"oggetto S3.' 
+---
+= Creare una regola di gestione del ciclo di vita del bucket
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.13.1, è possibile implementare la scadenza dell'oggetto S3. Le azioni di scadenza definiscono la scadenza degli oggetti in un bucket. Questa funzionalità consente di gestire le versioni degli oggetti in modo da soddisfare i requisiti di conservazione e gestire in modo efficace lo storage a oggetti S3 complessivo.
+
+.Prima di iniziare
+Una SVM abilitata per S3 contenente un server S3 e un bucket deve già esistere. Vedere link:create-svm-s3-task.html["Creare una SVM per S3"] per ulteriori informazioni.
+
+.A proposito di questa attività
+Quando si crea la regola di gestione del ciclo di vita del bucket, è necessario scegliere uno dei tre seguenti tipi di azione di scadenza:
+
+* `Expiration` – L'azione di scadenza scade gli oggetti identificati dalla regola. Se la versione del caso è attivata nel bucket, S3 rende non disponibili tutti gli oggetti scaduti. Se la versione non è attivata, questa regola elimina l'oggetto in modo permanente.
+* `NoncurrentVersionExpiration` – Questa azione viene utilizzata per specificare quando S3 rimuove in modo permanente oggetti non correnti. Questi oggetti cancellati non possono essere ripristinati.
+* `AbortIncompleteMultipartUpload` – L'amministratore può utilizzare questo elemento per impostare un tempo massimo (in giorni) per consentire il caricamento di più parti in corso
+
+
+È necessario definire i campi obbligatori per ogni tipo di azione di scadenza quando si crea una regola di gestione del ciclo di vita del bucket. Questi campi possono essere modificati dopo la creazione iniziale. Nella seguente tabella vengono visualizzati i campi univoci per ciascun tipo di azione.
+
+[cols="30,70"]
+|===
+
+
+| Tipo di azione | Campi univoci 
+
+
+ a| 
+NonCurrentVersionExpiration (scadenza versione non attuale)
+ a| 
+* `-non-curr-days` - Numero di giorni dopo i quali verranno eliminate le versioni non correnti
+* `-new-non-curr-versions` - Numero di versioni non correnti più recenti da conservare
+
+
+
+
+ a| 
+Scadenza
+ a| 
+* `-obj-age-days` - Numero di giorni dalla creazione, dopo i quali è possibile eliminare la versione corrente degli oggetti
+* `-obj-exp-date` - Data specifica in cui gli oggetti devono scadere
+* `-expired-obj-del-markers` - Pulisci i marcatori di eliminazione degli oggetti
+
+
+
+
+ a| 
+AbortIncompleteMultipartUpload
+ a| 
+* `-after-initiation-days` - Numero di giorni di avvio, dopo i quali è possibile interrompere il caricamento
+
+
+|===
+Affinché la regola di gestione del ciclo di vita del bucket venga applicata solo a un sottoinsieme specifico di oggetti, gli amministratori devono impostare ciascun filtro durante la creazione della regola. Se questi filtri non vengono impostati durante la creazione della regola, la regola verrà applicata a tutti gli oggetti all'interno del bucket.
+
+Tutti i filtri possono essere modificati dopo la creazione iniziale _tranne_ per i seguenti elementi: +
+
+* `-prefix`
+* `-tags`
+* `-obj-size-greater-than`
+* `-obj-size-less-than`
+
+
+.Fasi
+. Utilizzare `vserver object-store-server bucket lifecycle-management-rule create` comando con campi obbligatori per il tipo di azione di scadenza per creare la regola di gestione del ciclo di vita del bucket.
+
+
+.Esempio
+Il seguente comando crea una regola di gestione del ciclo di vita del bucket NonCurrentVersionExpiration:
+
+[listing]
+----
+vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action NonCurrentVersionExpiration -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -new-non-curr-versions <integer> -non-curr-days <integer>
+----
+.Esempio
+Il seguente comando crea una regola di gestione del ciclo di vita del bucket di scadenza:
+
+[listing]
+----
+vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action Expiration -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -obj-age-days <integer> -obj-exp-date <"MM/DD/YYYY HH:MM:SS"> -expired-obj-del-marker {true|false}
+----
+.Esempio
+Il seguente comando crea una regola di gestione del ciclo di vita del bucket AbortIncompleteMultipartUpload:
+
+[listing]
+----
+vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action AbortIncompleteMultipartUpload -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -after-initiation-days <integer>
+----

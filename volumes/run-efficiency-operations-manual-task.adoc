@@ -1,0 +1,60 @@
+---
+permalink: volumes/run-efficiency-operations-manual-task.html 
+sidebar: sidebar 
+keywords: starting deduplication manually, starting data compression manually, efficiency, run, sequential packing 
+summary: 'È possibile eseguire manualmente le operazioni di efficienza su un volume utilizzando il comando di avvio dell"efficienza del volume.' 
+---
+= Eseguire manualmente le operazioni di efficienza
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile eseguire manualmente le operazioni di efficienza su un volume utilizzando `volume efficiency start` comando.
+
+.Di cosa hai bisogno
+A seconda dell'operazione di efficienza che si desidera eseguire manualmente, è necessario aver attivato la deduplica o sia la compressione dei dati che la deduplica su un volume.
+
+.A proposito di questa attività
+Quando l'efficienza dello storage sensibile alla temperatura è abilitata su un volume, la deduplica viene eseguita inizialmente seguita dalla compressione dei dati.
+
+La deduplica è un processo in background che consuma le risorse di sistema mentre è in esecuzione. Se i dati non cambiano spesso in un volume, si consiglia di eseguire la deduplica con minore frequenza. Più operazioni di deduplica simultanee eseguite su un sistema storage comportano un maggiore consumo di risorse di sistema.
+
+È possibile eseguire un massimo di otto operazioni simultanee di deduplica o compressione dei dati per nodo. Se vengono pianificate ulteriori operazioni di efficienza, le operazioni vengono inserite nella coda.
+
+A partire da ONTAP 9.13.1, se l'efficienza dello storage sensibile alla temperatura è abilitata su un volume, è possibile eseguire l'efficienza del volume sui dati esistenti per sfruttare il packing sequenziale per migliorare ulteriormente l'efficienza dello storage.
+
+
+
+== Esegui l'efficienza manualmente
+
+.Fase
+. Avviare l'operazione di efficienza su un volume: `volume efficiency start`
++
+.Esempio
+Il seguente comando consente di avviare manualmente solo la deduplica o la deduplica seguita dalla compressione logica e dalla compressione container sul volume Vola
+
++
+[listing]
+----
+volume efficiency start -vserver vs1 -volume VolA
+----
+
+
+
+
+== Reimballare i dati esistenti
+
+Per sfruttare il pacchetto sequenziale di dati introdotto in ONTAP 9.13.1 sui volumi con l'efficienza dello storage sensibile alla temperatura attivata, è possibile reimballare i dati esistenti. Per utilizzare questo comando, è necessario essere in modalità avanzata con privilegi.
+
+.Fase
+. Impostare il livello di privilegio: `set -privilege advanced`
+. Reimballare i dati esistenti: `volume efficiency inactive-data-compression start -vserver _vserver_name_ -volume _volume_name_ -scan-mode extended_recompression`
++
+.Esempio
+[listing]
+----
+volume efficiency inactive-data-compression start -vserver vs1 -volume vol1 -scan-mode extended_recompression
+----
+

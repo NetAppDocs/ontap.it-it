@@ -1,0 +1,30 @@
+---
+permalink: system-admin/quorum-epsilon-concept.html 
+sidebar: sidebar 
+keywords: understand, quorum, epsilon, cluster, health, potential, communications, connectivity, challenges 
+summary: 'Il quorum e l"epsilon sono misure importanti per lo stato e la funzione dei cluster che indicano insieme come i cluster affrontano le potenziali sfide di comunicazione e connettività.' 
+---
+= Informazioni su quorum ed epsilon
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il quorum e l'epsilon sono misure importanti per lo stato e la funzione dei cluster che indicano insieme come i cluster affrontano le potenziali sfide di comunicazione e connettività.
+
+_Quorum_ è una condizione preliminare per un cluster completamente funzionante. Quando un cluster si trova in quorum, la maggior parte dei nodi è in buone condizioni e può comunicare tra loro. In caso di perdita del quorum, il cluster perde la capacità di eseguire le normali operazioni del cluster. Solo un insieme di nodi può avere il quorum alla volta, perché tutti i nodi condividono collettivamente una singola vista dei dati. Pertanto, se a due nodi non comunicanti è consentito modificare i dati in modo divergente, non è più possibile riconciliare i dati in una singola vista dati.
+
+Ogni nodo del cluster partecipa a un protocollo di voting che elegge un nodo _master_; ogni nodo rimanente è un _secondario_. Il nodo master è responsabile della sincronizzazione delle informazioni nel cluster. Una volta formato, il quorum viene mantenuto con il voto continuo. Se il nodo master non è in linea e il cluster è ancora in quorum, viene selezionato un nuovo master dai nodi che rimangono in linea.
+
+Poiché esiste la possibilità di un legame in un cluster con un numero pari di nodi, un nodo ha un peso di voto frazionario aggiuntivo chiamato _epsilon_. Se la connettività tra due parti uguali di un cluster di grandi dimensioni non riesce, il gruppo di nodi che contiene epsilon mantiene il quorum, presupponendo che tutti i nodi siano integri. Ad esempio, la seguente illustrazione mostra un cluster a quattro nodi in cui due dei nodi sono guasti. Tuttavia, poiché uno dei nodi sopravvissuti contiene epsilon, il cluster rimane in quorum anche se non esiste una semplice maggioranza di nodi sani.
+
+image::../media/epsilon-preserving-quorum.gif[Questa immagine viene spiegata dal testo circostante.]
+
+Epsilon viene assegnato automaticamente al primo nodo al momento della creazione del cluster. Se il nodo che contiene epsilon diventa inintegro, assume il controllo del partner ad alta disponibilità o viene sostituito dal partner ad alta disponibilità, epsilon viene automaticamente riassegnato a un nodo integro in una coppia ha diversa.
+
+L'utilizzo offline di un nodo può influire sulla capacità del cluster di rimanere in quorum. Pertanto, ONTAP emette un messaggio di avviso se si tenta di eseguire un'operazione che toglie il quorum al cluster o se si mette fuori servizio un'operazione per evitare la perdita del quorum. È possibile disattivare i messaggi di avviso del quorum utilizzando `cluster quorum-service options modify` al livello di privilegio avanzato.
+
+In generale, supponendo una connettività affidabile tra i nodi del cluster, un cluster più grande è più stabile di un cluster più piccolo. Il requisito di quorum di una semplice maggioranza della metà dei nodi più epsilon è più semplice da gestire in un cluster di 24 nodi che in un cluster di due nodi.
+
+Un cluster a due nodi presenta alcune sfide specifiche per il mantenimento del quorum. I cluster a due nodi utilizzano _cluster ha_, in cui nessuno dei due nodi contiene epsilon; invece, entrambi i nodi vengono continuamente interrogati per garantire che, in caso di guasto di un nodo, l'altro disponga dell'accesso completo in lettura/scrittura ai dati, nonché dell'accesso alle interfacce logiche e alle funzioni di gestione.

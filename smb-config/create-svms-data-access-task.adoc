@@ -1,0 +1,78 @@
+---
+permalink: smb-config/create-svms-data-access-task.html 
+sidebar: sidebar 
+keywords: svm, cluster, data, access, smb, client, create, create an svm 
+summary: 'Se non si dispone già di almeno una SVM in un cluster per fornire l"accesso ai dati ai client SMB, è necessario crearne una.' 
+---
+= Creare una SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se non si dispone già di almeno una SVM in un cluster per fornire l'accesso ai dati ai client SMB, è necessario crearne una.
+
+.Prima di iniziare
+* A partire da ONTAP 9.13.1, è possibile impostare una capacità massima per una VM di storage. È inoltre possibile configurare gli avvisi quando SVM si avvicina a un livello di capacità di soglia. Per ulteriori informazioni, vedere xref:../system-admin/manage-svm-capacity.html[Gestire la capacità SVM].
+
+
+.Fasi
+. Creare una SVM: `vserver create -vserver _svm_name_ -rootvolume _root_volume_name_ -aggregate _aggregate_name_ -rootvolume-security-style ntfs -language C.UTF-8 -ipspace _ipspace_name_`
++
+** Utilizzare l'impostazione NTFS per `-rootvolume-security-style` opzione.
+** Utilizzare il C.UTF-8 predefinito `-language` opzione.
+** Il `ipspace` l'impostazione è facoltativa.
+
+
+. Verificare la configurazione e lo stato della SVM appena creata: `vserver show -vserver _vserver_name_`
++
+Il `Allowed Protocols` Il campo deve includere CIFS. È possibile modificare questo elenco in un secondo momento.
+
++
+Il `Vserver Operational State` il campo deve visualizzare `running` stato. Se viene visualizzato il `initializing` indica che alcune operazioni intermedie, ad esempio la creazione del volume root, non sono riuscite ed è necessario eliminare la SVM e ricrearla.
+
+
+
+.Esempi
+Il seguente comando crea una SVM per l'accesso ai dati in IPSpace `ipspaceA`:
+
+[listing]
+----
+cluster1::> vserver create -vserver vs1.example.com -rootvolume root_vs1 -aggregate aggr1
+-rootvolume-security-style ntfs -language C.UTF-8 -ipspace ipspaceA
+
+[Job 2059] Job succeeded:
+Vserver creation completed
+----
+Il seguente comando indica che è stata creata una SVM con un volume root di 1 GB, che è stata avviata automaticamente e si trova in `running` stato. Il volume root dispone di un criterio di esportazione predefinito che non include alcuna regola, pertanto il volume root non viene esportato al momento della creazione.
+
+[listing]
+----
+cluster1::> vserver show -vserver vs1.example.com
+                                    Vserver: vs1.example.com
+                               Vserver Type: data
+                            Vserver Subtype: default
+                               Vserver UUID: b8375669-19b0-11e5-b9d1-00a0983d9736
+                                Root Volume: root_vs1
+                                  Aggregate: aggr1
+                                 NIS Domain: -
+                 Root Volume Security Style: ntfs
+                                LDAP Client: -
+               Default Volume Language Code: C.UTF-8
+                            Snapshot Policy: default
+                                    Comment:
+                               Quota Policy: default
+                List of Aggregates Assigned: -
+ Limit on Maximum Number of Volumes allowed: unlimited
+                        Vserver Admin State: running
+                  Vserver Operational State: running
+   Vserver Operational State Stopped Reason: -
+                          Allowed Protocols: nfs, cifs, fcp, iscsi, ndmp
+                       Disallowed Protocols: -
+                           QoS Policy Group: -
+                                Config Lock: false
+                               IPspace Name: ipspaceA
+----
+
+NOTE: A partire da ONTAP 9.13.1, è possibile impostare un modello di gruppo di policy QoS adattivo, applicando un limite di throughput e di soffitto ai volumi nella SVM. È possibile applicare questo criterio solo dopo aver creato la SVM. Per ulteriori informazioni su questo processo, vedere xref:../performance-admin/adaptive-policy-template-task.html[Impostare un modello di gruppo di criteri adattativi].

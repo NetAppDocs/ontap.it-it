@@ -1,0 +1,97 @@
+---
+permalink: authentication/configure-ldap-server-access-task.html 
+sidebar: sidebar 
+keywords: configure, ldap, server access 
+summary: 'È necessario configurare l"accesso del server LDAP a una SVM prima che gli account LDAP possano accedere alla SVM. È possibile utilizzare il comando di creazione del client ldap name-service dei servizi vserver per creare una configurazione del client LDAP sulla SVM. È quindi possibile utilizzare il comando name-service ldap create dei servizi vserver per associare la configurazione del client LDAP a SVM.' 
+---
+= Configurare l'accesso al server LDAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario configurare l'accesso del server LDAP a una SVM prima che gli account LDAP possano accedere alla SVM. È possibile utilizzare `vserver services name-service ldap client create` Per creare una configurazione del client LDAP su SVM. È quindi possibile utilizzare `vserver services name-service ldap create` Comando per associare la configurazione del client LDAP a SVM.
+
+.Di cosa hai bisogno
+* È necessario aver installato un link:install-ca-signed-server-digital-certificate-task.html["Certificato digitale del server firmato CA"] Su SVM.
+* Per eseguire questa attività, è necessario essere un amministratore del cluster o di SVM.
+
+
+.A proposito di questa attività
+La maggior parte dei server LDAP può utilizzare gli schemi predefiniti forniti da ONTAP:
+
+* MS-ad-BIS (lo schema preferito per la maggior parte dei server ad Windows 2012 e successivi)
+* AD-IDMU (server ad Windows 2008, Windows 2012 e versioni successive)
+* AD-SFU (server ad Windows 2003 e precedenti)
+* RFC-2307 (SERVER LDAP UNIX)
+
+
+Si consiglia di utilizzare gli schemi predefiniti, a meno che non vi sia un requisito diverso. In tal caso, è possibile creare uno schema personalizzato copiando uno schema predefinito e modificando la copia. Per ulteriori informazioni, consultare i seguenti documenti.
+
+* link:../nfs-config/index.html["Configurazione NFS"]
+* https://www.netapp.com/pdf.html?item=/media/19423-tr-4835.pdf["Report tecnico di NetApp 4835: Come configurare LDAP in ONTAP"^]
+
+
+.Fasi
+. Creare una configurazione del client LDAP su una SVM: `vserver services name-service ldap client create -vserver SVM_name -client-config client_configuration -servers LDAP_server_IPs -schema schema -use-start-tls true|false`
++
+[NOTE]
+====
+Start TLS è supportato solo per l'accesso ai dati SVM. Non è supportato per l'accesso alle SVM amministrative.
+
+====
++
+Per la sintassi completa dei comandi, vedere link:config-worksheets-reference.html["foglio di lavoro"].
+
++
+Il seguente comando crea una configurazione client LDAP denominata `corp` Su SVM``engData``. Il client esegue il binding anonimo ai server LDAP con gli indirizzi IP `172.160.0.100` e. `172.16.0.101`. Il client utilizza `RFC-2307` Schema per eseguire query LDAP. La comunicazione tra il client e il server viene crittografata mediante Start TLS.
+
++
+[listing]
+----
+cluster1::>vserver services name-service ldap client create
+-vserver engData -client-config corp -servers 172.16.0.100,172.16.0.101 -schema RFC-2307 -use-start-tls true
+----
++
+[NOTE]
+====
+A partire da ONTAP 9.2, il campo `-ldap-servers` sostituisce il campo `-servers`. Questo nuovo campo può includere un nome host o un indirizzo IP per il server LDAP.
+
+====
+. Associare la configurazione del client LDAP a SVM: `vserver services name-service ldap create -vserver SVM_name -client-config client_configuration -client-enabled true|false`
++
+Per la sintassi completa dei comandi, vedere link:config-worksheets-reference.html["foglio di lavoro"].
+
++
+Il seguente comando associa la configurazione del client LDAP `corp` Con SVM``engData``E attiva il client LDAP su SVM.
+
++
+[listing]
+----
+cluster1::>vserver services name-service ldap create -vserver engData -client-config corp -client-enabled true
+----
++
+[NOTE]
+====
+A partire da ONTAP 9.2, la `vserver services name-service ldap create` Il comando esegue una convalida automatica della configurazione e segnala un messaggio di errore se ONTAP non è in grado di contattare il server dei nomi.
+
+====
+. Convalidare lo stato dei server dei nomi utilizzando il comando di controllo ldap name-service dei servizi vserver.
++
+Il seguente comando convalida i server LDAP su SVM vs0.
+
++
+[listing]
+----
+cluster1::> vserver services name-service ldap check -vserver vs0
+
+| Vserver: vs0                                                |
+| Client Configuration Name: c1                               |
+| LDAP Status: up                                             |
+| LDAP Status Details: Successfully connected to LDAP server "10.11.12.13".                                              |
+----
++
+Il comando name service check è disponibile a partire da ONTAP 9.2.
+
+

@@ -1,0 +1,117 @@
+---
+permalink: smb-admin/security-styles-their-effects-concept.html 
+sidebar: sidebar 
+keywords: unix, ntfs, mixed, unified, security, style, effect, permission, handle, data, what the security styles and their effects are 
+summary: 'Esistono quattro diversi stili di sicurezza: UNIX, NTFS, misto e unificato. Ogni stile di sicurezza ha un effetto diverso sul modo in cui vengono gestite le autorizzazioni per i dati. È necessario comprendere i diversi effetti per assicurarsi di selezionare lo stile di sicurezza appropriato per i propri scopi.' 
+---
+= Quali sono gli stili di sicurezza e i loro effetti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Esistono quattro diversi stili di sicurezza: UNIX, NTFS, misto e unificato. Ogni stile di sicurezza ha un effetto diverso sul modo in cui vengono gestite le autorizzazioni per i dati. È necessario comprendere i diversi effetti per assicurarsi di selezionare lo stile di sicurezza appropriato per i propri scopi.
+
+È importante comprendere che gli stili di sicurezza non determinano quali tipi di client possono o non possono accedere ai dati. Gli stili di sicurezza determinano solo il tipo di autorizzazioni utilizzate da ONTAP per controllare l'accesso ai dati e il tipo di client in grado di modificare tali autorizzazioni.
+
+Ad esempio, se un volume utilizza lo stile di sicurezza UNIX, i client SMB possono comunque accedere ai dati (purché autenticino e autorizzino correttamente) a causa della natura multiprotocollo di ONTAP. Tuttavia, ONTAP utilizza autorizzazioni UNIX che solo i client UNIX possono modificare utilizzando strumenti nativi.
+
+|===
+| Stile di sicurezza | Client in grado di modificare le autorizzazioni | Autorizzazioni che i client possono utilizzare | Risultato di uno stile di sicurezza efficace | Client che possono accedere ai file 
+
+
+ a| 
+UNIX
+ a| 
+NFS
+ a| 
+Bit di modalità NFSv3
+ a| 
+UNIX
+ a| 
+NFS e SMB
+
+
+
+ a| 
+ACL NFSv4.x
+ a| 
+UNIX
+
+
+
+ a| 
+NTFS
+ a| 
+PMI
+ a| 
+ACL NTFS
+ a| 
+NTFS
+
+
+
+ a| 
+Misto
+ a| 
+NFS o SMB
+ a| 
+Bit di modalità NFSv3
+ a| 
+UNIX
+
+
+
+ a| 
+ACL NFSv4.x
+ a| 
+UNIX
+
+
+
+ a| 
+ACL NTFS
+ a| 
+NTFS
+ a| 
+Unificato
+ a| 
+NFS o SMB
+
+
+
+ a| 
+Bit di modalità NFSv3
+ a| 
+UNIX
+
+
+
+ a| 
+ACL NFSv4.1
+ a| 
+UNIX
+ a| 
+ACL NTFS
+ a| 
+NTFS
+
+
+
+.3+| Unificato (solo per volumi infiniti, in ONTAP 9.4 e versioni precedenti). .3+| NFS o SMB | Bit di modalità NFSv3 .2+| UNIX 
+
+
+| ACL NFSv4.1 | ACL NTFS 
+|===
+I volumi FlexVol supportano UNIX, NTFS e stili di sicurezza misti. Quando lo stile di sicurezza è misto o unificato, le autorizzazioni effettive dipendono dal tipo di client che ha modificato le autorizzazioni per ultima, perché gli utenti impostano lo stile di sicurezza su base individuale. Se l'ultimo client che ha modificato le autorizzazioni era un client NFSv3, le autorizzazioni sono bit di modalità UNIX NFSv3. Se l'ultimo client era un client NFSv4, le autorizzazioni sono ACL NFSv4. Se l'ultimo client era un client SMB, le autorizzazioni sono ACL NTFS di Windows.
+
+Lo stile di sicurezza unificato è disponibile solo con volumi infiniti, che non sono più supportati in ONTAP 9.5 e versioni successive. Per ulteriori informazioni, vedere link:../flexgroup/index.html["Panoramica sulla gestione dei volumi FlexGroup"].
+
+A partire da ONTAP 9.2, la `show-effective-permissions` al `vserver security file-directory` Il comando consente di visualizzare le autorizzazioni effettive concesse a un utente Windows o UNIX sul percorso di file o cartella specificato. Inoltre, il parametro opzionale `-share-name` consente di visualizzare l'autorizzazione di condivisione effettiva.
+
+[NOTE]
+====
+ONTAP imposta inizialmente alcune autorizzazioni predefinite per i file. Per impostazione predefinita, lo stile di sicurezza effettivo su tutti i dati nei volumi UNIX, misti e di sicurezza unificata è UNIX e il tipo di permessi effettivo è UNIX mode bits (0755 se non diversamente specificato) fino a quando non viene configurato da un client come consentito dallo stile di sicurezza predefinito. Per impostazione predefinita, lo stile di sicurezza effettivo su tutti i dati nei volumi di sicurezza NTFS è NTFS e dispone di un ACL che consente il controllo completo di tutti.
+
+====

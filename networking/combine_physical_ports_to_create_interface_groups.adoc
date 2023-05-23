@@ -1,0 +1,339 @@
+---
+sidebar: sidebar 
+permalink: networking/combine_physical_ports_to_create_interface_groups.html 
+keywords: combine, ports, ifgrp, interface, group, create, creating, add, adding, types, single-mode, single, mode, static, dynamic, multimode, best, practice, port-based, port, based, load, balance, balancing, ip, address, mac, sequential, remove, removing, delete, deleting, combine physical ports to create interface groups, interface group types, characteristics of single-mode interface groups, characteristics of static multimode interface groups, dynamic multimode interface group, load balancing in multimode interface groups, port-based load balancing, ip address and mac address load balancing, sequential load balancing, create an interface group, add a port to an interface group, remove a port from an interface group, delete an interface group 
+summary: Combina due o più porte fisiche in una singola porta logica per creare un gruppo di interfacce 
+---
+= Combina le porte fisiche per creare gruppi di interfacce
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Un gruppo di interfacce, noto anche come link Aggregation Group (LAG), viene creato combinando due o più porte fisiche in una singola porta logica. La porta logica offre maggiore resilienza, maggiore disponibilità e condivisione del carico.
+
+
+
+== Tipi di gruppi di interfacce
+
+Il sistema storage supporta tre tipi di gruppi di interfacce: Single-mode, static multimode e Dynamic Multimode. Ciascun gruppo di interfacce fornisce diversi livelli di tolleranza agli errori. I gruppi di interfacce multimodali forniscono metodi per il bilanciamento del carico del traffico di rete.
+
+
+
+=== Caratteristiche dei gruppi di interfacce single-mode
+
+In un gruppo di interfacce a modalità singola, è attiva solo una delle interfacce del gruppo di interfacce. Le altre interfacce sono in standby, pronte per essere utilizzate in caso di guasto dell'interfaccia attiva.
+
+Caratteristiche di un gruppo di interfacce single-mode:
+
+* Per il failover, il cluster monitora il collegamento attivo e controlla il failover. Poiché il cluster monitora il collegamento attivo, non è necessaria alcuna configurazione dello switch.
+* In un gruppo di interfacce a modalità singola, in standby possono essere presenti più interfacce.
+* Se un gruppo di interfacce single-mode si estende su più switch, è necessario collegare gli switch con un collegamento Inter-Switch (ISL).
+* Per un gruppo di interfacce a modalità singola, le porte dello switch devono trovarsi nello stesso dominio di trasmissione.
+* I pacchetti ARP per il monitoraggio dei collegamenti, che hanno un indirizzo di origine 0.0.0.0, vengono inviati sulle porte per verificare che le porte si trovino nello stesso dominio di trasmissione.
+
+
+La figura riportata di seguito mostra un esempio di gruppo di interfacce a modalità singola. Nella figura, e0a ed e1a fanno parte del gruppo di interfacce single-mode di a0a. Se l'interfaccia attiva, e0a, si guasta, l'interfaccia e1a di standby assume il controllo e mantiene la connessione allo switch.
+
+image:ontap_nm_image6.png["Immagine di un gruppo di interfacce a modalità singola"]
+
+
+NOTE: Per ottenere la funzionalità single-mode, si consiglia di utilizzare i gruppi di failover. Utilizzando un gruppo di failover, la seconda porta può ancora essere utilizzata per altre LIF e non deve rimanere inutilizzata. Inoltre, i gruppi di failover possono estendersi su più di due porte e possono estendersi su più nodi.
+
+
+
+=== Caratteristiche dei gruppi di interfacce statiche multimodali
+
+L'implementazione del gruppo di interfacce statiche multimodali in ONTAP è conforme allo standard IEEE 802.3ad (statico). Qualsiasi switch che supporti gli aggregati, ma non dispone di uno scambio di pacchetti di controllo per la configurazione di un aggregato, può essere utilizzato con gruppi di interfacce statiche multimodali.
+
+I gruppi di interfacce statiche multimodali non sono conformi allo standard IEEE 802.3ad (dinamico), noto anche come link Aggregation Control Protocol (LACP). LACP è equivalente al protocollo di aggregazione delle porte (PAgP), il protocollo di aggregazione dei collegamenti proprietario di Cisco.
+
+Di seguito sono riportate le caratteristiche di un gruppo di interfacce statiche multimodali:
+
+* Tutte le interfacce del gruppo di interfacce sono attive e condividono un singolo indirizzo MAC.
++
+** Più connessioni individuali sono distribuite tra le interfacce nel gruppo di interfacce.
+** Ogni connessione o sessione utilizza un'interfaccia all'interno del gruppo di interfacce. Quando si utilizza lo schema di bilanciamento del carico sequenziale, tutte le sessioni vengono distribuite tra i collegamenti disponibili pacchetti per pacchetto e non sono associate a una particolare interfaccia del gruppo di interfacce.
+
+
+* I gruppi di interfacce statiche multimodali possono essere ripristinati da un guasto di un massimo di interfacce "n-1", dove n è il numero totale di interfacce che formano il gruppo di interfacce.
+* Se una porta non funziona o viene scollegata, il traffico che stava attraversando il collegamento guasto viene automaticamente ridistribuito a una delle interfacce rimanenti.
+* I gruppi di interfacce statiche multimodali possono rilevare una perdita di collegamento, ma non possono rilevare una perdita di connettività al client o configurazioni errate dello switch che potrebbero influire sulla connettività e sulle prestazioni.
+* Un gruppo di interfacce statiche multimodali richiede uno switch che supporti l'aggregazione di collegamenti su più porte di switch. Lo switch è configurato in modo che tutte le porte a cui sono collegati i collegamenti di un gruppo di interfacce facciano parte di una singola porta logica. Alcuni switch potrebbero non supportare l'aggregazione di collegamenti delle porte configurate per i frame jumbo. Per ulteriori informazioni, consultare la documentazione del fornitore dello switch.
+* Sono disponibili diverse opzioni di bilanciamento del carico per distribuire il traffico tra le interfacce di un gruppo di interfacce statiche multimodali.
+
+
+La figura riportata di seguito mostra un esempio di gruppo di interfacce multimodali statiche. Le interfacce e0a, e1a, e2a e e3a fanno parte del gruppo di interfacce multimodali a1a. Tutte e quattro le interfacce nel gruppo di interfacce multimode a1a sono attive.
+
+image:ontap_nm_image7.png["Immagine di un gruppo di interfacce statiche multimodali"]
+
+Esistono diverse tecnologie che consentono di distribuire il traffico in un singolo collegamento aggregato su più switch fisici. Le tecnologie utilizzate per abilitare questa funzionalità variano a seconda dei prodotti di rete. I gruppi di interfacce statiche multimodali in ONTAP sono conformi agli standard IEEE 802.3. Se si dice che una particolare tecnologia di aggregazione di collegamenti a switch multipli interagiti con o sia conforme agli standard IEEE 802.3, dovrebbe funzionare con ONTAP.
+
+Lo standard IEEE 802.3 stabilisce che la periferica trasmittente in un collegamento aggregato determina l'interfaccia fisica per la trasmissione. Pertanto, ONTAP è responsabile solo della distribuzione del traffico in uscita e non può controllare il modo in cui arrivano i frame in entrata. Se si desidera gestire o controllare la trasmissione del traffico in entrata su un collegamento aggregato, tale trasmissione deve essere modificata sul dispositivo di rete direttamente connesso.
+
+
+
+=== Gruppo di interfacce Multimode dinamiche
+
+I gruppi di interfacce dinamiche multimodali implementano il protocollo LACP (link Aggregation Control Protocol) per comunicare l'appartenenza del gruppo allo switch direttamente collegato. LACP consente di rilevare lo stato di perdita del collegamento e l'impossibilità per il nodo di comunicare con la porta dello switch direct-attached.
+
+L'implementazione del gruppo di interfacce multimodali dinamiche in ONTAP è conforme allo standard IEEE 802.3 ad (802.1 AX). ONTAP non supporta il protocollo di aggregazione delle porte (PAgP), un protocollo di aggregazione dei collegamenti proprietario di Cisco.
+
+Un gruppo di interfacce multimodali dinamiche richiede uno switch che supporti LACP.
+
+ONTAP implementa LACP in modalità attiva non configurabile che funziona bene con gli switch configurati in modalità attiva o passiva. ONTAP implementa i timer LACP lunghi e brevi (per l'utilizzo con valori non configurabili 3 secondi e 90 secondi), come specificato in IEEE 802.3 ad (802.1AX).
+
+L'algoritmo di bilanciamento del carico ONTAP determina la porta membro da utilizzare per trasmettere il traffico in uscita e non controlla la modalità di ricezione dei frame in entrata. Lo switch determina il membro (singola porta fisica) del proprio gruppo di canali di porte da utilizzare per la trasmissione, in base all'algoritmo di bilanciamento del carico configurato nel gruppo di canali di porte dello switch. Pertanto, la configurazione dello switch determina la porta membro (singola porta fisica) del sistema di storage per ricevere il traffico. Per ulteriori informazioni sulla configurazione dello switch, consultare la documentazione del fornitore dello switch.
+
+Se una singola interfaccia non riesce a ricevere pacchetti di protocollo LACP successivi, quella singola interfaccia viene contrassegnata come "lag_inactive" nell'output del comando "ifgrp status". Il traffico esistente viene automaticamente reindirizzato a tutte le interfacce attive rimanenti.
+
+Quando si utilizzano gruppi di interfacce multimodali dinamiche, si applicano le seguenti regole:
+
+* I gruppi di interfacce multimodali dinamiche devono essere configurati per utilizzare i metodi di bilanciamento del carico basati su porta, IP, MAC o round robin.
+* In un gruppo di interfacce multimodali dinamiche, tutte le interfacce devono essere attive e condividere un singolo indirizzo MAC.
+
+
+La figura riportata di seguito mostra un esempio di gruppo di interfacce multimodali dinamiche. Le interfacce e0a, e1a, e2a e e3a fanno parte del gruppo di interfacce multimodali a1a. Tutte e quattro le interfacce nel gruppo di interfacce dinamiche multimodali a1a sono attive.
+
+image:ontap_nm_image7.png["Immagine di un gruppo di interfacce multimodali dinamiche"]
+
+
+
+=== Bilanciamento del carico in gruppi di interfacce multimodali
+
+È possibile garantire che tutte le interfacce di un gruppo di interfacce multimodali siano utilizzate in modo uguale per il traffico in uscita utilizzando l'indirizzo IP, l'indirizzo MAC, i metodi di bilanciamento del carico sequenziali o basati su porta per distribuire il traffico di rete in modo uniforme sulle porte di rete di un gruppo di interfacce multimodali.
+
+Il metodo di bilanciamento del carico per un gruppo di interfacce multimodali può essere specificato solo quando viene creato il gruppo di interfacce.
+
+*Best Practice*: Si consiglia di eseguire il bilanciamento del carico basato su porta quando possibile. Utilizzare il bilanciamento del carico basato su porta, a meno che non vi sia un motivo o una limitazione specifica nella rete che lo impedisca.
+
+
+
+==== Bilanciamento del carico basato su porta
+
+Il metodo consigliato è il bilanciamento del carico basato su porta.
+
+È possibile equalizzare il traffico su un gruppo di interfacce multimodali in base alle porte TCP/UDP (Transport Layer) utilizzando il metodo di bilanciamento del carico basato su porta.
+
+Il metodo di bilanciamento del carico basato su porta utilizza un algoritmo di hashing rapido sugli indirizzi IP di origine e di destinazione insieme al numero di porta del layer di trasporto.
+
+
+
+==== Bilanciamento del carico degli indirizzi IP e MAC
+
+Il bilanciamento del carico degli indirizzi IP e MAC è un metodo per equalizzare il traffico su gruppi di interfacce multimodali.
+
+Questi metodi di bilanciamento del carico utilizzano un algoritmo di hashing rapido sugli indirizzi di origine e di destinazione (indirizzo IP e indirizzo MAC). Se il risultato dell'algoritmo di hashing viene mappato su un'interfaccia che non si trova nello stato UP link, viene utilizzata la successiva interfaccia attiva.
+
+
+NOTE: Non selezionare il metodo di bilanciamento del carico dell'indirizzo MAC quando si creano gruppi di interfacce su un sistema che si connette direttamente a un router. In tale configurazione, per ogni frame IP in uscita, l'indirizzo MAC di destinazione è l'indirizzo MAC del router. Di conseguenza, viene utilizzata una sola interfaccia del gruppo di interfacce.
+
+Il bilanciamento del carico degli indirizzi IP funziona allo stesso modo per gli indirizzi IPv4 e IPv6.
+
+
+
+==== Bilanciamento sequenziale del carico
+
+È possibile utilizzare il bilanciamento del carico sequenziale per distribuire in modo uguale pacchetti tra più link utilizzando un algoritmo round robin. È possibile utilizzare l'opzione sequenziale per il bilanciamento del carico del traffico di una singola connessione su più collegamenti per aumentare il throughput di una singola connessione.
+
+Tuttavia, poiché il bilanciamento del carico sequenziale può causare l'erogazione di pacchetti fuori servizio, le performance possono risultare estremamente scarse. Pertanto, il bilanciamento del carico sequenziale non è generalmente consigliato.
+
+
+
+== Creare un gruppo di interfacce o un LAG
+
+È possibile creare un gruppo di interfacce o un LAG (single-mode, static multimode o Dynamic Multimode (LACP)) per presentare una singola interfaccia ai client combinando le funzionalità delle porte di rete aggregate.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per creare un LAG*
+
+.Fasi
+. Selezionare *Network > Ethernet port > + link Aggregation Group* per creare un LAG.
+. Selezionare il nodo dall'elenco a discesa.
+. Scegliere tra le seguenti opzioni:
++
+.. ONTAP (Seleziona dominio broadcast) per *selezionare automaticamente il dominio di broadcast (scelta consigliata)*.
+.. Per selezionare manualmente un dominio di trasmissione.
+
+
+. Selezionare le porte per il LAG.
+. Selezionare la modalità:
++
+.. Singolo: Viene utilizzata una sola porta alla volta.
+.. Multiplo: Tutte le porte possono essere utilizzate contemporaneamente.
+.. LACP: Il protocollo LACP determina le porte che è possibile utilizzare.
+
+
+. Selezionare il bilanciamento del carico:
++
+.. Basato su IP
+.. Basato SU MAC
+.. Porta
+.. Sequenziale
+
+
+. Salvare le modifiche.
+
+
+image:AddLag01.png["Aggiungi grafica lag"]
+
+--
+.CLI
+--
+*Utilizzare la CLI per creare un gruppo di interfacce*
+
+Per un elenco completo delle restrizioni di configurazione applicabili ai gruppi di interfacce delle porte, vedere `network port ifgrp add-port` pagina man.
+
+Quando si crea un gruppo di interfacce multimodali, è possibile specificare uno dei seguenti metodi di bilanciamento del carico:
+
+* `port`: Il traffico di rete viene distribuito in base alle porte TCP/UDP (Transport Layer). Si tratta del metodo consigliato per il bilanciamento del carico.
+* `mac`: Il traffico di rete viene distribuito in base agli indirizzi MAC.
+* `ip`: Il traffico di rete viene distribuito in base agli indirizzi IP.
+* `sequential`: Il traffico di rete viene distribuito man mano che viene ricevuto.
+
+
+
+NOTE: L'indirizzo MAC di un gruppo di interfacce è determinato dall'ordine delle porte sottostanti e dalla modalità di inizializzazione di queste porte durante l'avvio. Pertanto, non si deve presumere che l'indirizzo MAC di ifgrp sia persistente durante i riavvii o gli aggiornamenti ONTAP.
+
+.Fase
+Utilizzare `network port ifgrp create` per creare un gruppo di interfacce.
+
+I gruppi di interfacce devono essere denominati utilizzando la sintassi `a<number><letter>`. Ad esempio, a0a, a0b, a1c e a2a sono nomi di gruppi di interfacce validi.
+
+Per ulteriori informazioni su questo comando, vedere http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^].
+
+Nell'esempio seguente viene illustrato come creare un gruppo di interfacce denominato a0a con una funzione di distribuzione di porta e una modalità di multimode:
+
+`network port ifgrp create -node _cluster-1-01_ -ifgrp _a0a_ -distr-func _port_ -mode _multimode_`
+
+--
+====
+
+
+== Aggiungere una porta a un gruppo di interfacce o LAG
+
+È possibile aggiungere fino a 16 porte fisiche a un gruppo di interfacce o LAG per tutte le velocità delle porte.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per aggiungere una porta a un LAG*
+
+.Fasi
+. Selezionare *Network > Ethernet port > LAG* (rete > porta Ethernet > LAG*) per modificare un LAG.
+. Selezionare porte aggiuntive sullo stesso nodo da aggiungere al LAG.
+. Salvare le modifiche.
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per aggiungere porte a un gruppo di interfacce*
+
+.Fase
+Aggiungere le porte di rete al gruppo di interfacce:
+
+`network port ifgrp add-port`
+
+Per ulteriori informazioni su questo comando, vedere link:http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^].
+
+Nell'esempio seguente viene illustrato come aggiungere la porta e0c a un gruppo di interfacce denominato a0a:
+
+`network port ifgrp add-port -node _cluster-1-01_ -ifgrp _a0a_ -port _e0c_`
+
+A partire da ONTAP 9.8, i gruppi di interfacce vengono inseriti automaticamente in un dominio di trasmissione appropriato circa un minuto dopo l'aggiunta della prima porta fisica al gruppo di interfacce. Se non si desidera che ONTAP esegua questa operazione e si preferisce inserire manualmente ifgrp in un dominio di trasmissione, specificare `-skip-broadcast-domain-placement` come parte di `ifgrp add-port` comando.
+
+--
+====
+
+
+== Rimuovere una porta da un gruppo di interfacce o LAG
+
+È possibile rimuovere una porta da un gruppo di interfacce che ospita le LIF, purché non sia l'ultima porta del gruppo di interfacce. Non è necessario che il gruppo di interfacce non debba ospitare LIF o che il gruppo di interfacce non debba essere la porta home di una LIF, considerando che non si sta rimuovendo l'ultima porta dal gruppo di interfacce. Tuttavia, se si rimuove l'ultima porta, è necessario migrare o spostare i file LIF dal gruppo di interfacce.
+
+.A proposito di questa attività
+È possibile rimuovere fino a 16 porte (interfacce fisiche) da un gruppo di interfacce o LAG.
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per rimuovere una porta da un LAG*
+
+.Fasi
+. Selezionare *Network > Ethernet port > LAG* (rete > porta Ethernet > LAG*) per modificare un LAG.
+. Selezionare le porte da rimuovere dal LAG.
+. Salvare le modifiche.
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per rimuovere le porte da un gruppo di interfacce*
+
+.Fase
+Rimuovere le porte di rete da un gruppo di interfacce:
+
+`network port ifgrp remove-port`
+
+Nell'esempio seguente viene illustrato come rimuovere la porta e0c da un gruppo di interfacce denominato a0a:
+
+`network port ifgrp remove-port -node _cluster-1-01_ -ifgrp _a0a_ -port _e0c_`
+
+--
+====
+
+
+== Eliminare un gruppo di interfacce o un LAG
+
+È possibile eliminare i gruppi di interfacce o i LAG se si desidera configurare le LIF direttamente sulle porte fisiche sottostanti o si decide di modificare il gruppo di interfacce o la modalità LAG o la funzione di distribuzione.
+
+.Prima di iniziare
+* Il gruppo di interfacce o il LAG non deve ospitare una LIF.
+* Il gruppo di interfacce o LAG non deve essere né la porta home né la destinazione di failover di una LIF.
+
+
+La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Utilizzare System Manager per eliminare un LAG*
+
+.Fasi
+. Selezionare *Network > Ethernet port > LAG* (rete > porta Ethernet > LAG*) per eliminare un LAG.
+. Selezionare il LAG che si desidera rimuovere.
+. Eliminare il LAG.
+
+
+--
+.CLI
+--
+*Utilizzare la CLI per eliminare un gruppo di interfacce*
+
+.Fase
+Utilizzare `network port ifgrp delete` comando per eliminare un gruppo di interfacce.
+
+Per ulteriori informazioni su questo comando, vedere link:http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^].
+
+Nell'esempio seguente viene illustrato come eliminare un gruppo di interfacce denominato a0b:
+
+`network port ifgrp delete -node _cluster-1-01_ -ifgrp _a0b_`
+
+--
+====

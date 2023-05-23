@@ -1,0 +1,237 @@
+---
+permalink: smb-admin/monitor-encryption-statistics-task.html 
+sidebar: sidebar 
+keywords: monitor, smb, encryption, statistics, determine, establish, session, share, connection, encrypt, monitor smb encryption statistics 
+summary: È possibile monitorare le statistiche di crittografia SMB e determinare quali sessioni stabilite e quali connessioni di condivisione sono crittografate e quali no. 
+---
+= Monitorare le statistiche di crittografia SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile monitorare le statistiche di crittografia SMB e determinare quali sessioni stabilite e quali connessioni di condivisione sono crittografate e quali no.
+
+.A proposito di questa attività
+Il `statistics` Command al livello di privilegio avanzato fornisce i seguenti contatori, che è possibile utilizzare per monitorare il numero di sessioni SMB crittografate e condividere le connessioni:
+
+|===
+| Nome del contatore | Descrizioni 
+
+
+ a| 
+`encrypted_sessions`
+ a| 
+Indica il numero di sessioni SMB 3.0 crittografate
+
+
+
+ a| 
+`encrypted_share_connections`
+ a| 
+Indica il numero di condivisioni crittografate su cui è avvenuta una connessione ad albero
+
+
+
+ a| 
+`rejected_unencrypted_sessions`
+ a| 
+Indica il numero di configurazioni di sessione rifiutate a causa della mancanza di funzionalità di crittografia del client
+
+
+
+ a| 
+`rejected_unencrypted_shares`
+ a| 
+Indica il numero di mappature di condivisione rifiutate a causa della mancanza di funzionalità di crittografia del client
+
+|===
+Questi contatori sono disponibili con i seguenti oggetti di statistiche:
+
+* `cifs` Consente di monitorare la crittografia SMB per tutte le sessioni SMB 3.0.
++
+Le statistiche SMB 3.0 sono incluse nell'output di `cifs` oggetto. Se si desidera confrontare il numero di sessioni crittografate con il numero totale di sessioni, è possibile confrontare l'output per `encrypted_sessions` contatore con l'output per `established_sessions` contatore.
+
++
+Se si desidera confrontare il numero di connessioni di condivisione crittografate con il numero totale di connessioni di condivisione, è possibile confrontare l'output per `encrypted_share_connections` contatore con l'output per `connected_shares` contatore.
+
+* `rejected_unencrypted_sessions` Fornisce il numero di tentativi di stabilire una sessione SMB che richiede la crittografia da parte di un client che non supporta la crittografia SMB.
+* `rejected_unencrypted_shares` Fornisce il numero di tentativi di connessione a una condivisione SMB che richiede la crittografia da parte di un client che non supporta la crittografia SMB.
+
+
+È necessario avviare una raccolta di campioni di statistiche prima di poter visualizzare i dati risultanti. Se non si interrompe la raccolta dati, è possibile visualizzare i dati del campione. L'interruzione della raccolta dei dati fornisce un campione fisso. La mancata interruzione della raccolta dei dati consente di ottenere dati aggiornati da utilizzare per il confronto con le query precedenti. Il confronto può aiutarti a identificare le tendenze.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced: +
+`set -privilege advanced`
+. Avviare una raccolta di dati: +
+`statistics start -object {cifs|smb1|smb2} -instance _instance_ -sample-id _sample_ID_ [-node _node_name_]`
++
+Se non si specifica `-sample-id` Il comando genera un identificatore di esempio e definisce questo campione come campione predefinito per la sessione CLI. Il valore per `-sample-id` è una stringa di testo. Se si esegue questo comando durante la stessa sessione CLI e non si specifica `-sample-id` il comando sovrascrive il campione predefinito precedente.
+
++
+È possibile specificare il nodo su cui si desidera raccogliere le statistiche. Se non si specifica il nodo, l'esempio raccoglie le statistiche per tutti i nodi nel cluster.
+
+. Utilizzare `statistics stop` comando per interrompere la raccolta dei dati per il campione.
+. Visualizza le statistiche di crittografia SMB:
++
+|===
+| Se si desidera visualizzare informazioni per... | Inserisci... 
+
+
+ a| 
+Sessioni crittografate
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_sessions|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Sessioni crittografate e sessioni stabilite
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_sessions|established_sessions|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Connessioni di condivisione crittografate
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_share_connections|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Connessioni di condivisione crittografate e condivisioni connesse
+ a| 
+`show -sample-id _sample_ID_ -counter encrypted_share_connections|connected_shares|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Sessioni non crittografate rifiutate
+ a| 
+`show -sample-id _sample_ID_ -counter rejected_unencrypted_sessions|_node_name_ [-node _node_name_]`
+
+
+
+ a| 
+Connessioni di condivisione non crittografate rifiutate
+ a| 
+`show -sample-id _sample_ID_ -counter rejected_unencrypted_share|_node_name_ [-node _node_name_]`
+
+|===
++
+Se si desidera visualizzare le informazioni solo per un singolo nodo, specificare l'opzione `-node` parametro.
+
+. Tornare al livello di privilegio admin: +
+`set -privilege admin`
+
+
+.Esempi
+[%collapsible]
+====
+L'esempio seguente mostra come monitorare le statistiche di crittografia SMB 3.0 su storage virtual machine (SVM) vs1.
+
+Il seguente comando passa al livello di privilegio avanzato:
+
+[listing]
+----
+cluster1::> set -privilege advanced
+
+Warning: These advanced commands are potentially dangerous; use them only when directed to do so by support personnel.
+Do you want to continue? {y|n}: y
+----
+Il seguente comando avvia la raccolta dati per un nuovo campione:
+
+[listing]
+----
+cluster1::*> statistics start -object cifs -sample-id smbencryption_sample -vserver vs1
+Statistics collection is being started for Sample-id: smbencryption_sample
+----
+Il seguente comando interrompe la raccolta dei dati per quell'esempio:
+
+[listing]
+----
+cluster1::*> statistics stop -sample-id smbencryption_sample
+Statistics collection is being stopped for Sample-id: smbencryption_sample
+----
+Il seguente comando mostra le sessioni SMB crittografate e le sessioni SMB stabilite dal nodo dell'esempio:
+
+[listing]
+----
+cluster2::*> statistics show -object cifs -counter established_sessions|encrypted_sessions|node_name –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 11:17:45
+End-time: 4/12/2016 11:21:45
+Scope: vsim2
+
+    Counter                               Value
+    ----------------------------  ----------------------
+    established_sessions                     1
+    encrypted_sessions                       1
+
+2 entries were displayed
+----
+Il comando seguente mostra il numero di sessioni SMB non crittografate rifiutate dal nodo dell'esempio:
+
+[listing]
+----
+clus-2::*> statistics show -object cifs -counter rejected_unencrypted_sessions –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 11:17:45
+End-time: 4/12/2016 11:21:51
+Scope: vsim2
+
+    Counter                                    Value
+    ----------------------------    ----------------------
+    rejected_unencrypted_sessions                1
+
+1 entry was displayed.
+----
+Il comando seguente mostra il numero di condivisioni SMB connesse e di condivisioni SMB crittografate dal nodo dell'esempio:
+
+[listing]
+----
+clus-2::*> statistics show -object cifs -counter connected_shares|encrypted_share_connections|node_name –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 10:41:38
+End-time: 4/12/2016 10:41:43
+Scope: vsim2
+
+    Counter                                     Value
+    ----------------------------    ----------------------
+    connected_shares                              2
+    encrypted_share_connections                   1
+
+2 entries were displayed.
+----
+Il comando seguente mostra il numero di connessioni di condivisione SMB non crittografate rifiutate dal nodo dell'esempio:
+
+[listing]
+----
+clus-2::*> statistics show -object cifs -counter rejected_unencrypted_shares –node node_name
+
+Object: cifs
+Instance: [proto_ctx:003]
+Start-time: 4/12/2016 10:41:38
+End-time: 4/12/2016 10:42:06
+Scope: vsim2
+
+    Counter                                     Value
+    --------------------------------    ----------------------
+    rejected_unencrypted_shares                   1
+
+1 entry was displayed.
+----
+====
+.Informazioni correlate
+xref:determine-statistics-objects-counters-available-task.adoc[Determinazione degli oggetti e dei contatori delle statistiche disponibili]
+
+link:../performance-admin/index.html["Panoramica sulla gestione e sul monitoraggio delle performance"]

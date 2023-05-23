@@ -1,0 +1,95 @@
+---
+permalink: system-admin/configure-sp-bmc-network-manually-task.html 
+sidebar: sidebar 
+keywords: configure, sp, bmc, network, manually, ip, address 
+summary: 'Se non si dispone della configurazione di rete automatica impostata per l"SP, è necessario configurare manualmente la rete SP di un nodo affinché l"SP sia accessibile utilizzando un indirizzo IP.' 
+---
+= Configurare la rete SP/BMC manualmente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se non si dispone della configurazione di rete automatica impostata per l'SP, è necessario configurare manualmente la rete SP di un nodo affinché l'SP sia accessibile utilizzando un indirizzo IP.
+
+.Di cosa hai bisogno
+Se si desidera utilizzare le connessioni IPv6 per l'SP, IPv6 deve essere già configurato e abilitato per ONTAP. Il `network options ipv6` I comandi gestiscono le impostazioni IPv6 per ONTAP.
+
+[NOTE]
+====
+Questa attività si applica sia all'SP che al BMC.
+
+====
+È possibile configurare l'SP in modo che utilizzi IPv4, IPv6 o entrambi. La configurazione SP IPv4 supporta l'indirizzamento statico e DHCP, mentre la configurazione SP IPv6 supporta solo l'indirizzamento statico.
+
+Se è stata impostata la configurazione di rete automatica SP, non è necessario configurare manualmente la rete SP per i singoli nodi e il `system service-processor network modify` Il comando consente di attivare o disattivare solo l'interfaccia di rete SP.
+
+.Fasi
+. Configurare la rete SP per un nodo utilizzando `system service-processor network modify` comando.
++
+** Il `-address-family` Parametro specifica se modificare la configurazione IPv4 o IPv6 dell'SP.
+** Il `-enable` Il parametro attiva l'interfaccia di rete della famiglia di indirizzi IP specificata.
+** Il `-dhcp` Parametro specifica se utilizzare la configurazione di rete dal server DHCP o dall'indirizzo di rete fornito.
++
+È possibile attivare DHCP (tramite l'impostazione `-dhcp` a. `v4`) Solo se si utilizza IPv4. Non è possibile attivare DHCP per le configurazioni IPv6.
+
+** Il `-ip-address` Parametro specifica l'indirizzo IP pubblico per l'SP.
++
+Quando si tenta di configurare manualmente la rete SP con gli indirizzi assegnati a una subnet, viene visualizzato un messaggio di avviso. Ignorare l'avviso e procedere con l'assegnazione manuale dell'indirizzo potrebbe causare un'assegnazione duplicata dell'indirizzo.
+
+** Il `-netmask` Parametro specifica la netmask per l'SP (se si utilizza IPv4).
+** Il `-prefix-length` Parametro specifica la lunghezza del prefisso di rete della subnet mask per l'SP (se si utilizza IPv6).
+** Il `-gateway` Parametro specifica l'indirizzo IP del gateway per l'SP.
+
+
+. Configurare la rete SP per i nodi rimanenti nel cluster ripetendo il passaggio 1.
+. Visualizzare la configurazione di rete SP e verificare lo stato di configurazione SP utilizzando `system service-processor network show` con il `–instance` oppure `–field setup-status` parametri.
++
+Lo stato di setup SP per un nodo può essere uno dei seguenti:
+
++
+** `not-setup` -- non configurato
+** `succeeded` -- Configurazione riuscita
+** `in-progress` -- Configurazione in corso
+** `failed` -- Configurazione non riuscita
+
+
+
+
+.Esempio di configurazione della rete SP
+Nell'esempio seguente viene configurato l'SP di un nodo per l'utilizzo di IPv4, viene attivato l'SP e viene visualizzata la configurazione di rete SP per verificare le impostazioni:
+
+[listing]
+----
+
+cluster1::> system service-processor network modify -node local
+-address-family IPv4 -enable true -ip-address 192.168.123.98
+-netmask 255.255.255.0 -gateway 192.168.123.1
+
+cluster1::> system service-processor network show -instance -node local
+
+                               Node: node1
+                       Address Type: IPv4
+                  Interface Enabled: true
+                     Type of Device: SP
+                             Status: online
+                        Link Status: up
+                        DHCP Status: none
+                         IP Address: 192.168.123.98
+                        MAC Address: ab:cd:ef:fe:ed:02
+                            Netmask: 255.255.255.0
+       Prefix Length of Subnet Mask: -
+         Router Assigned IP Address: -
+              Link Local IP Address: -
+                 Gateway IP Address: 192.168.123.1
+                  Time Last Updated: Thu Apr 10 17:02:13 UTC 2014
+                        Subnet Name: -
+Enable IPv6 Router Assigned Address: -
+            SP Network Setup Status: succeeded
+    SP Network Setup Failure Reason: -
+
+1 entries were displayed.
+
+cluster1::>
+----

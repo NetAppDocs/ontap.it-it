@@ -1,0 +1,122 @@
+---
+permalink: antivirus/architecture-concept.html 
+sidebar: sidebar 
+keywords: antivirus, architecture 
+summary: 'L"architettura antivirus di NetApp è costituita da un server Vscan e da una serie di configurazioni ONTAP.' 
+---
+= Architettura antivirus
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'architettura antivirus di NetApp è costituita da un server Vscan e da una serie di configurazioni ONTAP.
+
+
+
+== Componenti del server Vscan
+
+È necessario installare i seguenti componenti sul server Vscan.
+
+* *Connettore antivirus ONTAP*
++
+Il connettore antivirus ONTAP fornito da NetApp gestisce le comunicazioni tra ONTAP e il server Vscan.
+
+* *Software antivirus*
++
+Il software antivirus di terze parti conforme a ONTAP esegue la scansione dei file per rilevare virus o altri codici dannosi. Specificare le azioni correttive da intraprendere sui file infetti durante la configurazione del software.
+
+
+
+
+
+== Configurabili ONTAP
+
+È necessario configurare i seguenti elementi sul sistema di storage NetApp.
+
+* *Scanner pool*
++
+Un pool di scanner definisce i server Vscan e gli utenti con privilegi che possono connettersi alle SVM. Definisce inoltre un periodo di timeout della richiesta di scansione, trascorso il quale la richiesta di scansione viene inviata a un server Vscan alternativo, se disponibile.
+
++
+[NOTE]
+====
+Si consiglia di impostare il periodo di timeout nel software antivirus sul server Vscan su un valore inferiore di cinque secondi rispetto al periodo di timeout della richiesta del pool di scanner. per evitare situazioni in cui l'accesso al file viene ritardato o negato del tutto perché il periodo di timeout sul software è superiore al periodo di timeout per la richiesta di scansione.
+
+====
+* *Utente con privilegi*
++
+Un utente con privilegi è un account utente di dominio utilizzato da un server Vscan per connettersi a SVM. L'account deve essere incluso nell'elenco degli utenti con privilegi definiti nel pool di scanner.
+
+* *Criterio scanner*
++
+Un criterio dello scanner determina se un pool di scanner è attivo. Un criterio dello scanner può avere uno dei seguenti valori:
+
++
+** `Primary` specifica che il pool di scanner è attivo.
+** `Secondary` Specifica che il pool di scanner è attivo solo se nessuno dei server Vscan nel pool di scanner primario è connesso.
+** `Idle` specifica che il pool di scanner non è attivo. I criteri dello scanner sono definiti dal sistema. Non è possibile creare un criterio scanner personalizzato.
+
+
+* *Policy di accesso*
++
+Un criterio di accesso definisce l'ambito di una scansione all'accesso. È possibile specificare le dimensioni massime dei file da sottoporre a scansione, le estensioni dei file da includere nella scansione e le estensioni e i percorsi dei file da escludere dalla scansione.
+
++
+Per impostazione predefinita, viene eseguita la scansione solo dei volumi di lettura/scrittura. È possibile specificare i filtri che consentono la scansione di volumi di sola lettura o che limitano la scansione ai file aperti con accesso di esecuzione:
+
++
+** `scan-ro-volume` consente la scansione di volumi di sola lettura.
+** `scan-execute-access` limita la scansione ai file aperti con accesso di esecuzione.
++
+[NOTE]
+====
+"`Execute access`" non è identico a "`Execute permission`". Un determinato client avrà "`Execute Access`" su un file eseguibile solo se il file è stato aperto con "`Execute Intent`".
+
+====
+
+
++
+È possibile impostare `scan-mandatory` Selezionare Off per specificare che l'accesso al file è consentito quando non sono disponibili server Vscan per la scansione dei virus.
+
+* *Attività on-demand*
++
+Un'attività on-demand definisce l'ambito di una scansione on-demand. È possibile specificare le dimensioni massime dei file da sottoporre a scansione, le estensioni e i percorsi dei file da includere nella scansione e le estensioni e i percorsi dei file da escludere dalla scansione. Per impostazione predefinita, i file nelle sottodirectory vengono sottoposti a scansione.
+
++
+Si utilizza una pianificazione cron per specificare quando eseguire l'attività. È possibile utilizzare `vserver vscan on-demand-task run` per eseguire l'attività immediatamente.
+
+* *Profilo delle operazioni del file Vscan (solo scansione all'accesso)*
++
+Il `-vscan-fileop-profile` parametro per `vserver cifs share create` Il comando definisce quali operazioni su una condivisione SMB possono attivare la scansione virus. Per impostazione predefinita, il parametro è impostato su `standard`, Che è la Best practice NetApp.
+
++
+È possibile regolare questo parametro in base alle necessità quando si crea o si modifica una condivisione SMB:
+
++
+** `no-scan` specifica che le scansioni antivirus non vengono mai attivate per la condivisione.
+** `standard` specifica che le scansioni antivirus possono essere attivate mediante operazioni di apertura, chiusura e ridenominazione.
+** `strict` specifica che le scansioni antivirus possono essere attivate mediante operazioni di apertura, lettura, chiusura e ridenominazione.
++
+Il `strict` profile offre una maggiore sicurezza per le situazioni in cui più client accedono a un file contemporaneamente. Se un client chiude un file dopo averlo scritto e lo stesso file rimane aperto su un secondo client, `strict` garantisce che un'operazione di lettura sul secondo client attivi una scansione prima della chiusura del file.
+
++
+Fare attenzione a limitare il `strict` il profilo alle condivisioni contenenti file che prevedi sia accessibile contemporaneamente. Poiché il profilo genera più richieste di scansione rispetto agli altri, può influire negativamente sulle prestazioni.
+
+** `writes-only` specifica che le scansioni antivirus possono essere attivate solo quando un file modificato viene chiuso.
++
+[NOTE]
+====
+Se un'applicazione client esegue un'operazione di ridenominazione, il file viene chiuso con il nuovo nome e non viene sottoposto a scansione. Se tali operazioni rappresentano un problema di sicurezza nell'ambiente in uso, è necessario utilizzare `standard` oppure `strict` profilo.
+
+====
++
+Perché `writes-only` genera un numero inferiore di richieste di scansione rispetto agli altri profili (ad eccezione di `no-scan`), in genere migliora le performance.
+
++
+Tenere presente, tuttavia, che se si utilizza questo profilo per una condivisione, lo scanner deve essere configurato per eliminare o mettere in quarantena un file infetto non riparabile, in modo che i client non possano accedervi in un secondo momento. Se, ad esempio, un client chiude un file dopo la scrittura di un virus e il file non viene riparato, cancellato o messo in quarantena, qualsiasi client che accede al file _senza_ scriverlo verrà infettato.
+
+
+
+

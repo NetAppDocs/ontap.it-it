@@ -1,0 +1,57 @@
+---
+permalink: san-admin/restore-all-luns-volume-snapshot-copy-task.html 
+sidebar: sidebar 
+keywords: restore, all, luns in a volume, from, snapshot copy 
+summary: È possibile utilizzare il comando di ripristino dello snapshot del volume per ripristinare tutte le LUN di un volume specificato da una copia Snapshot. 
+---
+= Ripristinare tutte le LUN di un volume da una copia Snapshot
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `volume snapshot restore` Comando per ripristinare tutte le LUN di un volume specificato da una copia Snapshot.
+
+.Fasi
+. Interrompere tutti gli accessi host alle LUN dall'host.
++
+L'utilizzo di SnapRestore senza interrompere tutti gli accessi host alle LUN nel volume può causare la corruzione dei dati e gli errori di sistema.
+
+. Smontare i LUN su tale host in modo che l'host non possa accedere ai LUN.
+. Dismappare le LUN:
++
+`lun mapping delete -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -igroup _igroup_name_`
+
+. Determinare la copia Snapshot in cui si desidera ripristinare il volume:
++
+`volume snapshot show -vserver _vserver_name_ -volume _volume_name_`
+
+. Impostare i privilegi su Advanced (avanzato):
++
+`set -privilege advanced`
+
+. Ripristinare i dati:
++
+`volume snapshot restore -vserver _vserver_name_ -volume _volume_name_ -snapshot _snapshot_name_`
+
+. Seguire le istruzioni visualizzate.
+. Rimappare le LUN:
++
+`lun mapping create -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -igroup _igroup_name_`
+
+. Verificare che i LUN siano online:
++
+`lun show -vserver _vserver_name_ -path _lun_path_ -fields state`
+
+. Se le LUN non sono online, portarle online:
++
+`lun modify -vserver _vserver_name_ -path _lun_path_ -state online`
+
+. Impostare i privilegi su admin:
++
+`set -privilege admin`
+
+. Dall'host, rimontare i LUN.
+. Dall'host, riavviare l'accesso ai LUN.
+

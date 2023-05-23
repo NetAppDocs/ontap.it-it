@@ -1,0 +1,42 @@
+---
+permalink: volumes/configure-automatic-grow-shrink-size-task.html 
+sidebar: sidebar 
+keywords: configure, volumes, automatically, grow, shrink, size 
+summary: 'È possibile configurare i volumi FlexVol in modo che aumentino e diminuiscano automaticamente in base allo spazio attualmente richiesto. La crescita automatica aiuta a evitare che un volume esaurisca lo spazio, se l"aggregato è in grado di fornire più spazio. La riduzione automatica impedisce a un volume di essere più grande del necessario, liberando spazio nell"aggregato per l"utilizzo da parte di altri volumi.' 
+---
+= Configurare i volumi per aumentare e ridurre automaticamente le dimensioni
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare i volumi FlexVol in modo che aumentino e diminuiscano automaticamente in base allo spazio attualmente richiesto. La crescita automatica aiuta a evitare che un volume esaurisca lo spazio, se l'aggregato è in grado di fornire più spazio. La riduzione automatica impedisce a un volume di essere più grande del necessario, liberando spazio nell'aggregato per l'utilizzo da parte di altri volumi.
+
+.Di cosa hai bisogno
+Il volume FlexVol deve essere online.
+
+.A proposito di questa attività
+La riduzione automatica può essere utilizzata solo in combinazione con la crescita automatica per soddisfare le esigenze di spazio in continua evoluzione e non è disponibile da sola. Quando la funzione di riduzione automatica è attivata, ONTAP gestisce automaticamente il comportamento di riduzione di un volume per evitare un loop infinito di operazioni di crescita automatica e di riduzione automatica.
+
+Man mano che un volume cresce, il numero massimo di file che può contenere potrebbe aumentare automaticamente. Quando un volume viene ridotto, il numero massimo di file che può contenere rimane invariato e un volume non può essere ridotto automaticamente al di sotto delle dimensioni corrispondenti al numero massimo di file corrente. Per questo motivo, potrebbe non essere possibile ridurre automaticamente un volume fino alle dimensioni originali.
+
+Per impostazione predefinita, la dimensione massima a cui un volume può crescere è pari al 120% della dimensione a cui è attivata la funzione di crescita automatica. Se è necessario garantire che il volume possa crescere fino a raggiungere un valore superiore, è necessario impostare di conseguenza la dimensione massima del volume.
+
+.Fase
+. Configurare il volume in modo che aumenti e riduca automaticamente le sue dimensioni:
++
+`volume autosize -vserver vserver_namevol_name -mode grow_shrink`
+
++
+Il seguente comando consente di modificare automaticamente le dimensioni di un volume chiamato test2. Il volume viene configurato per iniziare la riduzione quando è pieno al 60%. I valori predefiniti vengono utilizzati per il momento in cui inizierà a crescere e per le dimensioni massime.
+
++
+[listing]
+----
+cluster1::> volume autosize -vserver vs2 test2 -shrink-threshold-percent 60
+vol autosize: Flexible volume "vs2:test2" autosize settings UPDATED.
+
+Volume modify successful on volume: test2
+----
+

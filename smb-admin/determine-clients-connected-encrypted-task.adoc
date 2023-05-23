@@ -1,0 +1,81 @@
+---
+permalink: smb-admin/determine-clients-connected-encrypted-task.html 
+sidebar: sidebar 
+keywords: display, information, connect, smb, session, determine, client, encrypt, smb, connection, helpful, determining, session, desire, security, setting, determine whether client are connected using encrypted smb sessions 
+summary: È possibile visualizzare informazioni sulle sessioni SMB connesse per determinare se i client utilizzano connessioni SMB crittografate. Questo può essere utile per determinare se le sessioni del client SMB si connettono con le impostazioni di sicurezza desiderate. 
+---
+= Determinare se i client sono connessi utilizzando sessioni SMB crittografate
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile visualizzare informazioni sulle sessioni SMB connesse per determinare se i client utilizzano connessioni SMB crittografate. Questo può essere utile per determinare se le sessioni del client SMB si connettono con le impostazioni di sicurezza desiderate.
+
+.A proposito di questa attività
+Le sessioni dei client SMB possono avere uno dei tre livelli di crittografia seguenti:
+
+* `unencrypted`
++
+La sessione SMB non è crittografata. Non è stata configurata la crittografia a livello di SVM (Storage Virtual Machine) o a livello di condivisione.
+
+* `partially-encrypted`
++
+La crittografia viene avviata quando si verifica la connessione ad albero. La crittografia a livello di condivisione è configurata. La crittografia a livello di SVM non è attivata.
+
+* `encrypted`
++
+La sessione SMB è completamente crittografata. La crittografia a livello di SVM è attivata. La crittografia a livello di condivisione potrebbe non essere attivata. L'impostazione di crittografia a livello di SVM sostituisce l'impostazione di crittografia a livello di condivisione.
+
+
+
+.Fasi
+. Eseguire una delle seguenti operazioni:
++
+|===
+| Se si desidera visualizzare informazioni su... | Immettere il comando... 
+
+
+ a| 
+Sessioni con un'impostazione di crittografia specificata per le sessioni su una SVM specificata
+ a| 
+`vserver cifs session show -vserver _vserver_name_ {unencrypted|partially-encrypted|encrypted} -instance`
+
+
+
+ a| 
+L'impostazione di crittografia per un ID sessione specifico su una SVM specificata
+ a| 
+`vserver cifs session show -vserver _vserver_name_ -session-id _integer_ -instance`
+
+|===
+
+
+.Esempi
+Il seguente comando visualizza informazioni dettagliate sulla sessione, inclusa l'impostazione di crittografia, in una sessione SMB con ID sessione 2:
+
+[listing]
+----
+cluster1::> vserver cifs session show -vserver vs1 -session-id 2 -instance
+                        Node: node1
+                     Vserver: vs1
+                  Session ID: 2
+               Connection ID: 3151274158
+Incoming Data LIF IP Address: 10.2.1.1
+                 Workstation: 10.1.1.2
+    Authentication Mechanism: Kerberos
+                Windows User: DOMAIN\joe
+                   UNIX User: pcuser
+                 Open Shares: 1
+                  Open Files: 1
+                  Open Other: 0
+              Connected Time: 10m 43s
+                   Idle Time: 1m 19s
+            Protocol Version: SMB3
+      Continuously Available: No
+           Is Session Signed: true
+       User Authenticated as: domain-user
+                NetBIOS Name: CIFS_ALIAS1
+       SMB Encryption Status: Unencrypted
+----

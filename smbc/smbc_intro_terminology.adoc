@@ -1,0 +1,48 @@
+---
+sidebar: sidebar 
+permalink: smbc/smbc_intro_terminology.html 
+keywords: SM-BC, SMBC, Mediator, terminology 
+summary: 'Mentre inizi a esplorare la business continuity di ONTAP SnapMirror e pianifichi un"implementazione, è utile acquisire familiarità con la terminologia e i concetti chiave.' 
+---
+= Concetti chiave
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Mentre inizi a esplorare la business continuity di ONTAP SnapMirror e pianifichi un'implementazione, è utile acquisire familiarità con la terminologia e i concetti chiave.
+
+.SM-BC
+Acronimo di SnapMirror Business Continuity (SM-BC) disponibile con ONTAP 9.8 e versioni successive.
+
+.Gruppo di coerenza
+A partire da ONTAP 9.10.1, i gruppi di coerenza sono diventati un'unità di gestione del primo ordine. Per ulteriori informazioni sui gruppi di coerenza, fare riferimento a. link:../consistency-groups/index.html["Panoramica dei gruppi di coerenza"].
+
+Un gruppo di coerenza (CG) è un insieme di volumi FlexVol che forniscono una garanzia di coerenza dell'ordine di scrittura per il carico di lavoro dell'applicazione che deve essere protetto per la business continuity. Lo scopo di un gruppo di coerenza è quello di eseguire copie Snapshot simultanee e coerenti con il crash di un insieme di volumi in un momento specifico. Nella distribuzione regolare, il gruppo di volumi scelti per far parte di un CG viene mappato a un'istanza dell'applicazione. Le relazioni di SnapMirror, note anche come relazione CG, vengono stabilite tra un CG di origine e un CG di destinazione. I CGS di origine e di destinazione devono contenere lo stesso numero e tipo di volumi.
+
+.Costituente
+I singoli volumi FlexVol che fanno parte di un gruppo di coerenza.
+
+.Mediatore
+Il mediatore ONTAP fornisce un percorso di integrità alternativo al cluster peer, con le LIF dell'intercluster che forniscono l'altro percorso di integrità. Con le informazioni sullo stato di salute del mediatore, i cluster possono distinguere tra guasto LIF intercluster e guasto del sito. Quando il sito non funziona, Mediator trasmette on-demand le informazioni sullo stato di salute al cluster peer, facilitando il failover del cluster peer. Con le informazioni fornite dal mediatore e le informazioni di controllo dello stato LIF dell'intercluster, ONTAP determina se eseguire un failover automatico, se non è possibile eseguire il failover, continuare o arrestare.
+
+Il mediatore è una delle tre parti del quorum SM-BC che lavorano con il cluster primario e il cluster secondario per raggiungere un consenso. Un consenso richiede che almeno due parti del quorum accettino un'operazione.
+
+.Fuori sincronizzazione (OOS)
+L'i/o dell'applicazione non viene replicato nel sistema di storage secondario. Il volume di destinazione non è sincronizzato con il volume di origine perché la replica di SnapMirror non si verifica. Se lo stato mirror è SnapMirrored, significa che si è verificato un errore di trasferimento o un errore dovuto a un'operazione non supportata.
+
+.RPO zero
+Obiettivo zero recovery point. Si tratta della quantità accettabile di perdita di dati dovuta al downtime.
+
+.RTO zero
+L'obiettivo di tempo di ripristino zero o il failover trasparente dell'applicazione si ottiene utilizzando il failover del percorso basato su software MPIO (host Multipath i/o) per fornire un accesso senza interruzioni allo storage.
+
+.Failover pianificato
+Un'operazione manuale per modificare i ruoli delle copie in una relazione SM-BC. Il primario diventa il secondario e il secondario diventa il primario. Anche il reporting ALUA cambia.
+
+.Failover automatico non pianificato (AUFO)
+Un'operazione automatica per eseguire un failover sulla copia mirror. L'operazione richiede l'assistenza di Mediator per rilevare che la copia principale non è disponibile.

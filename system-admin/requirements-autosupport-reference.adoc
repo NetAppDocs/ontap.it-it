@@ -1,0 +1,85 @@
+---
+permalink: system-admin/requirements-autosupport-reference.html 
+sidebar: sidebar 
+keywords: requirements, autosupport, messages, http, smtp, https, configuration, support, protocols 
+summary: 'Utilizzare HTTPS per l"invio dei messaggi AutoSupport per garantire la massima sicurezza e per supportare tutte le funzionalità AutoSupport più recenti. Sebbene AutoSupport supporti HTTP e SMTP per l"invio di messaggi AutoSupport, si consiglia di utilizzare HTTPS.' 
+---
+= Requisiti per l'utilizzo di AutoSupport
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Utilizzare HTTPS per l'invio dei messaggi AutoSupport per garantire la massima sicurezza e per supportare tutte le funzionalità AutoSupport più recenti. Sebbene AutoSupport supporti HTTP e SMTP per l'invio di messaggi AutoSupport, si consiglia di utilizzare HTTPS.
+
+
+
+== Protocolli supportati
+
+Tutti questi protocolli vengono eseguiti su IPv4 o IPv6, in base alla famiglia di indirizzi a cui il nome viene risolto.
+
+|===
+| Protocollo e porta | Descrizione 
+
+
+ a| 
+HTTPS sulla porta 443
+ a| 
+Questo è il protocollo predefinito. Se possibile, utilizzare questa opzione.
+
+Questo protocollo supporta AutoSupport OnDemand e upload di file di grandi dimensioni.
+
+Il certificato proveniente dal server remoto viene convalidato in base al certificato root, a meno che non venga disattivata la convalida.
+
+Il recapito utilizza una richiesta HTTP PUT. Con PUT, se la richiesta non riesce durante la trasmissione, la richiesta viene riavviata da dove è stata interrotta. Se il server che riceve la richiesta non supporta PUT, il recapito utilizza una richiesta HTTP POST.
+
+
+
+ a| 
+HTTP sulla porta 80
+ a| 
+Questo protocollo è preferito rispetto a SMTP.
+
+Questo protocollo supporta il caricamento di file di grandi dimensioni, ma non AutoSupport OnDemand.
+
+Il recapito utilizza una richiesta HTTP PUT. Con PUT, se la richiesta non riesce durante la trasmissione, la richiesta viene riavviata da dove è stata interrotta. Se il server che riceve la richiesta non supporta PUT, il recapito utilizza una richiesta HTTP POST.
+
+
+
+ a| 
+SMTP sulla porta 25 o su un'altra porta
+ a| 
+Utilizzare questo protocollo solo se la connessione di rete non consente HTTPS o HTTP.
+
+Il valore predefinito della porta è 25, ma è possibile configurare AutoSupport in modo che utilizzi una porta diversa.
+
+Tenere presenti le seguenti limitazioni quando si utilizza SMTP:
+
+* AutoSupport OnDemand e upload di file di grandi dimensioni non sono supportati.
+* I dati non sono crittografati.
++
+SMTP invia i dati in testo chiaro, rendendo il testo nel messaggio AutoSupport facile da intercettare e leggere.
+
+* È possibile introdurre limitazioni sulla lunghezza del messaggio e della linea.
+
+
+|===
+Se si configura AutoSupport con indirizzi e-mail specifici per l'organizzazione di supporto interna o per un'organizzazione di partner di supporto, tali messaggi vengono sempre inviati tramite SMTP.
+
+Ad esempio, se si utilizza il protocollo consigliato per inviare messaggi al supporto tecnico e si desidera anche inviare messaggi all'organizzazione di supporto interna, i messaggi verranno trasportati utilizzando sia HTTPS che SMTP, rispettivamente.
+
+AutoSupport limita le dimensioni massime dei file per ciascun protocollo. L'impostazione predefinita per i trasferimenti HTTP e HTTPS è 25 MB. L'impostazione predefinita per i trasferimenti SMTP è 5 MB. Se le dimensioni del messaggio AutoSupport superano il limite configurato, AutoSupport recapita la maggior parte del messaggio possibile. È possibile modificare le dimensioni massime modificando la configurazione di AutoSupport. Vedere `system node autosupport modify` pagina man per ulteriori informazioni.
+
+[NOTE]
+====
+AutoSupport sovrascrive automaticamente il limite massimo delle dimensioni dei file per i protocolli HTTPS e HTTP quando si generano e inviano messaggi AutoSupport che caricano i file core dump o di archivio delle performance al sito di supporto NetApp o a un URI specificato. L'override automatica si applica solo quando si caricano i file utilizzando `system node autosupport invoke-core-upload` o il `system node autosupport invoke-performance-archive` comandi.
+
+====
+
+
+== Requisiti di configurazione
+
+A seconda della configurazione di rete, l'utilizzo dei protocolli HTTP o HTTPS potrebbe richiedere un'ulteriore configurazione di un URL proxy. Se si utilizza HTTP o HTTPS per inviare messaggi AutoSupport al supporto tecnico e si dispone di un proxy, è necessario identificare l'URL per tale proxy. Se il proxy utilizza una porta diversa da quella predefinita, ovvero 3128, è possibile specificare la porta per tale proxy. È inoltre possibile specificare un nome utente e una password per l'autenticazione del proxy.
+
+Se si utilizza SMTP per inviare messaggi AutoSupport all'organizzazione di supporto interna o al supporto tecnico, è necessario configurare un server di posta esterno. Il sistema di storage non funziona come server di posta, ma richiede un server di posta esterno per l'invio della posta. Il server di posta deve essere un host in attesa sulla porta SMTP (25) o su un'altra porta e deve essere configurato per inviare e ricevere la codifica MIME (Multipurpose Internet Mail Extensions) a 8 bit. Gli host di posta di esempio includono un host UNIX che esegue un server SMTP come il programma sendmail e un server Windows che esegue il server Microsoft Exchange. È possibile disporre di uno o più host di posta.

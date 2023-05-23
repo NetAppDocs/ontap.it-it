@@ -1,0 +1,90 @@
+---
+permalink: encryption-at-rest/key-management-servers-not-reachable-boot-concept.html 
+sidebar: sidebar 
+keywords: what, happens, key management servers, not reachable, boot, process 
+summary: ONTAP prende alcune precauzioni per evitare comportamenti indesiderati nel caso in cui un sistema storage configurato per NSE non riesca a raggiungere nessuno dei server di gestione delle chiavi specificati durante il processo di avvio. 
+---
+= Cosa accade quando i server di gestione delle chiavi non sono raggiungibili durante il processo di avvio
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP prende alcune precauzioni per evitare comportamenti indesiderati nel caso in cui un sistema storage configurato per NSE non riesca a raggiungere nessuno dei server di gestione delle chiavi specificati durante il processo di avvio.
+
+Se il sistema di storage è configurato per NSE, i SED vengono ridigitati e bloccati e i SED sono accesi, il sistema di storage deve recuperare le chiavi di autenticazione richieste dai server di gestione delle chiavi per autenticarsi ai SED prima di poter accedere ai dati.
+
+Il sistema storage tenta di contattare i server di gestione delle chiavi specificati per un massimo di tre ore. Se il sistema storage non riesce a raggiungerne uno dopo tale periodo, il processo di avvio si interrompe e il sistema storage si arresta.
+
+Se il sistema di storage contatta correttamente qualsiasi server di gestione delle chiavi specificato, tenta di stabilire una connessione SSL per un massimo di 15 minuti. Se il sistema di storage non riesce a stabilire una connessione SSL con un server di gestione delle chiavi specificato, il processo di avvio si interrompe e il sistema di storage si arresta.
+
+Mentre il sistema di storage tenta di contattare e connettersi ai server di gestione delle chiavi, visualizza informazioni dettagliate sui tentativi di contatto non riusciti alla CLI. È possibile interrompere i tentativi di contatto in qualsiasi momento premendo Ctrl-C.
+
+Come misura di sicurezza, i SED consentono solo un numero limitato di tentativi di accesso non autorizzati, dopodiché disattivano l'accesso ai dati esistenti. Se il sistema di storage non riesce a contattare alcun server di gestione delle chiavi specificato per ottenere le chiavi di autenticazione appropriate, può solo tentare di autenticare con la chiave predefinita, il che causa un tentativo di errore e un panico. Se il sistema di storage è configurato per il riavvio automatico in caso di panico, entra in un loop di avvio che porta a tentativi di autenticazione non riusciti continui sui SED.
+
+L'arresto del sistema storage in questi scenari è progettato per impedire al sistema storage di entrare in un loop di avvio e di perdere dati non intenzionale come conseguenza del blocco permanente dei SED dovuto al superamento del limite di sicurezza di un certo numero di tentativi di autenticazione consecutivi non riusciti. Il limite e il tipo di protezione di blocco dipendono dalle specifiche di produzione e dal tipo di SED:
+
+[cols="30,15,55"]
+|===
+
+
+| TIPO SED | Numero di tentativi consecutivi di autenticazione non riusciti che hanno determinato il blocco | Tipo di protezione di blocco quando viene raggiunto il limite di sicurezza 
+
+
+ a| 
+DISCO RIGIDO
+ a| 
+1024
+ a| 
+Permanente. I dati non possono essere recuperati, anche quando la chiave di autenticazione appropriata diventa nuovamente disponibile.
+
+
+
+ a| 
+X440_PHM2800 MCTO SSD NSE da 800 GB con revisioni del firmware NA00 o NA01
+ a| 
+5
+ a| 
+Temporaneo. Il blocco è valido solo fino a quando il disco non viene spento e riacceso.
+
+
+
+ a| 
+X577_PHM2800 MCTO SSD NSE da 800 GB con revisioni del firmware NA00 o NA01
+ a| 
+5
+ a| 
+Temporaneo. Il blocco è valido solo fino a quando il disco non viene spento e riacceso.
+
+
+
+ a| 
+X440_PHM2800MCTO SSD NSE da 800 GB con revisioni del firmware superiori
+ a| 
+1024
+ a| 
+Permanente. I dati non possono essere recuperati, anche quando la chiave di autenticazione appropriata diventa nuovamente disponibile.
+
+
+
+ a| 
+X577_PHM2800MCTO SSD NSE da 800 GB con revisioni del firmware superiori
+ a| 
+1024
+ a| 
+Permanente. I dati non possono essere recuperati, anche quando la chiave di autenticazione appropriata diventa nuovamente disponibile.
+
+
+
+ a| 
+Tutti gli altri modelli di SSD
+ a| 
+1024
+ a| 
+Permanente. I dati non possono essere recuperati, anche quando la chiave di autenticazione appropriata diventa nuovamente disponibile.
+
+|===
+Per tutti i tipi SED, un'autenticazione corretta azzera il numero di proy.
+
+Se si verifica questo scenario in cui il sistema storage viene arrestato a causa di un errore di accesso a uno dei server di gestione delle chiavi specificati, prima di continuare l'avvio del sistema storage è necessario identificare e correggere la causa dell'errore di comunicazione.

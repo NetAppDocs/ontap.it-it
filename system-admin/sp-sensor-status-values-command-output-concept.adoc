@@ -1,0 +1,268 @@
+---
+permalink: system-admin/sp-sensor-status-values-command-output-concept.html 
+sidebar: sidebar 
+keywords: understand, discrete, sp, sensor, status, values, command, output, cli, hexedecimal, format 
+summary: 'I sensori discreti non hanno soglie. Le letture, visualizzate sotto la colonna Current (corrente) nell"output di comando dei sensori del sistema SP CLI, non portano significati effettivi e vengono quindi ignorate dall"SP. La colonna Status (Stato) nell"output del comando dei sensori di sistema visualizza i valori di stato dei sensori discreti in formato esadecimale.' 
+---
+= Informazioni sui valori di stato del sensore SP discreto dell'output del comando dei sensori di sistema
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+I sensori discreti non hanno soglie. I relativi valori, visualizzati sotto `Current` Nella colonna SP CLI `system sensors` Output del comando, non portano significati effettivi e quindi vengono ignorati dal SP. Il `Status` nella colonna `system sensors` l'output del comando visualizza i valori di stato dei sensori discreti in formato esadecimale.
+
+Esempi di sensori discreti includono sensori per la ventola, guasti all'alimentatore e guasti al sistema. L'elenco specifico di sensori discreti dipende dalla piattaforma.
+
+È possibile utilizzare la CLI SP `system sensors get` `sensor_name` comando per l'interpretazione dei valori di stato per la maggior parte dei sensori discreti. I seguenti esempi mostrano i risultati dell'immissione `system sensors get` `sensor_name` Per i sensori discreti CPU0_Error e io_Slot1_Present:
+
+[listing]
+----
+SP node1> system sensors get CPU0_Error
+Locating sensor record...
+Sensor ID              : CPU0_Error (0x67)
+ Entity ID             : 7.97
+ Sensor Type (Discrete): Temperature
+ States Asserted       : Digital State
+                         [State Deasserted]
+----
+[listing]
+----
+SP node1> system sensors get IO_Slot1_Present
+Locating sensor record...
+Sensor ID              : IO_Slot1_Present (0x74)
+ Entity ID             : 11.97
+ Sensor Type (Discrete): Add-in Card
+ States Asserted       : Availability State
+                        [Device Present]
+----
+Anche se il `system sensors get` `sensor_name` Command visualizza le informazioni di stato per la maggior parte dei sensori discreti, non fornisce informazioni di stato per i sensori discreti System_FW_Status, System_Watchdog, PSU1_Input_Type e PSU2_Input_Type. È possibile utilizzare le seguenti informazioni per interpretare i valori di stato di questi sensori.
+
+
+
+== System_FW_Status
+
+La condizione del sensore System_FW_Status viene visualizzata sotto forma di `0xAABB`. È possibile combinare le informazioni di `AA` e. `BB` per determinare le condizioni del sensore.
+
+`AA` può avere uno dei seguenti valori:
+
+|===
+| Valori | Condizione del sensore 
+
+
+ a| 
+01
+ a| 
+Errore del firmware di sistema
+
+
+
+ a| 
+02
+ a| 
+Il firmware di sistema si blocca
+
+
+
+ a| 
+04
+ a| 
+Avanzamento del firmware di sistema
+
+|===
+`BB` può avere uno dei seguenti valori:
+
+|===
+| Valori | Condizione del sensore 
+
+
+ a| 
+00
+ a| 
+Il software di sistema si è arrestato correttamente
+
+
+
+ a| 
+01
+ a| 
+Inizializzazione della memoria in corso
+
+
+
+ a| 
+02
+ a| 
+Inizializzazione NVMEM in corso (quando è presente NVMEM)
+
+
+
+ a| 
+04
+ a| 
+Ripristino dei valori MCH (Memory Controller Hub) (quando è presente NVMEM)
+
+
+
+ a| 
+05
+ a| 
+L'utente ha inserito il programma di installazione
+
+
+
+ a| 
+13
+ a| 
+Avviare il sistema operativo o IL CARICATORE
+
+
+
+ a| 
+1F
+ a| 
+BIOS in fase di avvio
+
+
+
+ a| 
+20
+ a| 
+IL CARICATORE è in esecuzione
+
+
+
+ a| 
+21
+ a| 
+IL CARICATORE sta programmando il firmware principale del BIOS. Non spegnere il sistema.
+
+
+
+ a| 
+22
+ a| 
+IL CARICATORE sta programmando il firmware alternativo del BIOS. Non spegnere il sistema.
+
+
+
+ a| 
+2F
+ a| 
+ONTAP è in esecuzione
+
+
+
+ a| 
+60
+ a| 
+SP ha spento il sistema
+
+
+
+ a| 
+61
+ a| 
+SP ha acceso il sistema
+
+
+
+ a| 
+62
+ a| 
+SP ha ripristinato il sistema
+
+
+
+ a| 
+63
+ a| 
+Spegnere e riaccendere il watchdog SP
+
+
+
+ a| 
+64
+ a| 
+Ripristino a freddo del watchdog SP
+
+|===
+Ad esempio, lo stato del sensore System_FW_Status 0x042F indica "System firmware Progress (04), ONTAP is running (2F)" (avanzamento del firmware di sistema ().
+
+
+
+== System_Watchdog
+
+Il sensore System_Watchdog può avere una delle seguenti condizioni:
+
+* *0x0080*
++
+Lo stato di questo sensore non è cambiato
+
+
+
+|===
+| Valori | Condizione del sensore 
+
+
+ a| 
+0x0081
+ a| 
+Interruzione del timer
+
+
+
+ a| 
+0x0180
+ a| 
+Timer scaduto
+
+
+
+ a| 
+0x0280
+ a| 
+Reimpostazione a freddo
+
+
+
+ a| 
+0x0480
+ a| 
+Spegnere
+
+
+
+ a| 
+0x0880
+ a| 
+Spegnere e riaccendere
+
+|===
+Ad esempio, lo stato del sensore System_Watchdog 0x0880 indica che si verifica un timeout di watchdog e provoca un ciclo di alimentazione del sistema.
+
+
+
+== PSU1_Input_Type e PSU2_Input_Type
+
+Per gli alimentatori a corrente continua (CC), i sensori PSU1_Input_Type e PSU2_Input_Type non sono applicabili. Per gli alimentatori a corrente alternata (CA), lo stato dei sensori può avere uno dei seguenti valori:
+
+|===
+| Valori | Condizione del sensore 
+
+
+ a| 
+0x01 xx
+ a| 
+Tipo di PSU da 220 V.
+
+
+
+ a| 
+0x02 xx
+ a| 
+Tipo di PSU da 110 V.
+
+|===
+Ad esempio, lo stato del sensore PSU1_Input_Type 0x0280 indica che il sensore segnala che il tipo di PSU è 110 V.

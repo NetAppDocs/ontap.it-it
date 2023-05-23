@@ -1,0 +1,62 @@
+---
+permalink: smb-hyper-v-sql/continuously-available-share-hyper-v-concept.html 
+sidebar: sidebar 
+keywords: share, requirements, continuously, share, consideration, hyper, v, smb, nondiruptive, operation 
+summary: Quando si configurano condivisioni a disponibilità continua per configurazioni Hyper-V su SMB che supportano operazioni senza interruzioni, è necessario essere consapevoli di determinati requisiti e considerazioni. 
+---
+= Requisiti e considerazioni di condivisione continuamente disponibili per Hyper-V su SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si configurano condivisioni a disponibilità continua per configurazioni Hyper-V su SMB che supportano operazioni senza interruzioni, è necessario essere consapevoli di determinati requisiti e considerazioni.
+
+
+
+== Condividere i requisiti
+
+* Le condivisioni utilizzate dai server applicazioni devono essere configurate con il set di proprietà Continuously Available (disponibilità continua).
++
+Gli application server che si connettono alle condivisioni continuamente disponibili ricevono handle persistenti che consentono loro di riconnettersi senza interruzioni alle condivisioni SMB e recuperare i blocchi di file dopo eventi di interruzione, come takeover, giveback e trasferimento di aggregati.
+
+* Se si desidera utilizzare i servizi di backup abilitati per Remote VSS, non è possibile inserire i file Hyper-V in condivisioni che contengono giunzioni.
++
+In caso di ripristino automatico, la creazione della copia shadow non riesce se viene rilevata una giunzione durante l'attraversamento della condivisione. In caso di non ripristino automatico, la creazione della copia shadow non fallisce, ma la giunzione non punta a nulla.
+
+* Se si desidera utilizzare i servizi di backup abilitati per Remote VSS con il ripristino automatico, non è possibile inserire i file Hyper-V in condivisioni contenenti quanto segue:
++
+** Symlink, hardlink o widelink
+** File non regolari
++
+La creazione della copia shadow non riesce se nella copia shadow sono presenti collegamenti o file non regolari. Questo requisito si applica solo alle copie shadow con ripristino automatico.
+
+** Per eseguire correttamente le operazioni di copia shadow, è necessario disporre di spazio disponibile sufficiente sul volume (solo per Hyper-V su SMB).
++
+Lo spazio disponibile deve essere almeno pari allo spazio combinato utilizzato da tutti i file, le directory e le sottodirectory contenuti nelle condivisioni incluse nel set di backup delle copie shadow. Questo requisito si applica solo alle copie shadow con ripristino automatico.
+
+
+
+* Le seguenti proprietà di condivisione non devono essere impostate sulle condivisioni a disponibilità continua utilizzate dai server applicazioni:
++
+** Home directory
+** Caching degli attributi
+** BranchCache
+
+
+
+
+
+
+== Considerazioni
+
+* Le quote sono supportate nelle condivisioni a disponibilità continua.
+* Le seguenti funzionalità non sono supportate per le configurazioni Hyper-V su SMB:
++
+** Controllo
+** FPolicy
+
+
+* La scansione antivirus non viene eseguita sulle condivisioni SMB con `continuously-availability` parametro impostato su `Yes`.
+

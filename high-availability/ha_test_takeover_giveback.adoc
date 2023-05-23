@@ -1,0 +1,164 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha_test_takeover_giveback.html 
+keywords: ontap, high, availability, ha, pair, test, testing, takeover, giveback 
+summary: 'Dopo aver configurato tutti gli aspetti della coppia ha, è necessario verificare che funzioni come previsto per mantenere l"accesso ininterrotto allo storage di entrambi i nodi durante le operazioni di takeover e giveback' 
+---
+= Test di Takeover e giveback
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Dopo aver configurato tutti gli aspetti della coppia ha, è necessario verificare che funzioni come previsto per mantenere l'accesso ininterrotto allo storage di entrambi i nodi durante le operazioni di takeover e giveback. Durante il processo di acquisizione, il nodo locale (o Takeover) deve continuare a fornire i dati normalmente forniti dal nodo partner. Durante il giveback, il controllo e la consegna dello storage del partner dovrebbero tornare al nodo partner.
+
+.Fasi
+. Verificare che i cavi di interconnessione ha siano collegati correttamente.
+. Verificare che sia possibile creare e recuperare file su entrambi i nodi per ciascun protocollo concesso in licenza.
+. Immettere il seguente comando:
++
+`storage failover takeover -ofnode partnernode`
+
++
+Vedere la pagina man per i dettagli sui comandi.
+
+. Immettere uno dei seguenti comandi per confermare che si è verificato il Takeover:
++
+`storage failover show-takeover`
+
++
+`storage failover show`
+
++
+--
+Se si dispone di `storage failover` del comando `-auto-giveback` opzione attivata:
+
+|===
+
+
+| Nodo | Partner | Possibilità di acquisizione | Descrizione dello stato 
+
+
+| nodo 1 | nodo 2 | - | In attesa di un giveback 
+
+
+| nodo 2 | nodo 1 | falso | In fase di acquisizione, il giveback automatico verrà avviato in pochi secondi 
+|===
+Se si dispone di `storage failover` del comando `-auto-giveback` opzione disattivata:
+
+|===
+
+
+| Nodo | Partner | Possibilità di acquisizione | Descrizione dello stato 
+
+
+| nodo 1 | nodo 2 | - | In attesa di un giveback 
+
+
+| nodo 2 | nodo 1 | falso | In fase di acquisizione 
+|===
+--
+. Visualizzare tutti i dischi appartenenti al nodo partner (Node2) che il nodo di Takeover (Node1) può rilevare:
++
+`storage disk show -home node2 -ownership`
+
++
+--
+Il seguente comando visualizza tutti i dischi appartenenti a Node2 che Node1 può rilevare:
+`cluster::> storage disk show -home node2 -ownership`
+
+|===
+
+
+| Disco | Aggregato | A casa | Proprietario | Dr. Casa | ID casa | ID proprietario | ID casa DR | Riservatore | Piscina 
+
+
+| 1.0.2 | - | node2 | node2 | - | 4078312453 | 4078312453 | - | 4078312452 | Pool0 
+
+
+| 1.0.3 | - | node2 | node2 | - | 4078312453 | 4078312453 | - | 4078312452 | Pool0 
+|===
+--
+. Verificare che il nodo di Takeover (Node1) controlli gli aggregati del nodo partner (Node2):
++
+`aggr show ‑fields home‑id,home‑name,is‑home`
+
++
+--
+|===
+
+
+| aggregato | id abitazione | nome di casa | è a casa 
+
+
+ a| 
+aggr0_1
+ a| 
+2014942045
+ a| 
+node1
+ a| 
+vero
+
+
+
+ a| 
+aggr0_2
+ a| 
+4078312453
+ a| 
+node2
+ a| 
+falso
+
+
+
+ a| 
+aggr1_1
+ a| 
+2014942045
+ a| 
+node1
+ a| 
+vero
+
+
+
+| aggr1_2 | 4078312453 | node2  a| 
+falso
+
+|===
+Durante l'acquisizione, il valore "`is-home`" degli aggregati del nodo partner è falso.
+
+--
+. Restituire il servizio dati del nodo partner dopo aver visualizzato il messaggio "`Waiting for giveback`":
++
+`storage failover giveback -ofnode partnernode`
+
+. Immettere uno dei seguenti comandi per osservare l'avanzamento dell'operazione di giveback:
++
+`storage failover show-giveback`
+
++
+`storage failover show`
+
+. Procedere, a seconda che sia stato visualizzato il messaggio che indica che il giveback è stato completato correttamente:
++
+--
+|===
+
+
+| In caso di acquisizione e giveback... | Quindi... 
+
+
+| Sono stati completati correttamente | Ripetere i passaggi da 2 a 8 sul nodo partner. 
+
+
+| Non riuscito | Correggere l'errore di takeover o giveback, quindi ripetere questa procedura. 
+|===
+--
+

@@ -1,0 +1,46 @@
+---
+permalink: smb-config/create-share-task.html 
+sidebar: sidebar 
+keywords: create, smb, share, data, server, client, properties, home, directory, designate, designating, customize, configure, configuring, optional, setting, create an smb share 
+summary: È necessario creare una condivisione SMB prima di poter condividere i dati da un server SMB con client SMB. Quando si crea una condivisione, è possibile impostare le proprietà della condivisione, ad esempio designarla come home directory. È inoltre possibile personalizzare la condivisione configurando le impostazioni opzionali. 
+---
+= Creare una condivisione SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario creare una condivisione SMB prima di poter condividere i dati da un server SMB con client SMB. Quando si crea una condivisione, è possibile impostare le proprietà della condivisione, ad esempio designarla come home directory. È inoltre possibile personalizzare la condivisione configurando le impostazioni opzionali.
+
+.Prima di iniziare
+Il percorso della directory per il volume o qtree deve esistere nello spazio dei nomi SVM prima di creare la condivisione.
+
+.A proposito di questa attività
+Quando si crea una condivisione, l'ACL di condivisione predefinito (autorizzazioni di condivisione predefinite) è `Everyone / Full Control`. Dopo aver testato l'accesso alla condivisione, rimuovere l'ACL della condivisione predefinita e sostituirlo con un'alternativa più sicura.
+
+.Fasi
+. Se necessario, creare la struttura del percorso di directory per la condivisione.
++
+Il `vserver cifs share create` il comando verifica il percorso specificato in `-path` durante la creazione della condivisione. Se il percorso specificato non esiste, il comando non riesce.
+
+. Creare una condivisione SMB associata alla SVM specificata: `+vserver cifs share create -vserver vserver_name -share-name share_name -path path [-share-properties share_properties,...] [other_attributes] [-comment text]+`
+. Verificare che la condivisione sia stata creata:``vserver cifs share show -share-name share_name``
+
+
+.Esempi
+Il seguente comando crea una condivisione SMB denominata "`SHARE1`" su SVM `vs1.example.com`. Il percorso della directory è `/users`e viene creato con le proprietà predefinite.
+
+[listing]
+----
+cluster1::> vserver cifs share create -vserver vs1.example.com -share-name SHARE1 -path /users
+
+cluster1::> vserver cifs share show -share-name SHARE1
+
+Vserver          Share    Path     Properties Comment  ACL
+---------------  -------- -------- ---------- -------- -----------
+vs1.example.com  SHARE1   /users   oplocks    -        Everyone / Full Control
+                                   browsable
+                                   changenotify
+                                   show-previous-versions
+----

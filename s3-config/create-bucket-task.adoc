@@ -1,0 +1,164 @@
+---
+permalink: s3-config/create-bucket-task.html 
+sidebar: sidebar 
+keywords: s3, bucket, system manager, 
+summary: 'Gli oggetti S3 sono conservati in _bucket_--non sono nidificati come file all"interno di una directory all"interno di altre directory.' 
+---
+= Creare un bucket
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Gli oggetti S3 sono conservati in _bucket_--non sono nidificati come file all'interno di una directory all'interno di altre directory.
+
+.Prima di iniziare
+Una SVM contenente un server S3 deve già esistere.
+
+.A proposito di questa attività
+Per la CLI, quando si crea un bucket, sono disponibili due opzioni di provisioning:
+
+* Lasciare ONTAP Select gli aggregati sottostanti e i componenti FlexGroup (impostazione predefinita)
++
+** ONTAP crea e configura un volume FlexGroup per il primo bucket selezionando automaticamente gli aggregati. Verrà selezionato automaticamente il livello di servizio più alto disponibile per la piattaforma oppure sarà possibile specificare il livello di servizio storage. Tutti i bucket aggiuntivi aggiunti successivamente nella SVM avranno lo stesso volume FlexGroup sottostante.
+** In alternativa, è possibile specificare se il bucket verrà utilizzato per il tiering, nel qual caso ONTAP tenta di selezionare supporti a basso costo con performance ottimali per i dati su più livelli.
+
+
+* Si selezionano gli aggregati sottostanti e i componenti FlexGroup (richiede opzioni avanzate di comando dei privilegi)
++
+** È possibile selezionare manualmente gli aggregati su cui creare il bucket e il volume FlexGroup contenente, quindi specificare il numero di componenti su ciascun aggregato. Quando si aggiungono bucket aggiuntivi:
++
+*** Se si specificano aggregati e costituenti per un nuovo bucket, verrà creato un nuovo FlexGroup per il nuovo bucket.
+*** Se non si specificano aggregati e componenti per un nuovo bucket, il nuovo bucket verrà aggiunto a un FlexGroup esistente. Vedere xref:../flexgroup/index.html[Gestione dei volumi FlexGroup] per ulteriori informazioni.
++
+Quando si specificano aggregati e costituenti durante la creazione di un bucket, non vengono applicati gruppi di criteri QoS, predefiniti o personalizzati. È possibile farlo in un secondo momento con `vserver object-store-server bucket modify` comando.
+
+
+
+
+
+
+
+*Nota:* se si utilizzano bucket da Cloud Volumes ONTAP, è necessario utilizzare la procedura CLI. Si consiglia di selezionare manualmente gli aggregati sottostanti per assicurarsi che utilizzino un solo nodo. L'utilizzo di aggregati di entrambi i nodi può influire sulle performance, poiché i nodi si trovano in zone di disponibilità separate geograficamente e quindi suscettibili a problemi di latenza.
+
+I livelli di servizio dello storage sono gruppi di criteri QoS (Quality of Service) adattivi predefiniti, con livelli predefiniti _value_, _performance_ e _Extreme_. Invece di uno dei livelli di servizio storage predefiniti, è possibile definire un gruppo di policy QoS personalizzato e applicarlo a un bucket.
+
+A partire da ONTAP 9.8, quando si esegue il provisioning dello storage, la qualità del servizio viene attivata per impostazione predefinita. È possibile disattivare la QoS o scegliere una policy QoS personalizzata durante il processo di provisioning o in un secondo momento.
+
+link:storage-service-definitions-reference.html["Definizioni dei servizi di storage"]
+
+Se si configura il tiering della capacità locale, si creano bucket e utenti in una SVM di dati, non nella SVM di sistema in cui si trova il server S3.
+
+Per l'accesso client remoto, è necessario configurare i bucket in una VM di storage abilitata per S3. Se si crea un bucket in una VM storage non abilitata per S3, sarà disponibile solo per il tiering locale.
+
+link:../performance-admin/index.html["Gestione delle performance"]
+
+Vedere `vserver object-store-server bucket` pagine man per ulteriori opzioni di configurazione e visualizzazione.
+
+
+
+== Processo per la creazione di bucket
+
+[role="tabbed-block"]
+====
+.CLI
+--
+. Se si prevede di selezionare autonomamente aggregati e componenti FlexGroup, impostare il livello di privilegio su Advanced (altrimenti, il livello di privilegio admin è sufficiente): `set -privilege advanced`
+. Creare un bucket:
++
+`vserver object-store-server bucket create -vserver _svm_name_ -bucket _bucket_name_ [-size integer[KB|MB|GB|TB|PB]] [-comment text] [additional_options]`
+
++
+Il nome SVM può essere un SVM di dati o. `Cluster` (Il nome SVM di sistema) se si sta configurando il tiering locale.
+
++
+Se non si specificano opzioni, ONTAP crea un bucket da 5 GB con il livello di servizio impostato sul livello più alto disponibile per il sistema.
+
++
+Se si desidera che ONTAP crei un bucket in base alle performance o all'utilizzo, utilizzare una delle seguenti opzioni:
+
++
+** livello di servizio
++
+Includere il `-storage-service-level` con uno dei seguenti valori: `value`, `performance`, o. `extreme`.
+
+** tiering
++
+Includere il `-used-as-capacity-tier true` opzione.
+
+
+
++
+Se si desidera specificare gli aggregati su cui creare il volume FlexGroup sottostante, utilizzare le seguenti opzioni:
+
++
+** Il `-aggr-list` Parametro specifica l'elenco di aggregati da utilizzare per i componenti del volume FlexGroup.
++
+Ogni voce dell'elenco crea un costituente nell'aggregato specificato. È possibile specificare un aggregato più volte per creare più costituenti sull'aggregato.
+
++
+Per ottenere performance costanti nel volume FlexGroup, tutti gli aggregati devono utilizzare lo stesso tipo di disco e le stesse configurazioni del gruppo RAID.
+
+** Il `-aggr-list-multiplier` il parametro specifica il numero di iterazioni degli aggregati elencati con `-aggr-list` Quando si crea un volume FlexGroup.
++
+Il valore predefinito di `-aggr-list-multiplier` il parametro è 4.
+
+
+
+. Aggiungere un gruppo di criteri QoS, se necessario:
++
+`vserver object-store-server bucket modify -bucket _bucket_name_ -qos-policy-group _qos_policy_group_`
+
+. Verificare la creazione del bucket:
++
+`vserver object-store-server bucket show [-instance]`
+
+
+
+.Esempio
+Nell'esempio seguente viene creato un bucket per SVM vs1 di dimensione 1 TB e viene specificato l'aggregato:
+
+[listing]
+----
+cluster-1::*> vserver object-store-server bucket create -vserver svm1.example.com -bucket testbucket -aggr-list aggr1 -size 1TB
+----
+--
+.System Manager
+--
+. Aggiungi un nuovo bucket su una VM di storage abilitata per S3.
++
+.. Fare clic su *Storage > Bucket*, quindi su *Add* (Aggiungi).
+.. Immettere un nome, selezionare la VM di storage e immettere una dimensione.
++
+*** Se si fa clic su *Save* (Salva) a questo punto, viene creato un bucket con le seguenti impostazioni predefinite:
++
+**** A nessun utente viene concesso l'accesso al bucket, a meno che non siano già in vigore policy di gruppo.
++
+
+NOTE: Non utilizzare l'utente root S3 per gestire lo storage a oggetti ONTAP e condividerne le autorizzazioni, in quanto dispone di accesso illimitato all'archivio di oggetti. Creare invece un utente o un gruppo con privilegi amministrativi assegnati.
+
+**** Un livello di qualità del servizio (performance) il più alto disponibile per il sistema.
+
+
+*** È possibile fare clic su *altre opzioni* per configurare le autorizzazioni utente e il livello di performance durante la configurazione del bucket, oppure modificare queste impostazioni in un secondo momento.
++
+**** È necessario aver già creato utenti e gruppi prima di utilizzare *altre opzioni* per configurare le relative autorizzazioni.
+**** Se si intende utilizzare l'archivio di oggetti S3 per il tiering FabricPool, si consiglia di selezionare *Use for Tiering* (utilizzare supporti a basso costo con performance ottimali per i dati a più livelli) piuttosto che un livello di servizio per le performance.
+
+
+
+
+
+
+. Sulle applicazioni client S3 – un altro sistema ONTAP o un'applicazione esterna di terze parti – verificare l'accesso al nuovo bucket immettendo quanto segue:
++
+** Certificato CA del server S3.
+** La chiave di accesso e la chiave segreta dell'utente.
+** Il nome FQDN e il nome bucket del server S3.
+
+
+
+
+--
+====

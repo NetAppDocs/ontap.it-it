@@ -1,0 +1,75 @@
+---
+sidebar: sidebar 
+permalink: networking/configure_failover_settings_on_a_lif.html 
+keywords: configure, configuring, configuration, setup, set, up, failover, fail, over, group, policy, lif, configure failover settings on a lif, broadcast-domain-wide, system-defined, local-only, sfo-partner-only, disabled, network interface modify -vserver <vserver_name> -lif <lif_name> -failover-policy <failover_policy> -failover-group <failover_group>, examples of configuring failover settings and disabling failover 
+summary: Configurare una LIF per il failover su un gruppo specifico di porte di rete 
+---
+= Configurare le impostazioni di failover su una LIF
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+È possibile configurare una LIF per il failover su un gruppo specifico di porte di rete applicando una policy di failover e un gruppo di failover alla LIF. È anche possibile disattivare il failover di una LIF su un'altra porta.
+
+.A proposito di questa attività
+* Quando viene creato un LIF, il failover LIF viene attivato per impostazione predefinita e l'elenco delle porte di destinazione disponibili viene determinato dal gruppo di failover predefinito e dalla policy di failover basata sul tipo LIF e sulla policy di servizio.
++
+A partire da 9.5, è possibile specificare una politica di servizio per la LIF che definisce quali servizi di rete possono utilizzare la LIF. Alcuni servizi di rete impongono restrizioni di failover su una LIF.
+
++
+
+NOTE: Se la policy di servizio di una LIF viene modificata in modo da limitare ulteriormente il failover, la policy di failover della LIF viene aggiornata automaticamente dal sistema.
+
+* È possibile modificare il comportamento di failover dei LIF specificando i valori per i parametri -failover-group e -failover-policy nel comando di modifica dell'interfaccia di rete.
+* La modifica di una LIF che non ha una destinazione di failover valida per la LIF genera un messaggio di avviso.
++
+Se un LIF che non dispone di una destinazione di failover valida tenta di eseguire il failover, potrebbe verificarsi un'interruzione.
+
+* A partire da ONTAP 9.11.1, su tutte le piattaforme SAN Array (ASA), il failover LIF iSCSI viene attivato automaticamente sulle nuove LIF iSCSI create sulle macchine virtuali storage appena create.
++
+Inoltre, è possibile attivare manualmente il failover LIF iSCSI su LIF iSCSI preesistenti, ovvero le LIF create prima dell'aggiornamento a ONTAP 9.11.1 o versioni successive.link:../san-admin/asa-iscsi-lif-fo-task.html["Failover LIF iSCSI per piattaforme ASA"]
+
+* L'elenco seguente descrive come l'impostazione -failover-policy influenza le porte di destinazione selezionate dal gruppo di failover:
+
+
+
+NOTE: Per il failover LIF iSCSI, solo le policy di failover `local-only`, `sfo-partner-only` e. `disabled` sono supportati.
+
+* `broadcast-domain-wide` si applica a tutte le porte su tutti i nodi del gruppo di failover.
+* `system-defined` Si applica solo a quelle porte sul nodo home di LIF e a un altro nodo del cluster, in genere un partner non SFO, se esistente.
+* `local-only` Si applica solo a quelle porte sul nodo home di LIF.
+* `sfo-partner-only` Si applica solo a quelle porte sul nodo principale della LIF e al suo partner SFO.
+* `disabled` Indica che la LIF non è configurata per il failover.
+
+
+.Fase
+Configurare le impostazioni di failover per un'interfaccia esistente:
+
+....
+network interface modify -vserver <vserver_name> -lif <lif_name> -failover-policy <failover_policy> -failover-group <failover_group>
+....
+
+
+== Esempi di configurazione delle impostazioni di failover e disattivazione del failover
+
+Il seguente comando imposta il criterio di failover su broadcast-domain-wide e utilizza le porte del gruppo di failover fg3 come destinazioni di failover per i dati LIF 1 su SVM vs3:
+
+....
+network interface modify -vserver vs3 -lif data1 failover-policy broadcast-domain-wide - failover-group fg3
+
+network interface show -vserver vs3 -lif * -fields failover-group,failover-policy
+
+vserver lif             failover-policy       failover-group
+------- -------------- ---------------        --------------
+vs3     data1          broadcast-domain-wide  fg3
+....
+Il seguente comando disattiva il failover per LIF data1 su SVM vs3:
+
+....
+network interface modify -vserver vs3 -lif data1 failover-policy disabled
+....

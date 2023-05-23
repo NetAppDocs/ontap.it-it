@@ -1,0 +1,48 @@
+---
+permalink: performance-admin/check-fc-adapter-port-speed-task.html 
+sidebar: sidebar 
+keywords: check, fc, adapter, port, speed 
+summary: 'La velocità della porta di destinazione dell"adattatore deve corrispondere alla velocità del dispositivo a cui si connette, per ottimizzare le prestazioni. Se la porta è impostata sulla negoziazione automatica, la riconnessione potrebbe richiedere più tempo dopo un takeover e un giveback o un"altra interruzione.' 
+---
+= Controllare la velocità della porta dell'adattatore FC
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La velocità della porta di destinazione dell'adattatore deve corrispondere alla velocità del dispositivo a cui si connette, per ottimizzare le prestazioni. Se la porta è impostata sulla negoziazione automatica, la riconnessione potrebbe richiedere più tempo dopo un takeover e un giveback o un'altra interruzione.
+
+.Di cosa hai bisogno
+Tutte le LIF che utilizzano questo adattatore come porta home devono essere offline.
+
+.Fasi
+. Portare l'adattatore offline:
++
+`network fcp adapter modify -node _nodename_ -adapter _adapter_ -state _down_`
+
+. Verificare la velocità massima dell'adattatore porta:
++
+`fcp adapter show -instance`
+
+. Modificare la velocità della porta, se necessario:
++
+`network fcp adapter modify -node _nodename_ -adapter _adapter_ -speed {1|2|4|8|10|16|auto}`
+
+. Portare l'adattatore online:
++
+`network fcp adapter modify -node _nodename_ -adapter _adapter_ -state up`
+
+. Porta online tutti i LIF dell'adattatore:
++
+`network interface modify -vserver * -lif * { -home-node node1 -home-port e0c } -status-admin up`
+
+
+
+.Esempio
+Nell'esempio seguente viene modificata la velocità della porta dell'adattatore `0d` acceso `node1` A 2 Gbps:
+
+[listing]
+----
+cluster1::> network fcp adapter modify -node node1 -adapter 0d -speed 2
+----

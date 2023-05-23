@@ -1,0 +1,79 @@
+---
+permalink: nfs-admin/ldaps-concept.html 
+sidebar: sidebar 
+keywords: ldaps, concept 
+summary: È necessario comprendere alcuni termini e concetti relativi al modo in cui ONTAP protegge le comunicazioni LDAP. ONTAP può utilizzare TLS O LDAPS DI AVVIO per impostare sessioni autenticate tra server LDAP integrati in Active Directory o server LDAP basati su UNIX. 
+---
+= Concetti LDAPS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario comprendere alcuni termini e concetti relativi al modo in cui ONTAP protegge le comunicazioni LDAP. ONTAP può utilizzare TLS O LDAPS DI AVVIO per impostare sessioni autenticate tra server LDAP integrati in Active Directory o server LDAP basati su UNIX.
+
+
+
+== Terminologia
+
+È necessario comprendere alcuni termini relativi all'utilizzo di LDAPS da parte di ONTAP per proteggere le comunicazioni LDAP.
+
+* *LDAP*
++
+(Lightweight Directory Access Protocol) protocollo per l'accesso e la gestione delle directory di informazioni. LDAP viene utilizzato come directory di informazioni per la memorizzazione di oggetti come utenti, gruppi e netgroup. LDAP fornisce inoltre servizi di directory che gestiscono questi oggetti e soddisfano le richieste LDAP dai client LDAP.
+
+* *SSL*
++
+(Secure Sockets Layer) protocollo sviluppato per l'invio sicuro di informazioni su Internet. È stato deprecato a favore di TLS. SSL non è supportato in ONTAP 9.0-9.4.
+
+* *TLS*
++
+(Transport Layer Security) un protocollo di tracciamento degli standard IETF basato sulle specifiche SSL precedenti. È il successore di SSL.
+
+* *LDAPS (LDAP su SSL o TLS)*
++
+Protocollo che utilizza TLS o SSL per proteggere le comunicazioni tra client LDAP e server LDAP. I termini _LDAP su SSL_ e _LDAP su TLS_ sono talvolta utilizzati in modo intercambiabile; TLS è supportato da ONTAP 9 e versioni successive, SSL è supportato da ONTAP 9.5 e versioni successive.
+
++
+** In ONTAP 9.5-9.8, LDAPS può essere attivato solo sulla porta 636. A tale scopo, utilizzare `-use-ldaps-for-ad-ldap` con il `vserver cifs security modify` comando.
+** A partire da ONTAP 9.9.1, LDAPS può essere attivato su qualsiasi porta, anche se la porta 636 rimane quella predefinita. A tale scopo, impostare `-ldaps-enabled` parametro a. `true` e specificare il desiderato `-port` parametro. Per ulteriori informazioni, consultare `vserver services name-service ldap client create` pagina man
+
+
++
+[NOTE]
+====
+L'utilizzo di Start TLS anziché LDAPS è una Best practice di NetApp.
+
+====
+* *Avvia TLS*
++
+(Noto anche come _start_tls_, _STARTTLS_ e _STARTTLS_) un meccanismo per fornire comunicazioni sicure utilizzando i protocolli TLS.
+
++
+ONTAP utilizza STARTTLS per proteggere la comunicazione LDAP e la porta LDAP predefinita (389) per comunicare con il server LDAP. Il server LDAP deve essere configurato in modo da consentire le connessioni sulla porta LDAP 389; in caso contrario, le connessioni LDAP TLS dalla SVM al server LDAP non funzionano.
+
+
+
+
+
+== Utilizzo di LDAPS da parte di ONTAP
+
+ONTAP supporta l'autenticazione del server TLS, che consente al client LDAP SVM di confermare l'identità del server LDAP durante l'operazione di binding. I client LDAP abilitati per TLS possono utilizzare tecniche standard di crittografia a chiave pubblica per verificare che il certificato e l'ID pubblico di un server siano validi e siano stati emessi da un'autorità di certificazione (CA) elencata nell'elenco delle CA attendibili del client.
+
+LDAP supporta STARTTLS per crittografare le comunicazioni utilizzando TLS. STARTTLS inizia come connessione non crittografata sulla porta LDAP standard (389) e la connessione viene quindi aggiornata a TLS.
+
+ONTAP supporta:
+
+* LDAPS per il traffico SMB tra i server LDAP integrati in Active Directory e SVM
+* LDAPS per il traffico LDAP per la mappatura dei nomi e altre informazioni UNIX
++
+I server LDAP integrati in Active Directory o i server LDAP basati su UNIX possono essere utilizzati per memorizzare informazioni per la mappatura dei nomi LDAP e altre informazioni UNIX, come utenti, gruppi e netgroup.
+
+* Certificati della CA principale autofirmati
++
+Quando si utilizza un LDAP integrato in Active-Directory, il certificato root autofirmato viene generato quando il servizio certificati di Windows Server viene installato nel dominio. Quando si utilizza un server LDAP basato su UNIX per la mappatura dei nomi LDAP, il certificato root autofirmato viene generato e salvato utilizzando i mezzi appropriati per l'applicazione LDAP.
+
+
+
+Per impostazione predefinita, LDAPS è disattivato.

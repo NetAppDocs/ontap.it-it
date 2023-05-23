@@ -1,0 +1,77 @@
+---
+permalink: smb-config/create-server-workgroup-task.html 
+sidebar: sidebar 
+keywords: vserver, cifs, create, command, smb, server, workgroup, create an smb server in a workgroup 
+summary: È possibile utilizzare il comando vserver cifs create per creare un server SMB sulla SVM e specificare il gruppo di lavoro a cui appartiene. 
+---
+= Creare un server SMB in un gruppo di lavoro
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare `vserver cifs create` Per creare un server SMB sulla SVM e specificare il gruppo di lavoro a cui appartiene.
+
+.Prima di iniziare
+Le SVM e le LIF utilizzate per la distribuzione dei dati devono essere state configurate per consentire il protocollo SMB. Le LIF devono essere in grado di connettersi ai server DNS configurati sulla SVM.
+
+.A proposito di questa attività
+I server SMB in modalità workgroup non supportano le seguenti funzionalità SMB:
+
+* Protocollo di controllo SMB3
+* Condivisioni SMB3 CA
+* SQL su SMB
+* Reindirizzamento cartelle
+* Profili roaming
+* Oggetto Criteri di gruppo (GPO)
+* Servizio Volume Snapshot (VSS)
+
+
+Il `vserver cifs` le pagine man contengono ulteriori parametri di configurazione opzionali e requisiti di denominazione.
+
+.Fasi
+. Verificare che SMB sia concesso in licenza sul cluster: `system license show -package cifs`
++
+In caso contrario, contattare il rappresentante commerciale.
+
++
+Non è richiesta una licenza CIFS se il server SMB viene utilizzato solo per l'autenticazione.
+
+. Creare il server SMB in un gruppo di lavoro: `vserver cifs create -vserver vserver_name -cifs-server cifs_server_name -workgroup workgroup_name [-comment text]`
++
+Il seguente comando crea il server SMB "`smb_server01`" nel gruppo di lavoro "`workgroup01`":
+
++
+[listing]
+----
+cluster1::> vserver cifs create -vserver vs1.example.com -cifs-server SMB_SERVER01 -workgroup workgroup01
+----
+. Verificare la configurazione del server SMB utilizzando `vserver cifs show` comando.
++
+Nell'esempio seguente, l'output del comando mostra che un server SMB denominato "`smb_server01`" è stato creato su SVM vs1.example.com nel gruppo di lavoro "`workgroup01`":
+
++
+[listing]
+----
+cluster1::> vserver cifs show -vserver vs0
+
+                                          Vserver: vs1.example.com
+                         CIFS Server NetBIOS Name: SMB_SERVER01
+                    NetBIOS Domain/Workgroup Name: workgroup01
+                      Fully Qualified Domain Name: -
+                              Organizational Unit: -
+Default Site Used by LIFs Without Site Membership: -
+                                   Workgroup Name: workgroup01
+                             Authentication Style: workgroup
+                CIFS Server Administrative Status: up
+                          CIFS Server Description:
+                          List of NetBIOS Aliases: -
+----
+
+
+.Al termine
+Per un server CIFS in un gruppo di lavoro, è necessario creare utenti locali e, facoltativamente, gruppi locali su SVM.
+
+.Informazioni correlate
+link:../smb-admin/index.html["Gestione delle PMI"]

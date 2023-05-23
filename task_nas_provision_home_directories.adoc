@@ -1,0 +1,92 @@
+---
+sidebar: sidebar 
+permalink: task_nas_provision_home_directories.html 
+keywords: netapp, ontap, provisioning, nas, provision, home, directories, SMB, CIFS, SMB, share name 
+summary: Creare volumi per fornire storage per le home directory utilizzando il protocollo SMB. 
+---
+= Provisioning dello storage NAS per le home directory
+:toc: macro
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toc: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+:toc-position: content
+
+
+[role="lead"]
+Creare volumi per fornire storage per le home directory utilizzando il protocollo SMB.
+
+Questa procedura crea nuovi volumi per le home directory su un link:task_nas_enable_windows_smb.html["VM di storage già in uso con SMB"]. È possibile accettare le impostazioni predefinite del sistema durante la configurazione dei volumi o specificare configurazioni personalizzate.
+
+image:workflow_nas_provision_home_directories.gif["Workflow per il provisioning dello storage NAS per le home directory"]
+
+È possibile creare volumi FlexVol oppure, per file system di grandi dimensioni con requisiti di performance elevati, è possibile creare volumi FlexGroup. Vedere anche link:task_nas_provision_flexgroup.html["Eseguire il provisioning dello storage NAS per file system di grandi dimensioni utilizzando volumi FlexGroup"].
+
+Puoi anche salvare le specifiche di questo volume in un Ansible Playbook. Per ulteriori informazioni, visitare il sito Web all'indirizzo link:task_admin_use_ansible_playbooks_add_edit_volumes_luns.html["Utilizza i Playbook Ansible per aggiungere o modificare volumi o LUN"].
+
+.Fasi
+. Aggiungere un nuovo volume in una VM di storage abilitata per SMB.
++
+.. Selezionare *Storage > Volumes* (archiviazione > volumi), quindi fare clic su *Add* (Aggiungi).
+.. Immettere un nome, selezionare la VM di storage e immettere una dimensione.
++
+Vengono elencate solo le VM di storage configurate con il protocollo SMB. Se è disponibile una sola VM di storage configurata con il protocollo SMB, il campo *Storage VM* non viene visualizzato.
+
++
+*** Se si fa clic su *Salva* a questo punto, System Manager utilizza le impostazioni predefinite del sistema per creare e aggiungere un volume FlexVol.
+*** È possibile fare clic su *altre opzioni* per personalizzare la configurazione del volume e abilitare servizi come autorizzazione, qualità del servizio e protezione dei dati. Fare riferimento a. <<Personalizzare la configurazione del volume>>, quindi tornare qui per completare i seguenti passaggi.
+
+
+
+
+. [[fase 2,fase 2 nel flusso di lavoro]] fare clic su *Storage > Shares*, fare clic su *Add* e selezionare *Home Directory*.
+. Su un client Windows, effettuare le seguenti operazioni per verificare che la condivisione sia accessibile.
++
+.. In Esplora risorse, mappare un disco alla condivisione nel seguente formato: `+\\_SMB_Server_Name__Share_Name_+`
++
+Se il nome della condivisione è stato creato con variabili (%w, %d o %u), verificare l'accesso con un nome risolto.
+
+.. Sul disco appena creato, creare un file di prova, quindi eliminare il file.
+
+
+
+
+
+
+== Personalizzare la configurazione del volume
+
+È possibile personalizzare la configurazione del volume quando si aggiungono volumi invece di accettare le impostazioni predefinite del sistema.
+
+.Procedura
+Dopo aver fatto clic su *altre opzioni*, selezionare la funzionalità desiderata e immettere i valori richiesti.
+
+* Cache per il volume remoto.
+* Performance service level (qualità del servizio, QoS).
++
+A partire da ONTAP 9.8, è possibile specificare un criterio di qualità del servizio personalizzato o disattivare la qualità del servizio, oltre alla selezione del valore predefinito.
+
++
+** Per disattivare QoS, selezionare *Custom*, *Existing*, quindi *None*.
+** Se si seleziona *personalizzato* e si specifica un livello di servizio esistente, viene automaticamente selezionato un livello locale.
+** A partire da ONTAP 9.9.1, se si sceglie di creare un livello di servizio delle performance personalizzato, è possibile utilizzare Gestione sistema per selezionare manualmente il livello locale (*posizionamento manuale*) sul quale si desidera posizionare il volume che si sta creando.
++
+Questa opzione non è disponibile se si selezionano le opzioni della cache remota o del volume FlexGroup.
+
+
+
+* FlexGroup Volumes (selezionare *Distribuisci i dati del volume nel cluster*).
++
+Questa opzione non è disponibile se in precedenza è stato selezionato *posizionamento manuale* in *Performance Service Level*. In caso contrario, il volume che si sta aggiungendo diventa un volume FlexVol per impostazione predefinita.
+
+* Autorizzazioni di accesso per i protocolli per i quali è configurato il volume.
+* Protezione dei dati con SnapMirror (locale o remoto), quindi specificare il criterio di protezione e le impostazioni per il cluster di destinazione dagli elenchi a discesa.
+* Fare clic su *Save* (Salva) per creare il volume e aggiungerlo alla VM del cluster e dello storage.
+
+
+
+NOTE: Dopo aver salvato il volume, tornare a. <<step2>> per completare il provisioning delle home directory.

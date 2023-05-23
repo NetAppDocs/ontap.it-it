@@ -1,0 +1,254 @@
+---
+permalink: smb-admin/configure-storage-level-access-guard-task.html 
+sidebar: sidebar 
+keywords: level, storage, access, security, provide, guard, applies, access, apply, object, protocol, volume, qtree 
+summary: 'Per configurare Storage-Level Access Guard su un volume o su un qtree, è necessario seguire una serie di passaggi. Storage-Level Access Guard offre un livello di sicurezza degli accessi impostato a livello di storage. Fornisce una sicurezza che si applica a tutti gli accessi da tutti i protocolli NAS all"oggetto di storage a cui è stato applicato.' 
+---
+= Configurare Storage-Level Access Guard
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per configurare Storage-Level Access Guard su un volume o su un qtree, è necessario seguire una serie di passaggi. Storage-Level Access Guard offre un livello di sicurezza degli accessi impostato a livello di storage. Fornisce una sicurezza che si applica a tutti gli accessi da tutti i protocolli NAS all'oggetto di storage a cui è stato applicato.
+
+.Fasi
+. Creare un descrittore di protezione utilizzando `vserver security file-directory ntfs create` comando.
++
+`vserver security file-directory ntfs create -vserver vs1 -ntfs-sd sd1` `vserver security file-directory ntfs show -vserver vs1`
+
++
+[listing]
+----
+
+Vserver: vs1
+
+   NTFS Security    Owner Name
+   Descriptor Name
+   ------------     --------------
+   sd1              -
+----
++
+Viene creato un descrittore di protezione con le seguenti quattro voci di controllo di accesso DACL predefinite:
+
++
+[listing]
+----
+
+Vserver: vs1
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access          Apply To
+                     Type     Rights
+    --------------   -------  -------         -----------
+    BUILTIN\Administrators
+                     allow    full-control   this-folder, sub-folders, files
+    BUILTIN\Users    allow    full-control   this-folder, sub-folders, files
+    CREATOR OWNER    allow    full-control   this-folder, sub-folders, files
+    NT AUTHORITY\SYSTEM
+                     allow    full-control   this-folder, sub-folders, files
+----
++
+Se non si desidera utilizzare le voci predefinite durante la configurazione di Storage-Level Access Guard, è possibile rimuoverle prima di creare e aggiungere le proprie ACE al descrittore di protezione.
+
+. Rimuovere dal descrittore di protezione una delle ACL DACL predefinite che non si desidera configurare con la protezione Storage-Level Access Guard:
++
+.. Rimuovere eventuali ACL DACL indesiderati utilizzando `vserver security file-directory ntfs dacl remove` comando.
++
+In questo esempio, tre ACL DACL predefiniti vengono rimossi dal descrittore di protezione: BUILTIN/Administrators, BUILTIN/Users e CREATOR OWNER.
+
++
+`vserver security file-directory ntfs dacl remove -vserver vs1 -ntfs-sd sd1 -access-type allow -account builtin\users` `vserver security file-directory ntfs dacl remove -vserver vs1 -ntfs-sd sd1 -access-type allow -account builtin\administrators` `vserver security file-directory ntfs dacl remove -vserver vs1 -ntfs-sd sd1 -access-type allow -account "creator owner"`
+
+.. Verificare che le ACL DACL che non si desidera utilizzare per la protezione Storage-Level Access Guard siano rimosse dal descrittore di protezione utilizzando `vserver security file-directory ntfs dacl show` comando.
++
+In questo esempio, l'output del comando verifica che tre ACL DACL predefinite siano state rimosse dal descrittore di protezione, lasciando solo la voce ACE DACL predefinita di sistema/AUTORITÀ NT:
+
++
+`vserver security file-directory ntfs dacl show -vserver vs1`
+
++
+[listing]
+----
+
+Vserver: vs1
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access          Apply To
+                     Type     Rights
+    --------------   -------  -------         -----------
+    NT AUTHORITY\SYSTEM
+                     allow    full-control   this-folder, sub-folders, files
+----
+
+
+. Aggiungere una o più voci DACL a un descrittore di protezione utilizzando `vserver security file-directory ntfs dacl add` comando.
++
+In questo esempio, due ACL DACL vengono aggiunti al descrittore di protezione:
+
++
+`vserver security file-directory ntfs dacl add -vserver vs1 -ntfs-sd sd1 -access-type allow -account example\engineering -rights full-control -apply-to this-folder,sub-folders,files` `vserver security file-directory ntfs dacl add -vserver vs1 -ntfs-sd sd1 -access-type allow -account "example\Domain Users" -rights read -apply-to this-folder,sub-folders,files`
+
+. Aggiungere una o più voci SACL a un descrittore di protezione utilizzando `vserver security file-directory ntfs sacl add` comando.
++
+In questo esempio, due ACL SACL vengono aggiunti al descrittore di protezione:
+
++
+`vserver security file-directory ntfs sacl add -vserver vs1 -ntfs-sd sd1 -access-type failure -account "example\Domain Users" -rights read -apply-to this-folder,sub-folders,files` `vserver security file-directory ntfs sacl add -vserver vs1 -ntfs-sd sd1 -access-type success -account example\engineering -rights full-control -apply-to this-folder,sub-folders,files`
+
+. Verificare che le ACL DACL e SACL siano configurate correttamente utilizzando `vserver security file-directory ntfs dacl show` e. `vserver security file-directory ntfs sacl show` comandi, rispettivamente.
++
+In questo esempio, il comando seguente visualizza informazioni sulle voci DACL per il descrittore di protezione "`sd1`":
+
++
+`vserver security file-directory ntfs dacl show -vserver vs1 -ntfs-sd sd1`
+
++
+[listing]
+----
+
+Vserver: vs1
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access          Apply To
+                     Type     Rights
+    --------------   -------  -------         -----------
+    EXAMPLE\Domain Users
+                     allow    read           this-folder, sub-folders, files
+    EXAMPLE\engineering
+                     allow    full-control   this-folder, sub-folders, files
+    NT AUTHORITY\SYSTEM
+                     allow    full-control   this-folder, sub-folders, files
+----
++
+In questo esempio, il comando seguente visualizza informazioni sulle voci SACL per il descrittore di protezione "`sd1`":
+
++
+`vserver security file-directory ntfs sacl show -vserver vs1 -ntfs-sd sd1`
+
++
+[listing]
+----
+
+Vserver: vs1
+  NTFS Security Descriptor Name: sd1
+
+    Account Name     Access   Access          Apply To
+                     Type     Rights
+    --------------   -------  -------         -----------
+    EXAMPLE\Domain Users
+                     failure  read           this-folder, sub-folders, files
+    EXAMPLE\engineering
+                     success  full-control   this-folder, sub-folders, files
+----
+. Creare un criterio di protezione utilizzando `vserver security file-directory policy create` comando.
++
+Nell'esempio seguente viene creata una policy denominata "`policy1`":
+
++
+`vserver security file-directory policy create -vserver vs1 -policy-name policy1`
+
+. Verificare che il criterio sia configurato correttamente utilizzando `vserver security file-directory policy show` comando.
++
+`vserver security file-directory policy show`
+
++
+[listing]
+----
+
+   Vserver          Policy Name
+   ------------     --------------
+   vs1              policy1
+----
+. Aggiungere un'attività con un descrittore di protezione associato al criterio di protezione utilizzando `vserver security file-directory policy-task add` con il `-access-control` parametro impostato su `slag`.
++
+Anche se un criterio può contenere più di un'attività Storage-Level Access Guard, non è possibile configurare un criterio in modo che contenga sia le attività file-directory che Storage-Level Access Guard. Un criterio deve contenere tutte le attività Storage-Level Access Guard o tutte le attività di file-directory.
+
++
+In questo esempio, viene aggiunto un task alla policy denominata "`policy1`", assegnata al descrittore di sicurezza "`sd1`". Viene assegnato a. `/datavol1` percorso con il tipo di controllo dell'accesso impostato su "`slag`".
+
++
+`vserver security file-directory policy task add -vserver vs1 -policy-name policy1 -path /datavol1 -access-control slag -security-type ntfs -ntfs-mode propagate -ntfs-sd sd1`
+
+. Verificare che l'attività sia configurata correttamente utilizzando `vserver security file-directory policy task show` comando.
++
+`vserver security file-directory policy task show -vserver vs1 -policy-name policy1`
+
++
+[listing]
+----
+
+ Vserver: vs1
+  Policy: policy1
+
+   Index  File/Folder  Access           Security  NTFS       NTFS Security
+          Path         Control          Type      Mode       Descriptor Name
+   -----  -----------  ---------------  --------  ---------- ---------------
+   1      /datavol1    slag             ntfs      propagate  sd1
+----
+. Applicare il criterio di protezione Storage-Level Access Guard utilizzando `vserver security file-directory apply` comando.
++
+`vserver security file-directory apply -vserver vs1 -policy-name policy1`
+
++
+Il processo di applicazione della policy di sicurezza è pianificato.
+
+. Verificare che le impostazioni di protezione di Storage-Level Access Guard applicate siano corrette utilizzando `vserver security file-directory show` comando.
++
+In questo esempio, l'output del comando indica che la protezione Storage-Level Access Guard è stata applicata al volume NTFS `/datavol1`. Anche se il DACL predefinito che consente il controllo completo a tutti rimane, la protezione di Storage-Level Access Guard limita (e controlla) l'accesso ai gruppi definiti nelle impostazioni di Storage-Level Access Guard.
+
++
+`vserver security file-directory show -vserver vs1 -path /datavol1`
+
++
+[listing]
+----
+
+                Vserver: vs1
+              File Path: /datavol1
+      File Inode Number: 77
+         Security Style: ntfs
+        Effective Style: ntfs
+         DOS Attributes: 10
+ DOS Attributes in Text: ----D---
+Expanded Dos Attributes: -
+           Unix User Id: 0
+          Unix Group Id: 0
+         Unix Mode Bits: 777
+ Unix Mode Bits in Text: rwxrwxrwx
+                   ACLs: NTFS Security Descriptor
+                         Control:0x8004
+                         Owner:BUILTIN\Administrators
+                         Group:BUILTIN\Administrators
+                         DACL - ACEs
+                           ALLOW-Everyone-0x1f01ff
+                           ALLOW-Everyone-0x10000000-OI|CI|IO
+
+
+                         Storage-Level Access Guard security
+                         SACL (Applies to Directories):
+                           AUDIT-EXAMPLE\Domain Users-0x120089-FA
+                           AUDIT-EXAMPLE\engineering-0x1f01ff-SA
+                         DACL (Applies to Directories):
+                           ALLOW-EXAMPLE\Domain Users-0x120089
+                           ALLOW-EXAMPLE\engineering-0x1f01ff
+                           ALLOW-NT AUTHORITY\SYSTEM-0x1f01ff
+                         SACL (Applies to Files):
+                           AUDIT-EXAMPLE\Domain Users-0x120089-FA
+                           AUDIT-EXAMPLE\engineering-0x1f01ff-SA
+                         DACL (Applies to Files):
+                           ALLOW-EXAMPLE\Domain Users-0x120089
+                           ALLOW-EXAMPLE\engineering-0x1f01ff
+                           ALLOW-NT AUTHORITY\SYSTEM-0x1f01ff
+----
+
+
+.Informazioni correlate
+xref:manage-ntfs-security-audit-policies-slag-concept.adoc[Gestione della sicurezza dei file NTFS, delle policy di audit NTFS e di Storage-Level Access Guard su SVM mediante CLI]
+
+xref:workflow-config-storage-level-access-guard-concept.adoc[Workflow per configurare Storage-Level Access Guard]
+
+xref:display-storage-level-access-guard-task.adoc[Visualizzazione di informazioni su Storage-Level Access Guard]
+
+xref:remove-storage-level-access-guard-task.adoc[Rimozione di Storage-Level Access Guard]

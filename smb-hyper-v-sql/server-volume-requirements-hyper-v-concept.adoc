@@ -1,0 +1,58 @@
+---
+permalink: smb-hyper-v-sql/server-volume-requirements-hyper-v-concept.html 
+sidebar: sidebar 
+keywords: smb, cifs, server, volume, requirements, hyper, v, configuration, nondisruptive, operation 
+summary: Quando si creano configurazioni Hyper-V su SMB per operazioni senza interruzioni, è necessario conoscere alcuni requisiti di volume e server SMB. 
+---
+= Requisiti di volume e server SMB per Hyper-V su SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando si creano configurazioni Hyper-V su SMB per operazioni senza interruzioni, è necessario conoscere alcuni requisiti di volume e server SMB.
+
+
+
+== Requisiti dei server SMB
+
+* SMB 3.0 deve essere attivato.
++
+Questa opzione è attivata per impostazione predefinita.
+
+* L'opzione predefinita del server CIFS dell'utente UNIX deve essere configurata con un account utente UNIX valido.
++
+I server applicazioni utilizzano l'account del computer quando creano una connessione SMB. Poiché tutti gli accessi SMB richiedono che l'utente Windows si meda correttamente a un account utente UNIX o all'account utente UNIX predefinito, ONTAP deve essere in grado di mappare l'account del computer dell'application server all'account utente UNIX predefinito.
+
+* I riferimenti automatici dei nodi devono essere disattivati (questa funzionalità è disattivata per impostazione predefinita).
++
+Se si desidera utilizzare riferimenti automatici ai nodi per l'accesso a dati diversi dai file macchina Hyper-V, è necessario creare una SVM separata per tali dati.
+
+* L'autenticazione Kerberos e NTLM deve essere consentita nel dominio a cui appartiene il server SMB.
++
+ONTAP non annuncia il servizio Kerberos per il VSS remoto; pertanto, il dominio deve essere impostato su Consenti NTLM.
+
+* La funzionalità di copia shadow deve essere attivata.
++
+Questa funzionalità è attivata per impostazione predefinita.
+
+* L'account di dominio Windows utilizzato dal servizio di copia shadow per la creazione delle copie shadow deve essere membro del gruppo BUILTIN/Administrators locale del server SMB o del gruppo BUILTIN/Backup Operators.
+
+
+
+
+== Requisiti di volume
+
+* I volumi utilizzati per memorizzare i file delle macchine virtuali devono essere creati come volumi di sicurezza NTFS.
++
+Per fornire NDOS ai server applicazioni che utilizzano connessioni SMB a disponibilità continua, il volume contenente la condivisione deve essere un volume NTFS. Inoltre, deve sempre essere un volume NTFS. Non è possibile modificare un volume misto di sicurezza o un volume UNIX di sicurezza in un volume NTFS di sicurezza e utilizzarlo direttamente per le condivisioni NDOS su SMB. Se si modifica un volume misto di sicurezza in un volume di sicurezza NTFS e si intende utilizzarlo per le condivisioni NDOS su SMB, è necessario inserire manualmente un ACL nella parte superiore del volume e propagare tale ACL a tutti i file e cartelle contenuti. In caso contrario, le migrazioni delle macchine virtuali o le esportazioni e le importazioni dei file di database in cui i file vengono spostati in un altro volume possono non riuscire se i volumi di origine o di destinazione sono stati inizialmente creati come volumi misti o UNIX di sicurezza e successivamente modificati in stile di sicurezza NTFS.
+
+* Per eseguire correttamente le operazioni di copia shadow, è necessario disporre di spazio disponibile sufficiente sul volume.
++
+Lo spazio disponibile deve essere almeno pari allo spazio combinato utilizzato da tutti i file, le directory e le sottodirectory contenuti nelle condivisioni incluse nel set di backup delle copie shadow. Questo requisito si applica solo alle copie shadow con ripristino automatico.
+
+
+
+.Informazioni correlate
+http://technet.microsoft.com/en-us/library/["Microsoft TechNet Library: technet.microsoft.com/en-us/library/"]

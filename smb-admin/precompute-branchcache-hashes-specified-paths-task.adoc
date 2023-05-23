@@ -1,0 +1,100 @@
+---
+permalink: smb-admin/precompute-branchcache-hashes-specified-paths-task.html 
+sidebar: sidebar 
+keywords: configure, branchcache, service, pre-compute, hash, file, directory, structure, compute, branchcache-enabled share non-peak hours, pre-compute branchcache hashes on specified paths 
+summary: È possibile configurare il servizio BranchCache per pre-calcolare gli hash per un singolo file, per una directory o per tutti i file di una struttura di directory. Questo può essere utile se si desidera calcolare gli hash sui dati in una condivisione abilitata per BranchCache durante le ore non di punta. 
+---
+= Pre-calcolare gli hash BranchCache su percorsi specifici
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile configurare il servizio BranchCache per pre-calcolare gli hash per un singolo file, per una directory o per tutti i file di una struttura di directory. Questo può essere utile se si desidera calcolare gli hash sui dati in una condivisione abilitata per BranchCache durante le ore non di punta.
+
+.A proposito di questa attività
+Se si desidera raccogliere un campione di dati prima di visualizzare le statistiche hash, è necessario utilizzare `statistics start` e opzionale `statistics stop` comandi.
+
+* È necessario specificare la SVM (Storage Virtual Machine) e il percorso su cui si desidera pre-calcolare gli hash.
+* È inoltre necessario specificare se si desidera che gli hash vengano calcolati in modo ricorsivo.
+* Se si desidera che gli hash vengano calcolati in modo ricorrente, il servizio BranchCache attraversa l'intero albero di directory nel percorso specificato e calcola gli hash per ciascun oggetto idoneo.
+
+
+.Fasi
+. Pre-calcolare gli hash come desiderato:
++
+|===
+| Se si desidera pre-calcolare gli hash su... | Immettere il comando... 
+
+
+ a| 
+Un singolo file o directory
+ a| 
+`vserver cifs branchcache hash-create -vserver vserver_name -path path -recurse false`
+
+
+
+ a| 
+In modo ricorrente su tutti i file di una struttura di directory
+ a| 
+`vserver cifs branchcache hash-create -vserver vserver_name -path absolute_path -recurse true`
+
+|===
+. Verificare che gli hash vengano calcolati utilizzando `statistics` comando:
++
+.. Visualizzare le statistiche per `hashd` Oggetto sull'istanza SVM desiderata: `statistics show -object hashd -instance vserver_name`
+.. Verificare che il numero di hash creati aumenti ripetendo il comando.
+
+
+
+
+.Esempi
+Nell'esempio seguente vengono creati gli hash sul percorso `/data` E su tutti i file e sottodirectory contenuti su SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs branchcache hash-create -vserver vs1 -path /data -recurse true
+
+cluster1::> statistics show -object hashd -instance vs1
+Object: hashd
+Instance: vs1
+Start-time: 9/6/2012 19:09:54
+End-time: 9/6/2012 19:11:15
+Cluster: cluster1
+
+    Counter                                                     Value
+    -------------------------------- --------------------------------
+    branchcache_hash_created                                       85
+    branchcache_hash_files_replaced                                 0
+    branchcache_hash_rejected                                       0
+    branchcache_hash_store_bytes                                    0
+    branchcache_hash_store_size                                     0
+    instance_name                                                vs1
+    node_name                                                  node1
+    node_uuid
+                                11111111-1111-1111-1111-111111111111
+    process_name                                                   -
+
+cluster1::> statistics show -object hashd -instance vs1
+Object: hashd
+Instance: vs1
+Start-time: 9/6/2012 19:09:54
+End-time: 9/6/2012 19:11:15
+Cluster: cluster1
+
+    Counter                                                     Value
+    -------------------------------- --------------------------------
+    branchcache_hash_created                                       92
+    branchcache_hash_files_replaced                                 0
+    branchcache_hash_rejected                                       0
+    branchcache_hash_store_bytes                                    0
+    branchcache_hash_store_size                                     0
+    instance_name                                                vs1
+    node_name                                                  node1
+    node_uuid
+                                11111111-1111-1111-1111-111111111111
+    process_name                                                   -
+----
+.Informazioni correlate
+link:../performance-config/index.html["Configurazione del monitoraggio delle performance"]

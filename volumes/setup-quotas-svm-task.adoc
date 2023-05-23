@@ -1,0 +1,53 @@
+---
+permalink: volumes/setup-quotas-svm-task.html 
+sidebar: sidebar 
+keywords: set up, quotas on svm 
+summary: 'Per impostare le quote su una nuova macchina virtuale per lo storage (SVM, precedentemente nota come Vserver), è necessario creare un criterio di quota, aggiungere regole di policy di quota al criterio, assegnare il criterio alla SVM e inizializzare le quote su ciascun volume FlexVol sulla SVM.' 
+---
+= Impostare le quote su una SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per impostare le quote su una nuova macchina virtuale per lo storage (SVM, precedentemente nota come Vserver), è necessario creare un criterio di quota, aggiungere regole di policy di quota al criterio, assegnare il criterio alla SVM e inizializzare le quote su ciascun volume FlexVol sulla SVM.
+
+.Fasi
+. Immettere il comando `vserver show -instance` Per visualizzare il nome del criterio di quota predefinito creato automaticamente al momento della creazione di SVM.
++
+Se non è stato specificato un nome al momento della creazione della SVM, il nome è "predefinito". È possibile utilizzare `vserver quota policy rename` per assegnare un nome al criterio predefinito.
+
++
+[NOTE]
+====
+È inoltre possibile creare una nuova policy utilizzando `volume quota policy create` comando.
+
+====
+. Utilizzare `volume quota policy rule create` Comando per creare _una qualsiasi_ delle seguenti regole di quota per ciascun volume sulla SVM:
++
+** Regole di quota predefinite per tutti gli utenti
+** Regole di quota esplicite per utenti specifici
+** Regole di quota predefinite per tutti i gruppi
+** Regole di quota esplicite per gruppi specifici
+** Regole di quota predefinite per tutti i qtree
+** Regole di quota esplicite per qtree specifici
+
+
+. Utilizzare `volume quota policy rule show` per verificare che le regole di quota siano configurate correttamente.
+. Se si sta lavorando a una nuova policy, utilizzare `vserver modify` Per assegnare il nuovo criterio a SVM.
+. Utilizzare `volume quota on` Per inizializzare le quote su ciascun volume della SVM.
++
+È possibile monitorare il processo di inizializzazione nei seguenti modi:
+
++
+** Quando si utilizza `volume quota on` è possibile aggiungere il comando `-foreground` parametro per eseguire la quota sul lavoro in primo piano. (Per impostazione predefinita, il processo viene eseguito in background).
++
+Quando il lavoro viene eseguito in background, è possibile monitorarne l'avanzamento utilizzando `job show` comando.
+
+** È possibile utilizzare `volume quota show` per monitorare lo stato dell'inizializzazione della quota.
+
+
+. Utilizzare `volume quota show -instance` comando per verificare la presenza di errori di inizializzazione, come ad esempio le regole di quota che non sono riuscite a inizializzare.
+. Utilizzare `volume quota report` per visualizzare un report delle quote in modo da garantire che le quote applicate corrispondano alle aspettative.
+

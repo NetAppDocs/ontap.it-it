@@ -1,0 +1,92 @@
+---
+permalink: flexcache/prepopulate-volume-task.html 
+sidebar: sidebar 
+keywords: prepopulating, flexcache, volume 
+summary: È possibile prepopolare un volume FlexCache per ridurre il tempo necessario per accedere ai dati memorizzati nella cache. 
+---
+= Precompilare un volume FlexCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile prepopolare un volume FlexCache per ridurre il tempo necessario per accedere ai dati memorizzati nella cache.
+
+.Di cosa hai bisogno
+* È necessario essere un amministratore del cluster a livello di privilegi avanzati
+* I percorsi per la prepopolamento devono esistere o l'operazione di prepopolamento non riesce.
+
+
+.A proposito di questa attività
+* La precompilazione legge solo i file e passa in rassegna le directory
+* Il `-isRecursion` il flag si applica all'intero elenco di directory passate per il prepopolamento
+
+
+.Fasi
+. Precompilare un volume FlexCache:
++
+`volume flexcache prepopulate -cache-vserver vserver_name -cache-volume -path-list _path_list_ -isRecursion true|false`
+
++
+** Il `-path-list` il parametro indica il percorso della directory relativa che si desidera prepopolare a partire dalla directory principale di origine. Ad esempio, se la directory principale di origine è denominata /origin e contiene directory /origin/dir1 e /origin/dir2, è possibile specificare l'elenco dei percorsi come segue: `-path-list dir1, dir2` oppure `-path-list /dir1, /dir2`.
+** Il valore predefinito di `-isRecursion` Il parametro è vero.
++
+Questo esempio precompila un singolo percorso di directory:
+
++
+[listing]
+----
+cluster1::*> flexcache prepopulate start -cache-vserver vs2 -cache-volume fg_cachevol_1 -path-list /dir1
+  (volume flexcache prepopulate start)
+[JobId 207]: FlexCache prepopulate job queued.
+----
++
+Questo esempio precompila i file da diverse directory:
+
++
+[listing]
+----
+cluster1::*> flexcache prepopulate start -cache-vserver vs2 -cache-volume fg_cachevol_1 -path-list /dir1,/dir2,/dir3,/dir4
+  (volume flexcache prepopulate start)
+[JobId 208]: FlexCache prepopulate job queued.
+----
++
+Questo esempio precompila un singolo file:
+
++
+[listing]
+----
+cluster1::*> flexcache prepopulate start -cache-vserver vs2 -cache-volume fg_cachevol_1 -path-list /dir1/file1.txt
+  (volume flexcache prepopulate start)
+[JobId 209]: FlexCache prepopulate job queued.
+----
++
+Questo esempio precompila tutti i file dall'origine:
+
++
+[listing]
+----
+cluster1::*> flexcache prepopulate start -cache-vserver vs2 -cache-volume fg_cachevol_1 -path-list / -isRecursion true
+  (volume flexcache prepopulate start)
+[JobId 210]: FlexCache prepopulate job queued.
+----
++
+Questo esempio include un percorso non valido per il prepopolamento:
+
++
+[listing]
+----
+cluster1::*> flexcache prepopulate start -cache-volume vol_cache2_vs3_c2_vol_origin1_vs1_c1 -cache-vserver vs3_c2 -path-list /dir1, dir5, dir6
+  (volume flexcache prepopulate start)
+
+Error: command failed: Path(s) "dir5, dir6" does not exist in origin volume
+       "vol_origin1_vs1_c1" in Vserver "vs1_c1".
+----
+
+
+. Visualizza il numero di file letti:
++
+`job show -id job_ID -ins`
+
+

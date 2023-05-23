@@ -1,0 +1,101 @@
+---
+permalink: volumes/aggregate-fullness-overallocation-alerts-concept.html 
+sidebar: sidebar 
+keywords: how to, address, aggregate, fullness, overallocation, alerts 
+summary: 'ONTAP emette messaggi EMS quando gli aggregati stanno esaurendo lo spazio in modo da poter intraprendere azioni correttive fornendo più spazio per l"intero aggregato. Conoscere i tipi di avvisi e come risolverli aiuta a garantire la disponibilità dei dati.' 
+---
+= Gestire gli avvisi di fullness e overallocation aggregati
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP emette messaggi EMS quando gli aggregati stanno esaurendo lo spazio in modo da poter intraprendere azioni correttive fornendo più spazio per l'intero aggregato. Conoscere i tipi di avvisi e come risolverli aiuta a garantire la disponibilità dei dati.
+
+Quando un aggregato viene descritto come _full_, significa che la percentuale dello spazio nell'aggregato disponibile per l'utilizzo da parte dei volumi è scesa al di sotto di una soglia predefinita. Quando un aggregato viene _overallocato_, lo spazio utilizzato da ONTAP per i metadati e per supportare l'accesso ai dati di base è esaurito. A volte lo spazio normalmente riservato ad altri scopi può essere utilizzato per mantenere l'aggregato funzionante, ma le garanzie di volume per i volumi associati all'aggregato o alla disponibilità dei dati possono essere a rischio.
+
+L'allocazione in eccesso può essere logica o fisica. _Overallocation logica_ significa che lo spazio riservato per onorare gli impegni futuri in termini di spazio, come le garanzie di volume, è stato utilizzato per un altro scopo. _Overallocation fisica_ significa che l'aggregato sta esaurendo i blocchi fisici da utilizzare. Gli aggregati in questo stato sono a rischio di rifiutare le scritture, di andare offline o di causare potenzialmente un'interruzione del controller.
+
+La seguente tabella descrive gli avvisi di fullness e overallocation aggregati, le azioni che è possibile intraprendere per risolvere il problema e i rischi di non intraprendere azioni.
+
+[cols="5%,5%,5%,35%,25%,25%"]
+|===
+| Tipo di avviso | Livello EMS | Configurabile? | Definizione | Modi per risolvere il caso | Rischio se non viene intrapresa alcuna azione 
+
+
+ a| 
+Quasi pieno
+ a| 
+Debug
+ a| 
+N
+ a| 
+La quantità di spazio allocato per i volumi, incluse le relative garanzie, ha superato la soglia impostata per questo avviso (95%). La percentuale è `Used` Totale meno la dimensione della riserva di Snapshot.
+ a| 
+* Aggiunta di storage all'aggregato
+* Riduzione o eliminazione dei volumi
+* Spostamento dei volumi in un altro aggregato con più spazio
+* Rimozione delle garanzie di volume (impostandole su `none`)
+
+ a| 
+Nessun rischio di operazioni di scrittura o disponibilità dei dati.
+
+
+
+ a| 
+Completo
+ a| 
+Debug
+ a| 
+N
+ a| 
+Il file system ha superato la soglia impostata per questo avviso (98%). La percentuale è `Used` Totale meno la dimensione della riserva di Snapshot.
+ a| 
+* Aggiunta di storage all'aggregato
+* Riduzione o eliminazione dei volumi
+* Spostamento dei volumi in un altro aggregato con più spazio
+* Rimozione delle garanzie di volume (impostandole su `none`)
+
+ a| 
+Le garanzie di volume per i volumi nell'aggregato potrebbero essere a rischio, così come le operazioni di scrittura su tali volumi.
+
+
+
+ a| 
+Allocato logicamente in eccesso
+ a| 
+Errore SVC
+ a| 
+N
+ a| 
+Oltre allo spazio riservato ai volumi pieno, lo spazio nell'aggregato utilizzato per i metadati è stato esaurito.
+ a| 
+* Aggiunta di storage all'aggregato
+* Riduzione o eliminazione dei volumi
+* Spostamento dei volumi in un altro aggregato con più spazio
+* Rimozione delle garanzie di volume (impostandole su `none`)
+
+ a| 
+Le garanzie di volume per i volumi nell'aggregato sono a rischio, così come le operazioni di scrittura su tali volumi.
+
+
+
+ a| 
+Fisicamente allocato in eccesso
+ a| 
+Errore del nodo
+ a| 
+N
+ a| 
+L'aggregato sta esaurendo i blocchi fisici sui quali può scrivere.
+ a| 
+* Aggiunta di storage all'aggregato
+* Riduzione o eliminazione dei volumi
+* Spostamento dei volumi in un altro aggregato con più spazio
+
+ a| 
+Le operazioni di scrittura nei volumi dell'aggregato sono a rischio, così come la disponibilità dei dati; l'aggregato potrebbe andare offline. In casi estremi, il nodo potrebbe subire un'interruzione.
+
+|===
+Ogni volta che viene superata una soglia per un aggregato, sia che la percentuale di pienezza sia in aumento o in diminuzione, viene generato un messaggio EMS. Quando il livello di pienezza dell'aggregato scende al di sotto di una soglia, un `aggregate ok` Viene generato il messaggio EMS.

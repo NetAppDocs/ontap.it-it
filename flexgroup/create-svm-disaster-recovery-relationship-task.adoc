@@ -1,0 +1,98 @@
+---
+permalink: flexgroup/create-svm-disaster-recovery-relationship-task.html 
+sidebar: sidebar 
+keywords: create, svm, disaster, recovery, svm dr, svm-dr, relationship, flexgroup, volume, flex group, flexclone, flex clone 
+summary: 'A partire da ONTAP 9.9.1, è possibile creare relazioni di disaster recovery SVM (DR SVM) utilizzando i volumi FlexGroup. Una relazione DR SVM offre ridondanza e capacità di ripristinare FlexGroups in caso di disastro sincronizzando e replicando la configurazione SVM e i relativi dati. Per il DR SVM è richiesta una licenza SnapMirror.' 
+---
+= Creare una relazione di disaster recovery SVM per i volumi FlexGroup
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.9.1, è possibile creare relazioni di disaster recovery SVM (DR SVM) utilizzando i volumi FlexGroup. Una relazione DR SVM offre ridondanza e capacità di ripristinare FlexGroups in caso di disastro sincronizzando e replicando la configurazione SVM e i relativi dati. Per il DR SVM è richiesta una licenza SnapMirror.
+
+.Prima di iniziare
+Non è possibile creare una relazione DR SVM FlexGroup con quanto segue.
+
+* Esiste una configurazione FlexClone FlexGroup
+* Un volume FlexGroup contiene una configurazione FabricPool
+* Il volume FlexGroup fa parte di una relazione a cascata
+* Il volume FlexGroup fa parte di una relazione fanout e il cluster esegue una versione di ONTAP precedente a ONTAP 9.12.1. (A partire da ONTAP 9.13.1, le relazioni fanout sono supportate).
+
+
+.A proposito di questa attività
+* Tutti i nodi di entrambi i cluster devono eseguire la stessa versione di ONTAP del nodo su cui è stato aggiunto il supporto DR SVM (ONTAP 9.9.1 o versione successiva).
+* La relazione di DR SVM tra il sito primario e quello secondario deve essere in buone condizioni e avere spazio sufficiente sulle SVM primarie e secondarie per supportare i volumi FlexGroup.
+* Quando si crea una relazione DR SVM FlexGroup in cui il volume FlexGroup fa parte di una relazione fanout, è necessario essere consapevoli dei seguenti requisiti:
++
+** Il cluster di origine e di destinazione deve eseguire ONTAP 9.13.1 o versione successiva.
+** Il DR di SVM con volumi FlexGroup supporta le relazioni di fanout di SnapMirror a otto siti.
+
+
+
+
+Per informazioni sulla creazione di una relazione DR SVM, vedere https://docs.netapp.com/us-en/ontap/data-protection/snapmirror-svm-replication-workflow-concept.html["Gestire la replica di SnapMirror SVM"].
+
+.Fasi
+. Creare una relazione di DR SVM o utilizzare una relazione esistente.
++
+https://docs.netapp.com/us-en/ontap/data-protection/replicate-entire-svm-config-task.html["Replica di un'intera configurazione SVM"]
+
+. Creare un volume FlexGroup sul sito primario con il numero richiesto di componenti.
++
+link:create-task.html["Creazione di un volume FlexGroup"].
+
++
+Prima di procedere, attendere la creazione di FlexGroup e di tutti i componenti.
+
+. Per replicare il volume FlexGroup, aggiornare la SVM nel sito secondario: `snapmirror update -destination-path destination_svm_name: -source-path source_svm_name:`
++
+È inoltre possibile verificare se esiste già un aggiornamento pianificato di SnapMirror immettendo `snapmirror show -fields schedule`
+
+. Dal sito secondario, verificare che la relazione SnapMirror sia corretta: `snapmirror show`
++
+[listing]
+----
+cluster2::> snapmirror show
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs1:        XDP  vs1_dst:     Snapmirrored
+                                      Idle           -         true    -
+----
+. Dal sito secondario, verificare l'esistenza del nuovo volume FlexGroup e dei relativi componenti: `snapmirror show -expand`
++
+[listing]
+----
+cluster2::> snapmirror show -expand
+                                                                       Progress
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs1:        XDP  vs1_dst:     Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src  XDP  vs1_dst:fg_src
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0001
+            XDP  vs1_dst:fg_src__0001
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0002
+            XDP  vs1_dst:fg_src__0002
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0003
+            XDP  vs1_dst:fg_src__0003
+                              Snapmirrored
+                                      Idle           -         true    -
+vs1:fg_src__0004
+            XDP  vs1_dst:fg_src__0004
+                              Snapmirrored
+                                      Idle           -         true    -
+6 entries were displayed.
+----
+

@@ -1,0 +1,79 @@
+---
+permalink: s3-config/enable-ontap-s3-access-local-fabricpool-task.html 
+sidebar: sidebar 
+keywords: enable, ontap, s3 access, local, fabricpool, tiering 
+summary: 'Per utilizzare ONTAP S3 come Tier di capacità FabricPool locale, è necessario definire un archivio di oggetti in base al bucket creato e quindi associare l"archivio di oggetti a un aggregato di Tier di performance per creare un FabricPool.' 
+---
+= Abilitare l'accesso ONTAP S3 per il tiering FabricPool locale
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per utilizzare ONTAP S3 come Tier di capacità FabricPool locale, è necessario definire un archivio di oggetti in base al bucket creato e quindi associare l'archivio di oggetti a un aggregato di Tier di performance per creare un FabricPool.
+
+.Prima di iniziare
+È necessario disporre del nome del server ONTAP S3 e del nome del bucket e il server S3 deve essere stato creato utilizzando le LIF del cluster (con `-vserver Cluster` parametro).
+
+.A proposito di questa attività
+La configurazione dell'archivio di oggetti contiene informazioni sul Tier di capacità locale, inclusi i nomi dei server S3 e dei bucket e i requisiti di autenticazione.
+
+Una volta creata, la configurazione di un archivio di oggetti non deve essere riassociata a un altro archivio di oggetti o bucket. È possibile creare più bucket per i Tier locali, ma non è possibile creare più archivi di oggetti in un singolo bucket.
+
+Non è richiesta una licenza FabricPool per un livello di capacità locale.
+
+.Fasi
+. Creare l'archivio di oggetti per il livello di capacità locale:
++
+`storage aggregate object-store config create -object-store-name _store_name_ -ipspace Cluster -provider-type ONTAP_S3 -server _S3_server_name_ -container-name _bucket_name_ -access-key _access_key_ -secret-password password`
+
++
+** Il `-container-name` È il bucket S3 creato.
+** Il `-access-key` Il parametro autorizza le richieste al server ONTAP S3.
+** Il `-secret-password` Il parametro (chiave di accesso segreta) autentica le richieste al server ONTAP S3.
+** È possibile impostare `-is-certificate-validation-enabled` parametro a. `false` Per disattivare il controllo dei certificati per ONTAP S3.
+
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store config create
+-object-store-name MyLocalObjStore -ipspace Cluster -provider-type ONTAP_S3 -server s3.example.com
+-container-name bucket1 -access-key myS3key -secret-password myS3pass
+----
+. Visualizzare e verificare le informazioni di configurazione dell'archivio di oggetti:
++
+`storage aggregate object-store config show`
+
+. Facoltativo: Per verificare la quantità di dati inattivi in un volume, seguire la procedura descritta in http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-mgng-stor-tier-fp/GUID-78C09B0C-9508-4CEC-96FE-7ED73F7F5120.html["Determinare la quantità di dati inattivi in un volume utilizzando il reporting dei dati inattivi"].
++
+La visualizzazione della quantità di dati inattivi in un volume consente di decidere quale aggregato utilizzare per il tiering locale di FabricPool.
+
+. Collegare l'archivio di oggetti a un aggregato:
++
+`storage aggregate object-store attach -aggregate _aggr_name_ -object-store-name _store_name_`
+
++
+È possibile utilizzare `allow-flexgroup *true*` Possibilità di collegare aggregati che contengono componenti del volume FlexGroup.
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store attach
+-aggregate aggr1 -object-store-name MyLocalObjStore
+----
+. Visualizzare le informazioni sull'archivio di oggetti e verificare che l'archivio di oggetti collegato sia disponibile:
++
+`storage aggregate object-store show`
+
++
+[listing]
+----
+cluster1::> storage aggregate object-store show
+
+Aggregate    Object Store Name    Availability State
+---------    -----------------    ------------------
+aggr1        MyLocalObjStore      available
+----
+

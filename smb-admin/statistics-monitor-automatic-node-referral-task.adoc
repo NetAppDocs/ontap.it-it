@@ -1,0 +1,101 @@
+---
+permalink: smb-admin/statistics-monitor-automatic-node-referral-task.html 
+sidebar: sidebar 
+keywords: smb, connection, refer, monitor, automatic, node, referral, extent, locating, locate, host, redistribute, lif, local, access, cifs, use statistics to monitor automatic node referral activity 
+summary: 'Per determinare il numero di connessioni SMB a cui si fa riferimento, è possibile monitorare l"attività di riferimento automatico del nodo utilizzando il comando statistics. Monitorando i riferimenti è possibile determinare in che misura i riferimenti automatici individuano le connessioni sui nodi che ospitano le condivisioni e se è necessario ridistribuire i file LIF dei dati per fornire un migliore accesso locale alle condivisioni sul server CIFS.' 
+---
+= Utilizza le statistiche per monitorare l'attività di riferimento automatico del nodo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per determinare il numero di connessioni SMB a cui si fa riferimento, è possibile monitorare l'attività di riferimento automatico del nodo utilizzando `statistics` comando. Monitorando i riferimenti è possibile determinare in che misura i riferimenti automatici individuano le connessioni sui nodi che ospitano le condivisioni e se è necessario ridistribuire i file LIF dei dati per fornire un migliore accesso locale alle condivisioni sul server CIFS.
+
+.A proposito di questa attività
+Il `cifs` Object fornisce diversi contatori a livello di privilegio avanzato che sono utili per il monitoraggio dei riferimenti automatici ai nodi SMB:
+
+* `node_referral_issued`
++
+Numero di client che hanno ricevuto un riferimento al nodo della directory principale di condivisione dopo che il client si è connesso utilizzando una LIF ospitata da un nodo diverso dal nodo della directory principale di condivisione.
+
+* `node_referral_local`
++
+Numero di client connessi utilizzando una LIF ospitata dallo stesso nodo che ospita la directory principale di condivisione. L'accesso locale offre generalmente performance ottimali.
+
+* `node_referral_not_possible`
++
+Numero di client che non hanno ricevuto un riferimento al nodo che ospita la directory principale di condivisione dopo la connessione utilizzando una LIF ospitata da un nodo diverso dal nodo della directory principale di condivisione. Questo perché non è stato trovato un LIF di dati attivo per il nodo della directory principale di condivisione.
+
+* `node_referral_remote`
++
+Numero di client connessi utilizzando una LIF ospitata da un nodo diverso dal nodo che ospita la directory principale di condivisione. L'accesso remoto potrebbe causare un peggioramento delle performance.
+
+
+
+È possibile monitorare le statistiche di riferimento dei nodi automatici sulla macchina virtuale di storage (SVM) raccogliendo e visualizzando i dati per un periodo di tempo specifico (un esempio). Se non si interrompe la raccolta dei dati, è possibile visualizzare i dati del campione. L'interruzione della raccolta dei dati fornisce un campione fisso. La mancata interruzione della raccolta dei dati consente di ottenere dati aggiornati da utilizzare per il confronto con le query precedenti. Il confronto può aiutarti a identificare le tendenze delle performance.
+
+[NOTE]
+====
+Per valutare e utilizzare le informazioni raccolte da `statistics` è necessario conoscere la distribuzione dei client nei propri ambienti.
+
+====
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
+. Visualizzare le statistiche di riferimento dei nodi automatici utilizzando `statistics` comando.
++
+Questo esempio visualizza le statistiche di riferimento dei nodi automatici raccogliendo e visualizzando i dati per un periodo di tempo campionato:
+
++
+.. Avviare la raccolta: `statistics start -object cifs -instance vs1 -sample-id sample1`
++
+[listing]
+----
+Statistics collection is being started for Sample-id: sample1
+----
+.. Attendere il tempo di raccolta desiderato.
+.. Interrompere la raccolta: `statistics stop -sample-id sample1`
++
+[listing]
+----
+Statistics collection is being stopped for Sample-id: sample1
+----
+.. Visualizzare le statistiche di riferimento dei nodi automatici: `statistics show -sample-id sample1 -counter *node*`
++
+[listing]
+----
+Object: cifs
+Instance: vs1
+Start-time: 2/4/2013 19:27:02
+End-time: 2/4/2013 19:30:11
+Cluster: cluster1
+
+    Counter                                             Value
+    ----------------------------- ---------------------------
+    node_name                                          node1
+    node_referral_issued                                    0
+    node_referral_local                                     1
+    node_referral_not_possible                              2
+    node_referral_remote                                    2
+    ...
+
+    node_name                                          node2
+    node_referral_issued                                    2
+    node_referral_local                                     1
+    node_referral_not_possible                              0
+    node_referral_remote                                    2
+    ...
+----
++
+L'output visualizza i contatori di tutti i nodi che partecipano a SVM vs1. Per maggiore chiarezza, nell'esempio vengono forniti solo i campi di output relativi alle statistiche di riferimento dei nodi automatici.
+
+
+
+. Tornare al livello di privilegio admin: `set -privilege admin`
+
+
+.Informazioni correlate
+xref:display-statistics-task.adoc[Visualizzazione delle statistiche]
+
+link:../performance-config/index.html["Configurazione del monitoraggio delle performance"]

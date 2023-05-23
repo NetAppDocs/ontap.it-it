@@ -1,0 +1,174 @@
+---
+permalink: nfs-admin/configure-character-mappings-smb-file-translation-task.html 
+sidebar: sidebar 
+keywords: configure, character, mapping, smb, file, name, translation, volume 
+summary: I client NFS possono creare nomi di file che contengono caratteri non validi per i client SMB e alcune applicazioni Windows. È possibile configurare la mappatura dei caratteri per la conversione dei nomi file sui volumi per consentire ai client SMB di accedere ai file con nomi NFS che altrimenti non sarebbero validi. 
+---
+= Configurare la mappatura dei caratteri per la conversione dei nomi file SMB sui volumi
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+I client NFS possono creare nomi di file che contengono caratteri non validi per i client SMB e alcune applicazioni Windows. È possibile configurare la mappatura dei caratteri per la conversione dei nomi file sui volumi per consentire ai client SMB di accedere ai file con nomi NFS che altrimenti non sarebbero validi.
+
+.A proposito di questa attività
+Quando i client SMB accedono ai file creati dai client NFS, ONTAP esamina il nome del file. Se il nome non è un nome file SMB valido (ad esempio, se ha un carattere "`:`" incorporato), ONTAP restituisce il nome file 8.3 che viene mantenuto per ciascun file. Tuttavia, questo causa problemi per le applicazioni che codificano informazioni importanti in nomi di file lunghi.
+
+Pertanto, se si condivide un file tra client su sistemi operativi diversi, è necessario utilizzare caratteri nei nomi dei file validi in entrambi i sistemi operativi.
+
+Tuttavia, se si dispone di client NFS che creano nomi file contenenti caratteri non validi per i client SMB, è possibile definire una mappa che converte i caratteri NFS non validi in caratteri Unicode accettati sia da SMB che da alcune applicazioni Windows. Ad esempio, questa funzionalità supporta le applicazioni CATIA MCAD e Mathematica e altre applicazioni che richiedono questo requisito.
+
+È possibile configurare la mappatura dei caratteri volume per volume.
+
+Quando si configura la mappatura dei caratteri su un volume, è necessario tenere presente quanto segue:
+
+* La mappatura dei caratteri non viene applicata tra i punti di giunzione.
++
+È necessario configurare esplicitamente la mappatura dei caratteri per ciascun volume di giunzione.
+
+* È necessario assicurarsi che i caratteri Unicode utilizzati per rappresentare caratteri non validi o non validi siano caratteri che normalmente non vengono visualizzati nei nomi dei file; in caso contrario, si verificano mappature indesiderate.
++
+Ad esempio, se si tenta di mappare i due punti (:) a un trattino (-) ma il trattino (-) è stato utilizzato correttamente nel nome del file, un client Windows che tenta di accedere a un file denominato "`a-b`" avrebbe la sua richiesta mappata al nome NFS "`a:b`" (non il risultato desiderato).
+
+* Dopo aver applicato la mappatura dei caratteri, se la mappatura contiene ancora un carattere Windows non valido, ONTAP torna ai nomi file di Windows 8.3.
+* Nelle notifiche FPolicy, nei registri di controllo NAS e nei messaggi di traccia di sicurezza, vengono visualizzati i nomi dei file mappati.
+* Quando viene creata una relazione SnapMirror di tipo DP, la mappatura dei caratteri del volume di origine non viene replicata sul volume DP di destinazione.
+* Distinzione tra maiuscole e minuscole: Poiché i nomi Windows mappati diventano nomi NFS, la ricerca dei nomi segue la semantica NFS. Ciò include il fatto che le ricerche NFS sono sensibili al maiuscolo/minuscolo. Ciò significa che le applicazioni che accedono alle condivisioni mappate non devono fare affidamento sul comportamento di Windows senza distinzione tra maiuscole e minuscole. Tuttavia, il nome 8.3 è disponibile, senza distinzione tra maiuscole e minuscole.
+* Mappature parziali o non valide: Dopo aver mappato un nome da restituire ai client che eseguono l'enumerazione della directory ("dir"), il nome Unicode risultante viene controllato per la validità di Windows. Se il nome contiene ancora caratteri non validi o se non è valido per Windows (ad esempio, termina con "." o vuoto) viene restituito il nome 8.3 invece del nome non valido.
+
+
+.Fase
+. Configurare la mappatura dei caratteri:
++
+`+vserver cifs character-mapping create -vserver vserver_name -volume volume_name -mapping mapping_text, ...+`
+
++
+Il mapping è costituito da un elenco di coppie di caratteri origine-destinazione separate da "`:`". I caratteri sono caratteri Unicode immessi utilizzando cifre esadecimali. Ad esempio: 3C:E03C.
+
++
+Il primo valore di ciascuno `mapping_text` La coppia separata dai due punti è il valore esadecimale del carattere NFS che si desidera convertire, mentre il secondo valore è il valore Unicode utilizzato da SMB. Le coppie di mappatura devono essere univoche (deve esistere una mappatura uno a uno).
+
++
+** Mappatura di origine
++
+La tabella seguente mostra il set di caratteri Unicode consentito per il mapping di origine:
+
++
+[cols="20,20,60"]
+|===
+
+
+| Carattere Unicode | Carattere stampato | Descrizione 
+
+
+ a| 
+0x01-0x19
+ a| 
+Non applicabile
+ a| 
+Caratteri di controllo non stampabili
+
+
+
+ a| 
+0x5C
+ a| 
+.
+ a| 
+Barra rovesciata
+
+
+
+ a| 
+0x3A
+ a| 
+:
+ a| 
+Due punti
+
+
+
+ a| 
+0x2A
+ a| 
+*
+ a| 
+Asterisco
+
+
+
+ a| 
+0x3F
+ a| 
+?
+ a| 
+Punto interrogativo
+
+
+
+ a| 
+0x22
+ a| 
+"
+ a| 
+Virgoletta
+
+
+
+ a| 
+0x3C
+ a| 
+<
+ a| 
+Inferiore a.
+
+
+
+ a| 
+0x3E
+ a| 
+>
+ a| 
+Maggiore di
+
+
+
+ a| 
+0x7C
+ a| 
+|
+ a| 
+Linea verticale
+
+
+
+ a| 
+0xB1
+ a| 
+±
+ a| 
+Segno più-meno
+
+|===
+** Mappatura di destinazione
++
+È possibile specificare i caratteri di destinazione nella "`Private Use Area`" di Unicode nel seguente intervallo: U+E0000...U+F8FF.
+
+
+
+
+
+.Esempio
+Il seguente comando crea un mapping di caratteri per un volume denominato "`data`" su storage virtual machine (SVM) vs1:
+
+[listing]
+----
+cluster1::> vserver cifs character-mapping create -volume data -mapping 3c:e17c,3e:f17d,2a:f745
+cluster1::> vserver cifs character-mapping show
+
+Vserver         Volume Name  Character Mapping
+--------------  -----------  ------------------------------------------
+vs1             data         3c:e17c, 3e:f17d, 2a:f745
+----

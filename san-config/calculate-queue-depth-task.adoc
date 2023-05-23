@@ -1,0 +1,79 @@
+---
+permalink: san-config/calculate-queue-depth-task.html 
+sidebar: sidebar 
+keywords: calculate, queue depth 
+summary: 'Potrebbe essere necessario regolare la profondità della coda FC sull"host per ottenere i valori massimi per ITN per nodo e fan-in della porta FC. Il numero massimo di LUN e il numero di HBA che possono connettersi a una porta FC sono limitati dalla profondità di coda disponibile sulle porte di destinazione FC.' 
+---
+= Panoramica della profondità della coda di calcolo
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Potrebbe essere necessario regolare la profondità della coda FC sull'host per ottenere i valori massimi per ITN per nodo e fan-in della porta FC. Il numero massimo di LUN e il numero di HBA che possono connettersi a una porta FC sono limitati dalla profondità di coda disponibile sulle porte di destinazione FC.
+
+.A proposito di questa attività
+Queue Depth (profondità coda) è il numero di richieste i/o (comandi SCSI) che possono essere accodate contemporaneamente su un controller di storage. Ogni richiesta di i/o dall'HBA iniziatore dell'host all'adattatore di destinazione del controller di storage consuma una voce di coda. In genere, una maggiore profondità della coda equivale a prestazioni migliori. Tuttavia, se viene raggiunta la profondità massima della coda del controller di storage, il controller di storage rifiuta i comandi in entrata restituendo una risposta QFULL. Se un gran numero di host accede a un controller di storage, è necessario pianificare attentamente per evitare le condizioni QFULL, che degradano significativamente le prestazioni del sistema e possono causare errori su alcuni sistemi.
+
+In una configurazione con più iniziatori (host), tutti gli host devono avere profondità di coda simili. A causa della diseguaglianza nella profondità della coda tra gli host connessi allo storage controller attraverso la stessa porta di destinazione, gli host con profondità di coda inferiori vengono privati dell'accesso alle risorse da parte degli host con profondità di coda maggiori.
+
+È possibile fornire i seguenti consigli generali sulle profondità della coda "`tuning`":
+
+* Per i sistemi di piccole e medie dimensioni, utilizzare una profondità di coda HBA di 32.
+* Per i sistemi di grandi dimensioni, utilizzare una profondità della coda HBA pari a 128.
+* In caso di eccezioni o di test delle prestazioni, utilizzare una profondità della coda di 256 per evitare possibili problemi di accodamento.
+* Tutti gli host devono avere le profondità della coda impostate su valori simili per garantire un accesso uguale a tutti gli host.
+* Per evitare errori o penalizzazioni delle performance, non superare la profondità della coda della porta FC di destinazione del controller di storage.
+
+
+.Fasi
+. Contare il numero totale di iniziatori FC in tutti gli host che si connettono a una porta di destinazione FC.
+. Moltiplicare per 128.
++
+** Se il risultato è inferiore a 2,048, impostare la profondità della coda per tutti gli iniziatori su 128. Si dispone di 15 host con un iniziatore connesso a ciascuna delle due porte di destinazione sul controller di storage. 15 × 128 = 1,920. Poiché 1,920 è inferiore al limite di profondità totale della coda di 2,048, è possibile impostare la profondità della coda per tutti gli iniziatori su 128.
+** Se il risultato è superiore a 2,048, passare alla fase 3. Si dispone di 30 host con un iniziatore connesso a ciascuna delle due porte di destinazione sul controller di storage. 30 × 128 = 3,840. Poiché 3,840 è maggiore del limite di profondità totale della coda di 2,048, è necessario scegliere una delle opzioni indicate al punto 3 per la risoluzione dei problemi.
+
+
+. Scegliere una delle seguenti opzioni per aggiungere altri host al controller dello storage.
++
+** Opzione 1:
++
+... Aggiungere altre porte di destinazione FC.
+... Ridistribuire gli iniziatori FC.
+... Ripetere i passaggi 1 e 2. + la profondità di coda desiderata di 3,840 supera la profondità di coda disponibile per porta. Per risolvere questo problema, è possibile aggiungere un adattatore di destinazione FC a due porte a ciascun controller, quindi eseguire la zona degli switch FC in modo che 15 host su 30 si connettano a un set di porte e gli altri 15 host si connettano a un secondo set di porte. La profondità della coda per porta viene quindi ridotta a 15 × 128 = 1,920.
+
+
+** Opzione 2:
++
+... Indicare ciascun host come "`Large`" o "`sMall`" in base alle esigenze di i/o previste.
+... Moltiplicare il numero di iniziatori grandi per 128.
+... Moltiplicare il numero di piccoli iniziatori per 32.
+... Unire i due risultati.
+... Se il risultato è inferiore a 2,048, impostare la profondità della coda per gli host di grandi dimensioni su 128 e la profondità della coda per gli host di piccole dimensioni su 32.
+... Se il risultato è ancora maggiore di 2,048 per porta, ridurre la profondità della coda per iniziatore fino a quando la profondità totale della coda non è inferiore o uguale a 2,048.
++
+[NOTE]
+====
+Per stimare la profondità della coda necessaria per ottenere un determinato throughput i/o al secondo, utilizzare questa formula:
+
+Profondità della coda richiesta = (numero di i/o al secondo) × (tempo di risposta)
+
+Ad esempio, se si necessita di 40,000 i/o al secondo con un tempo di risposta di 3 millisecondi, la profondità della coda richiesta = 40,000 × (.003) = 120.
+
+====
+
+
+
+
+
+
+Il numero massimo di host che è possibile collegare a una porta di destinazione è 64, se si decide di limitare la profondità della coda alla raccomandazione di base di 32. Tuttavia, se si decide di avere una profondità di coda di 128, è possibile collegare un massimo di 16 host a una porta di destinazione. Maggiore è la profondità della coda, minore è il numero di host supportati da una singola porta di destinazione. Se il tuo requisito è tale da non poter scendere a compromessi sulla profondità della coda, dovresti ottenere più porte di destinazione.
+
+La profondità della coda desiderata di 3,840 supera la profondità della coda disponibile per porta. Sono disponibili 10 host "`Large`" con esigenze di i/o dello storage elevate e 20 host "`sMall`" con esigenze di i/o ridotte. Impostare la profondità della coda dell'iniziatore sugli host di grandi dimensioni su 128 e la profondità della coda dell'iniziatore sugli host di piccole dimensioni su 32.
+
+La profondità totale della coda risultante è (10 × 128) + (20 × 32) = 1,920.
+
+È possibile distribuire la profondità della coda disponibile in modo uniforme in ciascun iniziatore.
+
+La profondità della coda risultante per iniziatore è di 2,048 ÷ 30 = 68.

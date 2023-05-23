@@ -1,0 +1,90 @@
+---
+permalink: san-admin/improve-vmware-vaai-performance-esx-hosts-concept.html 
+sidebar: sidebar 
+keywords: improve, vmware, vaai, performance, esx, hosts 
+summary: 'ONTAP supporta alcune API vStorage VMware per l"integrazione degli array (VAAI) quando l"host ESX esegue ESX 4.1 o versioni successive. Queste funzionalità consentono di trasferire le operazioni dall"host ESX al sistema storage e aumentare il throughput di rete. L"host ESX attiva automaticamente le funzioni nell"ambiente corretto.' 
+---
+= Migliorare le performance di VMware VAAI per gli host ESX
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+ONTAP supporta alcune API vStorage VMware per l'integrazione degli array (VAAI) quando l'host ESX esegue ESX 4.1 o versioni successive. Queste funzionalità consentono di trasferire le operazioni dall'host ESX al sistema storage e aumentare il throughput di rete. L'host ESX attiva automaticamente le funzioni nell'ambiente corretto.
+
+La funzione VAAI supporta i seguenti comandi SCSI:
+
+* `EXTENDED_COPY`
++
+Questa funzione consente all'host di avviare il trasferimento dei dati tra le LUN o all'interno di una LUN senza coinvolgere l'host nel trasferimento dei dati. Ciò consente di risparmiare i cicli della CPU ESX e di aumentare il throughput di rete. La funzione di copia estesa, nota anche come "offload delle copie", viene utilizzata in scenari come la clonazione di una macchina virtuale. Quando viene richiamata dall'host ESX, la funzione di offload delle copie copia copia i dati all'interno del sistema di storage piuttosto che passare attraverso la rete host. L'offload della copia trasferisce i dati nei seguenti modi:
+
++
+** All'interno di un LUN
+** Tra LUN all'interno di un volume
+** Tra LUN su diversi volumi all'interno di una macchina virtuale per lo storage (SVM)
+** Tra LUN su SVM diverse all'interno di un cluster se questa funzione non può essere richiamata, l'host ESX utilizza automaticamente i comandi di LETTURA e SCRITTURA standard per l'operazione di copia.
+
+
+* `WRITE_SAME`
++
+Questa funzionalità consente di trasferire il lavoro di scrittura di un modello ripetuto, ad esempio tutti gli zeri, a un array di storage. L'host ESX utilizza questa funzionalità in operazioni come lo zero-filling di un file.
+
+* `COMPARE_AND_WRITE`
++
+Questa funzionalità ignora alcuni limiti di concorrenza per l'accesso ai file, che accelerano le operazioni come l'avvio delle macchine virtuali.
+
+
+
+
+
+== Requisiti per l'utilizzo dell'ambiente VAAI
+
+Le funzionalità VAAI fanno parte del sistema operativo ESX e vengono richiamate automaticamente dall'host ESX una volta configurato l'ambiente corretto.
+
+I requisiti ambientali sono i seguenti:
+
+* L'host ESX deve eseguire ESX 4.1 o versione successiva.
+* Il sistema storage NetApp che ospita il datastore VMware deve eseguire ONTAP.
+* (Solo offload delle copie) l'origine e la destinazione dell'operazione di copia VMware devono essere ospitati sullo stesso sistema di storage all'interno dello stesso cluster.
++
+[NOTE]
+====
+La funzione di offload delle copie attualmente non supporta la copia dei dati tra gli archivi dati VMware ospitati su sistemi storage diversi.
+
+====
+
+
+
+
+== Determinare se le funzionalità VAAI sono supportate da ESX
+
+Per verificare se il sistema operativo ESX supporta le funzionalità VAAI, è possibile controllare il client vSphere o utilizzare qualsiasi altro mezzo per accedere all'host. Per impostazione predefinita, ONTAP supporta i comandi SCSI.
+
+È possibile controllare le impostazioni avanzate dell'host ESX per determinare se le funzioni VAAI sono attivate. La tabella indica i comandi SCSI corrispondenti ai nomi dei controlli ESX.
+
+[cols="2*"]
+|===
+| Comando SCSI | Nome del controllo ESX (funzione VAAI) 
+
+
+ a| 
+COPIA_ESTESA
+ a| 
+`HardwareAcceleratedMove`
+
+
+
+ a| 
+WRITE_SAME
+ a| 
+`HardwareAcceleratedInit`
+
+
+
+ a| 
+COMPARE_AND_WRITE
+ a| 
+`HardwareAcceleratedLocking`
+
+|===

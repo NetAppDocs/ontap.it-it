@@ -1,0 +1,71 @@
+---
+permalink: volumes/resizing-concept.html 
+sidebar: sidebar 
+keywords: when to, use, resizing 
+summary: 'Poiché il ridimensionamento delle quote è più rapido dell"inizializzazione delle quote, è necessario utilizzare il ridimensionamento quando possibile. Tuttavia, il ridimensionamento funziona solo per alcuni tipi di modifiche delle quote.' 
+---
+= Quando è possibile utilizzare il ridimensionamento
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Poiché il ridimensionamento delle quote è più rapido dell'inizializzazione delle quote, è necessario utilizzare il ridimensionamento quando possibile. Tuttavia, il ridimensionamento funziona solo per alcuni tipi di modifiche delle quote.
+
+È possibile ridimensionare le quote quando si apportano i seguenti tipi di modifiche alle regole di quota:
+
+* Modifica di una quota esistente.
++
+Ad esempio, la modifica dei limiti di una quota esistente.
+
+* Aggiunta di una quota per una destinazione di quota per la quale esiste una quota predefinita o una quota di rilevamento predefinita.
+* Eliminazione di una quota per la quale è specificata una quota predefinita o una quota di tracciamento predefinita.
+* Combinazione di quote utente separate in un'unica quota multiutente.
+
+
+[NOTE]
+====
+Dopo aver apportato modifiche estese alle quote, è necessario eseguire una reinizializzazione completa per garantire che tutte le modifiche abbiano effetto.
+
+====
+[NOTE]
+====
+Se si tenta di ridimensionare e non tutte le modifiche delle quote possono essere incorporate utilizzando un'operazione di ridimensionamento, ONTAP emette un avviso. Dal report delle quote è possibile determinare se il sistema storage sta monitorando l'utilizzo del disco per un determinato utente, gruppo o qtree. Se viene visualizzata una quota nel report delle quote, significa che il sistema di storage sta monitorando lo spazio su disco e il numero di file di proprietà della destinazione della quota.
+
+====
+.Esempio di modifiche alle quote che possono essere rese effettive ridimensionando
+Alcune modifiche delle regole di quota possono essere rese effettive ridimensionando. Prendere in considerazione le seguenti quote:
+
+[listing]
+----
+
+#Quota Target type             disk  files thold sdisk sfile
+#------------ ----             ----  ----- ----- ----- -----
+*             user@/vol/vol2    50M   15K
+*             group@/vol/vol2  750M   85K
+*             tree@/vol/vol2      -     -
+jdoe          user@/vol/vol2/  100M   75K
+kbuck         user@/vol/vol2/  100M   75K
+----
+Si supponga di apportare le seguenti modifiche:
+
+* Aumentare il numero di file per la destinazione utente predefinita.
+* Aggiungere una nuova quota utente per un nuovo utente, boris, che richiede un limite di dischi superiore alla quota utente predefinita.
+* Eliminare la voce di quota esplicita dell'utente kbuck; il nuovo utente ora necessita solo dei limiti di quota predefiniti.
+
+
+Tali modifiche comportano le seguenti quote:
+
+[listing]
+----
+
+#Quota Target type             disk  files thold sdisk sfile
+#------------ ----             ----  ----- ----- ----- -----
+*             user@/vol/vol2    50M   25K
+*             group@/vol/vol2  750M   85K
+*             tree@/vol/vol2      -     -
+jdoe          user@/vol/vol2/  100M   75K
+boris         user@/vol/vol2/  100M   75K
+----
+Il ridimensionamento attiva tutte queste modifiche; non è necessaria una reinizializzazione della quota completa.

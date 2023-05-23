@@ -1,0 +1,28 @@
+---
+permalink: disks-aggregates/hot-spare-disks-work-concept.html 
+sidebar: sidebar 
+keywords: hot, spare disks, work 
+summary: 'Un disco hot spare è un disco assegnato a un sistema di storage ed è pronto per l"uso, ma non è in uso da un gruppo RAID e non conserva alcun dato.' 
+---
+= Funzionamento dei dischi hot spare
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Un disco hot spare è un disco assegnato a un sistema di storage ed è pronto per l'uso, ma non è in uso da un gruppo RAID e non conserva alcun dato.
+
+Se si verifica un guasto al disco all'interno di un gruppo RAID, il disco hot spare viene assegnato automaticamente al gruppo RAID per sostituire i dischi guasti. I dati del disco guasto vengono ricostruiti sul disco sostitutivo hot spare in background dal disco di parità RAID. L'attività di ricostruzione viene registrata in `/etc/message` Viene inviato un file e un messaggio AutoSupport.
+
+Se il disco hot spare disponibile non ha le stesse dimensioni del disco guasto, viene scelto un disco di dimensioni maggiori successive e quindi ridimensionato in modo da corrispondere alle dimensioni del disco che si sta sostituendo.
+
+
+
+== Requisiti di riserva per i dischi portanti multi-disco
+
+Mantenere il numero corretto di dischi di riserva nei carrier multi-disco è fondamentale per ottimizzare la ridondanza dello storage e ridurre al minimo il tempo che ONTAP deve dedicare alla copia dei dischi per ottenere un layout ottimale dei dischi.
+
+È necessario mantenere un minimo di due hot spare per i dischi portanti multi-disco in ogni momento. Per supportare l'utilizzo del Centro di manutenzione ed evitare problemi causati da guasti a più dischi simultanei, è necessario mantenere almeno quattro hot spare per il funzionamento a stato stazionario e sostituire tempestivamente i dischi guasti.
+
+Se due dischi si guastano contemporaneamente con solo due hot spare disponibili, ONTAP potrebbe non essere in grado di scambiare il contenuto del disco guasto e del relativo carrier mate con i dischi spare. Questo scenario è chiamato stallo. In questo caso, viene inviata una notifica tramite messaggi EMS e messaggi AutoSupport. Quando i supporti sostitutivi diventano disponibili, è necessario seguire le istruzioni fornite dai messaggi EMS. Per ulteriori informazioni, consultare l'articolo della Knowledge base link:++https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/Draft_-_RAID_Layout_Cannot_Be_Autocorrected_-_AutoSupport_message++["Impossibile eseguire la calibrazione automatica del layout RAID - messaggio AutoSupport"]

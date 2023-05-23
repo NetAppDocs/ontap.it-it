@@ -1,0 +1,148 @@
+---
+permalink: system-admin/remov-nodes-cluster-concept.html 
+sidebar: sidebar 
+keywords: remove, node, cluster, failover, partner, erase, inaccessible 
+summary: È possibile rimuovere i nodi indesiderati da un cluster, un nodo alla volta. Dopo aver rimosso un nodo, è necessario rimuovere anche il partner di failover. Se si rimuove un nodo, i relativi dati diventano inaccessibili o cancellati. 
+---
+= Rimuovere i nodi dal cluster
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile rimuovere i nodi indesiderati da un cluster, un nodo alla volta. Dopo aver rimosso un nodo, è necessario rimuovere anche il partner di failover. Se si rimuove un nodo, i relativi dati diventano inaccessibili o cancellati.
+
+.Prima di iniziare
+Prima di rimuovere i nodi dal cluster, devono essere soddisfatte le seguenti condizioni:
+
+* Più della metà dei nodi nel cluster deve essere integro.
+* Tutti i dati sul nodo che si desidera rimuovere devono essere stati svuotati.
++
+** Ciò potrebbe includere link:../encryption-at-rest/secure-purge-data-encrypted-volume-concept.html["eliminazione dei dati da un volume crittografato"].
+
+
+* Tutti i volumi non root lo sono link:../volumes/move-volume-task.html["spostato"] da aggregati di proprietà del nodo.
+* Tutti gli aggregati non root sono stati link:../disks-aggregates/commands-manage-aggregates-reference.html["cancellato"] dal nodo.
+* Se il nodo possiede dischi FIPS (Federal Information Processing Standards) o dischi con crittografia automatica (SED), link:../encryption-at-rest/return-seds-unprotected-mode-task.html["la crittografia del disco è stata rimossa"] riportando i dischi in modalità non protetta.
++
+** Potrebbe anche essere utile link:../encryption-at-rest/sanitize-fips-drive-sed-task.html["Sanificare i dischi FIPS o i SED"].
+
+
+* I dati LIF lo sono link:../networking/delete_a_lif.html["cancellato"] oppure link:../networking/migrate_a_lif.html["trasferito"] dal nodo.
+* Le LIF di gestione del cluster lo sono state link:../networking/migrate_a_lif.html["trasferito"] dal nodo e le porte home sono cambiate.
+* Tutte le LIF intercluster sono state link:../networking/delete_a_lif.html["rimosso"].
++
+** Quando si rimuovono le LIF di intercluster, viene visualizzato un avviso che può essere ignorato.
+
+
+* Il failover dello storage è stato così link:../high-availability/ha_commands_for_enabling_and_disabling_storage_failover.html["disattivato"] per il nodo.
+* Tutte le regole di failover LIF lo sono state link:../networking/commands_for_managing_failover_groups_and_policies.html["modificato"] per rimuovere le porte sul nodo.
+* Tutte le VLAN sul nodo sono state link:../networking/configure_vlans_over_physical_ports.html#delete-a-vlan["cancellato"].
+* Se si dispone di LUN sul nodo da rimuovere, è necessario link:https://docs.netapp.com/us-en/ontap/san-admin/modify-slm-reporting-nodes-task.html["Modificare l'elenco dei nodi di reporting della mappa LUN selettiva (SLM)"] prima di rimuovere il nodo.
++
+Se non si rimuove il nodo e il relativo partner ha dall'elenco dei nodi di reporting SLM, l'accesso alle LUN precedentemente presenti sul nodo può andare perso anche se i volumi contenenti le LUN sono stati spostati in un altro nodo.
+
+
+
+Si consiglia di inviare un messaggio AutoSupport per informare il supporto tecnico NetApp che la rimozione del nodo è in corso.
+
+*Nota:* non è necessario eseguire operazioni come `cluster remove-node`, `cluster unjoin`, e. `node rename` Quando è in corso un aggiornamento automatico di ONTAP.
+
+.A proposito di questa attività
+* Se si esegue un cluster a versione mista, è possibile rimuovere l'ultimo nodo a versione bassa utilizzando uno dei comandi di privilegio avanzati che iniziano con ONTAP 9.3:
++
+** ONTAP 9.3: `cluster unjoin -skip-last-low-version-node-check`
+** ONTAP 9.4 e versioni successive: `cluster remove-node -skip-last-low-version-node-check`
+
+
+* Se si disuniscono 2 nodi da un cluster a 4 nodi, il cluster ha viene attivato automaticamente sui due nodi rimanenti.
+
+
+
+NOTE: Tutti i dati del sistema e dell'utente, provenienti da tutti i dischi collegati al nodo, devono essere resi inaccessibili agli utenti prima di rimuovere un nodo dal cluster. Se un nodo non è stato collegato correttamente da un cluster, contattare il supporto NetApp per assistenza con le opzioni di ripristino.
+
+.Fasi
+. Impostare il livello di privilegio su avanzato:
++
+`*set -privilege advanced*`
+
+. Verificare se un nodo del cluster contiene epsilon:
++
+`*cluster show -epsilon true*`
+
++
+.. Se un nodo contiene epsilon, modificarne l'idoneità in false.
++
+`*cluster modify -node <node_name> -eligibility false*`
+
+
+
+. Se il nodo che si desidera rimuovere è il nodo master corrente, abilitare un altro nodo del cluster a essere selezionato come nodo master modificando l'idoneità del cluster del nodo master in `false`:
++
+`*cluster modify –eligibility false*`
+
++
+Il nodo master è il nodo che contiene processi come "`mgmt`", "`vldb`", "`vifmgr`", "`bcomd`" e "`crs`". Il `cluster ring show` il comando advanced mostra il nodo master corrente.
+
++
+[listing]
+----
+cluster::*> cluster modify -node node1 -eligibility false
+----
+. Accedere alla LIF di gestione dei nodi remoti o alla LIF di gestione dei cluster su un nodo diverso da quello da rimuovere.
+. Rimuovere il nodo dal cluster:
++
+|===
+| Per questa versione di ONTAP... | Utilizzare questo comando... 
+
+
+ a| 
+ONTAP 9.3
+ a| 
+`*cluster unjoin*`
+
+
+
+ a| 
+ONTAP 9.4 e versioni successive
+ a| 
+`*cluster remove-node*`
+
+|===
++
+Se si dispone di un cluster con versione mista e si sta rimuovendo l'ultimo nodo della versione inferiore, utilizzare `-skip-last-low-version-node-check` con questi comandi.
+
++
+Il sistema informa l'utente di quanto segue:
+
++
+** È inoltre necessario rimuovere il partner di failover del nodo dal cluster.
+** Una volta rimosso il nodo e prima di poterlo riconnettare a un cluster, è necessario utilizzare l'opzione del menu di avvio (4) pulizia della configurazione e inizializzazione di tutti i dischi o l'opzione (9) Configurazione della partizione avanzata del disco per cancellare la configurazione del nodo e inizializzare tutti i dischi.
++
+Viene generato un messaggio di errore se si verificano condizioni che è necessario risolvere prima di rimuovere il nodo. Ad esempio, il messaggio potrebbe indicare che il nodo dispone di risorse condivise che è necessario rimuovere o che si trova in una configurazione ha del cluster o in una configurazione di failover dello storage che è necessario disattivare.
+
++
+Se il nodo è il master del quorum, il cluster perderà brevemente e tornerà al quorum. Questa perdita di quorum è temporanea e non influisce sulle operazioni dei dati.
+
+
+
+. Se un messaggio di errore indica condizioni di errore, risolvere tali condizioni ed eseguire nuovamente il `cluster remove-node` oppure `cluster unjoin` comando.
++
+Il nodo viene riavviato automaticamente dopo che è stato rimosso dal cluster.
+
+. Se si sta ridisponendo il nodo, cancellare la configurazione del nodo e inizializzare tutti i dischi:
++
+.. Durante il processo di avvio, premere Ctrl-C per visualizzare il menu di avvio quando richiesto.
+.. Selezionare l'opzione del menu di boot *(4) clean Configuration (pulizia configurazione) e inizializzare tutti i dischi*.
+
+
+. Torna al livello di privilegio admin:
++
+`*set -privilege admin*`
+
+. Ripetere i passaggi precedenti per rimuovere il partner di failover dal cluster.
+
+
+.Al termine
+Se sono stati rimossi i nodi per avere un cluster a nodo singolo, è necessario modificare le porte del cluster per gestire il traffico dati modificando le porte del cluster in modo che siano porte dati, quindi creare file di dati LIF sulle porte dati.

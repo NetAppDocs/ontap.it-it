@@ -1,0 +1,58 @@
+---
+permalink: nas-audit/fpolicy-config-types-concept.html 
+sidebar: sidebar 
+keywords: fpolicy, configuration types 
+summary: 'Esistono due tipi di configurazione FPolicy di base. Una configurazione utilizza server FPolicy esterni per elaborare e agire in base alle notifiche. L"altra configurazione non utilizza server FPolicy esterni, ma utilizza il server FPolicy nativo interno di ONTAP per un semplice blocco dei file basato sulle estensioni.' 
+---
+= Tipi di configurazione FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Esistono due tipi di configurazione FPolicy di base. Una configurazione utilizza server FPolicy esterni per elaborare e agire in base alle notifiche. L'altra configurazione non utilizza server FPolicy esterni, ma utilizza il server FPolicy nativo interno di ONTAP per un semplice blocco dei file basato sulle estensioni.
+
+* *Configurazione del server FPolicy esterno*
++
+La notifica viene inviata al server FPolicy, che vagli la richiesta e applica le regole per determinare se il nodo deve consentire l'operazione di file richiesta. Per i criteri sincroni, il server FPolicy invia quindi una risposta al nodo per consentire o bloccare l'operazione di file richiesta.
+
+* *Configurazione del server FPolicy nativo*
++
+La notifica viene sottoposta a screening interno. La richiesta viene consentita o negata in base alle impostazioni di estensione del file configurate nell'ambito FPolicy.
+
++
+*Nota*: Le richieste di estensione del file negate non vengono registrate.
+
+
+
+
+
+== Quando creare una configurazione FPolicy nativa
+
+Le configurazioni FPolicy native utilizzano il motore FPolicy interno di ONTAP per monitorare e bloccare le operazioni dei file in base all'estensione del file. Questa soluzione non richiede server FPolicy esterni (server FPolicy). L'utilizzo di una configurazione nativa per il blocco dei file è appropriato quando questa semplice soluzione è tutto ciò che serve.
+
+Il blocco nativo dei file consente di monitorare le operazioni dei file che corrispondono alle operazioni configurate e agli eventi di filtraggio, negando quindi l'accesso ai file con estensioni particolari. Questa è la configurazione predefinita.
+
+Questa configurazione consente di bloccare l'accesso al file solo in base all'estensione del file. Ad esempio, per bloccare i file che contengono `mp3` extensions (estensioni), viene configurato un criterio per fornire notifiche per determinate operazioni con estensioni file di destinazione di `mp3`. Il criterio è configurato per negare `mp3` richieste di file per operazioni che generano notifiche.
+
+Quanto segue si applica alle configurazioni FPolicy native:
+
+* Lo stesso set di filtri e protocolli supportati dallo screening dei file basato su server FPolicy è supportato anche per il blocco dei file nativi.
+* È possibile configurare contemporaneamente le applicazioni di blocco dei file nativi e di screening dei file basate su server FPolicy.
++
+A tale scopo, è possibile configurare due policy FPolicy separate per la macchina virtuale di storage (SVM), una configurata per il blocco dei file nativi e una configurata per lo screening dei file basato su server FPolicy.
+
+* La funzione di blocco dei file nativi consente di visualizzare solo i file in base alle estensioni e non in base al contenuto del file.
+* Nel caso di collegamenti simbolici, il blocco dei file nativi utilizza l'estensione del file root.
+
+
+Scopri di più link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/FPolicy%3A_Native_File_Blocking["FPolicy: Blocco dei file nativi"^].
+
+
+
+== Quando creare una configurazione che utilizza server FPolicy esterni
+
+Le configurazioni FPolicy che utilizzano server FPolicy esterni per elaborare e gestire le notifiche offrono soluzioni efficaci per i casi di utilizzo in cui è necessario un blocco dei file più semplice basato sull'estensione dei file.
+
+È necessario creare una configurazione che utilizzi server FPolicy esterni quando si desidera eseguire operazioni quali il monitoraggio e la registrazione degli eventi di accesso ai file, fornire servizi di quota, eseguire il blocco dei file in base a criteri diversi dalle semplici estensioni dei file, fornire servizi di migrazione dei dati utilizzando applicazioni di gestione dello storage gerarchiche, In alternativa, è possibile fornire un insieme di policy dettagliato che monitorano solo un sottoinsieme di dati nella macchina virtuale di storage (SVM).

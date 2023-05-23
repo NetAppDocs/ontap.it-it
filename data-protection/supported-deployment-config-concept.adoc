@@ -1,0 +1,70 @@
+---
+permalink: data-protection/supported-deployment-config-concept.html 
+sidebar: sidebar 
+keywords: fan-out, fanout, fan out, cascade, data, protection, deployments, snapmirror, snap mirror, snapvault, synchronous, asynchronous, unified, replication, replicate, vault-mirror, vault-vault 
+summary: 'È possibile utilizzare un"implementazione fan-out per estendere la protezione dei dati a più sistemi secondari. È possibile utilizzare un"implementazione a cascata per estendere la protezione dei dati ai sistemi terziari.' 
+---
+= Implementazioni di protezione dei dati fan-out e cascata
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile utilizzare un'implementazione _fan-out_ per estendere la protezione dei dati a più sistemi secondari. È possibile utilizzare un'implementazione _Cascade_ per estendere la protezione dei dati ai sistemi terziari.
+
+Le implementazioni fan-out e cascata supportano qualsiasi combinazione di DR SnapMirror, SnapVault o replica unificata; tuttavia, le relazioni sincrone SnapMirror (supportate a partire da ONTAP 9.5) supportano solo implementazioni fan-out con una o più relazioni SnapMirror asincrone e non supportano implementazioni a cascata. Solo una relazione nella configurazione fan-out può essere una relazione sincrona di SnapMirror, mentre tutte le altre relazioni del volume di origine devono essere relazioni asincrone di SnapMirror. xref:../smbc/resume-protection-fan-out-configuration.html[Continuità aziendale di SnapMirror] (Supportato a partire da ONTAP 9.8) supporta anche le configurazioni fan-out.
+
+[NOTE]
+====
+È possibile utilizzare un'implementazione _fan-in_ per creare relazioni di protezione dei dati tra più sistemi primari e un singolo sistema secondario. Ogni relazione deve utilizzare un volume diverso sul sistema secondario.
+
+====
+[NOTE]
+====
+Tenere presente che la risincronizzazione dei volumi che fanno parte di una configurazione fan-out o a cascata può richiedere più tempo. Non è raro che la relazione di SnapMirror riporti lo stato di "preparazione" per un periodo di tempo prolungato.
+
+====
+
+
+== Come funzionano le implementazioni fan-out
+
+SnapMirror supporta le implementazioni fan-out di _mirror multipli_ e _mirror-vault_.
+
+Un'implementazione fan-out con mirror multipli consiste in un volume di origine che ha una relazione di mirroring con più volumi secondari.
+
+image::../media/sm-mirror-mirror-fanout.png[Implementazione della protezione dei dati: Mirror multipli fanout]
+
+Un'implementazione fan-out del vault mirror è costituita da un volume di origine che ha una relazione di mirroring con un volume secondario e una relazione SnapVault con un volume secondario diverso.
+
+image::../media/sm-mirror-vault-fanout.png[Implementazione della protezione dei dati: Fanout del vault mirror]
+
+A partire da ONTAP 9.5, è possibile avere implementazioni fan-out con relazioni sincrone di SnapMirror; tuttavia, solo una relazione nella configurazione fan-out può essere una relazione sincrona di SnapMirror, tutte le altre relazioni dal volume di origine devono essere relazioni asincrone di SnapMirror.
+
+image::../media/ssm-fanout.gif[fanout ssm]
+
+
+
+== Come funzionano le implementazioni a cascata
+
+SnapMirror supporta le implementazioni a cascata di _mirror-mirror_, _mirror-vault_, _vault-mirror_ e _vault-vault_.
+
+Un'implementazione a cascata di mirror consiste in una catena di relazioni in cui un volume di origine viene mirrorato su un volume secondario e il volume secondario viene mirrorato su un volume terzo. Se il volume secondario non è più disponibile, è possibile sincronizzare la relazione tra il volume primario e il volume terzo senza eseguire un nuovo trasferimento di riferimento.
+
+A partire da ONTAP 9.6, le relazioni sincroni di SnapMirror sono supportate in una distribuzione a cascata con mirror. Solo i volumi primari e secondari possono trovarsi in una relazione sincrona di SnapMirror. La relazione tra i volumi secondari e i volumi terziari deve essere asincrona.
+
+image::../media/sm-mirror-mirror-cascade.png[Implementazione di SnapMirror: Catena a cascata da origine a mirror]
+
+Un'implementazione a cascata del vault mirror consiste in una catena di relazioni in cui un volume di origine viene mirrorato su un volume secondario e il volume secondario viene vault su un volume terzo.
+
+image::../media/sm-mirror-vault-cascade.png[Implementazione di SnapMirror: Catena a cascata da origine a vault mirror]
+
+Sono supportate anche le implementazioni Vault-Mirror e, a partire da ONTAP 9.2, Vault-Vault Cascade:
+
+* Un'implementazione a cascata del vault-mirror consiste in una catena di relazioni in cui un volume di origine viene vault su un volume secondario e il volume secondario viene mirrorato su un volume terzo.
+* (A partire da ONTAP 9.2) Una distribuzione a cascata di vault è costituita da una catena di relazioni in cui un volume di origine viene vault su un volume secondario e il volume secondario viene vault su un volume terzo.
+
+
+.Ulteriori letture
+* xref:../smbc/resume-protection-fan-out-configuration.html[Ripristino della protezione in una configurazione fan-out con SM-BC]
+

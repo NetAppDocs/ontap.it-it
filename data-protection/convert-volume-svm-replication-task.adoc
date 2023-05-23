@@ -1,0 +1,83 @@
+---
+permalink: data-protection/convert-volume-svm-replication-task.html 
+sidebar: sidebar 
+keywords: convert, volume, replication, relationships, svm 
+summary: 'È possibile convertire le relazioni di replica tra i volumi in una relazione di replica tra le macchine virtuali di storage (SVM) che possiedono i volumi, a condizione che ciascun volume sull"origine (eccetto il volume root) venga replicato, inoltre, ciascun volume di origine (incluso il volume root) ha lo stesso nome del volume di destinazione.' 
+---
+= Convertire le relazioni di replica dei volumi in una relazione di replica SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile convertire le relazioni di replica tra i volumi in una relazione di replica tra le macchine virtuali di storage (SVM) che possiedono i volumi, a condizione che ciascun volume sull'origine (eccetto il volume root) venga replicato, inoltre, ciascun volume di origine (incluso il volume root) ha lo stesso nome del volume di destinazione.
+
+.A proposito di questa attività
+Utilizzare `volume rename` Quando la relazione SnapMirror è inattiva per rinominare i volumi di destinazione, se necessario.
+
+.Fasi
+. Dalla SVM di destinazione o dal cluster di destinazione, eseguire il seguente comando per risincronizzare i volumi di origine e di destinazione:
++
+`snapmirror resync -source-path _SVM:volume_ -destination-path _SVM:volume_ -type DP|XDP -schedule _schedule_ -policy _policy_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+Sebbene la risincronizzazione non richieda un trasferimento di riferimento, può richiedere molto tempo. È possibile eseguire la risincronizzazione in ore non di punta.
+
+====
++
+Nell'esempio riportato di seguito viene risincronata la relazione tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA` acceso `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror resync -source-path svm1:volA -destination-path svm_backup:volA
+----
+. Creare una relazione di replica SVM tra le SVM di origine e di destinazione, come descritto in link:replicate-entire-svm-config-task.html["Replica delle configurazioni SVM"].
++
+È necessario utilizzare `-identity-preserve true` opzione di `snapmirror create` quando si crea la relazione di replica.
+
+. Arrestare la SVM di destinazione:
++
+`vserver stop -vserver _SVM_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+Nell'esempio seguente viene interrotta la SVM di destinazione `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> vserver stop svm_backup
+----
+. Dalla SVM di destinazione o dal cluster di destinazione, eseguire il seguente comando per risincronizzare le SVM di origine e di destinazione:
++
+`snapmirror resync -source-path _SVM_: -destination-path _SVM_: -type DP|XDP -schedule _schedule_ -policy _policy_`
+
++
+Per la sintassi completa dei comandi, vedere la pagina man.
+
++
+[NOTE]
+====
+Inserire i due punti (:) dopo il nome SVM in `-source-path` e. `-destination-path` opzioni. Vedere l'esempio riportato di seguito.
+
+Sebbene la risincronizzazione non richieda un trasferimento di riferimento, può richiedere molto tempo. È possibile eseguire la risincronizzazione in ore non di punta.
+
+====
++
+Nell'esempio seguente viene risincronizzata la relazione tra la SVM di origine `svm1` E la SVM di destinazione `svm_backup`:
+
++
+[listing]
+----
+cluster_dst::> snapmirror resync -source-path svm1: -destination-path svm_backup:
+----
+
