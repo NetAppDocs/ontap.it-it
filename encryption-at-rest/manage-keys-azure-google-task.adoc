@@ -1,10 +1,10 @@
 ---
 permalink: encryption-at-rest/manage-keys-azure-google-task.html 
 sidebar: sidebar 
-keywords: key management, Azure, AKV, key vault, NVE keys, third-party, GCP, google cloud, Cloud KMS 
-summary: Utilizza Azure o Google Cloud per ottimizzare la protezione delle chiavi di crittografia ONTAP. 
+keywords: Azure, AKV, key vault, NVE keys, third-party, GCP, google cloud, Cloud KMS, AWS, amazon 
+summary: Utilizza Azure, Google Cloud o AWS Key Manager per ottimizzare la protezione delle chiavi di crittografia ONTAP. 
 ---
-= Gestisci le chiavi con un cloud provider
+= Gestire le chiavi con un cloud provider
 :hardbreaks:
 :allow-uri-read: 
 :icons: font
@@ -12,61 +12,95 @@ summary: Utilizza Azure o Google Cloud per ottimizzare la protezione delle chiav
 
 
 [role="lead"]
-A partire da ONTAP 9.10.1, è possibile utilizzare link:https://docs.microsoft.com/en-us/azure/key-vault/general/basic-concepts["Azure Key Vault (AKV)"^] e. link:https://cloud.google.com/kms/docs["Servizio di gestione delle chiavi di Google Cloud Platform (Cloud KMS)"^] Per proteggere le chiavi di crittografia ONTAP in un'applicazione implementata dalla piattaforma cloud Azure o Google.
+A partire da ONTAP 9.10.1, è possibile utilizzare link:https://docs.microsoft.com/en-us/azure/key-vault/general/basic-concepts["Azure Key Vault (AKV)"^] e. link:https://cloud.google.com/kms/docs["Servizio di gestione delle chiavi di Google Cloud Platform (Cloud KMS)"^] Per proteggere le chiavi di crittografia ONTAP in un'applicazione ospitata nel cloud. A partire da ONTAP 9.12.0, è anche possibile proteggere le chiavi NVE con link:https://docs.aws.amazon.com/kms/latest/developerguide/overview.html["KMS DI AWS"^].
 
-AKV e Cloud KMS possono essere utilizzati per proteggere link:configure-netapp-volume-encryption-concept.html["Chiavi NetApp Volume Encryption (NVE)"] Solo per SVM di dati.
+AWS KMS, AKV e Cloud KMS possono essere utilizzati per proteggere link:configure-netapp-volume-encryption-concept.html["Chiavi NetApp Volume Encryption (NVE)"] Solo per SVM di dati.
 
-La gestione delle chiavi con AKV o Cloud KMS può essere abilitata con l'interfaccia CLI o l'API REST ONTAP.
+.A proposito di questa attività
+La gestione delle chiavi con un provider cloud può essere abilitata con l'interfaccia CLI o l'API REST ONTAP.
 
-Quando si utilizza AKV o Cloud KMS, tenere presente che per impostazione predefinita viene utilizzata una LIF SVM dati per comunicare con l'endpoint di gestione delle chiavi cloud. Una rete di gestione dei nodi viene utilizzata per comunicare con i servizi di autenticazione del provider cloud (login.microsoftonline.com per Azure; oauth2.googleapis.com per Cloud KMS). Se la rete del cluster non è configurata correttamente, il cluster non utilizzerà correttamente il servizio di gestione delle chiavi.
+Quando si utilizza un cloud provider per proteggere le chiavi, tenere presente che per impostazione predefinita viene utilizzata una LIF SVM dati per comunicare con l'endpoint di gestione delle chiavi cloud. Una rete di gestione dei nodi viene utilizzata per comunicare con i servizi di autenticazione del provider cloud (login.microsoftonline.com per Azure; oauth2.googleapis.com per Cloud KMS). Se la rete del cluster non è configurata correttamente, il cluster non utilizzerà correttamente il servizio di gestione delle chiavi.
 
-.Prerequisiti
-* I nodi del cluster ONTAP devono supportare NVE
-* Licenza VE (Volume Encryption) installata
-* Licenza MTEKM (Multi-tenant Encryption Key Management) installata
-* Devi essere un amministratore del cluster o di SVM
+Quando si utilizza un servizio di gestione delle chiavi di un provider cloud, è necessario tenere presenti le seguenti limitazioni:
 
-
-.Limitazioni
-* AKV e Cloud KMS non sono disponibili per NSE e NAE. link:enable-external-key-management-96-later-nve-task.html["KMIP esterni"] può essere utilizzato in alternativa
-* AKV e Cloud KMS non sono disponibili per le configurazioni MetroCluster.
-* AKV e Cloud KMS possono essere configurati solo su una SVM dati
+* La gestione delle chiavi del cloud provider non è disponibile per NSE e NAE. link:enable-external-key-management-96-later-nve-task.html["KMIP esterni"] può essere utilizzato in alternativa.
+* La gestione delle chiavi del provider cloud non è disponibile per le configurazioni MetroCluster.
+* La gestione delle chiavi del cloud provider può essere configurata solo su una SVM dati.
 
 
+.Prima di iniziare
+* È necessario aver configurato il KMS sul cloud provider appropriato.
+* I nodi del cluster ONTAP devono supportare NVE.
+* È necessario aver installato le licenze di crittografia dei volumi (VE) e di gestione delle chiavi di crittografia multi-tenant (MTEKM).
+* Devi essere un amministratore del cluster o di SVM.
+* I dati SVM non devono includere volumi crittografati né utilizzare un gestore delle chiavi. Se i dati SVM includono volumi crittografati, è necessario eseguirne la migrazione prima di configurare il KMS.
 
 
-== Abilitare la gestione esterna delle chiavi con la CLI
 
-L'attivazione della gestione esterna delle chiavi dipende dal gestore specifico delle chiavi utilizzato. Se si abilita AKV in un Cloud Volumes ONTAP, si noti che esiste una procedura separata. Scegliere la scheda del gestore delle chiavi e dell'ambiente più adatto alle proprie esigenze:
+
+== Abilitare la gestione esterna delle chiavi
+
+L'attivazione della gestione esterna delle chiavi dipende dal gestore specifico delle chiavi utilizzato. Scegliere la scheda del gestore delle chiavi e dell'ambiente appropriati.
 
 [role="tabbed-block"]
 ====
+.AWS
+--
+.Prima di iniziare
+* È necessario creare una concessione per la chiave AWS KMS che verrà utilizzata dal ruolo IAM che gestisce la crittografia. Il ruolo IAM deve includere una policy che consenta le seguenti operazioni:
+* `DescribeKey`
+* `Encrypt`
+* `Decrypt`
+Per ulteriori informazioni, consultare la documentazione AWS per link:https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#grant["sovvenzioni"^].
+
+
+.Abilitare AWS KMV su una SVM ONTAP
+. Prima di iniziare, procurarsi l'ID della chiave di accesso e la chiave segreta da AWS KMS.
+. Impostare il livello di privilegio su Advanced (avanzato):
+`set -priv advanced`
+. Abilitare AWS KMS:
+`security key-manager external aws enable -vserver _svm_name_ -region _AWS_region_ -key-id _key_ID_ -encryption-context _encryption_context_`
+. Quando richiesto, inserire la chiave segreta.
+. Verificare che AWS KMS sia stato configurato correttamente:
+`security key-manager external aws show -vserver _svm_name_`
+
+
+--
 .Azure
 --
-.Attiva il vault delle chiavi Azure per ONTAP
+.Abilitare il vault delle chiavi Azure su una SVM ONTAP
 . Prima di iniziare, è necessario ottenere le credenziali di autenticazione appropriate dall'account Azure, un certificato o un segreto client. È inoltre necessario garantire che tutti i nodi del cluster siano integri. Puoi controllare questo con il comando `cluster show`.
 . Impostare il livello di privilegi su avanzato
 `set -priv advanced`
 . Abilitare AKV su SVM
 `security key-manager external azure enable -client-id _client_id_ -tenant-id _tenant_id_ -name -key-id _key_id_ -authentication-method {certificate|client-secret}`Quando richiesto, immettere il certificato del client o il segreto del client dall'account Azure.
 . Verificare che AKV sia attivato correttamente:
-`security key-manager external azure show vserver _SVM_name_`Se la raggiungibilità del servizio non è corretta, stabilire la connettività con il servizio di gestione delle chiavi AKV tramite data SVM LIF.
+`security key-manager external azure show vserver _svm_name_`
+Se la raggiungibilità del servizio non è corretta, stabilire la connettività con il servizio di gestione delle chiavi AKV tramite data SVM LIF.
 
 
 --
 .Google Cloud
 --
-.Abilitare il cloud KMS con l'interfaccia CLI per ONTAP
-. Prima di iniziare, è necessario ottenere la chiave privata per il file delle chiavi dell'account Google Cloud KMS in formato JSON. Questo è disponibile nel tuo account GCP. È inoltre necessario garantire che tutti i nodi del cluster siano integri. Puoi controllare questo con il comando `cluster show`.
-. Impostare il livello di privilegi su avanzato
+.Abilitare KMS cloud su una SVM ONTAP
+. Prima di iniziare, ottenere la chiave privata per il file delle chiavi dell'account Google Cloud KMS in formato JSON. Questo è disponibile nel tuo account GCP.
+È inoltre necessario garantire che tutti i nodi del cluster siano integri. Puoi controllare questo con il comando `cluster show`.
+. Impostare il livello di privilegi su avanzato:
 `set -priv advanced`
 . Abilitare Cloud KMS su SVM
-`security key-manager external gcp enable -vserver _data_svm_name_ -project-id _project_id_-key-ring-name _key_ring_name_ -key-ring-location _key_ring_location_ -key-name _key_name_`Quando richiesto, inserire il contenuto del file JSON con la chiave privata dell'account di servizio
+`security key-manager external gcp enable -vserver _svm_name_ -project-id _project_id_-key-ring-name _key_ring_name_ -key-ring-location _key_ring_location_ -key-name _key_name_`
+Quando richiesto, inserire il contenuto del file JSON con la chiave privata dell'account di servizio
 . Verificare che Cloud KMS sia configurato con i parametri corretti:
-`security key-manager external gcp show vserver _SVM_name_`Lo stato di `kms_wrapped_key_status` lo sarà `“UNKNOWN”` se non sono stati creati volumi crittografati. Se la raggiungibilità del servizio non è corretta, stabilire la connettività al servizio di gestione delle chiavi GCP tramite data SVM LIF.
+`security key-manager external gcp show vserver _svm_name_`
+Lo stato di `kms_wrapped_key_status` lo sarà `“UNKNOWN”` se non sono stati creati volumi crittografati.
+Se la raggiungibilità del servizio non è corretta, stabilire la connettività al servizio di gestione delle chiavi GCP tramite data SVM LIF.
 
 
 --
 ====
 Se uno o più volumi crittografati sono già configurati per un SVM di dati e le chiavi NVE corrispondenti sono gestite dal gestore delle chiavi integrato SVM di amministrazione, tali chiavi devono essere migrate al servizio di gestione delle chiavi esterno. Per eseguire questa operazione con la CLI, eseguire il comando:
 `security key-manager key migrate -from-Vserver _admin_SVM_ -to-Vserver _data_SVM_`Non è possibile creare nuovi volumi crittografati per i dati SVM del tenant fino a quando tutte le chiavi NVE dei dati SVM non vengono migrate correttamente.
+
+.Informazioni correlate
+* link:https://docs.netapp.com/us-en/cloud-manager-cloud-volumes-ontap/task-encrypting-volumes.html["Crittografia dei volumi con le soluzioni di crittografia NetApp per Cloud Volumes ONTAP"^]
+
