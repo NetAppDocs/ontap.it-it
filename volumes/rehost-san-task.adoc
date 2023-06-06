@@ -13,7 +13,28 @@ summary: 'È possibile eseguire il rehosting dei volumi con LUN mappati. Dopo av
 [role="lead"]
 È possibile eseguire il rehosting dei volumi con LUN mappati. Dopo aver ricreato il gruppo di iniziatori (igroup) nella SVM di destinazione, il rehost del volume può rimappare automaticamente il volume sulla stessa SVM.
 
-.Di cosa hai bisogno
+.A proposito di questa attività
+* Il rehosting è un'operazione che interrompe.
+* Se l'operazione di rehosting non riesce, potrebbe essere necessario riconfigurare i criteri del volume e le regole associate sul volume di origine.
+* A partire da ONTAP 9.8, è supportato il rehosting di un volume con crittografia volume NetApp (NVE). Se si utilizza un gestore di chiavi integrato, i metadati crittografati verranno modificati durante l'operazione di rehosting. I dati dell'utente non vengono modificati.
++
+Se si utilizza ONTAP 9.8 o una versione precedente, è necessario annullare la crittografia del volume prima di eseguire l'operazione di rehosting.
+
+
+
+* Dopo l'operazione di rehosting, le seguenti policy, regole dei criteri e configurazioni del volume vengono perse dal volume di origine e devono essere riconfigurate manualmente sul volume rehosted:
++
+** Policy antivirus
+** Policy di efficienza dei volumi
+** Policy sulla qualità del servizio (QoS)
+** Policy di Snapshot
+** criteri e regole di esportazione della configurazione di ns-switch e name services
+** ID utente e gruppo
+
+
+
+
+.Prima di iniziare
 * Il volume deve essere online.
 * Le operazioni di gestione dei volumi, come gli spostamenti dei volumi o delle LUN, non devono essere in esecuzione.
 * Non devono essere presenti i/o attivi sui volumi o sui LUN.
@@ -29,25 +50,10 @@ Se l'igroup ha lo stesso nome, è necessario rinominare l'igroup in una delle SV
 
 
 
-.A proposito di questa attività
-* Il rehosting è un'operazione che interrompe.
-* Se l'operazione di rehosting non riesce, potrebbe essere necessario riconfigurare i criteri del volume e le regole associate sul volume di origine.
-* Dopo l'operazione di rehosting, le seguenti policy, regole dei criteri e configurazioni del volume vengono perse dal volume di origine e devono essere riconfigurate manualmente sul volume rehosted:
-+
-** Policy antivirus
-** Policy di efficienza dei volumi
-** Policy sulla qualità del servizio (QoS)
-** Policy di Snapshot
-** criteri e regole di esportazione della configurazione di ns-switch e name services
-** ID utente e gruppo
-
-
-
-
 .Fasi
 . Registrare le informazioni di mappatura LUN sul volume di destinazione:
 +
-`lun mapping show–volume volume to be rehosted-vserver source vserver`
+`lun mapping show volume _volume_ vserver _source_svm_`
 
 +
 Si tratta di una procedura precauzionale per evitare la perdita di informazioni sulla mappatura LUN in caso di errore del rehost del volume.
@@ -55,7 +61,7 @@ Si tratta di una procedura precauzionale per evitare la perdita di informazioni 
 . Elimina igroups associati al volume di destinazione.
 . Eseguire nuovamente l'hosting del volume di destinazione nella SVM di destinazione:
 +
-`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+`volume rehost -vserver _source_svm_ -volume _volume_name_ -destination-vserver _destination_svm_`
 
 . Mappare i LUN sul volume di destinazione su igroups appropriati.
 +

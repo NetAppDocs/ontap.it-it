@@ -13,17 +13,15 @@ summary: È possibile eseguire il rehosting dei volumi che servono i dati tramit
 [role="lead"]
 È possibile eseguire il rehosting dei volumi che servono i dati tramite il protocollo NFS. Dopo aver eseguito il rehosting dei volumi NFS, per continuare ad accedere ai dati tramite il protocollo NFS, è necessario associare il volume alla policy di esportazione della SVM di hosting e configurare manualmente i criteri e le regole associate.
 
-.Di cosa hai bisogno
-* Il volume deve essere online.
-* Le operazioni di gestione dei volumi, come gli spostamenti dei volumi o delle LUN, non devono essere in esecuzione.
-* L'accesso ai dati al volume che viene reospitato deve essere interrotto.
-* La configurazione ns-switch e name Services della SVM di destinazione deve essere configurata per supportare l'accesso ai dati del volume di re-hosting.
-* L'ID utente e l'ID gruppo del volume devono essere disponibili nella SVM di destinazione o modificati nel volume di hosting.
-
-
 .A proposito di questa attività
 * Il rehosting è un'operazione che interrompe.
 * Se l'operazione di rehosting non riesce, potrebbe essere necessario riconfigurare i criteri del volume e le regole associate sul volume di origine.
+* A partire da ONTAP 9.8, è supportato il rehosting di un volume con crittografia volume NetApp (NVE). Se si utilizza un gestore di chiavi integrato, i metadati crittografati verranno modificati durante l'operazione di rehosting. I dati dell'utente non vengono modificati.
++
+Se si utilizza ONTAP 9.8 o una versione precedente, è necessario annullare la crittografia del volume prima di eseguire l'operazione di rehosting.
+
+
+
 * Dopo l'operazione di rehosting, le seguenti policy, regole dei criteri e configurazioni del volume vengono perse dal volume di origine e devono essere riconfigurate manualmente sul volume rehosted:
 +
 ** Policy di esportazione di volumi e qtree
@@ -38,6 +36,14 @@ summary: È possibile eseguire il rehosting dei volumi che servono i dati tramit
 
 
 
+.Prima di iniziare
+* Il volume deve essere online.
+* Le operazioni di gestione dei volumi, come gli spostamenti dei volumi o delle LUN, non devono essere in esecuzione.
+* L'accesso ai dati al volume che viene reospitato deve essere interrotto.
+* La configurazione ns-switch e name Services della SVM di destinazione deve essere configurata per supportare l'accesso ai dati del volume di re-hosting.
+* L'ID utente e l'ID gruppo del volume devono essere disponibili nella SVM di destinazione o modificati nel volume di hosting.
+
+
 .Fasi
 . Registrare le informazioni relative ai criteri di esportazione NFS per evitare di perdere informazioni sui criteri NFS in caso di errore dell'operazione di rehost del volume.
 . Smontare il volume dal volume padre:
@@ -50,7 +56,7 @@ summary: È possibile eseguire il rehosting dei volumi che servono i dati tramit
 
 . Eseguire nuovamente l'hosting del volume sulla SVM di destinazione:
 +
-`volume rehost -vserver source_svm -volume vol_name -destination-vserver destination_svm`
+`volume rehost -vserver _source_svm_ -volume _volume_name_ -destination-vserver _destination_svm_`
 
 +
 Il criterio di esportazione predefinito della SVM di destinazione viene applicato al volume rehosted.
