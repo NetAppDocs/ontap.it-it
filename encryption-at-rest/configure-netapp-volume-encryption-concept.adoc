@@ -17,7 +17,7 @@ NetApp Volume Encryption (NVE) è una tecnologia software per la crittografia de
 
 == Comprensione di NVE
 
-Entrambi i dati, incluse le copie Snapshot, e i metadati sono crittografati. L'accesso ai dati viene fornito da una chiave XTS-AES-256 univoca, una per volume. Un server di gestione delle chiavi esterno o Onboard Key Manager serve le chiavi ai nodi:
+Con NVE, sia i metadati che i dati (incluse le copie Snapshot) vengono crittografati. L'accesso ai dati viene fornito da una chiave XTS-AES-256 univoca, una per volume. Un server di gestione delle chiavi esterno o Onboard Key Manager (OKM) serve le chiavi ai nodi:
 
 * Il server di gestione delle chiavi esterno è un sistema di terze parti nell'ambiente di storage che fornisce le chiavi ai nodi utilizzando il protocollo KMIP (Key Management Interoperability Protocol). Si consiglia di configurare i server di gestione delle chiavi esterni su un sistema storage diverso dai dati.
 * Onboard Key Manager è uno strumento integrato che serve le chiavi ai nodi dello stesso sistema storage dei dati.
@@ -27,18 +27,14 @@ A partire da ONTAP 9.7, la crittografia aggregata e del volume è attivata per i
 
 È possibile attivare la crittografia su un volume nuovo o esistente. NVE supporta la gamma completa di funzionalità per l'efficienza dello storage, tra cui deduplica e compressione.
 
-[NOTE]
-====
-Se si utilizza SnapLock, è possibile attivare la crittografia solo su volumi SnapLock nuovi e vuoti. Non è possibile attivare la crittografia su un volume SnapLock esistente.
 
-====
+NOTE: Se si utilizza SnapLock, è possibile attivare la crittografia solo su volumi SnapLock nuovi e vuoti. Non è possibile attivare la crittografia su un volume SnapLock esistente.
+
 È possibile utilizzare NVE su qualsiasi tipo di aggregato (HDD, SSD, ibrido, LUN array), con qualsiasi tipo di RAID e in qualsiasi implementazione ONTAP supportata, incluso ONTAP Select. È inoltre possibile utilizzare NVE con crittografia basata su hardware per "crittografare `ddoppio`" i dati su dischi con crittografia automatica.
 
-[NOTE]
-====
-I sistemi AFF A220, AFF A800, FAS2720, FAS2750 e versioni successive memorizzano i core dump sul dispositivo di boot. Quando NVE è attivato su questi sistemi, anche il core dump viene crittografato.
 
-====
+NOTE: I sistemi AFF A220, AFF A800, FAS2720, FAS2750 e versioni successive memorizzano i core dump sul dispositivo di boot. Quando NVE è attivato su questi sistemi, anche il core dump viene crittografato.
+
 
 
 == Crittografia a livello di aggregato
@@ -175,14 +171,16 @@ A partire da ONTAP 9.6, NVE supporta l'ambito SVM solo per la gestione delle chi
  a| 
 Efficienza dello storage
  a| 
-Deduplica, compressione, compattazione, FlexClone. I cloni utilizzano la stessa chiave del padre, anche dopo aver sdoppiato il clone dal padre. Viene visualizzato un avviso per la reimmissione del clone split.
+Deduplica, compressione, compattazione, FlexClone.
+
+I cloni utilizzano la stessa chiave del padre, anche dopo aver sdoppiato il clone dal padre. Eseguire una `volume move` su un clone split, dopodiché il clone split avrà una chiave diversa.
 
 
 
  a| 
 Replica
  a| 
-* Per la replica del volume, il volume di destinazione deve essere abilitato per la crittografia. La crittografia può essere configurata per l'origine e non configurata per la destinazione e viceversa.
+* Per la replica dei volumi, i volumi di origine e di destinazione possono avere impostazioni di crittografia diverse. La crittografia può essere configurata per l'origine e non configurata per la destinazione e viceversa.
 * Per la replica SVM, il volume di destinazione viene crittografato automaticamente, a meno che la destinazione non contenga un nodo che supporti la crittografia del volume, nel qual caso la replica riesce, ma il volume di destinazione non viene crittografato.
 * Per le configurazioni MetroCluster, ogni cluster estrae le chiavi di gestione delle chiavi esterne dai relativi server delle chiavi configurati. Le chiavi OKM vengono replicate nel sito del partner dal servizio di replica della configurazione.
 
