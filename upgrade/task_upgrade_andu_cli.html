@@ -1369,6 +1369,8 @@
 
 
 
+
+
         </li>
       </ul>
     
@@ -17396,6 +17398,13 @@
       class=" "
     ><a class="na-navbar-padding" href="/it-it/ontap/update/index.html">
         Panoramica
+      </a></li><li 
+      data-pdf-exists="true" 
+      data-pdf-filename="Come vengono pianificati gli aggiornamenti automatici per l'installazione"
+      data-li-level="3#" 
+      class=" "
+    ><a class="na-navbar-padding" href="/it-it/ontap/update/how-auto-updates-scheduled.html">
+        Come vengono pianificati gli aggiornamenti automatici per l'installazione
       </a></li><li 
       data-pdf-exists="true" 
       data-pdf-filename="Abilitare gli aggiornamenti automatici"
@@ -37239,7 +37248,7 @@
 <p class="page-details">
   
     
-    <time datetime="2023-05-23 14:45:49 +0000">05/23/2023</time>
+    <time datetime="2023-06-17 23:48:05 +0000">06/17/2023</time>
     
   
 
@@ -37327,80 +37336,78 @@ Modifica dell&#8217;impostazione di <code>storage failover modify-auto-giveback<
 <ol class="arabic">
 <li>
 <p>Eliminare il pacchetto software ONTAP precedente:</p>
-<div class="paragraph">
-<p><code>cluster image package delete -version previous_ONTAP_Version</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image package delete -version previous_ONTAP_Version</code></pre>
+</div>
 </div>
 </li>
 <li>
 <p>Scarica il pacchetto software ONTAP di destinazione:</p>
-<div class="paragraph">
-<p><code>cluster image package get -url location</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image package get -url location</code></pre>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<img src="/us-en/ontap/images/note.svg" alt="Nota">
-</td>
-<td class="content">
-Se si esegue l&#8217;aggiornamento da ONTAP 9.3 a 9.7, scaricare il pacchetto software per ONTAP 9.5, quindi utilizzare lo stesso comando per scaricare il pacchetto software per 9.7. Se si esegue l&#8217;aggiornamento da ONTAP 9.5 a 9.9.1, scaricare il pacchetto software per ONTAP 9.7, quindi utilizzare lo stesso comando per scaricare il pacchetto software per 9.9.1.
-</td>
-</tr>
-</table>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre>cluster1::&gt; cluster image package get -url http://www.example.com/software/9.7/image.tgz
+<pre>cluster1::&gt; cluster image package get -url http://www.example.com/software/9.13.1/image.tgz
 
 Package download completed.
 Package processing completed.</pre>
 </div>
 </div>
+<div class="paragraph">
+<p>Se si sta eseguendo un <a href="https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_paths.html#types-of-upgrade-paths">"upgrade diretto multi-hop"</a>, Scaricare il pacchetto software per la versione intermedia di ONTAP necessaria per l&#8217;aggiornamento, quindi utilizzare lo stesso comando per scaricare il pacchetto software per la versione ONTAP di destinazione.  Ad esempio, se si esegue l&#8217;aggiornamento da 9.8 a 9.13.1, è necessario scaricare il pacchetto software per ONTAP 9.12.1 e utilizzare lo stesso comando per scaricare il pacchetto software per 9.13.1.</p>
+</div>
 </li>
 <li>
 <p>Verificare che il pacchetto software sia disponibile nel repository dei pacchetti del cluster:</p>
-<div class="paragraph">
-<p><code>cluster image package show-repository</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image package show-repository</code></pre>
+</div>
 </div>
 <div class="listingblock">
 <div class="content">
 <pre>cluster1::&gt; cluster image package show-repository
 Package Version  Package Build Time
 ---------------- ------------------
-9.7              MM/DD/YYYY 10:32:15</pre>
+9.13.1              MM/DD/YYYY 10:32:15</pre>
 </div>
 </div>
 </li>
 <li>
 <p>Verificare che il cluster sia pronto per essere aggiornato senza interruzioni:</p>
-<div class="paragraph">
-<p><code>cluster image validate -version package_version_number</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image validate -version package_version_number</code></pre>
+</div>
 </div>
 <div class="ulist">
 <ul>
 <li>
+<p>Se si sta eseguendo un <a href="https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_paths.html#types-of-upgrade-paths">"upgrade diretto multi-hop"</a>, Utilizzare il pacchetto ONATP di destinazione per la verifica.  Non è necessario convalidare separatamente l&#8217;immagine di aggiornamento intermedia.  Ad esempio, se si esegue l&#8217;aggiornamento da 9.8 a 9.13.1, è necessario utilizzare il pacchetto 9.13.1 per la verifica. Non è necessario validare il pacchetto 9.12.1 separatamente.</p>
+</li>
+<li>
 <p>Se si sta aggiornando una configurazione MetroCluster a due o quattro nodi, è necessario eseguire questo comando su entrambi i cluster prima di procedere.</p>
-</li>
-<li>
-<p>Se si esegue l&#8217;aggiornamento da ONTAP 9.3 a 9.7, utilizzare il pacchetto 9.7 per la verifica. Non è necessario validare il pacchetto 9.5 separatamente.</p>
-</li>
-<li>
-<p>Se si esegue l&#8217;aggiornamento da ONTAP 9.5 a 9.9.1, utilizzare il pacchetto 9.9.1 per la verifica. Non è necessario validare il pacchetto 9.7 separatamente.</p>
-</li>
-</ul>
-</div>
 <div class="listingblock">
 <div class="content">
-<pre>cluster1::&gt; cluster image validate -version 9.7
+<pre>cluster1::&gt; cluster image validate -version 9.13.1
 
 WARNING: There are additional manual upgrade validation checks that must be performed after these automated validation checks have completed...</pre>
 </div>
 </div>
 </li>
+</ul>
+</div>
+</li>
 <li>
 <p>Monitorare l&#8217;avanzamento della convalida:</p>
-<div class="paragraph">
-<p><code>cluster image show-update-progress</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image show-update-progress</code></pre>
+</div>
 </div>
 </li>
 <li>
@@ -37408,8 +37415,10 @@ WARNING: There are additional manual upgrade validation checks that must be perf
 </li>
 <li>
 <p>Generare una stima dell&#8217;aggiornamento del software:</p>
-<div class="paragraph">
-<p><code>cluster image update -version package_version_number -estimate-only</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image update -version package_version_number -estimate-only</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>La stima dell&#8217;aggiornamento software visualizza i dettagli relativi a ciascun componente da aggiornare e la durata stimata dell&#8217;aggiornamento.</p>
@@ -37417,28 +37426,27 @@ WARNING: There are additional manual upgrade validation checks that must be perf
 </li>
 <li>
 <p>Eseguire l&#8217;aggiornamento del software:</p>
-<div class="paragraph">
-<p><code>cluster image update -version package_version_number</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image update -version package_version_number</code></pre>
+</div>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>Se si esegue l&#8217;aggiornamento da ONTAP 9.3 a 9.7, utilizzare il numero di versione del pacchetto 9.7 nel comando precedente.</p>
-</li>
-<li>
-<p>Se si esegue l&#8217;aggiornamento da ONTAP 9.5 a 9.9.1, utilizzare il numero di versione del pacchetto 9.9.1 nel comando precedente.</p>
-</li>
-<li>
-<p>Per qualsiasi configurazione MetroCluster, ad eccezione di un sistema MetroCluster a 2 nodi, il processo di aggiornamento di ONTAP viene avviato simultaneamente sulle coppie ha in entrambi i siti (il sito locale e il sito di disaster recovery) dopo l&#8217;avvio dell&#8217;utente e la conferma sulla riga di comando. Per un sistema MetroCluster a 2 nodi, l&#8217;aggiornamento viene avviato per primo sul sito di disaster recovery, ovvero il sito in cui l&#8217;aggiornamento non viene avviato. Una volta completato l&#8217;aggiornamento sul sito di disaster recovery, l&#8217;aggiornamento inizia sul sito locale.</p>
+<p>Se si sta eseguendo un <a href="https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_paths.html#types-of-upgrade-paths">"upgrade diretto multi-hop"</a> Utilizzare la versione ONTAP di destinazione per il numero_versione_pacchetto. Ad esempio, se si esegue l&#8217;aggiornamento da ONTAP 9.8 a 9.13.1, utilizzare 9.13.1 come numero_versione_pacchetto.</p>
 </li>
 <li>
 <p>Se il cluster è composto da 2 a 6 nodi, viene eseguito un aggiornamento in sequenza. Se il cluster è costituito da 8 o più nodi, viene eseguito un aggiornamento in batch per impostazione predefinita. Se lo si desidera, è possibile utilizzare <code>-force-rolling</code> parametro per specificare un aggiornamento in sequenza.</p>
 </li>
 <li>
 <p>Dopo aver completato ogni takeover e giveback, l&#8217;aggiornamento attende 8 minuti per consentire alle applicazioni client di eseguire il ripristino dalla pausa in i/o che si verifica durante il takeover e il giveback. Se l&#8217;ambiente richiede più o meno tempo per la stabilizzazione del client, è possibile utilizzare <code>-stabilize-minutes</code> parametro per specificare una quantità diversa di tempo di stabilizzazione.</p>
+</li>
+<li>
+<p>Per qualsiasi configurazione MetroCluster, ad eccezione di un sistema MetroCluster a 2 nodi, il processo di aggiornamento di ONTAP viene avviato simultaneamente sulle coppie ha in entrambi i siti (il sito locale e il sito di disaster recovery) dopo l&#8217;avvio dell&#8217;utente e la conferma sulla riga di comando. Per un sistema MetroCluster a 2 nodi, l&#8217;aggiornamento viene avviato per primo sul sito di disaster recovery, ovvero il sito in cui l&#8217;aggiornamento non viene avviato. Una volta completato l&#8217;aggiornamento sul sito di disaster recovery, l&#8217;aggiornamento inizia sul sito locale.</p>
 <div class="listingblock">
 <div class="content">
-<pre>cluster1::&gt; cluster image update -version 9.7
+<pre>cluster1::&gt; cluster image update -version 9.13.1
 
 Starting validation for this update. Please wait..
 
@@ -37463,24 +37471,22 @@ cluster-1::&gt;</pre>
 </li>
 <li>
 <p>Visualizzare l&#8217;avanzamento dell&#8217;aggiornamento del cluster:</p>
-<div class="paragraph">
-<p><code>cluster image show-update-progress</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image show-update-progress</code></pre>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<img src="/us-en/ontap/images/note.svg" alt="Nota">
-</td>
-<td class="content">
-Se si sta aggiornando una configurazione MetroCluster a 4 o 8 nodi, il <code>cluster image show-update-progress</code> command visualizza solo l&#8217;avanzamento del nodo su cui viene eseguito il comando. È necessario eseguire il comando su ciascun nodo per visualizzare l&#8217;avanzamento dei singoli nodi.
-</td>
-</tr>
-</table>
+</div>
+<div class="paragraph">
+<p>Se si sta aggiornando una configurazione MetroCluster a 4 o 8 nodi, il <code>cluster image show-update-progress</code> command visualizza solo l&#8217;avanzamento del nodo su cui viene eseguito il comando. È necessario eseguire il comando su ciascun nodo per visualizzare l&#8217;avanzamento dei singoli nodi.</p>
 </div>
 </li>
 <li>
 <p>Verificare che l&#8217;aggiornamento sia stato completato correttamente su ciascun nodo.</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image show-update-progress</code></pre>
+</div>
+</div>
 <div class="listingblock">
 <div class="content">
 <pre>cluster1::&gt; cluster image show-update-progress
@@ -37493,16 +37499,16 @@ Data ONTAP updates   completed                01:31:00        01:39:00
 Post-update checks   completed                00:10:00        00:02:00
 3 entries were displayed.
 
-Updated nodes: node0, node1.
-
-cluster1::&gt;</pre>
+Updated nodes: node0, node1.</pre>
 </div>
 </div>
 </li>
 <li>
 <p>Attivare una notifica AutoSupport:</p>
-<div class="paragraph">
-<p><code>autosupport invoke -node * -type all -message "Finishing_NDU"</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">autosupport invoke -node * -type all -message "Finishing_NDU"</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Se il cluster non è configurato per l&#8217;invio di messaggi AutoSupport, una copia della notifica viene salvata localmente.</p>
@@ -37517,7 +37523,7 @@ cluster1::&gt;</pre>
 <img src="/us-en/ontap/images/note.svg" alt="Nota">
 </td>
 <td class="content">
-Questa procedura viene eseguita solo per le configurazioni MetroCluster FC. Se si utilizza una configurazione IP MetroCluster, ignorare questa procedura.
+Questo passaggio viene eseguito solo per le configurazioni MetroCluster FC.  Se si utilizza una configurazione IP MetroCluster, non è necessario eseguire questa operazione.
 </td>
 </tr>
 </table>
@@ -37526,8 +37532,10 @@ Questa procedura viene eseguita solo per le configurazioni MetroCluster FC. Se s
 <ol class="loweralpha" type="a">
 <li>
 <p>Controllare se è attivato lo switchover automatico non pianificato:</p>
-<div class="paragraph">
-<p><code>metrocluster show</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">metrocluster show</code></pre>
+</div>
 </div>
 <div class="paragraph">
 <p>Se è attivato lo switchover automatico non pianificato, nell&#8217;output del comando viene visualizzata la seguente istruzione:</p>
@@ -37544,12 +37552,19 @@ Questa procedura viene eseguita solo per le configurazioni MetroCluster FC. Se s
 <ol class="loweralpha" type="a">
 <li>
 <p>Se l&#8217;istruzione non viene visualizzata nell&#8217;output, abilitare lo switchover automatico non pianificato:</p>
-<div class="paragraph">
-<p><code>metrocluster modify -auto-switchover-failure-domain auso-on-cluster-disaster</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">metrocluster modify -auto-switchover-failure-domain auso-on-cluster-disaster</code></pre>
+</div>
 </div>
 </li>
 <li>
-<p>Verificare che sia stato attivato lo switchover automatico non pianificato ripetendo il passaggio 1.</p>
+<p>Verificare che sia stato attivato lo switchover automatico non pianificato:</p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">metrocluster show</code></pre>
+</div>
+</div>
 </li>
 </ol>
 </div>
@@ -37573,8 +37588,10 @@ Questa procedura viene eseguita solo per le configurazioni MetroCluster FC. Se s
 <ol class="arabic">
 <li>
 <p>Visualizzare l&#8217;errore di aggiornamento:</p>
-<div class="paragraph">
-<p><code>cluster image show-update-progress</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image show-update-progress</code></pre>
+</div>
 </div>
 </li>
 <li>
@@ -37582,18 +37599,24 @@ Questa procedura viene eseguita solo per le configurazioni MetroCluster FC. Se s
 </li>
 <li>
 <p>Riprendere l&#8217;aggiornamento:</p>
-<div class="paragraph">
-<p><code>cluster image resume-update</code></p>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-cli" data-lang="cli">cluster image resume-update</code></pre>
+</div>
 </div>
 </li>
 </ol>
 </div>
-<div class="paragraph">
+<div class="ulist">
 <div class="title">Informazioni correlate</div>
+<ul>
+<li>
 <p><a href="https://aiq.netapp.com/">"Avviare Active IQ"</a></p>
-</div>
-<div class="paragraph">
+</li>
+<li>
 <p><a href="https://docs.netapp.com/us-en/active-iq/">"Documentazione Active IQ"</a></p>
+</li>
+</ul>
 </div>
 </div>
 </div>
