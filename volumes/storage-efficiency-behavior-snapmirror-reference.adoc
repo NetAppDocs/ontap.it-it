@@ -1,0 +1,61 @@
+---
+permalink: volumes/storage-efficiency-behavior-snapmirror-reference.html 
+sidebar: sidebar 
+keywords: storage, efficiency, temperature, change, efficient, snapmirror, volume, move 
+summary: 'Il modo in cui l"efficienza dello storage viene applicata a un volume durante lo spostamento di un volume o l"operazione SnapMirror e ciò che accade dopo aver attivato manualmente l"efficienza dello storage sensibile alla temperatura dipendono dal tipo di efficienza del volume di origine.' 
+---
+= Comportamento in termini di efficienza dello storage con lo spostamento dei volumi e le operazioni SnapMirror
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Il modo in cui l'efficienza dello storage si comporta su un volume quando si esegue un'operazione di spostamento del volume o SnapMirror e ciò che accade quando si esegue un'interruzione di SnapMirror e si attiva manualmente l'efficienza dello storage sensibile alla temperatura dipende dal tipo di efficienza sul volume di origine.
+
+La seguente tabella descrive il comportamento di un volume di origine e di un volume di destinazione quando si esegue uno spostamento del volume o un'operazione SnapMirror con diversi tipi di efficienza dello storage, nonché il comportamento quando si attiva manualmente l'efficienza dello storage sensibile alla temperatura (TSSE).
+
+[cols="1,1,1,2,1,1,2"]
+|===
+
+
+| Efficienza del volume di origine 3+| Comportamento predefinito del volume di destinazione 3+| Comportamento predefinito dopo l'attivazione manuale di TSSE (dopo l'interruzione di SnapMirror) 
+
+
+|  | *Tipo di efficienza dello storage* | *Nuove scritture* | *Compressione dati a freddo* | *Tipo di efficienza dello storage* | *Nuove scritture* | *Compressione dati a freddo* 
+
+
+| Nessuna efficienza dello storage (probabile FAS) | Compressione del file | La compressione del file viene tentata inline sui dati appena scritti | Nessuna compressione dei dati a freddo, i dati rimangono così come sono | TSSE con algoritmo cold data scan come ZSTD | viene tentata la compressione inline 8k in formato TSSE | *File dati compressi*: N/A.
+   +
+   *Dati non compressi*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia
+   +
+   *Dati appena scritti*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia 
+
+
+| Nessuna efficienza dello storage (probabile FAS) | Compressione dei file su piattaforme C-Series che utilizzano ONTAP 9.11.1P10 o ONTAP 9.12.1P3 | Nessuna compressione dati Cold abilitata per TSSE | *File dati compressi*: N/A. | TSSE con algoritmo cold data scan come ZSTD | Compressione inline 8K | *File dati compressi*: N/A.
+   +
+   *Dati non compressi*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia
+   +
+   *Dati appena scritti*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia 
+
+
+| Nessuna efficienza dello storage (probabile FAS) | TSSE su piattaforme C-Series che utilizzano ONTAP 9.12.1P4 e versioni successive o ONTAP 9.13.1 e versioni successive | Viene tentata la compressione inline 8K in formato TSSE | *File dati compressi*: N/A.
+   +
+   *Dati non compressi*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia
+   +
+   *Dati appena scritti*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia | TSSE con algoritmo cold data scan come ZSTD | Viene tentata la compressione inline 8K in formato TSSE | *File dati compressi*: N/A.
+   +
+   *Dati non compressi*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia
+   +
+   *Dati appena scritti*: Tentativo di compressione di 32K dopo il raggiungimento dei giorni di soglia 
+
+
+| Gruppo di compressione del file | Uguale all'origine | La compressione del file viene tentata inline sui dati appena scritti | Nessuna compressione dei dati a freddo, i dati rimangono così come sono | TSSE con algoritmo cold data scan come ZSTD | viene tentata la compressione inline 8k in formato TSSE | *File dati compressi*: Non compressi
+  +
+  *Dati non compressi*: Viene tentata una compressione di 32K dopo che sono stati raggiunti i giorni di soglia
+  +
+  *Dati appena scritti*: Viene tentata una compressione di 32K dopo il raggiungimento della soglia dei giorni 
+
+
+| Scansione dei dati TSSE cold | TSSE che utilizza lo stesso algoritmo di compressione del volume di origine (LZOPro->LZOPro e ZSTD->ZSTD) | Tentativo di compressione inline 8K in formato TSSE | Tentativo di compressione di 32K con LzoPro dopo il raggiungimento di un livello di freddo basato su giorni di soglia sia sui dati esistenti che sui dati appena scritti. | TSSE è attivato. NOTA: L'algoritmo di scansione dei dati cold LZOPro può essere modificato in ZSTD. | Viene tentata la compressione inline 8K in formato TSSE | Viene tentata una compressione di 32K dopo che la temperatura dei giorni di soglia è stata soddisfatta sia sui dati esistenti che sui dati appena scritti. 
+|===
