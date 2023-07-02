@@ -68,7 +68,9 @@ NOTE: Durante la migrazione da un cluster AFF a un cluster FAS con aggregati ibr
 |===
 
 
-== Requisiti di performance dell'infrastruttura di rete per il tempo di round trip (RTT) TCP
+== Requisiti di performance dell'infrastruttura di rete per il tempo di round trip TCP (RTT) tra il cluster di origine e di destinazione
+
+A seconda della versione di ONTAP installata sul cluster, la rete che collega i cluster di origine e di destinazione deve avere un tempo massimo di andata e ritorno, come indicato di seguito:
 
 |===
 
@@ -104,17 +106,16 @@ NOTE: Durante la migrazione da un cluster AFF a un cluster FAS con aggregati ibr
 
 == Prerequisiti
 
-Prima di avviare una migrazione SMV, è necessario soddisfare i seguenti prerequisiti:
+Prima di iniziare una migrazione SVM, è necessario soddisfare i seguenti prerequisiti:
 
 * Devi essere un amministratore del cluster.
 * link:https://docs.netapp.com/us-en/ontap/peering/create-cluster-relationship-93-later-task.html["I cluster di origine e di destinazione devono essere connessi in peering l'uno all'altro"^].
 * I cluster di origine e di destinazione devono avere la licenza Data Protection Bundle installata.
-* Tutti i nodi nel cluster di origine devono eseguire ONTAP 9.10.1 o versione successiva. Per informazioni sul supporto specifico dei controller di array ONTAP, vedere
+* Tutti i nodi nel cluster di origine devono eseguire ONTAP 9.10.1 o versione successiva. Per informazioni sul supporto specifico dei controller di array ONTAP, vedere link:https://hwu.netapp.com/["Hardware Universe"^].
 * Tutti i nodi nel cluster di origine devono eseguire la stessa versione di ONTAP.
 * Tutti i nodi nel cluster di destinazione devono eseguire la stessa versione di ONTAP.
 * Il cluster di destinazione deve essere uguale o non più di due importanti versioni effettive del cluster (ECV) del cluster di origine.
 * I cluster di origine e di destinazione devono supportare la stessa subnet IP per l'accesso ai dati LIF.
-* La rete che collega i cluster di origine e destinazione deve avere un tempo di andata e ritorno massimo (RTT) non superiore a 10 ms.
 * La SVM di origine deve contenere meno di xref:Maximum supported volumes per SVM[numero massimo di volumi di dati supportati per la release].
 * Sulla destinazione deve essere disponibile uno spazio sufficiente per il posizionamento del volume
 * Onboard Key Manager deve essere configurato sulla destinazione se la SVM di origine ha volumi crittografati
@@ -151,7 +152,7 @@ La tabella indica le funzionalità di ONTAP supportate dalla mobilità dei dati 
 | Destinazione SnapMirror asincrona | ONTAP 9.12.1 |  
 
 
-| Origine SnapMirror asincrona | ONTAP 9.12.1  a| 
+| Origine SnapMirror asincrona | ONTAP 9.11.1  a| 
 * I trasferimenti possono continuare normalmente sulle relazioni di FlexVol SnapMirror durante la maggior parte della migrazione.
 * Eventuali trasferimenti in corso vengono annullati durante il cutover e i nuovi trasferimenti falliscono durante il cutover e non possono essere riavviati fino al completamento della migrazione.
 * I trasferimenti pianificati annullati o persi durante la migrazione non vengono avviati automaticamente al termine della migrazione.
@@ -209,7 +210,7 @@ Scopri di più xref:FabricPool support[Supporto FabricPool].
 | Mirror per la condivisione del carico | Non supportato |  
 
 
-| SVM MetroCluster | Non supportato |  
+| SVM MetroCluster | Non supportato | Sebbene la migrazione SVM non supporti la migrazione MetroCluster SVM, potrebbe essere possibile utilizzare la replica asincrona SnapMirror in link:https://www.netapp.com/media/83785-tr-4966.pdf["Migrare una SVM in una configurazione MetroCluster"]. 
 
 
 | Configurazioni NDMP | Non supportato |  
@@ -239,7 +240,10 @@ Prima della migrazione SVM:
 | Onboard Key Manager (OKM) con la modalità Common Criteria attivata sul cluster di origine | Non supportato |  
 
 
-| Qtree | ONTAP 9.10.1 |  
+| Qtree | Non supportato |  
+
+
+| Quote | Non supportato |  
 
 
 | S3 | Non supportato |  
@@ -296,7 +300,7 @@ La migrazione SVM è supportata con i volumi su FabricPools per le seguenti piat
 
 == Operazioni supportate durante la migrazione
 
-La seguente tabella indica il supporto delle operazioni del volume in base allo stato di migrazione:
+La seguente tabella indica le operazioni di volume supportate nella SVM in migrazione in base allo stato di migrazione:
 
 [cols="2,1,1,1"]
 |===
@@ -308,13 +312,16 @@ La seguente tabella indica il supporto delle operazioni del volume in base allo 
 |  | *In corso* | *In pausa* | *Cutover* 
 
 
-| Creare | Consentito | Consentito | Non supportato 
+| Creare | Non consentito | Consentito | Non supportato 
 
 
 | Eliminare | Non consentito | Consentito | Non supportato 
 
 
-| Analisi del file system 2+| Vedi analisi del filesystem | Non supportato 
+| Disable filesystem analytics. (Analisi del file | Consentito | Consentito | Non supportato 
+
+
+| Abilitazione dell'analisi del file system | Non consentito | Consentito | Non supportato 
 
 
 | Modificare | Consentito | Consentito | Non supportato 
@@ -326,7 +333,7 @@ La seguente tabella indica il supporto delle operazioni del volume in base allo 
 | Spostare/eseguire nuovamente l'host | Non consentito | Consentito | Non supportato 
 
 
-| Qtreecreate/modify | Non consentito | Non consentito | Non supportato 
+| Creazione/modifica qtree | Non consentito | Non consentito | Non supportato 
 
 
 | Creazione/modifica quota | Non consentito | Non consentito | Non supportato 
@@ -355,7 +362,7 @@ La seguente tabella indica il supporto delle operazioni del volume in base allo 
 
 | Ripristinare il file dalla copia Snapshot | Consentito | Consentito | Non supportato 
 |===
-La seguente tabella indica il supporto delle operazioni del file in base allo stato di migrazione:
+La seguente tabella indica le operazioni sui file supportate nella SVM in migrazione in base allo stato di migrazione:
 
 [cols="2,1,1,1"]
 |===

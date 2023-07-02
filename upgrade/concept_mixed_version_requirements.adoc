@@ -1,46 +1,79 @@
 ---
 permalink: upgrade/concept_mixed_version_requirements.html 
 sidebar: sidebar 
-keywords: ontap, upgrade, mixed, version, requirements 
-summary: A partire da ONTAP 9.3, per impostazione predefinita, non è possibile aggiungere nuovi nodi al cluster che eseguono una versione di ONTAP diversa dalla versione in esecuzione sui nodi esistenti. 
+keywords: ontap, upgrade, mixed, version, clusters, mixed-version nodes, requirements 
+summary: Un cluster ONTAP a versione mista è costituito da nodi che eseguono due release principali di ONTAP diverse, come ONTAP 9.8 e 9.12.1. I cluster ONTAP a versione mista sono supportati da NetApp solo in scenari specifici. 
 ---
-= Requisiti di versione mista
+= Cluster ONTAP a versione mista
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-A partire da ONTAP 9.3, per impostazione predefinita, non è possibile aggiungere nuovi nodi al cluster che eseguono una versione di ONTAP diversa dalla versione in esecuzione sui nodi esistenti.
+Un cluster ONTAP con versione mista è costituito da nodi che eseguono due release principali di ONTAP diverse, come ONTAP 9.8 e 9.12.1, o ONTAP 9.9.1 e 9.13.1. I cluster ONTAP a versione mista sono supportati da NetApp solo in scenari specifici.
 
-Se si prevede di aggiungere nuovi nodi al cluster che eseguono una versione di ONTAP successiva ai nodi del cluster esistente, è necessario aggiornare prima i nodi del cluster alla versione successiva, quindi aggiungere i nuovi nodi.
+I due scenari più comuni sono:
 
-I cluster di versioni miste non sono consigliati, ma in alcuni casi potrebbe essere necessario inserire temporaneamente uno stato di versione mista. Ad esempio, se si esegue l'aggiornamento a una versione successiva di ONTAP non supportata su alcuni nodi del cluster esistente, è necessario immettere uno stato di versione mista. In questo caso, è necessario aggiornare i nodi che supportano la versione successiva di ONTAP, quindi rimuovere i nodi che non supportano la versione di ONTAP a cui si sta eseguendo l'aggiornamento utilizzando il seguente comando:
+* Aggiornamenti del software ONTAP in cluster di grandi dimensioni
+* Gli aggiornamenti del software ONTAP sono necessari quando si prevede di aggiungere nuovi controller a un cluster
 
-[cols="2"]
+
+Questo contenuto si applica alle versioni di ONTAP che supportano i sistemi delle piattaforme NetApp, come i sistemi AFF, ASA, FAS e C-Series.  Le informazioni qui riportate non si applicano alle versioni cloud di ONTAP (9.x.0), come 9.12.0.
+
+
+
+== Requisiti per i cluster ONTAP a versione mista
+
+In qualsiasi scenario in cui il cluster deve entrare in uno stato di versione ONTAP misto, è necessario essere a conoscenza di requisiti e restrizioni importanti.
+
+* In un cluster non possono essere presenti più di due versioni principali di ONTAP diverse per volta. I cluster con nodi in esecuzione con diversi livelli di patch P o D della stessa release di ONTAP, come ONTAP 9.9.1P1 e 9.9.1P5, non sono considerati cluster ONTAP con versione mista.
+* Mentre il cluster si trova in uno stato di versione mista, non inserire alcun comando che alteri l'operazione o la configurazione del cluster, a meno che non sia necessario per soddisfare i requisiti di aggiornamento. Per facilitare le attività di upgrade dei controller, sono supportate le operazioni di spostamento del volume in un cluster ONTAP con versione mista.
+* Per un funzionamento ottimale del cluster, il tempo in cui il cluster si trova in uno stato di versione mista deve essere il più breve possibile.  La durata massima di permanenza di un cluster in uno stato di versione mista dipende dalla versione ONTAP più bassa del cluster.
++
+[cols="2*"]
 |===
-| Versione di ONTAP | Comando 
+| Se la versione più bassa di ONTAP in esecuzione nel cluster di versioni miste è: | Quindi, è possibile rimanere in uno stato di versione misto per un massimo di 
 
 
- a| 
-ONTAP 9.3
- a| 
-`cluster unjoin -skip-last-low-version-node-check`
+| ONTAP 9.8 o superiore | 90 giorni 
 
 
-
- a| 
-ONATP 9.4 e versioni successive
- a| 
-`cluster remove-node -skip-last-low-version-node-check`
-
+| ONTAP 9.7 o versione precedente | 7 giorni 
 |===
-Potrebbe anche essere necessario immettere uno stato di versione misto per un aggiornamento tecnico o un aggiornamento interrotto. In questi casi, è possibile eseguire l'override del comportamento predefinito di ONTAP e aggiungere nodi di una versione diversa utilizzando `cluster add-node -allow-mixed-version-join` advanced privilege command.
+* A partire da ONTAP 9.8, un cluster ONTAP con versione mista può includere un massimo di 4 release principali. Ad esempio, un cluster ONTAP con versione mista potrebbe avere nodi che eseguono ONTAP 9.8 e 9.12.1 o nodi che eseguono ONTAP 9.9.1 e 9.13.1. Tuttavia, un cluster ONTAP con versione mista con nodi che eseguono ONTAP 9.8 e 9.13.1 non sarebbe supportato, perché questo cluster con versione mista si estende su 5 release principali.
 
-Quando si deve entrare in uno stato di versione mista, è necessario completare l'aggiornamento il più rapidamente possibile.
 
-A partire da ONTAP 9.8 e versioni successive, una coppia ha non deve eseguire una versione di ONTAP da una release diversa da altre coppie ha nel cluster per più di 90 giorni. In ONTAP 9.7 e versioni precedenti, una coppia ha non deve eseguire una versione di ONTAP da una release diversa da altre coppie ha nel cluster per più di 7 giorni.
 
-Per un corretto funzionamento del cluster, il periodo in cui il cluster si trova in uno stato di versione mista deve essere il più breve possibile.
 
-Quando il cluster si trova in uno stato di versione mista, non inserire alcun comando che alteri l'operazione o la configurazione del cluster, a meno che non sia necessario per soddisfare i requisiti di aggiornamento.
+== Aggiornamento della versione ONTAP di un cluster di grandi dimensioni
+
+Ogni versione di ONTAP offre un set di funzionalità più solido. Quando è necessario aggiornare la versione ONTAP di un cluster più grande per passare a una versione più recente di ONTAP, è necessario inserire uno stato del cluster con versione mista per un certo periodo di tempo durante l'aggiornamento di ciascun nodo del cluster.
+
+
+
+== Aggiunta di nuovi nodi al cluster
+
+È possibile aggiungere nuovi nodi al cluster per espanderne la capacità o perché si stanno sostituendo completamente i controller. In entrambi i casi, è necessario attivare la migrazione dei dati dai vecchi controller al nuovo sistema.
+
+Se si prevede di aggiungere nuovi nodi al cluster e tali nodi richiedono una versione di ONTAP successiva a quella dei nodi esistenti nel cluster, è necessario aggiornare prima tutti i nodi esistenti nel cluster alla versione successiva di ONTAP, quindi aggiungere i nuovi nodi. Tuttavia, se ciò non è possibile perché alcuni dei nodi esistenti non supportano la versione successiva di ONTAP, sarà necessario inserire uno stato di versione mista per un periodo di tempo limitato come parte del processo di aggiornamento.
+Se si dispone di nodi che non supportano la versione ONTAP più bassa richiesta dai nuovi controller, attenersi alla seguente procedura:
+
+. link:https://docs.netapp.com/us-en/ontap/upgrade/concept_upgrade_methods.html["Eseguire l'upgrade"] I nodi del cluster che supportano la versione ONTAP dei nuovi controller.
+. Aggiungere i nuovi nodi al cluster.
++
+Utilizzare il comando ONTAP cluster add-node -allow-mixed-version-join al livello di privilegio avanzato per unire i nuovi nodi.
+
+. Migrare i dati da qualsiasi nodo che non può essere aggiornato a un nodo che esegue la versione ONTAP superiore.
+. link:https://docs.netapp.com/us-en/ontap/system-admin/remov-nodes-cluster-concept.html["Rimuovere i nodi non supportati dal cluster"^].
++
+Utilizzare il comando ONTAP cluster remove-node -skip-last-low-version-node-check per rimuovere questi nodi. (In ONTAP 9.3 e versioni precedenti, utilizzare il comando cluster unjoin -skip-last-low-version-node-check).
+
+
+
+Per ulteriori informazioni sulla migrazione dei dati, consulta:
+
+* link:https://docs.netapp.com/us-en/ontap-systems-upgrade/upgrade/upgrade-create-aggregate-move-volumes.html["Creare un aggregato e spostare i volumi nei nuovi nodi"^]
+* link:https://docs.netapp.com/us-en/ontap-metrocluster/transition/task_move_linux_iscsi_hosts_from_mcc_fc_to_mcc_ip_nodes.html#setting-up-new-iscsi-connections["Impostazione di nuove connessioni iSCSI per gli spostamenti dei volumi SAN"^]
+* link:https://docs.netapp.com/us-en/ontap/encryption-at-rest/encrypt-existing-volume-task.html["Spostamento di volumi con crittografia"^]
+
