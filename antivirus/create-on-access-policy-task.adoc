@@ -2,7 +2,7 @@
 permalink: antivirus/create-on-access-policy-task.html 
 sidebar: sidebar 
 keywords: create, on-access, policy 
-summary: 'Un criterio di accesso definisce l"ambito di una scansione all"accesso. È possibile specificare le dimensioni massime dei file da sottoporre a scansione, le estensioni dei file da includere nella scansione e le estensioni e i percorsi dei file da escludere dalla scansione. È possibile creare una policy di accesso per una singola SVM o per tutte le SVM in un cluster.' 
+summary: 'Un criterio di accesso definisce l"ambito di una scansione all"accesso. È possibile creare una policy di accesso per una singola SVM o per tutte le SVM in un cluster. Se è stata creata una policy di accesso per tutte le SVM in un cluster, è necessario attivare la policy su ogni SVM singolarmente.' 
 ---
 = Creare una policy di accesso
 :allow-uri-read: 
@@ -11,19 +11,30 @@ summary: 'Un criterio di accesso definisce l"ambito di una scansione all"accesso
 
 
 [role="lead"]
-Un criterio di accesso definisce l'ambito di una scansione all'accesso. È possibile specificare le dimensioni massime dei file da sottoporre a scansione, le estensioni dei file da includere nella scansione e le estensioni e i percorsi dei file da escludere dalla scansione. È possibile creare una policy di accesso per una singola SVM o per tutte le SVM in un cluster.
+Un criterio di accesso definisce l'ambito di una scansione all'accesso. È possibile creare una policy di accesso per una singola SVM o per tutte le SVM in un cluster. Se è stata creata una policy di accesso per tutte le SVM in un cluster, è necessario attivare la policy su ogni SVM singolarmente.
 
 .A proposito di questa attività
-Per impostazione predefinita, ONTAP crea una policy di accesso denominata "`default_CIFS`" e la abilita per tutte le SVM in un cluster.
+* È possibile specificare le dimensioni massime dei file da sottoporre a scansione, le estensioni e i percorsi dei file da includere nella scansione e le estensioni e i percorsi dei file da escludere dalla scansione.
+* È possibile impostare `scan-mandatory` Selezionare Off per specificare che l'accesso al file è consentito quando non sono disponibili server Vscan per la scansione dei virus.
+* Per impostazione predefinita, ONTAP crea una policy di accesso denominata "default_CIFS" e la abilita per tutte le SVM in un cluster.
+* Qualsiasi file idoneo per l'esclusione della scansione in base a. `paths-to-exclude`, `file-ext-to-exclude`, o. `max-file-size` i parametri non vengono presi in considerazione per la scansione, anche se `scan-mandatory` l'opzione è impostata su on. (Selezionare questa opzione link:vscan-server-connection-concept.html["risoluzione dei problemi"] sezione per i problemi di connettività relativi a. `scan-mandatory` opzione).
+* Per impostazione predefinita, viene eseguita la scansione solo dei volumi di lettura/scrittura. È possibile specificare i filtri che consentono la scansione di volumi di sola lettura o che limitano la scansione ai file aperti con accesso di esecuzione.
+* La scansione virus non viene eseguita su una condivisione SMB per la quale il parametro Continuously-Available è impostato su Yes.
+* Vedere link:architecture-concept.html["Architettura antivirus"] Per ulteriori informazioni sul profilo _Vscan file-Operations_.
+* È possibile creare un massimo di dieci (10) criteri di accesso per SVM. Tuttavia, è possibile attivare un solo criterio di accesso alla volta.
++
+** È possibile escludere un massimo di cento (100) percorsi ed estensioni di file dalla scansione virus in una policy di accesso.
 
-È possibile impostare `scan-mandatory` Selezionare Off per specificare che l'accesso al file è consentito quando non sono disponibili server Vscan per la scansione dei virus. Tenere presente che tutti i file che si qualificano per l'esclusione di scansione in base a. `paths-to-exclude`, `file-ext-to-exclude`, o. `max-file-size` i parametri non vengono presi in considerazione per la scansione anche se `scan-mandatory` l'opzione è impostata su on.
 
-[NOTE]
-====
-Per potenziali problemi relativi a. `scan-mandatory` vedere xref:vscan-server-connection-concept.adoc[Potenziali problemi di connettività che coinvolgono l'opzione di scansione obbligatoria].
+* Alcuni consigli sull'esclusione dei file:
++
+** Considerare l'esclusione di file di grandi dimensioni (è possibile specificare le dimensioni del file) dalla scansione dei virus perché possono causare un rallentamento della risposta o timeout delle richieste di scansione per gli utenti CIFS. La dimensione predefinita del file per l'esclusione è 2 GB.
+** Considerare l'esclusione di estensioni di file come `.vhd` e. `.tmp` perché i file con queste estensioni potrebbero non essere appropriati per la scansione.
+** Considerare l'esclusione di percorsi di file come la directory di quarantena o i percorsi in cui sono memorizzati solo i dischi rigidi o i database virtuali.
+** Verificare che tutte le esclusioni siano specificate nello stesso criterio, in quanto è possibile attivare un solo criterio alla volta. NetApp consiglia di utilizzare lo stesso set di esclusioni specificato nel motore antivirus.
 
-====
-Per impostazione predefinita, viene eseguita la scansione solo dei volumi di lettura/scrittura. È possibile specificare i filtri che consentono la scansione di volumi di sola lettura o che limitano la scansione ai file aperti con accesso di esecuzione.
+
+
 
 .Fasi
 . Creare una policy di accesso:
@@ -33,7 +44,8 @@ Per impostazione predefinita, viene eseguita la scansione solo dei volumi di let
 +
 ** Specificare una SVM di dati per una policy definita per una singola SVM, una SVM amministrativa del cluster per una policy definita per tutte le SVM in un cluster.
 ** Il `-file-ext-to-exclude` l'impostazione ha la precedenza su `-file-ext-to-include` impostazione.
-** Impostare `-scan-files-with-no-ext` a true per eseguire la scansione dei file senza estensioni. Il comando seguente crea una policy di accesso denominata `Policy1` su ``vs1``SVM:
+** Impostare `-scan-files-with-no-ext` a true per eseguire la scansione dei file senza estensioni.
+Il comando seguente crea una policy di accesso denominata `Policy1` su `vs1` SVM:
 
 
 +

@@ -17,20 +17,19 @@ summary: È necessario creare pool di scanner primari e secondari su ciascun clu
 * I server SVM e Vscan devono trovarsi nello stesso dominio o in domini attendibili.
 * Per i pool di scanner definiti per una singola SVM, è necessario aver configurato il connettore antivirus ONTAP con la LIF di gestione SVM o la LIF dei dati SVM.
 * Per i pool di scanner definiti per tutte le SVM in un cluster, è necessario aver configurato il connettore antivirus ONTAP con la LIF di gestione del cluster.
+* L'elenco degli utenti con privilegi deve includere l'account utente di dominio utilizzato dal server Vscan per connettersi a SVM.
+* Una volta configurato il pool di scanner, controllare lo stato della connessione ai server.
 
 
 .A proposito di questa attività
 Le configurazioni MetroCluster proteggono i dati implementando due cluster mirrorati fisicamente separati. Ciascun cluster replica in modo sincrono i dati e la configurazione SVM dell'altro. Una SVM primaria sul cluster locale serve i dati quando il cluster è online. Una SVM secondaria sul cluster locale serve i dati quando il cluster remoto non è in linea.
 
-Ciò significa che è necessario creare pool di scanner primari e secondari su ciascun cluster in una configurazione MetroCluster, corrispondente alle SVM primarie e secondarie sul cluster. Il pool secondario diventa attivo quando il cluster inizia a fornire i dati dalla SVM secondaria. La figura seguente mostra una tipica configurazione MetroCluster.
+Ciò significa che è necessario creare pool di scanner primari e secondari su ciascun cluster in una configurazione MetroCluster, il pool secondario diventa attivo quando il cluster inizia a servire i dati dalla SVM secondaria. Per il disaster recovery (DR), la configurazione è simile a quella di MetroCluster.
 
-image::../media/metrocluster-av-config.gif[config. av MetroCluster]
+Questa figura mostra una tipica configurazione MetroCluster/DR.
 
-[NOTE]
-====
-L'elenco degli utenti con privilegi deve includere l'account utente di dominio utilizzato dal server Vscan per connettersi a SVM.
+image::../media/metrocluster-av-config.png[config. av MetroCluster]
 
-====
 .Fasi
 . Creazione di un pool di scanner:
 +
@@ -73,7 +72,10 @@ cluster1::> vserver vscan scanner-pool create -vserver cifssvm1 -
 scanner-pool pool2_for_site2 -hostnames scan2 -privileged-users cifs
 \u1,cifs\u2
 ----
-. Verificare che i pool di scanner siano stati creati: `vserver vscan scanner-pool show -vserver _data_SVM|cluster_admin_SVM_ -scanner-pool _scanner_pool_`
+. Verificare che i pool di scanner siano stati creati:
++
+`vserver vscan scanner-pool show -vserver _data_SVM|cluster_admin_SVM_ -scanner-pool _scanner_pool_`
+
 +
 Per un elenco completo delle opzioni, vedere la pagina man del comando.
 

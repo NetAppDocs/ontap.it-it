@@ -2,7 +2,7 @@
 permalink: antivirus/file-protection-virus-scanning-concept.html 
 sidebar: sidebar 
 keywords: anti virus, understand, netapp, virus, scan 
-summary: È possibile utilizzare la funzionalità antivirus integrata nei sistemi di storage NetApp per proteggere i dati da virus o altri codici dannosi. La scansione dei virus NetApp, chiamata Vscan, combina il software antivirus di terze parti migliore del settore con le funzionalità ONTAP che offrono la flessibilità necessaria per controllare quali file vengono sottoposti a scansione e quando. 
+summary: Vscan è una soluzione di scansione antivirus sviluppata da NetApp che consente ai clienti di proteggere i propri dati da virus o altri codici dannosi. Combina il software antivirus fornito dal partner con le funzionalità ONTAP per offrire ai clienti la flessibilità necessaria per gestire la scansione dei file. 
 ---
 = Informazioni sulla scansione dei virus NetApp
 :allow-uri-read: 
@@ -11,24 +11,28 @@ summary: È possibile utilizzare la funzionalità antivirus integrata nei sistem
 
 
 [role="lead"]
-È possibile utilizzare la funzionalità antivirus integrata nei sistemi di storage NetApp per proteggere i dati da virus o altri codici dannosi. La scansione dei virus NetApp, denominata _Vscan_, combina il software antivirus di terze parti migliore del settore con le funzionalità ONTAP che offrono la flessibilità necessaria per controllare quali file vengono sottoposti a scansione e quando.
+Vscan è una soluzione di scansione antivirus sviluppata da NetApp che consente ai clienti di proteggere i propri dati da virus o altri codici dannosi. Combina il software antivirus fornito dal partner con le funzionalità ONTAP per offrire ai clienti la flessibilità necessaria per gestire la scansione dei file.
 
 
 
 == Come funziona la scansione virus
 
-I sistemi storage trasferiscono le operazioni di scansione a server esterni che ospitano software antivirus di terze parti. Il connettore antivirus ONTAP, fornito da NetApp e installato sul server esterno, gestisce la comunicazione tra il sistema di storage e il software antivirus.
+I sistemi storage trasferiscono le operazioni di scansione a server esterni che ospitano software antivirus di terze parti.
 
-* È possibile utilizzare _on-access scanning_ per verificare la presenza di virus quando i client aprono, leggono, rinominano o chiudono i file su SMB. L'operazione sul file viene sospesa fino a quando il server esterno non riporta lo stato di scansione del file. Se il file è già stato sottoposto a scansione, ONTAP consente l'operazione. In caso contrario, richiede una scansione dal server.
+In base alla modalità di scansione attiva, ONTAP invia richieste di scansione quando i client accedono ai file tramite SMB (on-access) o accedono ai file in posizioni specifiche, in base a una pianificazione o immediatamente (on-demand).
+
+* È possibile utilizzare _on-access scanning_ per verificare la presenza di virus quando i client aprono, leggono, rinominano o chiudono i file su SMB. Le operazioni sui file vengono sospese fino a quando il server esterno non riporta lo stato di scansione del file. Se il file è già stato sottoposto a scansione, ONTAP consente l'operazione. In caso contrario, richiede una scansione dal server.
 +
 La scansione on-access non è supportata per NFS.
 
-* È possibile utilizzare la _scansione on-demand_ per controllare i file alla ricerca di virus immediatamente o in base a una pianificazione. Ad esempio, è possibile eseguire scansioni solo in ore non di punta. Il server esterno aggiorna lo stato di scansione dei file selezionati, in modo che la latenza di accesso ai file (presupponendo che non siano stati modificati) sia in genere ridotta al successivo accesso tramite SMB.
+* È possibile utilizzare la _scansione on-demand_ per controllare i file alla ricerca di virus immediatamente o in base a una pianificazione. Si consiglia di eseguire scansioni on-demand solo in ore non di punta per evitare di sovraccaricare l'infrastruttura AV esistente, che è normalmente dimensionata per la scansione on-access. Il server esterno aggiorna lo stato di scansione dei file selezionati, in modo da ridurre la latenza di accesso ai file su SMB. In caso di modifiche al file o aggiornamenti della versione software, viene richiesta una nuova scansione del file dal server esterno.
 +
 È possibile utilizzare la scansione on-demand per qualsiasi percorso nello spazio dei nomi SVM, anche per i volumi esportati solo tramite NFS.
 
 
 
-In genere, si abilitano entrambe le modalità di scansione su una SVM. In entrambe le modalità, il software antivirus esegue un'azione correttiva sui file infetti in base alle impostazioni del software.
+In genere, si abilitano le modalità di scansione on-access e on-demand su una SVM. In entrambe le modalità, il software antivirus esegue un'azione correttiva sui file infetti in base alle impostazioni del software.
+
+Il connettore antivirus ONTAP, fornito da NetApp e installato sul server esterno, gestisce la comunicazione tra il sistema di storage e il software antivirus.
 
 image::../media/how-virus-scanning-works-new.gif[come funziona la scansione virus]
