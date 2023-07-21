@@ -19,6 +19,15 @@ Le policy di tiering di FabricPool ti consentono di spostare i dati in modo effi
 
 Le policy di tiering FabricPool determinano quando o se i blocchi di dati utente di un volume in FabricPool vengono spostati nel Tier cloud, in base al volume "`temperature`" di hot (attivo) o cold (inattivo). Il volume "`temperature`" aumenta quando si accede frequentemente e diminuisce quando non lo è. Alcune policy di tiering prevedono un periodo di raffreddamento minimo di tiering, che imposta il tempo in cui i dati utente in un volume di FabricPool devono rimanere inattivi affinché i dati vengano considerati "`cold`" e spostati al livello cloud.
 
+Dopo che un blocco è stato identificato come cold, viene contrassegnato come idoneo per essere tiered.  Una scansione giornaliera di tiering in background cerca i blocchi freddi. Una volta raccolti un numero sufficiente di blocchi da 4 KB dallo stesso volume, questi vengono concatenati in un oggetto da 4 MB e spostati nel Tier cloud in base alla policy di tiering del volume.
+
+[NOTE]
+====
+Dati nei volumi utilizzando `all` la policy di tiering viene immediatamente contrassegnata come cold e inizia il tiering al livello cloud il prima possibile. Non è necessario attendere l'esecuzione della scansione di tiering giornaliera.
+
+====
+È possibile utilizzare `volume object-store tiering show` Per visualizzare lo stato di tiering di un volume FabricPool. Per ulteriori informazioni, consultare link:https://docs.netapp.com/us-en/ontap-cli-9131/["Riferimento comando"].
+
 Il criterio di tiering FabricPool viene specificato a livello di volume. Sono disponibili quattro opzioni:
 
 * Il `snapshot-only` La policy di tiering (impostazione predefinita) sposta i blocchi di dati utente delle copie Snapshot del volume non associate al file system attivo nel Tier cloud.
@@ -32,7 +41,10 @@ Il periodo di raffreddamento minimo di tiering predefinito è di 31 giorni e si 
 +
 È possibile modificare l'impostazione predefinita per il periodo di raffreddamento minimo di tiering con `-tiering-minimum-cooling-days` nel livello di privilegio avanzato di `volume create` e. `volume modify` comandi. I valori validi vanno da 2 a 183 giorni.
 
-* Il `all` La policy di tiering, supportata solo su ONTAP 9.6 e versioni successive, sposta tutti i blocchi di dati utente nel file system attivo e nelle copie Snapshot nel Tier cloud. Sostituisce il `backup` policy di tiering.
+* Il `all` La policy di tiering, supportata solo con ONTAP 9.6 e versioni successive, sposta tutti i blocchi di dati utente nel file system attivo e nelle copie Snapshot nel Tier cloud. Sostituisce il `backup` policy di tiering.
++
+Il `all` i criteri di tiering dei volumi non devono essere utilizzati su volumi di lettura/scrittura con traffico client normale.
+
 +
 Il periodo di raffreddamento minimo del tiering non si applica perché i dati spostano il Tier cloud non appena viene eseguita la scansione del tiering e non è possibile modificare l'impostazione.
 
