@@ -4,7 +4,7 @@ permalink: smbc/smbc_admin_add_and_remove_volumes_in_consistency_groups.html
 keywords: SM-BC, SMBC, volume, consistency group, remove volume, add volume 
 summary: Se si desidera modificare la composizione del gruppo di coerenza aggiungendo o rimuovendo un volume, è necessario prima eliminare la relazione originale e quindi creare nuovamente il gruppo di coerenza con la nuova composizione. 
 ---
-= Aggiungere e rimuovere volumi in un gruppo di coerenza
+= Aggiungere o rimuovere volumi a un gruppo di coerenza
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,32 +14,36 @@ summary: Se si desidera modificare la composizione del gruppo di coerenza aggiun
 
 
 [role="lead"]
-L'aggiunta e la rimozione di volumi in una relazione SM-BC attiva dipende dalla versione di ONTAP in uso.
+Con il variare dei requisiti dei carichi di lavoro delle applicazioni, potrebbe essere necessario aggiungere o rimuovere volumi da un gruppo di coerenza per garantire la continuità del business. Il processo di aggiunta e rimozione di volumi in una relazione SM-BC attiva dipende dalla versione di ONTAP in uso.
+
+Nella maggior parte dei casi, si tratta di un processo di interruzione che richiede di interrompere la relazione SnapMirror, modificare il gruppo di coerenza e riprendere la protezione. A partire da ONTAP 9.13.1, l'aggiunta di volumi a un gruppo di coerenza con una relazione SM-BC attiva è un'operazione senza interruzioni.
 
 .A proposito di questa attività
-In ONTAP dalla versione 9.8 alla 9.9.1, è possibile aggiungere o rimuovere volumi a un gruppo di coerenza utilizzando l'interfaccia utente di ONTAP.
+* In ONTAP dalla versione 9.8 alla 9.9.1, è possibile aggiungere o rimuovere volumi a un gruppo di coerenza utilizzando l'interfaccia utente di ONTAP.
+* A partire da ONTAP 9.10.1, si consiglia di eseguire la gestione link:../consistency-groups/index.html["gruppi di coerenza"] Tramite Gestore di sistema o con l'API REST di ONTAP.
++
+Se si desidera modificare la composizione del gruppo di coerenza aggiungendo o rimuovendo un volume, è necessario prima eliminare la relazione originale e quindi creare nuovamente il gruppo di coerenza con la nuova composizione.
 
-A partire da ONTAP 9.10.1, si consiglia di eseguire la gestione link:../consistency-groups/index.html["gruppi di coerenza"] Tramite Gestore di sistema o con l'API REST di ONTAP. Se si desidera modificare la composizione del gruppo di coerenza aggiungendo o rimuovendo un volume, è necessario prima eliminare la relazione originale e quindi creare nuovamente il gruppo di coerenza con la nuova composizione.
+* A partire da ONTAP 9.13.1, è possibile aggiungere senza interruzioni volumi a un gruppo di coerenza con una relazione SM-BC attiva dall'origine o dalla destinazione.
++
+La rimozione dei volumi è un'operazione di interruzione. Prima di procedere con la rimozione dei volumi, è necessario interrompere la relazione di SnapMirror.
 
-A partire da ONTAP 9.13.1, è possibile aggiungere senza interruzioni volumi a un gruppo di coerenza con una relazione SM-BC attiva dall'origine o dalla destinazione.
 
-
-NOTE: La rimozione di volumi da un gruppo di coerenza con una relazione SM-BC è un'operazione di interruzione e prima di procedere con questa operazione è necessario interrompere la relazione SnapMirror.
 
 [role="tabbed-block"]
 ====
 .ONTAP 9.8-9.13.0
 --
 .Prima di iniziare
-* La modifica della composizione non è consentita quando il gruppo di coerenza si trova nello stato "InSync".
+* Non è possibile iniziare a modificare il gruppo di coerenza mentre si trova in `InSync` stato.
 * Il volume di destinazione deve essere di tipo DP.
 * Il nuovo volume aggiunto per espandere il gruppo di coerenza deve disporre di una coppia di copie Snapshot comuni tra i volumi di origine e di destinazione.
 
 
 .Fasi
-Questa procedura presuppone che vi siano due mappature di volume: Vol_src1 <--> vol_dst1 e vol_src2 <--> vol_dst2, in una relazione di gruppo di coerenza tra i punti finali vs1_src:/cg/cg_src e vs1_dst:/cg/cg_dst.
+Gli esempi illustrati in due mappature di volumi: `vol_src1` <--> `vol_dst1` e. `vol_src2` <--> `vol_dst2`, in una relazione di gruppo di coerenza tra i punti finali `vs1_src:/cg/cg_src` e. `vs1_dst:/cg/cg_dst`.
 
-. Verificare che esista una copia Snapshot comune tra i volumi di origine e di destinazione sul cluster di origine e di destinazione:
+. Sui cluster di origine e di destinazione, verificare la presenza di un'istantanea comune tra i cluster di origine e di destinazione con il comando `snapshot show -vserver _svm_name_ -volume _volume_name_ -snapshot _snapmirror_`
 +
 `source::>snapshot show -vserver vs1_src -volume vol_src3 -snapshot snapmirror*`
 
@@ -50,7 +54,7 @@ Questa procedura presuppone che vi siano due mappature di volume: Vol_src1 <--> 
 +
 `destination::>snapmirror initialize -source-path vs1_src:vol_src3 -destination-path vs1_dst:vol_dst3`
 
-. Eliminare la relazione del gruppo di coerenza RTO zero:
+. Eliminare la relazione del gruppo di coerenza:
 +
 `destination::>snapmirror delete -destination-path vs1_dst:vol_dst3`
 

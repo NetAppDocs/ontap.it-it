@@ -14,22 +14,25 @@ summary: 'È possibile convertire una relazione SnapMirror sincrona con protezio
 
 
 [role="lead"]
-È possibile convertire una relazione SnapMirror sincrona con protezione zero recovery point (zero RPO) esistente in una relazione di gruppo di coerenza SnapMirror sincrona SM-BC zero RTO.
+Se si dispone di una relazione SnapMirror sincrona esistente tra un cluster di origine e di destinazione, è possibile convertirla in una relazione SM-BC. Ciò consente di associare i volumi mirrorati a un gruppo di coerenza, garantendo zero RPO in un carico di lavoro multi-volume. Inoltre, è possibile conservare le snapshot SnapMirror esistenti se è necessario ripristinarle in un momento specifico prima di stabilire la relazione SM-BC.
 
 .Prima di iniziare
-* Esiste una relazione SnapMirror sincrona RPO zero tra primario e secondario.
-* Tutte le LUN del volume di destinazione vengono dismappate prima della creazione della relazione SnapMirror RTO zero.
+* Deve esistere una relazione SnapMirror sincrona RPO zero tra il cluster primario e secondario.
+* Prima di poter creare la relazione SnapMirror zero RTO, è necessario rimuovere la mappatura di tutti i LUN del volume di destinazione.
 * SM-BC supporta solo i protocolli SAN (non NFS/CIFS). Assicurarsi che nessun componente del gruppo di coerenza sia montato per l'accesso NAS.
 
 
 .A proposito di questa attività
-* È necessario essere un amministratore di cluster e SVM sull'origine e sulla destinazione.
+* È necessario essere un amministratore di cluster e SVM sui cluster primario e secondario.
 * Non è possibile convertire zero RPO in zero RTO Sync modificando il criterio SnapMirror.
-* Se vengono mappati i LUN esistenti sul volume secondario, `snapmirror create` Con Automatedfailover, il criterio genera un errore. Assicurarsi che i LUN siano dismappati prima di emettere `snapmirror create` comando.
+* Assicurarsi che i LUN siano dismappati prima di emettere `snapmirror create` comando.
++
+Se i LUN esistenti sul volume secondario sono mappati e l' `AutomatedFailover` il criterio è configurato, il `snapmirror create` genera un errore.
+
 
 
 .Fasi
-. Eseguire un'operazione di aggiornamento di SnapMirror sulla relazione esistente:
+. Dal cluster secondario, eseguire un aggiornamento di SnapMirror sulla relazione esistente:
 +
 `destination::>snapmirror update -destination-path vs1_dst:vol1`
 
@@ -62,7 +65,7 @@ summary: 'È possibile convertire una relazione SnapMirror sincrona con protezio
 +
 `destination::> snapmirror create -source-path vs1_src:/cg/cg_src -destination-path vs1_dst:/cg/cg_dst -cg-item-mappings vol1:@vol1,vol2:@vol2 -policy AutomatedFailover`
 
-. Risincronizzare il gruppo di coerenza RTO zero:
+. Risincronizzare il gruppo di coerenza:
 +
 `destination::> snapmirror resync -destination-path vs1_dst:/cg/cg_dst`
 

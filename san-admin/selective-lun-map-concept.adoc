@@ -1,7 +1,7 @@
 ---
 permalink: san-admin/selective-lun-map-concept.html 
 sidebar: sidebar 
-keywords: select, lun, map 
+keywords: select, selective, lun, map, slm, enabled, modify, reporting, nodes, list 
 summary: 'La mappa LUN selettiva (SLM) riduce il numero di percorsi dall"host al LUN. Con SLM, quando viene creata una nuova mappa LUN, la LUN è accessibile solo attraverso i percorsi sul nodo che possiede il LUN e il suo partner ha.' 
 ---
 = Panoramica della mappa LUN selettiva
@@ -18,3 +18,45 @@ SLM consente la gestione di un singolo igroup per host e supporta anche operazio
 I portset possono essere utilizzati con SLM come nelle versioni precedenti di ONTAP per limitare ulteriormente l'accesso di determinate destinazioni a determinati iniziatori. Quando si utilizza SLM con i portset, i LUN saranno accessibili sull'insieme di LIF nel portset sul nodo che possiede il LUN e sul partner ha di quel nodo.
 
 SLM è attivato per impostazione predefinita su tutte le nuove mappe LUN.
+
+
+
+== Determinare se SLM è attivato su una mappa LUN
+
+Se l'ambiente dispone di una combinazione di LUN creati in ONTAP e LUN trasferiti da versioni precedenti, potrebbe essere necessario determinare se la mappa LUN selettiva (SLM) è attivata su una LUN specifica.
+
+È possibile utilizzare le informazioni visualizzate nell'output di `lun mapping show -fields reporting-nodes, node` Per determinare se SLM è attivato sulla mappa LUN. Se SLM non è abilitato, nelle celle sotto la colonna "`reporting-nodes`" dell'output del comando viene visualizzato "-". Se SLM è attivato, l'elenco dei nodi visualizzato nella colonna "`Nodes`" viene duplicato nella colonna "`reporting-Nodes`".
+
+
+
+== Modificare l'elenco dei nodi di reporting SLM
+
+Se si sposta un LUN o un volume contenente LUN in un'altra coppia ad alta disponibilità (ha) all'interno dello stesso cluster, è necessario modificare l'elenco dei nodi di reporting della mappa LUN selettiva (SLM) prima di iniziare lo spostamento per garantire che vengano mantenuti i percorsi LUN attivi e ottimizzati.
+
+.Fasi
+. Aggiungere il nodo di destinazione e il relativo nodo partner all'elenco dei nodi di reporting dell'aggregato o del volume:
++
+`lun mapping add-reporting-nodes -vserver _vserver_name_ -path _lun_path_ -igroup _igroup_name_ [-destination-aggregate _aggregate_name_|-destination-volume _volume_name_]`
+
++
+Se si dispone di una convenzione di denominazione coerente, è possibile modificare più mappature LUN contemporaneamente utilizzando `_igroup_prefix*_` invece di `_igroup_name_`.
+
+. Eseguire nuovamente la scansione dell'host per rilevare i percorsi aggiunti di recente.
+. Se il sistema operativo lo richiede, aggiungere i nuovi percorsi alla configurazione MPIO (Multipath Network i/o).
+. Eseguire il comando per l'operazione di spostamento desiderata e attendere il completamento dell'operazione.
+. Verificare che l'i/o venga gestito tramite il percorso Active/Optimized:
++
+`lun mapping show -fields reporting-nodes`
+
+. Rimuovere il proprietario del LUN precedente e il relativo nodo partner dall'elenco dei nodi di reporting:
++
+`lun mapping remove-reporting-nodes -vserver _vserver_name_ -path _lun_path_ -igroup _igroup_name_ -remote-nodes`
+
+. Verificare che il LUN sia stato rimosso dalla mappa LUN esistente:
++
+`lun mapping show -fields reporting-nodes`
+
+. Rimuovere eventuali voci di dispositivi obsolete per il sistema operativo host.
+. Modificare eventuali file di configurazione multipathing, se necessario.
+. Eseguire nuovamente la scansione dell'host per verificare la rimozione dei vecchi percorsi. + consultare la documentazione dell'host per istruzioni specifiche su come eseguire nuovamente la scansione degli host.
+

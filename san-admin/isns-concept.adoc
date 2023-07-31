@@ -1,10 +1,10 @@
 ---
 permalink: san-admin/isns-concept.html 
 sidebar: sidebar 
-keywords: what, isns 
+keywords: isns, isns server, internet storage name service, iscsi, iqn 
 summary: 'Internet Storage Name Service (iSNS) è un protocollo che consente il rilevamento e la gestione automatici dei dispositivi iSCSI su una rete di storage TCP/IP. Un server iSNS conserva informazioni sui dispositivi iSCSI attivi sulla rete, inclusi i relativi indirizzi IP, i nomi dei nodi iSCSI IQN e i gruppi di portali.' 
 ---
-= Cos'è iSNS
+= ISNS (Internet Storage Name Service)
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -28,3 +28,92 @@ Un server iSNS utilizza il protocollo iSNS (Internet Storage Name Service) per m
 Il protocollo iSNS consente il rilevamento e la gestione automatizzati dei dispositivi iSCSI su una rete di storage IP. Un iniziatore iSCSI può eseguire query sul server iSNS per rilevare i dispositivi di destinazione iSCSI.
 
 NetApp non fornisce o rivende server iSNS. È possibile ottenere questi server da un vendor supportato da NetApp.
+
+
+
+== Come le SVM interagiscono con un server iSNS
+
+Il server iSNS comunica con ciascuna macchina virtuale di storage (SVM) attraverso la LIF di gestione SVM. La LIF di gestione registra tutte le informazioni relative a nome, alias e portale del nodo di destinazione iSCSI con il servizio iSNS per una SVM specifica.
+
+Nell'esempio seguente, SVM "`VS1`" utilizza la LIF di gestione SVM "`VS1_mgmt_lif`" per la registrazione con il server iSNS. Durante la registrazione iSNS, una SVM invia tutte le LIF iSCSI attraverso la LIF di gestione SVM al server iSNS. Una volta completata la registrazione iSNS, il server iSNS dispone di un elenco di tutti i LIF che servono iSCSI in "`VS1`". Se un cluster contiene più SVM, ciascuna SVM deve registrarsi singolarmente con il server iSNS per utilizzare il servizio iSNS.
+
+image::../media/bsag_c-mode_iSNS_register.png[Registro iSNS bsag c mode]
+
+Nell'esempio successivo, dopo che il server iSNS ha completato la registrazione con la destinazione, l'host A è in grado di rilevare tutte le LIF per "`VS1`" attraverso il server iSNS, come indicato nella fase 1. Dopo che l'host A ha completato il rilevamento dei LIF per "`VS1`", l'host A può stabilire una connessione con una qualsiasi delle LIF in "`VS1`", come illustrato nella fase 2. L'host A non è a conoscenza di alcuna LIF in "`VS2`" fino a quando la LIF di gestione "`VS2_Mgmt_LIF`" per "`VS2`" non si registra con il server iSNS.
+
+image::../media/bsag_c-mode_iSNS_connect.png[bsag c mode iSNS Connect]
+
+Tuttavia, se si definiscono gli elenchi di accesso all'interfaccia, l'host può utilizzare solo i LIF definiti nell'elenco di accesso all'interfaccia per accedere alla destinazione.
+
+Una volta configurato iSNS, ONTAP aggiorna automaticamente il server iSNS quando cambiano le impostazioni di configurazione di SVM.
+
+Potrebbe verificarsi un ritardo di alcuni minuti tra il momento in cui vengono apportate le modifiche alla configurazione e il momento in cui ONTAP invia l'aggiornamento al server iSNS. Forzare un aggiornamento immediato delle informazioni iSNS sul server iSNS: `vserver iscsi isns update`
+
+
+
+== Comandi per la gestione di iSNS
+
+ONTAP fornisce comandi per gestire il servizio iSNS.
+
+|===
+
+
+| Se si desidera... | Utilizzare questo comando... 
+
+
+ a| 
+Configurare un servizio iSNS
+ a| 
+`vserver iscsi isns create`
+
+
+
+ a| 
+Avviare un servizio iSNS
+ a| 
+`vserver iscsi isns start`
+
+
+
+ a| 
+Modificare un servizio iSNS
+ a| 
+`vserver iscsi isns modify`
+
+
+
+ a| 
+Visualizzare la configurazione del servizio iSNS
+ a| 
+`vserver iscsi isns show`
+
+
+
+ a| 
+Forzare un aggiornamento delle informazioni iSNS registrate
+ a| 
+`vserver iscsi isns update`
+
+
+
+ a| 
+Arrestare un servizio iSNS
+ a| 
+`vserver iscsi isns stop`
+
+
+
+ a| 
+Rimuovere un servizio iSNS
+ a| 
+`vserver iscsi isns delete`
+
+
+
+ a| 
+Visualizzare la pagina man per un comando
+ a| 
+`man _command name_`
+
+|===
+Per ulteriori informazioni, consulta la pagina man relativa a ciascun comando.

@@ -4,7 +4,7 @@ permalink: smbc/index.html
 keywords: SM-BC, SMBC, overview, benefits, use cases, architecture 
 summary: 'A partire da ONTAP 9.8, è possibile utilizzare SnapMirror Business Continuity (SM-BC) per proteggere le applicazioni con LUN, consentendo il failover delle applicazioni in modo trasparente, garantendo la continuità del business in caso di disastro.' 
 ---
-= Panoramica
+= Panoramica di SnapMirror Business Continuity
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,15 +14,17 @@ summary: 'A partire da ONTAP 9.8, è possibile utilizzare SnapMirror Business Co
 
 
 [role="lead"]
-A partire da ONTAP 9.8, è possibile utilizzare SnapMirror Business Continuity (SM-BC) per proteggere le applicazioni con LUN, consentendo il failover delle applicazioni in modo trasparente, garantendo la continuità del business in caso di disastro. SM-BC è supportato sui cluster AFF (incluso AFF C-Series) o su tutti I cluster array SAN (ASA), in cui i cluster primari e secondari possono essere AFF o ASA. SM-BC protegge le applicazioni con LUN iSCSI o FCP.
+SnapMirror Business Continuity (SM-BC) consente ai servizi di business di continuare a funzionare anche in caso di guasto completo del sito, supportando il failover delle applicazioni in modo trasparente utilizzando una copia secondaria. Per attivare un failover con SM-BC non sono richiesti né interventi manuali né script aggiuntivi.
+
+SM-BC è disponibile a partire da ONTAP 9.8. SM-BC è supportato sui cluster AFF o su tutti i cluster ARRAY SAN (ASA), in cui i cluster primario e secondario possono essere AFF o ASA. SM-BC protegge le applicazioni con LUN iSCSI o FCP.
 
 
 
 == Benefici
 
-SnapMirror Business Continuity offre i seguenti vantaggi:
+SM-BC offre i seguenti vantaggi:
 
-* Offre disponibilità continua per le applicazioni business-critical
+* Disponibilità continua per applicazioni business-critical
 * Possibilità di ospitare applicazioni critiche in modo alternato dal sito primario e secondario
 * Gestione semplificata delle applicazioni mediante gruppi di coerenza per una coerenza dipendente dell'ordine di scrittura
 * Possibilità di testare il failover per ciascuna applicazione
@@ -32,19 +34,13 @@ SnapMirror Business Continuity offre i seguenti vantaggi:
 
 
 
-== Casi di utilizzo tipici
+== Casi di utilizzo
 
+.Implementazione dell'applicazione per RTO (Zero Recovery Time Object)
+In un'implementazione SM-BC, si disporrà di un cluster primario e secondario. Un LUN nel cluster primario  `1LP`) avrà un mirror (`L1s`) Sul secondario; entrambi i LUN condividono lo stesso ID seriale e vengono riportati come LUN di lettura/scrittura sull'host. Tuttavia, le operazioni di lettura e scrittura vengono servite solo al LUN primario, `1LP`. Any scrive nel mirror `L1S` sono serviti dal proxy.
 
-
-=== Implementazione dell'applicazione per zero RTO o failover trasparente dell'applicazione
-
-Il failover trasparente delle applicazioni si basa sul failover del percorso basato su software host multipath i/o (MPIO) per ottenere un accesso senza interruzioni allo storage. Entrambe le copie LUN, ad esempio primaria (L1P) e copia mirror (L1S), hanno la stessa identità (numero di serie) e sono riportate come leggibili-scrivibili per l'host. Tuttavia, le operazioni di lettura e scrittura vengono eseguite solo dal volume primario. I/o rilasciati alla copia mirror vengono inviati alla copia principale. Il percorso preferito dell'host verso L1 è VS1:N1 basato sullo stato di accesso ALUA (Asymmetric Logical Unit Access) Active Optimized (A/o). Mediator è consigliato come parte dell'implementazione, principalmente per eseguire il failover in caso di un'interruzione dello storage sul primario.
-
-
-
-=== Scenario di disastro
-
-Il sito che ospita il cluster primario subisce un disastro. Il software di multipathing host contrassegna tutti i percorsi del cluster come non attivi e utilizza i percorsi del cluster secondario. Il risultato è un failover senza interruzioni alla copia mirror per LUN L1. L1S viene convertito da una copia mirror a una copia attiva del LUN L1. Il failover viene eseguito automaticamente quando viene configurato un Mediator esterno. Il percorso preferito dell'host verso L1 diventa VS2:N1.
+.Scenario di disastro
+Con SM-BC, è possibile replicare in modo sincrono più volumi per un'applicazione tra siti in ubicazioni geograficamente distribuite. È possibile eseguire automaticamente il failover sulla copia secondaria in caso di interruzione del primario, consentendo così la business continuity per le applicazioni di primo livello.
 
 
 
@@ -53,3 +49,12 @@ Il sito che ospita il cluster primario subisce un disastro. Il software di multi
 La figura seguente illustra il funzionamento della funzione di continuità aziendale di SnapMirror a un livello elevato.
 
 image:workflow_san_snapmirror_business_continuity.png["Workflow di Business Continuity SnapMirror"]
+
+Nella sezione uno del diagramma, un'applicazione viene implementata su una SVM nel data center primario. I volumi che sono stati aggiunti al gruppo di coerenza primario sono protetti con SM-BC e vengono mirrorati nel gruppo di coerenza secondario di un data center secondario. In caso di interruzione, i volumi nel gruppo di coerenza primario effettueranno il failover nel gruppo di coerenza mirrorato. I volumi non appartenenti a un gruppo di coerenza mirrorato non vengono serviti in caso di failover.
+
+
+
+== Ulteriori informazioni
+
+* link:https://www.netapp.com/pdf.html?item=/media/21888-tr-4878.pdf["TR-4878: Business continuity SnapMirror"^]
+
