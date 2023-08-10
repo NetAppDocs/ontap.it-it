@@ -1,0 +1,85 @@
+---
+permalink: upgrade/install-software-manual-upgrade.html 
+sidebar: sidebar 
+keywords: ontap, software, image, download, downloading, install, installing 
+summary: 'Dopo aver scaricato il pacchetto software ONTAP per un aggiornamento, è necessario installarlo localmente prima di iniziare l"aggiornamento' 
+---
+= Installare il pacchetto software ONTAP per gli aggiornamenti manuali
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Dopo aver scaricato il pacchetto software ONTAP per un aggiornamento, è necessario installarlo localmente prima di iniziare l'aggiornamento.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato), immettendo *y* quando viene richiesto di continuare: `set -privilege advanced`
++
+Il prompt avanzato (`*>`).
+
+. Installare l'immagine.
++
+[cols="2"]
+|===
+| Se si possiede la seguente configurazione... | Utilizzare questo comando... 
+
+
+ a| 
+** Non MetroCluster
+** MetroCluster a 2 nodi
+
+ a| 
+`system node image update -node * -package _location_ -replace-package true -setdefault true -background true`
+
+_Location_ può essere un server Web o una cartella locale, a seconda della versione di ONTAP. Vedere `system node image update` pagina man per i dettagli.
+
+Questo comando installa l'immagine software su tutti i nodi contemporaneamente. Per installare l'immagine su ciascun nodo uno alla volta, non specificare `-background` parametro.
+
+
+
+ a| 
+** MetroCluster a 4 nodi
+** Configurazione MetroCluster a 8 nodi
+
+ a| 
+`system node image update -node * -package location -replace-package true -background true -setdefault false`
+
+È necessario eseguire questo comando su entrambi i cluster.
+
+Questo comando utilizza una query estesa per modificare l'immagine software di destinazione, che viene installata come immagine alternativa su ciascun nodo.
+
+|===
+. Invio `y` per continuare quando richiesto.
+. Verificare che l'immagine software sia installata su ciascun nodo.
++
+`system node image show-update-progress -node *`
+
++
+Questo comando visualizza lo stato corrente dell'installazione dell'immagine software. Continuare ad eseguire questo comando fino a quando tutti i nodi non riportano un *Run Status* di *Exit* e un *Exit Status* di *Success*.
+
++
+Il comando di aggiornamento dell'immagine del nodo di sistema può non riuscire e visualizzare messaggi di errore o di avviso. Dopo aver risolto eventuali errori o avvisi, è possibile eseguire nuovamente il comando.
+
++
+Questo esempio mostra un cluster a due nodi in cui l'immagine software viene installata correttamente su entrambi i nodi:
+
++
+[listing]
+----
+cluster1::*> system node image show-update-progress -node *
+There is no update/install in progress
+Status of most recent operation:
+        Run Status:     Exited
+        Exit Status:    Success
+        Phase:          Run Script
+        Exit Message:   After a clean shutdown, image2 will be set as the default boot image on node0.
+There is no update/install in progress
+Status of most recent operation:
+        Run Status:     Exited
+        Exit Status:    Success
+        Phase:          Run Script
+        Exit Message:   After a clean shutdown, image2 will be set as the default boot image on node1.
+2 entries were acted on.
+----
+
