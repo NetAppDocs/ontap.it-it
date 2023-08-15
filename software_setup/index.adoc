@@ -1,14 +1,253 @@
 ---
 permalink: software_setup/index.html 
 sidebar: sidebar 
-keywords: home, software, setup, ontap, documentation 
+keywords: ontap, software, setup, deciding, decide, if, whether, use, cli, cluster, System Manager, IPv6, HA, root volumes, FlexArray 
 summary: Installazione del software 
 ---
-= Installazione del software
+= Inizia subito a configurare il cluster di ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-È possibile configurare un nuovo cluster con Gestore di sistema o con l'interfaccia utente di ONTAP. Fare clic su link:https://docs.netapp.com/us-en/ontap/task_configure_ontap.html["qui"] per saperne di più.
+Puoi utilizzare System Manager o l'interfaccia a riga di comando (CLI) di ONTAP per configurare nuovi cluster ONTAP.  Prima di iniziare, è necessario raccogliere le informazioni necessarie per completare la configurazione del cluster, ad esempio la porta dell'interfaccia di gestione del cluster e l'indirizzo IP.
+
+NetApp consiglia di farlo link:../task_configure_ontap.html["Utilizza System Manager per configurare nuovi cluster"].  System Manager offre un workflow semplice e facile per la configurazione e la configurazione del cluster, che include l'assegnazione di un indirizzo IP di gestione dei nodi, l'inizializzazione del cluster, la creazione di un Tier locale, la configurazione dei protocolli e il provisioning dello storage iniziale.
+
+È solo necessario a. link:task_create_the_cluster_on_the_first_node.html["USA l'interfaccia a riga di comando di ONTAP per configurare il cluster"] Se si utilizza ONTAP 9,7 o versione precedente su una configurazione MetroCluster.
+A partire da ONTAP 9.13.1, sulle piattaforme AFF A800 e FAS8700, puoi anche utilizzare l'interfaccia a riga di comando di ONTAP per creare e configurare nuovi cluster in ambienti di rete solo IPv6. Se devi utilizzare IPv6 in ONTAP 9.13.0 e versioni precedenti o su altre piattaforme in ONTAP 9.13.1 e versioni successive, puoi utilizzare System Manager per creare nuovi cluster utilizzando e versioni successive di IPv4 link:convert-ipv4-to-ipv6-task.html["Converti in IPv6"].
+
+Se si configura un FlexArray su dischi non NetApp, è necessario utilizzare l'interfaccia utente di ONTAP per configurare i volumi root sulle LUN degli array, quindi utilizzare l'installazione guidata cluster per configurare il cluster. Per ulteriori informazioni, consultare link:https://docs.netapp.com/us-en/ontap-flexarray/install/concept_flexarray_virtualization_technology_overview_using_array_luns_for_storage.html["Installazione e requisiti della virtualizzazione FlexArray"] documentazione.
+
+
+
+== Tutto ciò che serve per la configurazione dei cluster
+
+[role="lead"]
+La configurazione del cluster comporta la raccolta delle informazioni necessarie per configurare l'impostazione di ciascun nodo, la creazione del cluster sul primo nodo e l'Unione di eventuali nodi rimanenti al cluster.
+
+Inizia raccogliendo tutte le informazioni pertinenti nei fogli di lavoro per la configurazione del cluster.
+
+Il foglio di lavoro per l'installazione del cluster consente di registrare i valori necessari durante il processo di installazione del cluster. Se viene fornito un valore predefinito, è possibile utilizzare tale valore oppure immettere il proprio.
+
+
+
+=== Impostazioni predefinite del sistema
+
+I valori predefiniti del sistema sono i valori predefiniti per la rete cluster privata. Si consiglia di utilizzare questi valori predefiniti. Tuttavia, se non soddisfano i requisiti, è possibile utilizzare la tabella per registrare i propri valori.
+
+
+NOTE: Per i cluster configurati per l'utilizzo di switch di rete, ogni switch del cluster deve utilizzare la dimensione MTU 9000.
+
+[cols="2*"]
+|===
+| Tipi di informazioni | I tuoi valori 
+
+
+| Porte di rete del cluster privato |  
+
+
+| Netmask di rete del cluster |  
+
+
+| Indirizzi IP dell'interfaccia del cluster (per ciascuna porta di rete del cluster su ciascun nodo) gli indirizzi IP di ciascun nodo devono trovarsi sulla stessa subnet. |  
+|===
+
+
+=== Informazioni sul cluster
+
+[cols="2*"]
+|===
+| Tipi di informazioni | I tuoi valori 
+
+
+| Nome del cluster il nome deve iniziare con una lettera e deve contenere meno di 44 caratteri. Il nome può includere i seguenti caratteri speciali:
+`.` `-` `_` |  
+|===
+
+
+=== Chiavi di licenza delle funzioni
+
+È possibile trovare le chiavi di licenza per gli ordini software iniziali o aggiuntivi nel sito di supporto NetApp in *My Support* > *Software Licenses*.
+
+[cols="2*"]
+|===
+| Tipi di informazioni | I tuoi valori 
+
+
+| Chiavi di licenza delle funzioni |  
+|===
+
+
+=== SVM (Admin Storage Virtual Machine)
+
+[cols="2*"]
+|===
+| Tipi di informazioni | I tuoi valori 
+
+
+ a| 
+Password dell'amministratore del cluster
+
+La password per l'account admin richiesta dal cluster prima di concedere l'accesso dell'amministratore del cluster alla console o tramite un protocollo sicuro.
+
+
+NOTE: Per motivi di sicurezza, si sconsiglia di registrare le password in questo foglio di lavoro.
+
+Le regole predefinite per le password sono le seguenti:
+
+* La password deve contenere almeno otto caratteri.
+* Una password deve contenere almeno una lettera e un numero.
+
+ a| 
+
+
+
+ a| 
+Porta dell'interfaccia di gestione del cluster
+
+La porta fisica connessa alla rete dati e che consente all'amministratore del cluster di gestire il cluster.
+ a| 
+
+
+
+ a| 
+Indirizzo IP dell'interfaccia di gestione del cluster
+
+Un indirizzo IPv4 o IPv6 univoco per l'interfaccia di gestione del cluster. L'amministratore del cluster utilizza questo indirizzo per accedere alla SVM amministrativa e gestire il cluster. In genere, questo indirizzo deve trovarsi sulla rete dati.
+
+È possibile ottenere questo indirizzo IP dall'amministratore responsabile dell'assegnazione degli indirizzi IP all'interno dell'organizzazione.
+
+Esempio: 192.0.2.66
+ a| 
+
+
+
+ a| 
+Netmask dell'interfaccia di gestione del cluster (IPv4)
+
+Subnet mask che definisce l'intervallo di indirizzi IPv4 validi sulla rete di gestione del cluster.
+
+Esempio: 255.255.255.0
+ a| 
+
+
+
+ a| 
+Interfaccia di gestione del cluster lunghezza netmask (IPv6)
+
+Se l'interfaccia di gestione del cluster utilizza un indirizzo IPv6, questo valore rappresenta la lunghezza del prefisso che definisce l'intervallo di indirizzi IPv6 validi sulla rete di gestione del cluster.
+
+Esempio: 64
+ a| 
+
+
+
+ a| 
+Gateway predefinito dell'interfaccia di gestione del cluster
+
+L'indirizzo IP del router sulla rete di gestione del cluster.
+ a| 
+
+
+
+ a| 
+Nome di dominio DNS
+
+Il nome del dominio DNS della rete.
+
+Il nome di dominio deve essere composto da caratteri alfanumerici. Per inserire più nomi di dominio DNS, separare ciascun nome con una virgola o uno spazio.
+ a| 
+
+
+
+ a| 
+Indirizzi IP del server dei nomi
+
+Gli indirizzi IP dei server dei nomi DNS. Separare ciascun indirizzo con una virgola o uno spazio.
+ a| 
+
+|===
+
+
+=== Informazioni sui nodi (per ciascun nodo del cluster)
+
+[cols="2*"]
+|===
+| Tipi di informazioni | I tuoi valori 
+
+
+ a| 
+Posizione fisica del controller (opzionale)
+
+Una descrizione della posizione fisica del controller. Utilizzare una descrizione che identifichi dove trovare questo nodo nel cluster (ad esempio, "`Lab 5, Row 7, rack B`").
+ a| 
+
+
+
+ a| 
+Porta di interfaccia per la gestione dei nodi
+
+La porta fisica connessa alla rete di gestione dei nodi e che consente all'amministratore del cluster di gestire il nodo.
+ a| 
+
+
+
+ a| 
+Indirizzo IP dell'interfaccia di gestione dei nodi
+
+Indirizzo IPv4 o IPv6 univoco per l'interfaccia di gestione dei nodi sulla rete di gestione. Se la porta dell'interfaccia di gestione dei nodi è stata definita una porta dati, l'indirizzo IP deve essere un indirizzo IP univoco sulla rete dati.
+
+È possibile ottenere questo indirizzo IP dall'amministratore responsabile dell'assegnazione degli indirizzi IP all'interno dell'organizzazione.
+
+Esempio: 192.0.2.66
+ a| 
+
+
+
+ a| 
+Netmask dell'interfaccia di gestione dei nodi (IPv4)
+
+Subnet mask che definisce l'intervallo di indirizzi IP validi sulla rete di gestione dei nodi.
+
+Se la porta dell'interfaccia di gestione dei nodi è stata definita una porta dati, la netmask deve essere la subnet mask della rete dati.
+
+Esempio: 255.255.255.0
+ a| 
+
+
+
+ a| 
+Interfaccia di gestione dei nodi lunghezza netmask (IPv6)
+
+Se l'interfaccia di gestione dei nodi utilizza un indirizzo IPv6, questo valore rappresenta la lunghezza del prefisso che definisce l'intervallo di indirizzi IPv6 validi sulla rete di gestione dei nodi.
+
+Esempio: 64
+ a| 
+
+
+
+ a| 
+Gateway predefinito dell'interfaccia di gestione dei nodi
+
+L'indirizzo IP del router sulla rete di gestione dei nodi.
+ a| 
+
+|===
+
+
+=== Informazioni sul server NTP
+
+[cols="2*"]
+|===
+| Tipi di informazioni | I tuoi valori 
+
+
+ a| 
+Indirizzi del server NTP
+
+Gli indirizzi IP dei server NTP (Network Time Protocol) del sito. Questi server vengono utilizzati per sincronizzare l'ora nel cluster.
+ a| 
+
+|===

@@ -102,11 +102,11 @@ ARP dispone di due modalità:
 
 Quando si attiva ARP, questo viene eseguito in modalità di apprendimento. In modalità di apprendimento, il sistema ONTAP sviluppa un profilo di allerta basato sulle aree analitiche sopra menzionate: Entropia, tipi di estensione del file e IOPS del file. Dopo aver eseguito ARP in modalità di apprendimento per un tempo sufficiente a valutare le caratteristiche del carico di lavoro, è possibile passare alla modalità attiva e iniziare a proteggere i dati. Una volta che ARP è passato alla modalità attiva, ONTAP crea snapshot ARP per proteggere i dati in caso di rilevamento di una minaccia.
 
-Si consiglia di lasciare ARP in modalità di apprendimento per almeno 30 giorni, anche se è possibile passare alla modalità attiva in qualsiasi momento. Il passaggio anticipato potrebbe portare a troppi falsi positivi. A partire da ONTAP 9.13.1, ARP determina automaticamente l'intervallo ottimale del periodo di apprendimento e automatizza lo switch, che può verificarsi prima di 30 giorni.
+Si consiglia di lasciare ARP in modalità di apprendimento per almeno 30 giorni, anche se è possibile passare alla modalità attiva in qualsiasi momento. Il passaggio troppo anticipato potrebbe causare troppi falsi positivi. A partire da ONTAP 9.13.1, ARP determina automaticamente l'intervallo ottimale del periodo di apprendimento e automatizza lo switch, che può verificarsi prima di 30 giorni.
 
 In modalità attiva, se un'estensione del file è contrassegnata come anomala, è necessario valutare l'avviso. Puoi agire sull'avviso per proteggere i tuoi dati o contrassegnarlo come falso positivo. Quando si contrassegna un falso positivo, ONTAP aggiorna il profilo di avviso ARP in modo che l'estensione del file non venga contrassegnata in seguito. Il comando `security anti-ransomware volume workload-behavior show` mostra le estensioni di file rilevate nel volume. (Se si esegue questo comando nelle prime fasi della modalità di apprendimento e viene visualizzata una rappresentazione accurata dei tipi di file, non utilizzare tali dati come base per passare alla modalità attiva, poiché ONTAP sta ancora raccogliendo altre metriche).
 
-A partire da ONTAP 9.11.1, è possibile personalizzare i parametri di rilevamento per ARP utilizzando `security anti-ransomware volume attack-detection-parameters modify` comando. Ad esempio, se si prevede di utilizzare più nuovi tipi di file nel volume, è possibile disattivare gli avvisi per tipi di file mai visti prima. Per ulteriori informazioni su questo comando, vedere link:https://docs.netapp.com/us-en/ontap-cli-9131/security-anti-ransomware-volume-attack-detection-parameters-modify.html["Riferimento al comando ONTAP"^].
+A partire da ONTAP 9.11.1, è possibile personalizzare i parametri di rilevamento per ARP. Per ulteriori informazioni, vedere xref:manage-parameters-task.html[Gestire i parametri di rilevamento degli attacchi ARP].
 
 
 
@@ -117,14 +117,14 @@ In modalità attiva, ARP valuta la probabilità di minaccia in base ai dati in e
 * **Basso**: Viene assegnata la prima volta che si osserva una nuova estensione del file nel volume.
 * **Moderato**: Si osservano più file con la stessa estensione mai vista prima.
 +
-** In ONTAP 9.10.1, la soglia per l'escalation a moderate è di 100 o più file. A partire da ONTAP 9.11.1, la quantità di file è personalizzabile; il valore predefinito è 20.
+** In ONTAP 9.10.1, la soglia per l'escalation a moderate è di 100 o più file. A partire da ONTAP 9.11.1, è possibile modificare la quantità di file; il valore predefinito è 20.
 
 
 
 
-Quando la probabilità di attacco è bassa, ONTAP ha rilevato un'anomalia e crea un'istantanea del volume in background per creare il miglior punto di ripristino possibile. Ad esempio, ARP Snapshot è identificabile dal nome `Anti_ransomware_backup.2022-12-20_1248`e utilizza il tag `anti-ransomware-backup`.
+In una situazione di basso rischio, ONTAP rileva un'anomalia e crea un'istantanea del volume per creare il miglior punto di ripristino possibile. L'istantanea ARP utilizza `anti-ransomware-backup` tag ed è identificabile dal suo nome, ad esempio `Anti_ransomware_backup.2022-12-20_1248`.
 
-La minaccia passa a un livello moderato dopo che ONTAP ha eseguito un report di analisi per determinare se l'anomalia corrisponde a un profilo ransomware. Le minacce che rimangono al livello basso vengono registrate, ma ONTAP non invia alcun avviso in caso di minacce basse. Quando la probabilità di attacco è moderata, ONTAP genera una notifica EMS che richiede di valutare la minaccia. Per ulteriori informazioni, vedere xref:respond-abnormal-task.html[Rispondere ad attività anomale].
+Dopo che ONTAP ha eseguito un report di analytics, la minaccia passa a moderata. Ciò determina se l'anomalia corrisponde a un profilo ransomware. Le minacce che rimangono al livello basso sono registrate e visibili nella sezione **Eventi** di Gestione di sistema, ma ONTAP non invia un avviso per le minacce basse. Quando la probabilità di attacco è moderata, ONTAP genera una notifica EMS che richiede di valutare la minaccia. Per ulteriori informazioni, vedere xref:respond-abnormal-task.html[Rispondere ad attività anomale].
 
 È possibile visualizzare informazioni su una minaccia, indipendentemente dal livello, nella sezione **Eventi** di System Manager o con `security anti-ransomware volume show -vserver _svm_name_` comando.
 
