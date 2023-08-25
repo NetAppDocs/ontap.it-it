@@ -1,10 +1,10 @@
 ---
 permalink: nas-audit/fpolicy-external-fpolicy-servers-concept.html 
 sidebar: sidebar 
-keywords: fpolicy, works, external fpolicy servers 
+keywords: fpolicy, works, external fpolicy servers, privileged data access, channels, synchronous communication, connection, credentials, super user 
 summary: 'Dopo aver configurato e attivato FPolicy sulla macchina virtuale di storage (SVM), FPolicy viene eseguito su ogni nodo a cui partecipa SVM. FPolicy è responsabile della creazione e della gestione delle connessioni con server FPolicy esterni (server FPolicy), dell"elaborazione delle notifiche e della gestione dei messaggi di notifica da e verso i server FPolicy.' 
 ---
-= Panoramica sul funzionamento di FPolicy con i server FPolicy esterni
+= Funzionamento di FPolicy con i server FPolicy esterni
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -21,3 +21,73 @@ Inoltre, nell'ambito della gestione delle connessioni, FPolicy ha le seguenti re
 * Invia le notifiche ai server FPolicy in una sessione autenticata.
 * Gestisce la connessione dati pass-through-Read stabilita dal server FPolicy per gestire le richieste del client quando è attivata la funzione pass-through-Read.
 
+
+
+
+== Come vengono utilizzati i canali di controllo per la comunicazione FPolicy
+
+FPolicy avvia una connessione del canale di controllo a un server FPolicy esterno dalle LIF dei dati di ciascun nodo che partecipa a una macchina virtuale di storage (SVM). FPolicy utilizza canali di controllo per la trasmissione delle notifiche dei file; pertanto, un server FPolicy potrebbe visualizzare più connessioni dei canali di controllo in base alla topologia SVM.
+
+
+
+== Come vengono utilizzati i canali di accesso privilegiato ai dati per le comunicazioni sincrone
+
+Con i casi di utilizzo sincroni, il server FPolicy accede ai dati che risiedono sulla macchina virtuale di storage (SVM) attraverso un percorso di accesso privilegiato ai dati. L'accesso attraverso il percorso privilegiato espone l'intero file system al server FPolicy. Il reparto IT può accedere ai file di dati per raccogliere informazioni, scansionare file, leggere file o scrivere in file.
+
+Poiché il server FPolicy esterno può accedere all'intero file system dalla directory principale di SVM attraverso il canale dati privilegiato, la connessione del canale dati privilegiato deve essere sicura.
+
+
+
+== Modalità di utilizzo delle credenziali di connessione FPolicy con i canali di accesso privilegiato ai dati
+
+Il server FPolicy effettua connessioni privilegiate di accesso ai dati ai nodi del cluster utilizzando una specifica credenziale utente Windows che viene salvata con la configurazione FPolicy. SMB è l'unico protocollo supportato per la connessione di un canale di accesso privilegiato ai dati.
+
+Se il server FPolicy richiede un accesso privilegiato ai dati, devono essere soddisfatte le seguenti condizioni:
+
+* Sul cluster deve essere attivata una licenza SMB.
+* Il server FPolicy deve essere eseguito con le credenziali configurate nella configurazione FPolicy.
+
+
+Quando si effettua una connessione al canale dati, FPolicy utilizza la credenziale per il nome utente Windows specificato. L'accesso ai dati avviene tramite la condivisione amministrativa ONTAP_ADMIN.
+
+
+
+== Cosa significa concedere credenziali super utente per l'accesso privilegiato ai dati
+
+ONTAP utilizza la combinazione dell'indirizzo IP e della credenziale utente configurata nella configurazione FPolicy per assegnare credenziali super utente al server FPolicy.
+
+Quando il server FPolicy accede ai dati, lo stato di Super User concede i seguenti privilegi:
+
+* Evitare controlli delle autorizzazioni
++
+L'utente evita di controllare i file e l'accesso alla directory.
+
+* Speciali privilegi di blocco
++
+ONTAP consente l'accesso in lettura, scrittura o modifica a qualsiasi file, indipendentemente dai blocchi esistenti. Se il server FPolicy utilizza blocchi di intervallo di byte sul file, si ottiene la rimozione immediata dei blocchi esistenti sul file.
+
+* Ignorare eventuali controlli FPolicy
++
+Access non genera alcuna notifica FPolicy.
+
+
+
+
+
+== In che modo FPolicy gestisce l'elaborazione delle policy
+
+Alla macchina virtuale di storage (SVM) potrebbero essere assegnati più criteri FPolicy, ciascuno con una priorità diversa. Per creare una configurazione FPolicy appropriata sulla SVM, è importante comprendere come FPolicy gestisce l'elaborazione delle policy.
+
+Ogni richiesta di accesso al file viene inizialmente valutata per determinare quali policy monitorano questo evento. Se si tratta di un evento monitorato, le informazioni sull'evento monitorato e le policy interessate vengono trasmesse a FPolicy, dove vengono valutate. Ogni policy viene valutata in base alla priorità assegnata.
+
+Durante la configurazione dei criteri, è necessario prendere in considerazione i seguenti consigli:
+
+* Se si desidera che un criterio venga sempre valutato prima di altri criteri, configurarlo con una priorità più alta.
+* Se il successo dell'operazione di accesso al file richiesta in un evento monitorato è un prerequisito per una richiesta di file che viene valutata in base a un altro criterio, assegnare una priorità maggiore alla policy che controlla il successo o l'errore della prima operazione di file.
++
+Ad esempio, se un criterio gestisce la funzionalità di archiviazione e ripristino dei file FPolicy e un secondo criterio gestisce le operazioni di accesso ai file sul file online, il criterio che gestisce il ripristino dei file deve avere una priorità più alta in modo che il file venga ripristinato prima di poter consentire l'operazione gestita dal secondo criterio.
+
+* Se si desidera valutare tutti i criteri applicabili a un'operazione di accesso ai file, assegnare una priorità inferiore ai criteri sincroni.
+
+
+È possibile riordinare le priorità dei criteri per i criteri esistenti modificando il numero di sequenza dei criteri. Tuttavia, per fare in modo che FPolicy valuti i criteri in base all'ordine di priorità modificato, è necessario disattivare e riabilitare il criterio con il numero di sequenza modificato.

@@ -1,7 +1,7 @@
 ---
 permalink: authentication/enable-ad-users-groups-access-cluster-svm-task.html 
 sidebar: sidebar 
-keywords: configure, active directory, domain, controller access 
+keywords: configure, active directory, domain, controller access, authentication tunnel, SMB server, create, svm, computer, account, domain, cifs server 
 summary: 'È necessario configurare l"accesso del controller di dominio ad al cluster o alla SVM prima che un account ad possa accedere alla SVM. Se è già stato configurato un server SMB per una SVM di dati, è possibile configurare la SVM come gateway o tunnel per l"accesso ad al cluster. Se non è stato configurato un server SMB, è possibile creare un account di computer per SVM nel dominio ad.' 
 ---
 = Panoramica sull'accesso al controller di dominio di Active Directory
@@ -38,6 +38,83 @@ Se si desidera utilizzare le chiavi di sessione AES durante la creazione di un c
 
 `cifs security modify -vserver vs1 -aes-enabled-for-netlogon-channel true`
 
-L'impostazione predefinita è `false`.
+L'impostazione predefinita è "`false'".
 
 Nelle versioni di ONTAP precedenti alla 9.10.1, se il controller di dominio applica AES per i servizi di accesso alla rete sicuri, la connessione non riesce. Il controller di dominio deve essere configurato in modo da accettare connessioni a chiave avanzata con ONTAP in queste release.
+
+
+
+== Configurare un tunnel di autenticazione
+
+Se è già stato configurato un server SMB per una SVM dati, è possibile utilizzare `security login domain-tunnel create` Comando per configurare la SVM come gateway, o _tunnel_, per l'accesso ad al cluster.
+
+.Di cosa hai bisogno
+* È necessario aver configurato un server SMB per una SVM dati.
+* Per accedere alla SVM amministrativa per il cluster, è necessario aver attivato un account utente di dominio ad.
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+
+A partire da ONTAP 9.10.1, se si dispone di un gateway SVM (tunnel di dominio) per l'accesso ad, è possibile utilizzare Kerberos per l'autenticazione dell'amministratore se NTLM è stato disattivato nel dominio ad. Nelle versioni precedenti, Kerberos non era supportato con l'autenticazione admin per i gateway SVM. Questa funzionalità è disponibile per impostazione predefinita; non è richiesta alcuna configurazione.
+
+.NOTA
+L'autenticazione Kerberos viene sempre tentata per prima. In caso di errore, viene quindi tentata l'autenticazione NTLM.
+
+.Fase
+. Configurare una SVM di dati abilitata per SMB come tunnel di autenticazione per l'accesso del controller di dominio ad al cluster:
++
+`security login domain-tunnel create -vserver SVM_name`
+
++
+Per la sintassi completa dei comandi, vedere link:config-worksheets-reference.html["foglio di lavoro"].
+
++
+[NOTE]
+====
+Affinché l'utente possa essere autenticato, SVM deve essere in esecuzione.
+
+====
++
+Il seguente comando configura la SVM dei dati con abilitazione SMB "`engData'" come tunnel di autenticazione.
+
++
+[listing]
+----
+cluster1::>security login domain-tunnel create -vserver engData
+----
+
+
+
+
+== Creare un account di computer SVM sul dominio
+
+Se non è stato configurato un server SMB per una SVM dati, è possibile utilizzare `vserver active-directory create` Per creare un account di computer per la SVM nel dominio.
+
+.Di cosa hai bisogno
+Per eseguire questa attività, è necessario essere un amministratore del cluster o di SVM.
+
+.A proposito di questa attività
+Dopo aver inserito `vserver active-directory create` Viene richiesto di fornire le credenziali per un account utente ad con privilegi sufficienti per aggiungere computer all'unità organizzativa specificata nel dominio. La password dell'account non può essere vuota.
+
+.Fase
+. Creare un account di computer per una SVM nel dominio ad:
++
+`vserver active-directory create -vserver _SVM_name_ -account-name _NetBIOS_account_name_ -domain _domain_ -ou _organizational_unit_`
+
++
+Per la sintassi completa dei comandi, vedere link:config-worksheets-reference.html["foglio di lavoro"].
+
++
+Il seguente comando crea un account di computer denominato "`ADSERVER1'" nel dominio "`example.com`" per SVM "`engData'". Dopo aver immesso il comando, viene richiesto di immettere le credenziali dell'account utente ad.
+
++
+[listing]
+----
+cluster1::>vserver active-directory create -vserver engData -account-name ADSERVER1 -domain example.com
+
+In order to create an Active Directory machine account, you must supply the name and password of a Windows account with sufficient privileges to add computers to the "CN=Computers" container within the "example.com" domain.
+
+Enter the user name: Administrator
+
+Enter the password:
+----
+
