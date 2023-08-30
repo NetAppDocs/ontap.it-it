@@ -4,25 +4,47 @@ sidebar: sidebar
 keywords: ontap, upgrade, verifying, verify, netgroup file, present, nodes 
 summary: 'Se sono stati caricati netgroup nelle macchine virtuali di storage, prima di eseguire l"aggiornamento o il ripristino, è necessario verificare che il file netgroup sia presente su ciascun nodo. Un file netgroup mancante su un nodo può causare un errore di aggiornamento o ripristino.' 
 ---
-= Verifica della presenza del file netgroup su tutti i nodi
+= Verificare che su tutti i nodi sia presente il file netgroup prima di eseguire un aggiornamento o un ripristino di ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Se i netgroup sono stati caricati nelle macchine virtuali di storage (SVM), prima di eseguire l'aggiornamento o il ripristino, è necessario verificare che il file netgroup sia presente su ciascun nodo. Un file netgroup mancante su un nodo può causare un errore di aggiornamento o ripristino.
+Prima di eseguire l'upgrade o l'indirizzamento di ONTAP, se sono stati caricati netgroup nelle Storage Virtual Machine (SVM), è necessario verificare la presenza del file netgroup in ogni nodo. Un file netgroup mancante su un nodo può causare un errore di aggiornamento o ripristino.
 
-link:../nfs-admin/index.html["Gestione NFS"] Contiene ulteriori informazioni sui netgroup e sul loro caricamento da un URI.
-
-. Impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
-. Visualizzare lo stato del netgroup per ogni SVM: `vserver services netgroup status`
-. Verificare che per ogni SVM, ciascun nodo mostri lo stesso valore hash del file netgroup: `vserver services name-service netgroup status`
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Visualizzare lo stato del netgroup per ogni SVM:
++
+[source, cli]
+----
+vserver services netgroup status
+----
+. Verificare che per ogni SVM, ciascun nodo mostri lo stesso valore hash del file netgroup:
++
+[source, cli]
+----
+vserver services name-service netgroup status
+----
 +
 In questo caso, è possibile saltare il passaggio successivo e procedere con l'aggiornamento o il ripristino. In caso contrario, passare alla fase successiva.
 
-. Su un nodo qualsiasi del cluster, caricare manualmente il file netgroup: `vserver services netgroup load -vserver vserver_name -source uri`
+. Su un nodo qualsiasi del cluster, caricare manualmente il file netgroup:
++
+[source, cli]
+----
+vserver services netgroup load -vserver vserver_name -source uri
+----
 +
 Questo comando scarica il file netgroup su tutti i nodi. Se un file netgroup esiste già su un nodo, viene sovrascritto.
 
 
+
+.Informazioni correlate
+link:../nfs-config/work-netgroups-task.html["Lavorare con i netgroup"]

@@ -11,28 +11,64 @@ summary: 'Se si utilizza la crittografia dello storage NetApp su ONTAP 9.2 o ver
 
 
 [role="lead"]
-Se si utilizza NetApp Storage Encryption (NSE) su ONTAP 9.2 o versione precedente e si esegue l'aggiornamento a ONTAP 9.3 o versione successiva, è necessario utilizzare l'interfaccia a riga di comando (CLI) per eliminare eventuali connessioni server KMIP (External Key Management) esistenti prima di eseguire l'aggiornamento.
+Prima di eseguire l'upgrade di ONTAP, se si esegue ONTAP 9,2 o versione precedente con crittografia dello storage NetApp (NSE) ed eseguire l'aggiornamento a ONTAP 9,3 o versione successiva, è necessario utilizzare l'interfaccia a riga di comando (CLI) per eliminare qualsiasi connessione server di gestione delle chiavi esterna (KMIP) esistente.
 
+.Fasi
 . Verificare che le unità NSE siano sbloccate, aperte e impostate sull'ID protetto predefinito 0x0:
 +
-`storage encryption disk show -disk*`
-
+[source, cli]
+----
+storage encryption disk show -disk*
+----
 . Accedere alla modalità avanzata dei privilegi:
 +
-`set -privilege advanced`
-
-. Utilizzare l'ID protetto predefinito 0x0 per assegnare la chiave FIPS ai dischi con crittografia automatica (SED): `storage encryption disk modify -fips-key-id 0x0 -disk *`
-. Verificare che l'assegnazione della chiave FIPS a tutti i dischi sia completata: `storage encryption disk show-status`
-. Verificare che la *mode* per tutti i dischi sia impostata su data: `storage encryption disk show`
-. Visualizzare i server KMIP configurati: `security key-manager show`
-. Eliminare i server KMIP configurati: `security key-manager delete -address kmip_ip_address`
-. Eliminare la configurazione del gestore delle chiavi esterno:``security key-manager delete-kmip-config``
+[source, cli]
+----
+set -privilege advanced
+----
+. Utilizzare l'ID protetto predefinito 0x0 per assegnare la chiave FIPS ai dischi con crittografia automatica (SED):
++
+[source, cli]
+----
+storage encryption disk modify -fips-key-id 0x0 -disk *
+----
+. Verificare che l'assegnazione della chiave FIPS a tutti i dischi sia completata:
++
+[source, cli]
+----
+storage encryption disk show-status
+----
+. Verificare che la *modalità* per tutti i dischi sia impostata su dati
++
+[source, cli]
+----
+storage encryption disk show
+----
+. Visualizzare i server KMIP configurati:
++
+[source, cli]
+----
+security key-manager show
+----
+. Eliminare i server KMIP configurati:
++
+[source, cli]
+----
+security key-manager delete -address kmip_ip_address
+----
+. Eliminare la configurazione del gestore delle chiavi esterno:
++
+[source, cli]
+----
+security key-manager delete-kmip-config
+----
 +
 
 NOTE: Questa fase non rimuove i certificati NSE.
 
 
 
+.Cosa succederà
 Una volta completato l'aggiornamento, è necessario riconfigurare le connessioni del server KMIP.
 
 .Informazioni correlate

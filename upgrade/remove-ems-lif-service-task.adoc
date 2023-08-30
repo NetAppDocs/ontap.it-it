@@ -13,15 +13,17 @@ summary: 'Il servizio Upgrade Advisor di Active IQ Digital Advisor fornisce info
 [role="lead"]
 Se i messaggi del sistema di gestione degli eventi (EMS) sono stati impostati prima dell'aggiornamento da ONTAP 9.7 o versioni precedenti a ONTAP 9.8 o versioni successive , dopo l'aggiornamento, i messaggi EMS potrebbero non essere recapitati.
 
-Durante l'aggiornamento, il servizio EMS di gestione, che è il servizio LIF EMS, viene aggiunto a tutti i criteri di servizio esistenti. In questo modo, è possibile inviare messaggi EMS da una qualsiasi delle LIF associate a una qualsiasi delle policy di servizio. Se il LIF selezionato non è accessibile alla destinazione di notifica degli eventi, il messaggio non viene recapitato.
+Durante l'aggiornamento, Management-ems, che è il servizio LIF EMS, viene aggiunto a tutte le policy di servizio esistenti.  In questo modo, è possibile inviare messaggi EMS da una qualsiasi delle LIF associate a una qualsiasi delle policy di servizio.  Se il LIF selezionato non è accessibile alla destinazione di notifica degli eventi, il messaggio non viene recapitato.
 
 Per evitare questo problema, dopo l'aggiornamento, è necessario rimuovere il servizio LIF EMS dai criteri di servizio di rete che non forniscono la raggiungibilità alla destinazione.
 
 .Fasi
 . Identificare i LIF e i criteri di servizio di rete associati attraverso i quali è possibile inviare i messaggi EMS:
 +
-`network interface show -fields service-policy -services management-ems`
-
+[source, cli]
+----
+network interface show -fields service-policy -services management-ems
+----
 +
 [listing]
 ----
@@ -39,8 +41,10 @@ cluster-1      inter_cluster
 ----
 . Controllare ogni LIF per la connettività alla destinazione EMS:
 +
-`network ping -lif lif_name -vserver svm_name -destination destination_address`
-
+[source, cli]
+----
+network ping -lif lif_name -vserver svm_name -destination destination_address
+----
 +
 Eseguire questa operazione su ciascun nodo.
 
@@ -56,16 +60,22 @@ no answer from 10.10.10.10
 ----
 . Immettere il livello di privilegio avanzato:
 +
-`set advanced`
-
+[source, cli]
+----
+set advanced
+----
 . Per le LIF che non dispongono di raggiungibilità, rimuovere il servizio LIF ems di gestione dai criteri di servizio corrispondenti:
 +
-`network interface service-policy remove-service -vserver svm_name -policy service_policy_name -service management-ems`
-
+[source, cli]
+----
+network interface service-policy remove-service -vserver svm_name -policy service_policy_name -service management-ems
+----
 . Verificare che la LIF ems di gestione sia ora associata solo alle LIF che forniscono la raggiungibilità alla destinazione EMS:
 +
-`network interface show -fields service-policy -services management-ems`
-
+[source, cli]
+----
+network interface show -fields service-policy -services management-ems
+----
 
 
 .Link correlati
