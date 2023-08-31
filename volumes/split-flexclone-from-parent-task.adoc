@@ -2,7 +2,7 @@
 permalink: volumes/split-flexclone-from-parent-task.html 
 sidebar: sidebar 
 keywords: split, flexclone, volume, parent, volume, clone 
-summary: Se si desidera che un volume FlexClone in lettura/scrittura disponga di spazio su disco proprio anziché utilizzare quello del volume padre, è possibile separare il volume FlexClone dal volume padre. 
+summary: È possibile suddividere un volume FlexClone dal padre per rendere il clone un volume FlexVol normale. 
 ---
 = Separare un volume FlexClone dal volume di origine
 :allow-uri-read: 
@@ -11,17 +11,30 @@ summary: Se si desidera che un volume FlexClone in lettura/scrittura disponga di
 
 
 [role="lead"]
-Se si desidera che un volume FlexClone in lettura/scrittura disponga di spazio su disco proprio anziché utilizzare quello del volume padre, è possibile separare il volume FlexClone dal volume padre.
+È possibile suddividere un volume FlexClone dal padre per rendere il clone un volume FlexVol normale.
+
+L'operazione di suddivisione dei cloni avviene in background. I dati sono accessibili sul clone e sull'immagine principale durante la divisione. A partire da ONTAP 9,4, l'efficienza dello spazio viene preservata. Il processo di suddivisione aggiorna solo i metadati e richiede un io minimo. Non vengono copiati blocchi di dati.
 
 .A proposito di questa attività
-La suddivisione di un volume FlexClone dal volume principale può determinare la conservazione di più spazio nell'aggregato contenente. Se non si dispone di privilegi sufficienti per visualizzare lo spazio disponibile nell'aggregato, contattare l'amministratore dello storage per verificare che vi sia spazio sufficiente nell'aggregato per completare l'operazione di divisione.
+* Non è possibile creare nuove copie Snapshot del volume FlexClone durante l'operazione di divisione.
+* Un volume FlexClone non può essere diviso dal volume principale se appartiene a una relazione di protezione dei dati o fa parte di un mirror di condivisione del carico.
+* Se si porta il volume FlexClone offline mentre è in corso la suddivisione, l'operazione di suddivisione viene sospesa; quando si riporta in linea il volume FlexClone, l'operazione di suddivisione riprende.
+* Dopo la divisione, sia il volume FlexVol superiore che il clone richiedono l'allocazione dello spazio completo determinata dalle rispettive garanzie del volume.
+* Dopo la divisione di un volume FlexClone dall'immagine principale, non è possibile unire nuovamente i due volumi.
+* A partire da ONTAP 9.4, per i volumi non garantiti sui sistemi AFF, l'operazione di split per i volumi FlexClone condivide i blocchi fisici e non copia i dati. Pertanto, la suddivisione dei volumi FlexClone sui sistemi AFF è più rapida rispetto all'operazione di suddivisione di FlexClone in altri sistemi FAS in ONTAP 9.4 e versioni successive. L'operazione di suddivisione FlexClone migliorata sui sistemi AFF offre i seguenti vantaggi:
++
+** L'efficienza dello storage viene preservata dopo la divisione del clone dal padre.
+** Le copie Snapshot esistenti non vengono eliminate.
+** Il funzionamento è più rapido.
+** Il volume FlexClone può essere suddiviso da qualsiasi punto della gerarchia dei cloni.
 
-A partire da ONTAP 9.4, per i volumi non garantiti sui sistemi AFF, l'operazione di split per i volumi FlexClone condivide i blocchi fisici e non copia i dati. Pertanto, la suddivisione dei volumi FlexClone sui sistemi AFF è più rapida rispetto all'operazione di suddivisione di FlexClone in altri sistemi FAS in ONTAP 9.4 e versioni successive. L'operazione di suddivisione FlexClone migliorata sui sistemi AFF offre i seguenti vantaggi:
 
-* L'efficienza dello storage viene preservata dopo la divisione del clone dal padre.
-* Le copie Snapshot esistenti non vengono eliminate.
-* Il funzionamento è più rapido.
-* Il volume FlexClone può essere suddiviso da qualsiasi punto della gerarchia dei cloni.
+
+
+.Prima di iniziare
+* Devi essere un amministratore del cluster.
+* Il volume FlexClone deve essere online all'inizio dell'operazione di divisione.
+* Il volume principale deve essere online perché la divisione abbia successo.
 
 
 .Fasi
