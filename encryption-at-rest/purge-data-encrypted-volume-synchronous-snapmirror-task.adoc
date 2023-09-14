@@ -11,21 +11,19 @@ summary: A partire da ONTAP 9.8, è possibile utilizzare la funzione di eliminaz
 
 
 [role="lead"]
-A partire da ONTAP 9.8, è possibile utilizzare un purge sicuro per i dati "`scrub`" senza interruzioni su volumi abilitati per NVE con una relazione SnapMirror sincrona.
-
-.Di cosa hai bisogno
-* Per eseguire questa attività, è necessario essere un amministratore del cluster.
-* Per questa attività sono richiesti privilegi avanzati.
-
+A partire da ONTAP 9,8, puoi utilizzare una pulizia sicura per "scrub" senza interruzioni dei dati su volumi abilitati per NVE con una relazione di SnapMirror sincrono.
 
 .A proposito di questa attività
 Il completamento di una rimozione sicura potrebbe richiedere da diversi minuti a molte ore, a seconda della quantità di dati contenuti nei file cancellati. È possibile utilizzare `volume encryption secure-purge show` per visualizzare lo stato dell'operazione. È possibile utilizzare `volume encryption secure-purge abort` per terminare l'operazione.
 
-[NOTE]
-====
-Per eseguire un'eliminazione sicura su un host SAN, è necessario eliminare l'intero LUN contenente i file da eliminare oppure è necessario essere in grado di perforare i LUN per i blocchi che appartengono ai file che si desidera eliminare. Se non è possibile eliminare il LUN o se il sistema operativo host non supporta i fori di punzonatura nel LUN, non è possibile eseguire un'eliminazione sicura.
 
-====
+NOTE: Per eseguire un'eliminazione sicura su un host SAN, è necessario eliminare l'intero LUN contenente i file da eliminare oppure è necessario essere in grado di perforare i LUN per i blocchi che appartengono ai file che si desidera eliminare. Se non è possibile eliminare il LUN o se il sistema operativo host non supporta i fori di punzonatura nel LUN, non è possibile eseguire un'eliminazione sicura.
+
+.Prima di iniziare
+* Per eseguire questa attività, è necessario essere un amministratore del cluster.
+* Per questa attività sono richiesti privilegi avanzati.
+
+
 .Fasi
 . Sul sistema storage, passare al livello di privilegio avanzato:
 +
@@ -46,25 +44,25 @@ Ripetere questo passaggio per l'altro volume nella relazione di Synchronous Snap
 
 . Se i file che si desidera eliminare in modo sicuro si trovano nelle copie Snapshot, eliminare le copie Snapshot:
 +
-`snapshot delete -vserver SVM_name -volume vol_A -snapshot snapshot`
+`snapshot delete -vserver _SVM_name_ -volume _volume_name_ -snapshot _snapshot_`
 
 . Se il file di eliminazione sicuro si trova nelle copie Snapshot di base o comuni, aggiornare SnapMirror per spostare la copia Snapshot comune in avanti:
 +
-`snapmirror update -source-snapshot snapshot_name -destination-path destination_path`
+`snapmirror update -source-snapshot _snapshot_name_ -destination-path _destination_path_`
 
 +
 Esistono due copie Snapshot comuni, quindi questo comando deve essere emesso due volte.
 
 . Se il file di eliminazione sicuro si trova nella copia Snapshot coerente con l'applicazione, eliminare la copia Snapshot su entrambi i volumi nella relazione SnapMirror sincrona:
 +
-`snapshot delete -vserver SVM_name -volume vol_name -snapshot snapshot`
+`snapshot delete -vserver _SVM_name_ -volume _volume_name_ -snapshot _snapshot_`
 
 +
 Eseguire questa operazione su entrambi i volumi.
 
 . Eliminare in modo sicuro i file cancellati:
 +
-`volume encryption secure-purge start -vserver SVM_name -volume volume_name`
+`volume encryption secure-purge start -vserver _SVM_name_ -volume _volume_name_`
 
 +
 Ripetere questo passaggio su ciascun volume nella relazione SnapMirror sincrona.

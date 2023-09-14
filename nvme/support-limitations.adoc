@@ -4,16 +4,92 @@ sidebar: sidebar
 keywords: nvme, namespaces, considerations, provisioning 
 summary: Il supporto di NVMe varia in base alla versione di ONTAP, alla piattaforma e alla configurazione. 
 ---
-= Supporto e limitazioni NVMe
+= Configurazione, supporto e limitazioni NVMe
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
+A partire da ONTAP 9.4, la link:https://docs.netapp.com/us-en/ontap/san-admin/manage-nvme-concept.html["NVMe (non-volatile Memory Express)"] il protocollo è disponibile per gli ambienti SAN. FC-NVMe utilizza le stesse procedure di configurazione fisica e di zoning delle reti FC tradizionali, ma consente una maggiore larghezza di banda, IOPS aumentati e latenza ridotta rispetto a FC-SCSI.
+
 Il supporto e le limitazioni di NVMe variano in base alla versione di ONTAP, alla piattaforma e alla configurazione. Per ulteriori informazioni sulla configurazione specifica, consultare la link:https://imt.netapp.com/matrix/["Tool di matrice di interoperabilità NetApp"].
 
-Supporto del protocollo
+
+
+== Configurazione
+
+* Puoi configurare la tua configurazione NVMe con nodi singoli o coppie ha utilizzando un fabric singolo o multi-fabric.
+* È necessario configurare una LIF di gestione per ogni SVM che supporti SAN.
+* L'utilizzo di fabric switch FC eterogenei non è supportato, tranne nel caso di switch blade integrati.
++
+Le eccezioni specifiche sono elencate nella link:https://mysupport.netapp.com/matrix["Tool di matrice di interoperabilità NetApp"^].
+
+* Cascade, Partial Mesh, full mesh, core-edge e director fabric sono tutti metodi standard di settore per collegare switch FC a un fabric e sono tutti supportati.
++
+Un fabric può essere costituito da uno o più switch e i controller di storage possono essere collegati a più switch.
+
+
+
+
+
+== Caratteristiche
+
+Le seguenti funzionalità NVMe sono supportate in base alla tua versione di ONTAP.
+
+[cols="2*"]
+|===
+
+
+| Inizio con ONTAP... | NVMe supporta 
+
+
+| 9.12.1  a| 
+Configurazioni IP MetroCluster a 4 nodi su NVMe/FC.
+* Le configurazioni MetroCluster non sono supportate per NVMe precedenti alla 9.12.1.
+* Le configurazioni MetroCluster non sono supportate su NVMe/TCP.
+
+
+
+| 9.10.1 | xref:../nvme/resize-namespace-task.html[Ridimensionamento di uno spazio dei nomi] 
+
+
+| 9.9.1  a| 
+* La coesistenza di namespace e LUN nello stesso volume.
+
+
+
+
+| 9.8  a| 
+* Coesistenza del protocollo
++
+I protocolli SCSI, NAS e NVMe possono esistere sulla stessa Storage Virtual Machine (SVM).
+
++
+Prima di ONTAP 9,8, NVMe può essere l'unico protocollo sulla SVM.
+*
+
+
+
+
+
+| 9.6  a| 
+* blocchi da 512 byte e blocchi da 4096 byte per namespace
++
+4096 è il valore predefinito. 512 deve essere utilizzato solo se il sistema operativo host non supporta blocchi da 4096 byte.
+
+* Spostamento del volume con spazi dei nomi mappati
+
+
+
+
+| 9.5 | Failover/sconto per coppia ha multipath. 
+|===
+
+
+== Protocolli
+
+Sono supportati i seguenti protocolli NVMe.
 
 [cols="3*"]
 |===
@@ -32,18 +108,13 @@ In ONTAP 9.7 e versioni precedenti, NVMe può essere l'unico protocollo su SVM.
 
 
 
-== Supporto e limitazioni di piattaforma e configurazione
+== Piattaforme e nodi per cluster
 
-I protocolli NVMe/FC e NVMe/TCP sono supportati come segue.  NVME/FC è supportato sulle piattaforme elencate di seguito solo con HBA FC da 32 GB.
-
-[NOTE]
-====
-* A partire da ONTAP 9.12.1, le configurazioni IP MetroCluster a 4 nodi sono supportate su NVMe/FC.
-* Le configurazioni MetroCluster non sono supportate su NVMe/TCP.
-* Le configurazioni MetroCluster non sono supportate per NVMe precedenti alla 9.12.1.
+I protocolli NVMe/FC e NVMe/TCP sono supportati come segue.
 
 
-====
+NOTE: NVME/FC è supportato sulle piattaforme elencate di seguito con HBA FC da 32GB GB.
+
 [cols="3*"]
 |===
 
@@ -69,35 +140,9 @@ I protocolli NVMe/FC e NVMe/TCP sono supportati come segue.  NVME/FC è supporta
 |===
 
 
-== Supporto e limitazioni dello spazio dei nomi
+== Spazi dei nomi
 
-Il supporto dello spazio dei nomi NVMe varia in base alla versione di ONTAP in uso.
-
-[cols="2*"]
-|===
-
-
-| Inizio con ONTAP... | Supporto degli spazi dei nomi NVMe... 
-
-
-| 9.10.1 | xref:../nvme/resize-namespace-task.html[Ridimensionamento in corso]
-
-Il ridimensionamento di uno spazio dei nomi non è supportato nelle versioni precedenti a ONTAP 9.10.1. 
-
-
-| 9.8 | I LUN e gli spazi dei nomi possono essere combinati sullo stesso volume. 
-
-
-| 9.6  a| 
-* blocchi da 512 byte e blocchi da 4096 byte
-+
-4096 è il valore predefinito. 512 deve essere utilizzato solo se il sistema operativo host non supporta blocchi da 4096 byte.
-
-* Spostamento del volume con spazi dei nomi mappati
-
-
-|===
-Inoltre, quando si lavora con gli spazi dei nomi NVMe, occorre tenere presente quanto segue:
+Quando si utilizzano gli namespace NVMe, devi essere consapevole di quanto segue:
 
 * In caso di perdita di dati in un LUN, non è possibile ripristinarli da uno spazio dei nomi o viceversa.
 * La garanzia di spazio per gli spazi dei nomi è la stessa della garanzia di spazio del volume contenente.
@@ -105,9 +150,6 @@ Inoltre, quando si lavora con gli spazi dei nomi NVMe, occorre tenere presente q
 * Gli spazi dei nomi non supportano quanto segue:
 +
 ** Ridenominazione
-+
-Non è possibile rinominare uno spazio dei nomi.
-
 ** Spostamento tra volumi
 ** Copia inter-volume
 ** Copia su richiesta
@@ -117,26 +159,17 @@ Non è possibile rinominare uno spazio dei nomi.
 
 
 
-== Failover/giveback coppia ha multipath
-
-A partire da ONTAP 9.5, NVMe supporta il failover/giveback di coppie ha multipath.
-
-
-
 == Ulteriori limitazioni
 
-* Le seguenti funzioni di ONTAP non sono supportate dalle configurazioni NVMe:
+.Le seguenti funzioni di ONTAP non sono supportate dalle configurazioni NVMe:
+* Sincronizza
+* Virtual Storage Console
 +
-** Sincronizza
-** Virtual Storage Console
+.. Quanto segue si applica solo ai nodi che eseguono ONTAP 9.4:
 
 
-* Quanto segue si applica solo ai nodi che eseguono ONTAP 9.4:
-+
-** Le LIF e gli spazi dei nomi NVMe devono essere ospitati sullo stesso nodo.
-** Il servizio NVMe deve essere creato prima della creazione di NVMe LIF.
-
-
+* Le LIF e gli spazi dei nomi NVMe devono essere ospitati sullo stesso nodo.
+* Il servizio NVMe deve essere creato prima della creazione di NVMe LIF.
 
 
 Vedere https://hwu.netapp.com["NetApp Hardware Universe"^] Per un elenco completo dei limiti NVMe.

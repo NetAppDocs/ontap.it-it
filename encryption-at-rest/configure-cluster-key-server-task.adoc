@@ -22,7 +22,7 @@ I Key server esterni possono essere utilizzati per le chiavi NSE, NVE, NAE e SED
 
 == Prima di iniziare
 
-* link:install-ssl-certificates-hardware-task.html["La gestione delle chiavi KMIP è già abilitata per SVM"].
+* link:install-ssl-certificates-hardware-task.html["La gestione delle chiavi di KMIP deve essere abilitata per la SVM"].
 * Questo processo supporta solo i server chiave che utilizzano KMIP. Per un elenco dei server delle chiavi supportati, consultare link:http://mysupport.netapp.com/matrix/["Tool di matrice di interoperabilità NetApp"^].
 * Tutti i nodi del cluster devono eseguire ONTAP 9.11.1 o versione successiva.
 * L'ordine dei server elenca gli argomenti in `-secondary-key-servers` Il parametro riflette l'ordine di accesso dei server KMIP (gestione delle chiavi esterne).
@@ -39,18 +39,20 @@ La procedura di configurazione dipende dal fatto che sia stato configurato o men
 .Aggiunta di server di chiavi primari e secondari a una SVM
 --
 . Verificare che non sia stata attivata alcuna gestione delle chiavi per il cluster:
-`security key-manager external show -vserver _vserver_name_`Se SVM ha già attivato un massimo di quattro server principali, è necessario rimuovere uno dei server principali esistenti prima di aggiungerne uno nuovo.
+`security key-manager external show -vserver _svm_name_`
+Se SVM ha già attivato un massimo di quattro server principali, è necessario rimuovere uno dei server principali esistenti prima di aggiungerne uno nuovo.
 . Attivare il gestore delle chiavi primario:
-`security key-manager external enable -vserver _vserver_name_ -key-servers _server_ip_ -client-cert _client_cert_name_ -server-ca-certs _server_ca_cert_names_`
+`security key-manager external enable -vserver _svm_name_ -key-servers _server_ip_ -client-cert _client_cert_name_ -server-ca-certs _server_ca_cert_names_`
 . Modificare il server delle chiavi primario per aggiungere i server delle chiavi secondari. Il `-secondary-key-servers` parameter accetta un elenco separato da virgole di un massimo di tre server chiave.
-`security key-manager external modify-server -vserver _vserver_name_ -key-servers _primary_key_server_ -secondary-key-servers _list_of_key_servers_`
+`security key-manager external modify-server -vserver _svm_name_ -key-servers _primary_key_server_ -secondary-key-servers _list_of_key_servers_`
 
 
 --
 .Aggiungere i server di chiavi secondari a un server di chiavi primario esistente
 --
 . Modificare il server delle chiavi primario per aggiungere i server delle chiavi secondari. Il `-secondary-key-servers` parameter accetta un elenco separato da virgole di un massimo di tre server chiave.
-`security key-manager external modify-server -vserver _vserver_name_ -key-servers _primary_key_server_ -secondary-key-servers _list_of_key_servers_`Per ulteriori informazioni sui server di chiavi secondari, vedere <<mod-secondary>>.
+`security key-manager external modify-server -vserver _svm_name_ -key-servers _primary_key_server_ -secondary-key-servers _list_of_key_servers_`
+Per ulteriori informazioni sui server di chiavi secondari, vedere  <<mod-secondary>>.
 
 
 --
@@ -63,7 +65,7 @@ La procedura di configurazione dipende dal fatto che sia stato configurato o men
 
 
 
-=== Conversione dei server principali e secondari
+=== Convertire i server chiavi primari e secondari
 
 Per convertire un server di chiavi primario in un server di chiavi secondario, è necessario prima rimuoverlo dalla SVM con `security key-manager external remove-servers` comando.
 
@@ -71,7 +73,7 @@ Per convertire un server chiavi secondario in un server chiavi primario, è nece
 
 
 
-=== Modifica dei server di chiavi secondari
+=== Modificare i server chiavi secondari
 
 I server di chiavi secondari vengono gestiti con `-secondary-key-servers` del parametro `security key-manager external modify-server` comando. Il `-secondary-key-servers` parameter accetta un elenco separato da virgole. L'ordine specificato dei server di chiavi secondari nell'elenco determina la sequenza di accesso per i server di chiavi secondari. L'ordine di accesso può essere modificato eseguendo il comando `security key-manager external modify-server` con i server di chiavi secondari inseriti in una sequenza diversa.
 
