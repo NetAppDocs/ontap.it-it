@@ -1,8 +1,8 @@
 ---
 permalink: concepts/insights-system-optimization-concept.html 
 sidebar: sidebar 
-keywords: system manager, optimize, optimise, optimization, optimisation, insight, cluster, system, analysis, analyze, perform, performing, performance, capacity, local tier, storage tier, telnet, remote shell, rsh, autosupport, auto support, auto-support, insecure protocol, login banner, log in banner, ssh, secure shell, cbc cipher, ntp server, admin user, administrative, user, best practice, practise, fabricpool, fabric pool, physical capacity, aggregate, cloud, snapshot, directories, directory, file, remote access, transport protocol, https, http, autogrow, auto grow, auto-grow, shrink, reduce, reduction, dismiss, undismiss, explore, fix, remove, replace, analytic, security, compliance, secure, comply, volume, applications, reclaim, space, full, provisioning, provisioned cluster, serial, port, node 
-summary: Con System Manager puoi visualizzare informazioni utili per ottimizzare le performance e la sicurezza del tuo sistema. 
+keywords: system manager, optimize, optimise, optimization, optimisation, insight, cluster, system, analysis, analyze, perform, performing, performance, capacity, local tier, storage tier, telnet, remote shell, rsh, autosupport, auto support, auto-support, insecure protocol, nonsecure, login banner, log in banner, ssh, secure shell, cbc cipher, ntp server, admin user, administrative, user, best practice, practise, fabricpool, fabric pool, physical capacity, aggregate, cloud, snapshot, directories, directory, file, remote access, transport protocol, https, http, autogrow, auto grow, auto-grow, shrink, reduce, reduction, dismiss, undismiss, explore, fix, remove, replace, analytic, security, compliance, secure, comply, volume, applications, reclaim, space, full, provisioning, provisioned cluster, serial, port, node, global fips 140-2 
+summary: A partire da ONTAP 9.11.1, System Manager visualizza informazioni utili per ottimizzare le performance e la sicurezza del sistema. 
 ---
 = Informazioni su System Manager
 :allow-uri-read: 
@@ -30,15 +30,13 @@ System Manager può visualizzare le seguenti informazioni in risposta alle condi
 
 
  a| 
-Il livello locale sta esaurendo la capacità fisica
+Gli strati locali sono privi di spazio
  a| 
 Rimediare ai rischi
  a| 
-Uno o più Tier locali sono pieni e in rapida crescita di oltre il 95%.
+Uno o più Tier locali sono pieni e in rapida crescita di oltre il 95%. È possibile che i carichi di lavoro esistenti non siano in grado di crescere o, in casi estremi, che i carichi di lavoro esistenti esauriscano lo spazio ed effettuino un errore.
  a| 
-*Correzione consigliata*: Eseguire una delle altre opzioni.
-
-*Altre opzioni*:
+*Correzione consigliata*: Eseguire una delle seguenti opzioni.
 
 * Cancellare la coda di ripristino del volume.
 * Consentire il thin provisioning sui volumi con thick provisioning per liberare lo storage intrappolato.
@@ -51,22 +49,11 @@ Uno o più Tier locali sono pieni e in rapida crescita di oltre il 95%.
 
 
  a| 
-La capacità del volume FlexGroup non è bilanciata
- a| 
-Ottimizzazione dello storage
- a| 
-Uno o più volumi FlexGroup hanno un elevato tasso di squilibrio.
- a| 
-*Consigliato*: Riequilibrare i volumi FlexGroup.
-
-
-
- a| 
-L'applicazione sta esaurendo lo spazio disponibile
+Le applicazioni mancano di spazio
  a| 
 Richiede attenzione
  a| 
-I volumi pieni oltre il 95% non hanno la funzione di crescita automatica attivata.
+Uno o più volumi sono pieni più del 95%, ma non hanno la funzione di crescita automatica attivata.
  a| 
 *Consigliato*: Consente di attivare la crescita automatica fino al 150% della capacità di corrente.
 
@@ -76,6 +63,28 @@ I volumi pieni oltre il 95% non hanno la funzione di crescita automatica attivat
 * Ridimensionare i volumi.
 * Eliminare directory o file.
 
+
+
+
+ a| 
+La capacità del volume FlexGroup non è bilanciata
+ a| 
+Ottimizzazione dello storage
+ a| 
+Le dimensioni dei volumi costituenti di uno o più volumi FlexGroup sono cresciute in modo non uniforme nel tempo, portando a uno squilibrio nell'utilizzo della capacità.  Se i volumi costituenti diventano pieni, potrebbero verificarsi errori di scrittura.
+ a| 
+*Consigliato*: Riequilibrare i volumi FlexGroup.
+
+
+
+ a| 
+La capacità delle macchine virtuali storage sta per esaurirsi
+ a| 
+Ottimizzazione dello storage
+ a| 
+Una o più macchine virtuali storage hanno una capacità quasi massima vicina a quella massima.  Non sarà quindi possibile eseguire il provisioning di ulteriore spazio per volumi nuovi o esistenti se le Storage VM raggiungono la capacità massima.
+ a| 
+*Consigliato*: Se possibile, aumentare il limite massimo di capacità della VM di storage.
 
 |===
 
@@ -89,6 +98,50 @@ System Manager può visualizzare le seguenti informazioni in risposta a condizio
 
 
 | Insight | Severità | Condizione | Correzioni 
+
+
+ a| 
+I volumi sono ancora in modalità di apprendimento anti-ransomware
+ a| 
+Richiede attenzione
+ a| 
+Uno o più volumi sono in modalità di apprendimento anti-ransomware da 90 giorni.
+ a| 
+*Consigliato*: Abilitare la modalità anti-ransomware attiva per questi volumi.
+
+
+
+ a| 
+L'eliminazione automatica delle copie Snapshot è abilitata sui volumi
+ a| 
+Richiede attenzione
+ a| 
+L'eliminazione automatica dello snapshot è abilitata su uno o più volumi.
+ a| 
+*Consigliato*: Disattiva l'eliminazione automatica delle copie Snapshot. In caso contrario, in caso di attacco ransomware, il recovery di dati per questi volumi potrebbe non essere possibile.
+
+
+
+ a| 
+I volumi non dispongono di policy Snapshot
+ a| 
+Richiede attenzione
+ a| 
+Uno o più volumi non dispongono di una policy Snapshot adeguata.
+ a| 
+*Consigliato*: Allegare un criterio Snapshot ai volumi che non ne hanno uno. In caso contrario, in caso di attacco ransomware, il recovery di dati per questi volumi potrebbe non essere possibile.
+
+
+
+ a| 
+FPolicy nativo non è configurato
+ a| 
+Best practice
+ a| 
+FPolicy non è configurato su una o più macchine virtuali storage NAS.
+ a| 
+*Consigliato*: Configurare FPolicy nelle VM di archiviazione NAS per controllare le estensioni di file consentite o non consentite per la scrittura sui volumi nel cluster. In questo modo è possibile prevenire gli attacchi ransomware con estensioni di file note.
+
 
 
  a| 
@@ -109,106 +162,7 @@ Best practice
  a| 
 Il numero di server configurati per NTP è inferiore a 3.
  a| 
-*Consigliato*: Aggiungere server NTP in modo che ci siano almeno 3.
-
-
-
- a| 
-AutoSupport sta utilizzando un protocollo non sicuro
- a| 
-Best practice
- a| 
-AutoSupport non è configurato per comunicare tramite HTTPS.
- a| 
-*Consigliato*: Modificare il protocollo di trasporto su HTTPS.
-
-
-
- a| 
-L'utente amministratore predefinito non è bloccato
- a| 
-Best practice
- a| 
-Nessuno ha effettuato l'accesso utilizzando un account amministrativo predefinito (admin o diag) e questi account non sono bloccati.
- a| 
-*Consigliato*: Blocca gli account amministrativi predefiniti quando non vengono utilizzati.
-
-
-
- a| 
-I volumi non dispongono di policy Snapshot
- a| 
-Richiede attenzione
- a| 
-Nessuna policy Snapshot adeguata è collegata a uno o più volumi.
- a| 
-*Consigliato*: Allegare un criterio Snapshot ai volumi che non ne hanno uno. In caso contrario, in caso di attacco ransomware, il ripristino dei dati per questi volumi potrebbe non essere possibile.
-
-
-
- a| 
-L'eliminazione automatica delle istantanee è attivata
- a| 
-Richiede attenzione
- a| 
-L'eliminazione automatica delle copie Snapshot è abilitata per uno o più volumi.
- a| 
-*Consigliato*: Disattiva l'eliminazione automatica delle copie Snapshot. In caso contrario, in caso di attacco ransomware, il ripristino dei dati per questi volumi potrebbe non essere possibile.
-
-
-
- a| 
-I volumi non sono monitorati alla ricerca di attacchi ransomware
- a| 
-Richiede attenzione
- a| 
-L'anti-ransomware è supportato su diversi volumi, ma non è ancora stato configurato. In caso contrario, potresti non accorgerti quando i volumi sono minacciati o sotto attacco.
- a| 
-*Consigliato*: Abilitare l'anti-ransomware sui volumi.
-
-
-
- a| 
-Le macchine virtuali storage non sono configurate per anti-ransomware
- a| 
-Best practice
- a| 
-La funzionalità anti-ransomware è supportata su diverse macchine virtuali storage, ma non è ancora stata configurata.
- a| 
-*Consigliato*: Abilitare l'anti-ransomware sulle macchine virtuali storage. Altrimenti, potresti non notare quando le macchine virtuali storage sono minacciate o sottoposte a attacchi.
-
-
-
- a| 
-FPolicy nativo non è configurato
- a| 
-Best practice
- a| 
-FPolicy non è impostato per macchine virtuali storage NAS.
- a| 
-*Consigliato*: Configurare FPolicy nelle VM di archiviazione NAS per controllare le estensioni di file consentite o non consentite per la scrittura sui volumi nel cluster.
-
-
-
- a| 
-La modalità attiva non è abilitata per l'anti-ransomware
- a| 
-Richiede attenzione
- a| 
-Diversi volumi hanno completato la modalità di apprendimento, ma la modalità attiva non è stata attivata.
- a| 
-*Consigliato*: Consente di attivare la modalità attiva per tali volumi.
-
-
-
- a| 
-Il banner di accesso non è configurato
- a| 
-Best practice
- a| 
-I messaggi di accesso non sono configurati per il cluster o la VM di storage.
- a| 
-*Consigliato*: Impostare il banner di accesso per il cluster o la VM di storage e abilitarne l'uso.
+*Consigliato*: Associare al cluster almeno tre server NTP.  In caso contrario, possono verificarsi problemi con la sincronizzazione dell'ora del cluster.
 
 
 
@@ -224,24 +178,79 @@ Secure Shell (SSH) deve essere utilizzato per un accesso remoto sicuro.
 
 
  a| 
+Banner di accesso non configurato
+ a| 
+Best practice
+ a| 
+I messaggi di accesso non sono configurati né per il cluster, né per la VM di storage, né per entrambi.
+ a| 
+*Consigliato*: Configurare i banner di accesso per il cluster e la VM di storage e abilitarne l'utilizzo.
+
+
+
+ a| 
+AutoSupport sta utilizzando un protocollo non sicuro
+ a| 
+Best practice
+ a| 
+AutoSupport non è configurato per comunicare tramite HTTPS.
+ a| 
+*Consigliato*: Si consiglia vivamente di utilizzare HTTPS come protocollo di trasporto predefinito per inviare messaggi AutoSupport al supporto tecnico.
+
+
+
+ a| 
+L'utente amministratore predefinito non è bloccato
+ a| 
+Best practice
+ a| 
+Nessuno ha effettuato l'accesso utilizzando un account amministrativo predefinito (admin o diag) e questi account non sono bloccati.
+ a| 
+*Consigliato*: Blocca gli account amministrativi predefiniti quando non vengono utilizzati.
+
+
+
+ a| 
 Secure Shell (SSH) sta utilizzando cifrari non sicuri
  a| 
 Best practice
  a| 
-La configurazione corrente utilizza cifrari CBC non sicuri.
+La configurazione corrente utilizza cifrari CBC non protetti.
  a| 
-*Consigliato*: Rimuovere i cifrari con nomi contenenti "cbc", ad esempio "ais128-cbc", "AES192-cbc", "AES256-cbc" e "3DES-cbc".
+*Raccomandato*: Si dovrebbe consentire solo cifrari sicuri sul server web per proteggere la comunicazione sicura con i visitatori. Rimuovere i cifrari con nomi contenenti "cbc", ad esempio "ais128-cbc", "AES192-cbc", "AES256-cbc" e "3DES-cbc".
 
 
 
  a| 
-FIPS globale disattivato
+La compliance FIPS globale 140-2 è disattivata
  a| 
 Best practice
  a| 
-La compliance FIPS globale 140-2 è disattivata.
+La compliance FIPS globale 140-2 è disabilitata nel cluster.
  a| 
-*Consigliato*: Consente la conformità FIPS 140-2 globale.
+*Consigliato*: Per motivi di sicurezza, è necessario abilitare la crittografia globale conforme a FIPS 140-2 per garantire che ONTAP possa comunicare in modo sicuro con client o client server esterni.
+
+
+
+ a| 
+I volumi non vengono monitorati alla ricerca di attacchi ransomware
+ a| 
+Richiede attenzione
+ a| 
+La funzionalità anti-ransomware è disabilitata su uno o più volumi.
+ a| 
+*Consigliato*: Abilitare l'anti-ransomware sui volumi. In caso contrario, potresti non accorgerti quando i volumi sono minacciati o sotto attacco.
+
+
+
+ a| 
+Le macchine virtuali storage non sono configurate per anti-ransomware
+ a| 
+Best practice
+ a| 
+Una o più macchine virtuali storage non sono configurate per la protezione anti-ransomware.
+ a| 
+*Consigliato*: Abilitare l'anti-ransomware sulle macchine virtuali storage. Altrimenti, potresti non notare quando le macchine virtuali storage sono minacciate o sottoposte a attacchi.
 
 |===
 
@@ -258,34 +267,34 @@ System Manager può visualizzare le seguenti informazioni in risposta ai problem
 
 
  a| 
-L'aggiornamento automatico non è abilitato.
+Il cluster non è configurato per le notifiche
  a| 
 Best practice
  a| 
-L'EULA non è stato accettato per il cluster.
+Email, webhook o traphost SNMP non sono configurati per consentirti di ricevere notifiche su problemi con il cluster.
  a| 
-*Consigliato*: Accettare l'EULA per il cluster.
+*Consigliato*: Configurare le notifiche per il cluster.
 
 
 
  a| 
-È disponibile l'ultimo aggiornamento del firmware
+Il cluster non è configurato per gli aggiornamenti automatici.
+ a| 
+Best practice
+ a| 
+Il cluster non è stato configurato in modo da ricevere aggiornamenti automatici per il pacchetto di qualifica del disco più recente, il firmware del disco, il firmware dello shelf e i file del firmware SP/BMC quando sono disponibili.
+ a| 
+*Consigliato*: Attivare questa funzione.
+
+
+
+ a| 
+Il firmware del cluster non è aggiornato
  a| 
 Best practice
  a| 
 Il sistema non dispone dell'ultimo aggiornamento del firmware che potrebbe avere miglioramenti, patch di sicurezza o nuove funzioni che consentono di proteggere il cluster per prestazioni migliori.
  a| 
 *Consigliato*: Aggiornare il firmware ONTAP.
-
-
-
- a| 
-Le notifiche non sono configurate
- a| 
-Best practice
- a| 
-Email, webhook o traphost SNMP non sono configurati per consentire la ricezione di notifiche relative a problemi con il cluster.
- a| 
-*Consigliato*: Configurare le notifiche per il cluster.
 
 |===
