@@ -14,7 +14,7 @@ summary: La connettività del mediatore dal sito B risulta irraggiungibile.
 
 
 [role="lead"]
-Per verificare la connessione del mediatore ONTAP, utilizzare `snapmirror mediator show` comando. Se lo stato della connessione è irraggiungibile e il sito B non è in grado di raggiungere il sito B, si otterrà un output simile a quello riportato di seguito. Per ripristinare la connessione, attenersi alla procedura descritta nella soluzione
+Per verificare la connessione del mediatore ONTAP, utilizzare `snapmirror mediator show` comando. Se lo stato della connessione non è raggiungibile e il sito B non è in grado di raggiungere il sito A, si avrà un'uscita simile a quella riportata di seguito. Per ripristinare la connessione, attenersi alla procedura descritta nella soluzione
 
 ....
 cluster::*> snapmirror mediator show
@@ -41,20 +41,18 @@ Peer Cluster Name         Cluster Serial Number Availability   Authentication
 C1_cluster 			  1-80-000011           Unavailable    ok
 ....
 .Soluzione
-Forzare un failover per abilitare l'i/o dal sito B e quindi stabilire una relazione RTO zero dal sito B al sito A.
-
-Completare i seguenti passaggi per eseguire un failover forzato sul sito B.
+Forzare un failover per abilitare l'i/o dal sito B e quindi stabilire una relazione RTO zero dal sito B al sito A. Completare i seguenti passaggi per eseguire un failover forzato sul sito B.
 
 . Annullare la mappatura di tutte le LUN appartenenti al gruppo di coerenza dal sito B.
 . Eliminare la relazione del gruppo di coerenza di SnapMirror utilizzando l'opzione force (forza).
-. Immettere il comando snapmirror break nel gruppo di coerenza dei volumi costituenti per convertire i volumi da DP a RW, per abilitare l'i/o dal sito B.
+. Immettere il comando SnapMirror BREAK nei volumi costituenti del gruppo di coerenza per convertire i volumi da DP a RW, per abilitare l'i/o dal sito B.
 . Avviare i nodi del sito A per creare una relazione RTO zero dal sito B al sito A.
 . Rilasciare il gruppo di coerenza con informazioni sulla relazione solo sul sito A per conservare una copia Snapshot comune e annullare la mappatura delle LUN appartenenti al gruppo di coerenza.
 . Convertire i volumi sul sito A da RW a DP impostando una relazione a livello di volume utilizzando il criterio Sync o il criterio Async.
-. Eseguire la risincronizzazione di snapmirror per sincronizzare le relazioni.
+. Eseguire il `snapmirror resync` per sincronizzare le relazioni.
 . Eliminare le relazioni di SnapMirror con il criterio di sincronizzazione sul sito A.
 . Rilasciare il criterio delle relazioni di SnapMirror con Sync utilizzando solo le informazioni sulla relazione, vero sul sito B.
 . Creare una relazione di gruppo di coerenza tra il sito B e il sito A.
-. Eseguire una risincronizzazione del gruppo di coerenza dal sito A, quindi verificare che il gruppo di coerenza sia sincronizzato.
-. Eseguire nuovamente la scansione dei percorsi i/o del LUN host per ripristinare tutti i percorsi dei LUN.
+. Dal cluster di origine, sincronizzare nuovamente il gruppo di coerenza. Verificare che lo stato del gruppo di coerenza sia sincronizzato.
+. Eseguire nuovamente la scansione dei percorsi di i/o delle LUN dell'host per ripristinare tutti i percorsi alle LUN.
 
