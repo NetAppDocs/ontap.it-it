@@ -1,0 +1,71 @@
+---
+permalink: concepts/storage-efficiency-overview.html 
+sidebar: sidebar 
+keywords: storage efficiency, storage efficiencies, storage efficiency technologies, space utliziation, space savings, optimizing, space optimization, minimizing, wasted space, reducing, footprint, thin provisioning, deduplication, zero block, zero-block, inline, deduplication, backgroud deduplication, postprocessing, post-processing, compression, compaction, flex-clone technologies 
+summary: 'L"efficienza dello storage misura la efficacia con cui un sistema storage utilizza lo spazio disponibile ottimizzando le risorse di storage, riducendo lo spazio sprecato e riducendo l"impatto fisico dei dati scritti.' 
+---
+= Panoramica dell'efficienza dello storage di ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'efficienza dello storage misura la efficacia con cui un sistema storage utilizza lo spazio disponibile ottimizzando le risorse di storage, riducendo lo spazio sprecato e riducendo l'impatto fisico dei dati scritti. Una maggiore efficienza dello storage consente di memorizzare la quantità massima di dati nel minor spazio possibile al minor costo possibile. Ad esempio, utilizzando tecnologie per l'efficienza dello storage che rilevano ed eliminano blocchi di dati duplicati e blocchi di dati pieni di zero, si riduce la quantità complessiva di storage fisico necessario e si riduce il costo complessivo.
+
+ONTAP offre una vasta gamma di tecnologie per l'efficienza dello storage che riducono la quantità di hardware fisico o di cloud storage consumato dai dati e che forniscono anche miglioramenti significativi alle performance di sistema, tra cui letture dei dati più rapide, copie dei set di dati più rapide e un provisioning più rapido delle macchine virtuali.
+
+.Le tecnologie per l'efficienza dello storage di ONTAP includono:
+* *Thin provisioning*
++
+xref:thin-provisioning-concept.html[Thin provisioning] Consente di allocare lo storage in un volume o LUN in base alle necessità, anziché riservarlo in anticipo.  Questo riduce la quantità di storage fisico necessario consentendo di allocare in eccesso i volumi o le LUN in base a un potenziale utilizzo, senza riservare spazio non attualmente in uso.
+
+* *Deduplica*
++
+xref:deduplication-concept.html[Deduplica] riduce la quantità di storage fisico necessaria per un volume in tre modi distinti.
+
++
+** *Deduplicazione a blocchi zero*
++
+La deduplica zero block rileva ed elimina i blocchi di dati riempiti con tutti gli zero e aggiorna solo i metadati. viene quindi salvato il 100% dello spazio tipicamente utilizzato dai blocchi zero.  La deduplica zero block è abilitata per impostazione predefinita su tutti i volumi deduplicati.
+
+** *Deduplicazione inline*
++
+La deduplica inline rileva i blocchi di dati duplicati e li sostituisce con dei riferimenti a un blocco condiviso univoco prima che i dati vengano scritti sul disco. La deduplica inline accelera il provisioning delle macchine virtuali del 20-30%.  A seconda della versione di ONTAP in uso e della piattaforma in uso, la deduplica inline è disponibile a livello di volume o aggregato.  È abilitato per impostazione predefinita nei sistemi AFF e ASA. È necessario abilitare manualmente la deduplica inline su sistemi FAS.
+
+** *Deduplicazione in background*
++
+La deduplica in background rileva anche i blocchi di dati duplicati e li sostituisce con dei riferimenti a un blocco condiviso unico, ma migliora ulteriormente l'efficienza dello storage dopo che i dati sono stati scritti sul disco.  È possibile impostare la deduplica in background in modo che venga eseguita quando vengono soddisfatti determinati criteri sul sistema di storage. Ad esempio, è possibile abilitare la deduplica in background quando il volume raggiunge un utilizzo del 10%.  È inoltre possibile attivare manualmente la deduplica in background o impostarla per l'esecuzione su una pianificazione specifica. È abilitato per impostazione predefinita nei sistemi AFF e ASA. È necessario abilitare manualmente la deduplica in background sui sistemi FAS.
+
+
+
++
+La deduplica è supportata sia all'interno dei volumi che tra i volumi di un aggregato.  Le letture dei dati deduplicati non comportano in genere alcun costo per le prestazioni.
+
+* *Compressione*
++
+xref:compression-concept.html[Compressione] riduce la quantità di storage fisico necessaria per un volume combinando blocchi di dati in gruppi di compressione, ciascuno dei quali viene memorizzato come un singolo blocco. Quando viene ricevuta una richiesta di lettura o sovrascrittura, viene letto solo un piccolo gruppo di blocchi, non l'intero file. Questo processo ottimizza le prestazioni di lettura e sovrascrittura e consente una maggiore scalabilità nelle dimensioni dei file compressi.
+
++
+La compressione può essere eseguita inline o post-process.  La compressione inline genera risparmi di spazio immediati grazie alla compressione dei dati in memoria prima che vengano scritti sul disco. La compressione post-elaborazione scrive prima i blocchi su disco come non compressi, quindi, in un momento pianificato, comprime i dati. È necessario attivare manualmente la compressione.
+
+* *Compattazione*
++
+La tecnologia di compaction riduce la quantità di storage fisico richiesta per un volume prelevando porzioni di dati memorizzate in blocchi da 4 KB, ma di dimensioni inferiori a 4 KB e combinandole in un singolo blocco. La tecnologia di compaction avviene mentre i dati sono ancora in memoria, in modo da non consumare spazio non necessario sui dischi.  È abilitato per impostazione predefinita nei sistemi AFF e ASA. Devi attivare manualmente la compaction sui sistemi FAS.
+
+* *Volumi, file e LUN di FlexClone*
++
+xref:flexclone-volumes-files-luns-concept.html[Tecnologia FlexClone] Sfrutta i metadati Snapshot per creare copie scrivibili point-in-time di un volume, file o LUN. Le copie condividono i blocchi di dati con i genitori, senza consumare storage tranne ciò che è necessario per i metadati fino a quando le modifiche non vengono scritte in una copia o nella relativa copia padre.  Quando viene scritta una modifica, viene memorizzato solo il delta.
+
++
+Se le copie tradizionali dei set di dati richiedono pochi minuti o anche ore per la creazione, la tecnologia FlexClone consente di copiare quasi istantaneamente anche i set di dati più estesi.
+
+
+
+Puoi realizzare il vantaggio di queste tecnologie nelle tue operazioni quotidiane con il minimo sforzo.  Ad esempio, si supponga di dover fornire a 5.000 utenti lo spazio di archiviazione per le home directory e si stimi che lo spazio massimo necessario a qualsiasi utente sia di 1 GB. È possibile riservare in anticipo un aggregato da 5 TB per soddisfare la potenziale esigenza di storage totale.  Tuttavia, è anche noto che i requisiti di capacità delle home directory variano notevolmente a seconda dell'organizzazione.  Invece di riservare 5 TB di spazio totale all'organizzazione, è possibile creare un aggregato da 2 TB.  Quindi è possibile utilizzare il thin provisioning per assegnare nominalmente 1 GB di storage a ciascun utente, ma allocare lo storage solo in base alle necessità.  È possibile monitorare attivamente l'aggregato nel tempo e aumentare le dimensioni fisiche effettive in base alle necessità.
+
+Un altro esempio potrebbe essere l'utilizzo di una VDI (Virtual Desktop Infrastructure) con una grande quantità di dati duplicati tra i virtual desktop. La deduplica riduce l'utilizzo dello storage eliminando automaticamente i blocchi di informazioni duplicati nell'infrastruttura di desktop virtuale, sostituendoli con un puntatore al blocco originale. Altre tecnologie per l'efficienza dello storage di ONTAP, come la compressione, possono essere eseguite in background senza alcun intervento da parte dell'utente.
+
+La tecnologia di partizione dei dischi di ONTAP offre anche una maggiore efficienza dello storage.  La tecnologia RAID DP protegge da guasti a due unità disco senza sacrificare le prestazioni o aggiungere overhead del mirroring del disco. La partizione avanzata dei dischi a stato solido con ONTAP 9 aumenta la capacità utilizzabile di quasi il 20%.
+
+NetApp offre le stesse funzionalità di efficienza dello storage disponibili con ONTAP on-premise nel cloud. Durante la migrazione dei dati da ONTAP on-premise al cloud, l'efficienza dello storage esistente viene preservata. Ad esempio, supponiamo di disporre di un database SQL contenente dati business-critical da spostare da un sistema on-premise nel cloud.  Puoi utilizzare la replica dei dati in BlueXP per migrare i tuoi dati e, come parte del processo di migrazione, puoi abilitare la tua policy on-premise più recente per le copie Snapshot nel cloud.

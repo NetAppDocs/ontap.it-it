@@ -1,0 +1,91 @@
+---
+permalink: smb-admin/add-remove-share-properties-existing-share-task.html 
+sidebar: sidebar 
+keywords: customize, exist, smb, share, add, remove, removing, properties, useful, configuration, changing, change, requirement, environment, add or remove share properties on an existing smb share 
+summary: 'È possibile personalizzare una condivisione SMB esistente aggiungendo o rimuovendo le proprietà della condivisione. Questo può essere utile se si desidera modificare la configurazione della condivisione per soddisfare i requisiti in continuo cambiamento nell"ambiente.' 
+---
+= Aggiungere o rimuovere le proprietà di condivisione su una condivisione SMB esistente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile personalizzare una condivisione SMB esistente aggiungendo o rimuovendo le proprietà della condivisione. Questo può essere utile se si desidera modificare la configurazione della condivisione per soddisfare i requisiti in continuo cambiamento nell'ambiente.
+
+.Prima di iniziare
+La condivisione di cui si desidera modificare le proprietà deve esistere.
+
+.A proposito di questa attività
+Linee guida per l'aggiunta di proprietà di condivisione:
+
+* È possibile aggiungere una o più proprietà di condivisione utilizzando un elenco delimitato da virgole.
+* Tutte le proprietà di condivisione precedentemente specificate rimangono attive.
++
+Le nuove proprietà aggiunte vengono aggiunte all'elenco esistente di proprietà di condivisione.
+
+* Se si specifica un nuovo valore per le proprietà di condivisione già applicate alla condivisione, il nuovo valore specificato sostituisce il valore originale.
+* Non è possibile rimuovere le proprietà di condivisione utilizzando `vserver cifs share properties add` comando.
++
+È possibile utilizzare `vserver cifs share properties remove` comando per rimuovere le proprietà di condivisione.
+
+
+
+Linee guida per la rimozione delle proprietà di condivisione:
+
+* È possibile rimuovere una o più proprietà di condivisione utilizzando un elenco delimitato da virgole.
+* Tutte le proprietà di condivisione precedentemente specificate ma non rimosse rimangono attive.
+
+
+.Fasi
+. Immettere il comando appropriato:
++
+|===
+| Se si desidera... | Immettere il comando... 
+
+
+ a| 
+Aggiungere proprietà di condivisione
+ a| 
+`+vserver cifs share properties add -vserver _vserver_name_ -share-name _share_name_ -share-properties _properties_,...+`
+
+
+
+ a| 
+Rimuovere le proprietà di condivisione
+ a| 
+`+vserver cifs share properties remove -vserver _vserver_name_ -share-name _share_name_ -share-properties _properties_,...+`
+
+|===
+. Verificare le impostazioni della proprietà di condivisione: `vserver cifs share show -vserver vserver_name -share-name share_name`
+
+
+.Esempi
+Il seguente comando aggiunge `showsnapshot` Condividere la proprietà con una condivisione denominata "`share1`" su SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs share properties add -vserver vs1 -share-name share1 -share-properties showsnapshot
+
+cluster1::> vserver cifs share show -vserver vs1
+Vserver    Share   Path      Properties   Comment    ACL
+---------  ------  --------  ----------   --------   -----------
+vs1        share1  /share1   oplocks      -          Everyone / Full Control
+                             browsable
+                             changenotify
+                             showsnapshot
+----
+Il seguente comando rimuove `browsable` Condividere la proprietà da una condivisione denominata "`share2`" su SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs share properties remove -vserver vs1 -share-name share2 -share-properties browsable
+
+cluster1::> vserver cifs share show -vserver vs1
+Vserver    Share   Path      Properties   Comment    ACL
+---------  ------  --------  ----------   --------   -----------
+vs1        share2  /share2   oplocks      -          Everyone / Full Control
+                             changenotify
+----
+.Informazioni correlate
+xref:commands-manage-shares-reference.adoc[Comandi per la gestione delle condivisioni SMB]
