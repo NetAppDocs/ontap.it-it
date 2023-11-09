@@ -11,7 +11,7 @@ summary: 'Se è stato configurato l"accesso al client S3 per i dati NAS e si pas
 
 
 [role="lead"]
-Se è stato configurato l'accesso al client S3 per i dati NAS e si passa da ONTAP 9.12.1 o versione successiva a ONTAP 9.11.1 o versione precedente, è necessario rimuovere la configurazione del bucket NAS e rimuovere eventuali mappature dei nomi (utenti S3 a utenti Windows o Unix) prima di eseguire il ripristino.
+Se è stato configurato l'accesso client S3 per i dati NAS, prima di passare da ONTAP 9.12.1 o versione successiva a ONTAP 9.11.1 o versione precedente, è necessario utilizzare l'interfaccia a riga di comando (CLI) di ONTAP per rimuovere la configurazione del bucket NAS e rimuovere eventuali mappature dei nomi (da S3 utenti a utenti Windows o Unix).
 
 .A proposito di questa attività
 Le seguenti attività vengono completate in background durante il processo di revert.
@@ -22,29 +22,29 @@ Le seguenti attività vengono completate in background durante il processo di re
 * Eliminare tutti i valori default-unix-user e default-Windows-user per tutti i server S3 configurati.
 
 
-[role="tabbed-block"]
-====
-.System Manager
---
-. Rimuovere una configurazione del bucket S3 NAS. + fare clic su *Storage > Bucket*, quindi su image:../media/icon_kabob.gif["icona del kebab"] Per ciascun bucket S3 NAS configurato, fare clic su *Delete* (Elimina).
-. Rimuovere le mappature dei nomi locali per i client UNIX o Windows (o entrambi).
+.Fasi
+. Rimuovere la configurazione della benna S3 NAS:
 +
-.. Fare clic su *Storage > Bucket*, quindi selezionare la VM di storage abilitata per S3/NAS.
-.. Selezionare *Impostazioni*, quindi fare clic su image:../media/icon_arrow.gif["freccia destra"] In *Name Mapping* (sotto *host Users and Groups*).
-.. Nei riquadri *S3 to Windows* o *S3 to UNIX* (o entrambi), fare clic su image:../media/icon_kabob.gif["icona del kebab"] Per ogni mappatura configurata, fare clic su *Delete* (Elimina).
+[source, cli]
+----
+vserver object-store-server bucket delete -vserver _svm_name_ -bucket _s3_nas_bucket_name_
+----
+. Rimuovi mapping dei nomi per UNIX:
++
+[source, cli]
+----
+vserver name-mapping delete -vserver _svm_name_ -direction s3-unix
+----
+. Rimuovere le mappature dei nomi per Windows:
++
+[source, cli]
+----
+vserver name-mapping delete -vserver _svm_name_ -direction s3-win
+----
+. Rimozione dei protocolli S3 dalla SVM:
++
+[source, cli]
+----
+vserver remove-protocols -vserver <svm_name> -protocols s3
+----
 
-
-
-
---
-.CLI
---
-. Rimuovere la configurazione del bucket S3 NAS. +
-`vserver object-store-server bucket delete -vserver _svm_name_ -bucket _s3_nas_bucket_name_`
-. Rimuovere le mappature dei nomi. +
-`vserver name-mapping delete -vserver _svm_name_ -direction s3-unix` +
-`vserver name-mapping delete -vserver _svm_name_ -direction s3-win`
-
-
---
-====
