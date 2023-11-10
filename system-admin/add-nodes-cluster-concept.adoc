@@ -14,19 +14,13 @@ summary: Una volta creato un cluster, è possibile espanderlo aggiungendo nodi. 
 Una volta creato un cluster, è possibile espanderlo aggiungendo nodi. È possibile aggiungere un solo nodo alla volta.
 
 .Di cosa hai bisogno
-* Se si aggiungono nodi a un cluster a più nodi, più della metà dei nodi esistenti nel cluster deve essere integro (indicato da `cluster show`).
-* Se si aggiungono nodi a un cluster senza switch a due nodi, è necessario aver installato e configurato gli switch di interconnessione e gestione del cluster prima di aggiungere altri nodi.
+* Se si aggiungono nodi a un cluster a più nodi, tutti i nodi esistenti nel cluster devono essere integri (indicati da `cluster show`).
+* Se stai aggiungendo nodi a un cluster senza switch a due nodi, devi convertire il cluster senza switch a due nodi in un cluster con switch usando uno switch cluster supportato da NetApp.
 +
 La funzionalità cluster senza switch è supportata solo in un cluster a due nodi.
 
-+
-Quando un cluster contiene o aumenta fino a più di due nodi, l'ha del cluster non è richiesto e viene disattivato automaticamente.
-
 * Se si aggiunge un secondo nodo a un cluster a nodo singolo, il secondo nodo deve essere stato installato e la rete del cluster deve essere stata configurata.
-* Se nel cluster è attivata la configurazione automatica SP, la subnet specificata per l'SP da utilizzare deve disporre di risorse disponibili per il nodo di giunzione.
-+
-Un nodo che si unisce al cluster utilizza la subnet specificata per eseguire la configurazione automatica dell'SP.
-
+* Se nel cluster è attivata la configurazione automatica SP, la subnet specificata per il SP deve disporre di risorse disponibili per consentire al nodo di Unione di utilizzare la subnet specificata per configurare automaticamente il SP.
 * Per la LIF di gestione dei nodi del nuovo nodo è necessario aver raccolto le seguenti informazioni:
 +
 ** Porta
@@ -58,7 +52,7 @@ You can enter the following commands at any time:
 
 To accept a default or omit a question, do not enter a value.
 
-Enter the node management interface port [e0c]:
+Enter the node management interface port [e0M]:
 ----
 . Uscire dalla procedura guidata Node Setup (Configurazione nodo): `exit`
 +
@@ -86,7 +80,7 @@ You can return to cluster setup at any time by typing "cluster setup".
 To accept a default or omit a question, do not enter a value....
 
 Use your web browser to complete cluster setup by accessing
-https://10.63.11.29
+https://<node_mgmt_or_e0M_IP_address>
 
 Otherwise, press Enter to complete cluster setup using the
 command line interface:
@@ -104,6 +98,9 @@ Per ulteriori informazioni sulla configurazione di un cluster mediante la GUI di
 Do you want to create a new cluster or join an existing cluster? {create, join}:
 join
 ----
++
+Se la versione di ONTAP eseguita sul nuovo nodo è diversa dalla versione in esecuzione sul cluster esistente, il sistema riporta un `System checks Error: Cluster join operation cannot be performed at this time` errore. Questo è il comportamento previsto. Per continuare, eseguire `add-node -allow-mixed-version-join new_node_name` comando a livello di privilegi avanzati da un nodo esistente nel cluster.
+
 . Seguire le istruzioni per configurare il nodo e unirsi al cluster:
 +
 ** Per accettare il valore predefinito di un prompt, premere Invio.
@@ -115,3 +112,6 @@ join
 
 .Al termine
 Dopo aver aggiunto nodi al cluster, è necessario attivare il failover dello storage per ogni coppia ha.
+
+.Informazioni correlate
+https://docs.netapp.com/us-en/ontap/upgrade/concept_mixed_version_requirements.html#requirements-for-mixed-version-ontap-clusters["Cluster ONTAP a versione mista"]
