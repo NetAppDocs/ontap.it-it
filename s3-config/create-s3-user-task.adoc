@@ -15,36 +15,50 @@ summary: 'L"autorizzazione dell"utente è richiesta in tutti gli archivi a ogget
 L'autorizzazione dell'utente è richiesta in tutti gli archivi a oggetti ONTAP per limitare la connettività ai client autorizzati.
 
 .Prima di iniziare.
-Una SVM abilitata per S3 deve già esistere.
+Una macchina virtuale per lo storage abilitata per S3 deve già esistere.
 
 .A proposito di questa attività
-A un utente S3 può essere concesso l'accesso a qualsiasi bucket in una SVM, ma non in più SVM.
-
-Quando si crea un utente S3, vengono generate una chiave di accesso e una chiave segreta. Devono essere condivisi con l'utente insieme all'FQDN e al nome del bucket dell'archivio di oggetti. I tasti S3 degli utenti possono essere visualizzati con `vserver object-store-server user show` comando.
+A un utente S3 può essere concesso l'accesso a qualsiasi bucket in una VM di storage. Quando si crea un utente S3, vengono generate anche una chiave di accesso e una chiave segreta per l'utente. Devono essere condivisi con l'utente insieme all'FQDN dell'archivio oggetti e al nome del bucket. Con è possibile visualizzare le chiavi di un utente S3 `vserver object-store-server user show` comando.
 
 È possibile concedere autorizzazioni di accesso specifiche agli utenti S3 in un criterio bucket o in un criterio del server di oggetti.
 
 [NOTE]
 ====
-Quando viene creato un server archivio oggetti, viene creato un utente root (UID 0), un utente privilegiato con accesso a tutti i bucket. Invece di amministrare ONTAP S3 come utente root, è consigliabile creare un ruolo di amministratore utente con privilegi specifici.
+Quando si crea un nuovo server archivio oggetti, ONTAP crea un utente root (UID 0), che è un utente con privilegi con accesso a tutti i bucket. Invece di amministrare ONTAP S3 come utente root, NetApp consiglia di creare un ruolo di utente amministratore con privilegi specifici.
 
 ====
 [role="tabbed-block"]
 ====
-.System Manager
---
-. Modificare la VM di storage: Fare clic su *Storage > Storage VM*, fare clic sulla VM di storage, fare clic su *Settings* (Impostazioni), quindi su image:icon_pencil.gif["icona a forma di matita"] Sotto S3.
-. Aggiungere un utente: Fare clic su *utenti*, quindi su *Aggiungi*.
-. Immettere un nome e fare clic su *Save* (Salva).
-. Assicurarsi di salvare la chiave di accesso e la chiave segreta, che saranno necessarie per l'accesso dai client S3.
-
-
---
 .CLI
 --
 . Creare un utente S3:
-`vserver object-store-server user create -vserver _svm_name_ -user _user_name_ [-comment _text_]`
-. Assicurarsi di salvare la chiave di accesso e la chiave segreta, che saranno necessarie per l'accesso dai client S3.
+`vserver object-store-server user create -vserver svm_name -user user_name -comment [-comment text] -key-time-to-live time`
++
+** L'aggiunta di un commento è facoltativa.
+** A partire da ONTAP 9.14.1, è possibile definire il periodo di validità della chiave in `-key-time-to-live` parametro. È possibile aggiungere il periodo di conservazione in questo formato, per indicare il periodo dopo il quale la chiave di accesso scade: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W`
+Ad esempio, se si desidera immettere un periodo di conservazione di un giorno, due ore, tre minuti e quattro secondi, immettere il valore come `P1DT2H3M4S`. Se non specificato, la chiave è valida per un periodo di tempo indeterminato.
++
+Nell'esempio riportato di seguito viene creato un utente con nome `sm_user1` Sulla VM di storage `vs0`, con un periodo di conservazione della chiave di una settimana.
+
++
+[listing]
+----
+vserver object-store-server user create -vserver vs0 -user sm_user1 -key-time-to-live P1W
+----
+
+
+. Assicurarsi di salvare la chiave di accesso e la chiave segreta. Saranno richiesti per l'accesso da S3 client.
+
+
+--
+.System Manager
+--
+. Fare clic su *Storage > Storage VM* (Storage > Storage VM). Selezionare la VM di archiviazione a cui si desidera aggiungere un utente, selezionare *Impostazioni* e fare clic su image:icon_pencil.gif["icona a forma di matita"] Sotto S3.
+. Per aggiungere un utente, fare clic su *utenti > Aggiungi*.
+. Immettere un nome per l'utente.
+. A partire da ONTAP 9.14.1, è possibile specificare il periodo di conservazione delle chiavi di accesso create per l'utente. È possibile specificare il periodo di conservazione in giorni, ore, minuti o secondi, dopo il quale le chiavi scadono automaticamente. Per impostazione predefinita, il valore è impostato su `0` ciò indica che la chiave è valida a tempo indeterminato.
+. Fare clic su *Save* (Salva). L'utente viene creato e vengono generate una chiave di accesso e una chiave segreta per l'utente.
+. Scaricare o salvare la chiave di accesso e la chiave segreta. Saranno richiesti per l'accesso da S3 client.
 
 
 --

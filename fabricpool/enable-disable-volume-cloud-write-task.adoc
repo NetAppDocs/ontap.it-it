@@ -1,0 +1,104 @@
+---
+permalink: fabricpool/enable-disable-volume-cloud-write-task.html 
+sidebar: sidebar 
+keywords: creating, volume, fabricpool, cloud write, enable, disable 
+summary: A partire da ONTAP 9.14.1, puoi abilitare e disabilitare la modalità di scrittura cloud su un volume nuovo o esistente in un FabricPool per consentire ai client NFS di scrivere dati direttamente nel cloud. 
+---
+= Attiva e disattiva i volumi da scrivere direttamente nel cloud
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.14.1, puoi abilitare e disabilitare la modalità di scrittura cloud su un volume nuovo o esistente in un FabricPool, consentendo ai client NFS di scrivere dati direttamente nel cloud senza attendere le scansioni di tiering. I client SMB continuano a scrivere nel Tier di performance in un volume abilitato per la scrittura nel cloud. La modalità di scrittura cloud è disattivata per impostazione predefinita.
+
+La modalità di scrittura su cloud è utile per casi come le migrazioni, ad esempio quando vengono trasferite in un cluster grandi quantità di dati rispetto a quanto supportato dal cluster nel Tier locale. Senza la modalità di scrittura cloud, durante la migrazione, vengono trasferite piccole quantità di dati, quindi sottoposte a tiering e quindi trasferite di nuovo in Tier, fino al completamento della migrazione. Utilizzando la modalità di scrittura cloud, questo tipo di gestione non è più necessario, perché i dati non vengono mai trasferiti nel Tier locale.
+
+.Prima di iniziare
+* Dovresti essere un amministratore di cluster o SVM.
+* È necessario essere al livello di privilegi avanzati.
+* Il volume deve essere di tipo lettura-scrittura.
+* Il volume deve disporre di TUTTA LA policy di tiering.
+
+
+
+
+== Attiva la scrittura cloud durante la creazione di un volume
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Creazione di un volume e abilitazione della modalità di scrittura cloud:
++
+[source, cli]
+----
+volume create -volume <volume name> -is-cloud-write-enabled <true|false> -aggregate <local tier name>
+----
++
+L'esempio seguente crea un volume denominato vol1 con Cloud Write abilitato nel Tier locale FabricPool (aggr1):
+
++
+[listing]
+----
+volume create -volume vol1 -is-cloud-write-enabled true -aggregate aggr1
+----
+
+
+
+
+== Abilita la scrittura cloud su un volume esistente
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Modificare un volume per attivare la modalità di scrittura cloud:
++
+[source, cli]
+----
+volume modify -volume <volume name> -is-cloud-write-enabled <true|false> -aggregate <local tier name>
+----
++
+Il seguente esempio modifica un volume chiamato vol1 con scrittura cloud abilitata nel Tier locale FabricPool (aggr1):
+
++
+[listing]
+----
+volume modify -volume vol1 -is-cloud-write-enabled true -aggregate aggr1
+----
+
+
+
+
+== Disattiva la scrittura cloud su un volume
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Disattiva modalità di scrittura cloud:
++
+[source, cli]
+----
+volume modify -volume <volume name> -is-cloud-write-enabled <true|false> -aggregate <aggregate name>
+----
++
+L'esempio seguente crea un volume denominato vol1 con Cloud Write abilitato:
+
++
+[listing]
+----
+volume modify -volume vol1 -is-cloud-write-enabled false -aggregate aggr1
+----
+

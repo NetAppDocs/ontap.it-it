@@ -1,0 +1,59 @@
+---
+permalink: nfs-trunking/create-server-task.html 
+sidebar: sidebar 
+keywords: NFS, servers, create, NFS trunking, enabled, multipathing, svm 
+summary: A partire da ONTAP 9.14.1, il trunking può essere abilitato sui server NFS che eseguono v4,1 o versioni successive. NFSv4,1 e versioni successive sono abilitate per impostazione predefinita quando vengono creati i server NFS. 
+---
+= Creare un server NFS abilitato al trunking
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.14.1, il trunking può essere abilitato sui server NFS. NFSv4,1 è attivato per impostazione predefinita quando vengono creati i server NFS.
+
+.Prima di iniziare
+La SVM deve essere:
+
+* supportato da uno storage sufficiente per i requisiti dei dati dei client.
+* Abilitato per NFS.
+* Dedicato al trunking NFS. Nessun altro client deve essere configurato su di esso.
+
+
+.Fasi
+. Se non esiste una SVM idonea, creane una:
++
+`vserver create -vserver _svm_name_ -rootvolume _root_volume_name_ -aggregate _aggregate_name_ -rootvolume-security-style unix -language C.UTF-8`
+
+. Verificare la configurazione e lo stato della SVM appena creata:
++
+`vserver show -vserver _svm_name_`
+
++
+Scopri di più link:../nfs-config/create-svms-data-access-task.html["Creazione di una SVM."]
+
+. Creare il server NFS:
++
+`vserver nfs create -vserver _svm_name_ -v3 disabled -v4.0 disabled -v4.1 enabled -v4.1-trunking enabled -v4-id-domain _my_domain.com_`
+
+. Verificare che NFS sia in esecuzione:
++
+`vserver nfs status -vserver _svm_name_`
+
+. Verificare che NFS sia configurato come desiderato:
++
+`vserver nfs show -vserver _svm_name_`
+
++
+Scopri di più link:../nfs-config/create-server-task.html["Configurazione del server NFS."]
+
+
+
+.Al termine
+Configurare i seguenti servizi in base alle esigenze:
+
+* link:../nfs-config/configure-dns-host-name-resolution-task.html["DNS"]
+* link:../nfs-config/using-ldap-concept.html["LDAP"]
+* link:../nfs-config/kerberos-nfs-strong-security-concept.html["Kerberos"]
+

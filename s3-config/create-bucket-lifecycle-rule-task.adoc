@@ -11,20 +11,34 @@ summary: 'A partire da ONTAP 9.13.1, è possibile implementare la scadenza dell"
 
 
 [role="lead"]
-A partire da ONTAP 9.13.1, è possibile implementare la scadenza dell'oggetto S3. Le azioni di scadenza definiscono la scadenza degli oggetti in un bucket. Questa funzionalità consente di gestire le versioni degli oggetti in modo da soddisfare i requisiti di conservazione e gestire in modo efficace lo storage a oggetti S3 complessivo.
+A partire da ONTAP 9.13.1, puoi creare regole di Lifecycle management per gestire i cicli di vita degli oggetti nei tuoi bucket S3. È possibile definire regole di eliminazione per oggetti specifici in un bucket e, attraverso queste regole, scadono tali oggetti bucket. Ciò consente di soddisfare i requisiti di conservazione e di gestire in modo efficiente lo storage a oggetti complessivo S3.
+
+
+NOTE: Se il blocco degli oggetti è attivato per gli oggetti bucket, le regole di gestione del ciclo di vita per la scadenza degli oggetti non verranno applicate agli oggetti bloccati. Per informazioni sul blocco degli oggetti, vedere link:../s3-config/create-bucket-task.html["Creare un bucket"].
 
 .Prima di iniziare
 Una SVM abilitata per S3 contenente un server S3 e un bucket deve già esistere. Vedere link:create-svm-s3-task.html["Creare una SVM per S3"] per ulteriori informazioni.
 
 .A proposito di questa attività
-Quando si crea la regola di gestione del ciclo di vita del bucket, è necessario scegliere uno dei tre seguenti tipi di azione di scadenza:
+Quando si creano le regole di gestione del ciclo di vita, è possibile applicare le seguenti azioni di eliminazione agli oggetti bucket:
 
-* `Expiration` – L'azione di scadenza scade gli oggetti identificati dalla regola. Se la versione del caso è attivata nel bucket, S3 rende non disponibili tutti gli oggetti scaduti. Se la versione non è attivata, questa regola elimina l'oggetto in modo permanente.
-* `NoncurrentVersionExpiration` – Questa azione viene utilizzata per specificare quando S3 rimuove in modo permanente oggetti non correnti. Questi oggetti cancellati non possono essere ripristinati.
-* `AbortIncompleteMultipartUpload` – L'amministratore può utilizzare questo elemento per impostare un tempo massimo (in giorni) per consentire il caricamento di più parti in corso
+* Eliminazione delle versioni correnti - questa azione scade gli oggetti identificati dalla regola. Se il controllo delle versioni è abilitato nel bucket, S3 rende non disponibili tutti gli oggetti scaduti. Se il controllo delle versioni non è abilitato, questa regola elimina gli oggetti in modo permanente. L'azione CLI è `Expiration`.
+* Eliminazione di versioni non correnti - questa azione specifica quando S3 può rimuovere in modo permanente oggetti non correnti. L'azione CLI è `NoncurrentVersionExpiration`.
+* Eliminazione dei marcatori di eliminazione scaduti - questa azione elimina i marcatori di eliminazione degli oggetti scaduti.
+Nei bucket abilitati per le versioni, gli oggetti con marcatori di eliminazione diventano le versioni correnti degli oggetti. Gli oggetti non vengono eliminati e non è possibile eseguire alcuna azione su di essi. Questi oggetti diventano scaduti quando non sono associate versioni correnti. L'azione CLI è `Expiration`.
+* Eliminazione dei caricamenti di più parti incompleti - questa azione imposta il tempo massimo (in giorni) per il quale si desidera consentire il caricamento di più parti. Successivamente, vengono eliminati. L'azione CLI è `AbortIncompleteMultipartUpload`.
 
 
-È necessario definire i campi obbligatori per ogni tipo di azione di scadenza quando si crea una regola di gestione del ciclo di vita del bucket. Questi campi possono essere modificati dopo la creazione iniziale. Nella seguente tabella vengono visualizzati i campi univoci per ciascun tipo di azione.
+La procedura seguente dipende dall'interfaccia utilizzata. Con ONTAP 9.13,1, è necessario utilizzare la CLI. A partire da ONTAP 9.14.1, è possibile utilizzare anche Gestione sistema.
+
+
+
+== Gestisci le regole di Lifecycle management con la CLI
+
+A partire da ONTAP 9.13.1, puoi utilizzare l'interfaccia a riga di comando di ONTAP per creare regole di Lifecycle management per scadere gli oggetti nei bucket S3.
+
+.Di cosa hai bisogno
+Per la CLI, è necessario definire i campi obbligatori per ogni tipo di azione di scadenza quando si crea una regola di gestione del ciclo di vita bucket. Questi campi possono essere modificati dopo la creazione iniziale. Nella seguente tabella vengono visualizzati i campi univoci per ciascun tipo di azione.
 
 [cols="30,70"]
 |===
@@ -94,3 +108,67 @@ Il seguente comando crea una regola di gestione del ciclo di vita del bucket Abo
 ----
 vserver object-store-server bucket lifecycle-management-rule create -vserver <svm_name> -bucket <bucket_name> -rule-id <rule_name> -action AbortIncompleteMultipartUpload -index <lifecycle_rule_index_integer> -is-enabled {true|false} -prefix <object_name> -tags <text> -obj-size-greater-than {<integer>[KB|MB|GB|TB|PB]} -obj-size-less-than {<integer>[KB|MB|GB|TB|PB]} -after-initiation-days <integer>
 ----
+
+
+== Gestisci le regole di Lifecycle management con System Manager
+
+A partire da ONTAP 9.14.1, è possibile implementare la scadenza degli oggetti utilizzando Gestione sistema. È possibile aggiungere, modificare ed eliminare regole di Lifecycle management per gli oggetti S3. Inoltre, è possibile importare una regola del ciclo di vita creata per un bucket e utilizzarla per gli oggetti in un altro bucket. È possibile disattivare una regola attiva e attivarla in un secondo momento.
+
+
+
+=== Aggiungere una regola di gestione del ciclo di vita
+
+. Fare clic su *Storage > Bucket*.
+. Selezionare il bucket per il quale si desidera specificare la regola di scadenza.
+. Fare clic su image:icon_kabob.gif["icona del kebab"] E selezionare *Gestisci regole del ciclo di vita*.
+. Fare clic su *Aggiungi > regola ciclo di vita*.
+. Nella pagina Add a Lifecycle rule (Aggiungi una regola del ciclo di vita), aggiungere il nome della regola.
+. Definire l'ambito della regola, se si desidera che venga applicata a tutti gli oggetti nel bucket o a oggetti specifici. Se si desidera specificare gli oggetti, aggiungere almeno uno dei seguenti criteri di filtro:
++
+.. Prefix (prefisso): Specificare un prefisso dei nomi delle chiavi dell'oggetto a cui applicare la regola. In genere si tratta del percorso o della cartella dell'oggetto. È possibile immettere un prefisso per regola. A meno che non venga fornito un prefisso valido, la regola si applica a tutti gli oggetti in un bucket.
+.. Tag: Specificare fino a tre coppie chiave e valore (tag) per gli oggetti a cui la regola deve essere applicata. Per il filtraggio vengono utilizzate solo chiavi valide. Il valore è facoltativo. Tuttavia, se si aggiungono valori, assicurarsi di aggiungere solo valori validi per le chiavi corrispondenti.
+.. Dimensioni: È possibile limitare l'ambito tra le dimensioni minime e massime degli oggetti. È possibile immettere uno o entrambi i valori. L'unità predefinita è MiB.
+
+
+. Specificare l'azione:
++
+.. *Scade la versione corrente degli oggetti*: Impostare una regola per rendere tutti gli oggetti correnti permanentemente non disponibili dopo un numero specifico di giorni dalla loro creazione o in una data specifica. Questa opzione non è disponibile se è selezionata l'opzione *Elimina marcatori eliminazione oggetto scaduto*.
+.. *Eliminare definitivamente le versioni non correnti*: Specificare il numero di giorni dopo il quale la versione diventa non corrente e successivamente può essere eliminata, e il numero di versioni da conservare.
+.. *Elimina marcatori di eliminazione oggetto scaduto*: Selezionare questa azione per eliminare gli oggetti con marcatori di eliminazione scaduti, ovvero i marcatori di eliminazione senza un oggetto corrente associato.
++
+
+NOTE: Questa opzione non è disponibile quando si seleziona l'opzione *scadenza della versione corrente degli oggetti* che elimina automaticamente tutti gli oggetti dopo il periodo di conservazione. Questa opzione diventa anche non disponibile quando si utilizzano i tag degli oggetti per il filtraggio.
+
+.. *Elimina upload multiparte incompleti*: Consente di impostare il numero di giorni dopo il quale i caricamenti multiparte incompleti devono essere eliminati. Se i caricamenti multiparte in corso non riescono entro il periodo di conservazione specificato, è possibile eliminare i caricamenti multiparte incompleti. Questa opzione diventa non disponibile quando si utilizzano i tag degli oggetti per il filtraggio.
+.. Fare clic su *Save* (Salva).
+
+
+
+
+
+
+=== Importare una regola del ciclo di vita
+
+. Fare clic su *Storage > Bucket*.
+. Selezionare il bucket per il quale si desidera importare la regola di scadenza.
+. Fare clic su image:icon_kabob.gif["icona del kebab"] E selezionare *Gestisci regole del ciclo di vita*.
+. Fare clic su *Aggiungi > Importa una regola*.
+. Selezionare il bucket dal quale si desidera importare la regola. Vengono visualizzate le regole di gestione del ciclo di vita definite per il bucket selezionato.
+. Selezionare la regola che si desidera importare. È possibile selezionare una regola alla volta, mentre la selezione predefinita è la prima regola.
+. Fare clic su *Importa*.
+
+
+
+
+=== Modificare, eliminare o disattivare una regola
+
+È possibile modificare solo le azioni di Lifecycle management associate alla regola. Se la regola è stata filtrata con tag Object, le opzioni *Delete Expired Object DELETE Marker* e *Delete incomplete Multipart Uploads* non sono disponibili.
+
+Quando si elimina una regola, tale regola non verrà più applicata agli oggetti precedentemente associati.
+
+. Fare clic su *Storage > Bucket*.
+. Selezionare il bucket per il quale si desidera modificare, eliminare o disattivare la regola di gestione del ciclo di vita.
+. Fare clic su image:icon_kabob.gif["icona del kebab"] E selezionare *Gestisci regole del ciclo di vita*.
+. Selezionare la regola richiesta. È possibile modificare e disattivare una regola alla volta. È possibile eliminare più regole contemporaneamente.
+. Selezionare *Modifica*, *Elimina* o *Disabilita* e completare la procedura.
+

@@ -1,0 +1,40 @@
+---
+permalink: nas-audit/persistent-stores.html 
+sidebar: sidebar 
+keywords: overview, persistent store, fpolicy 
+summary: 'A partire da ONTAP 9.14.1, FPolicy consente di configurare un archivio persistente per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l"elaborazione i/o dei client dall"elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone e asincrone non sono supportate.' 
+---
+= Archivi persistenti di FPolicy
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.14.1, FPolicy consente di configurare un archivio persistente per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l'elaborazione i/o dei client dall'elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone (obbligatorie o non obbligatorie) e asincrone non sono supportate.
+
+Questa funzione è disponibile solo in modalità FPolicy esterna. L'applicazione partner utilizzata deve supportare questa funzione. È necessario collaborare con il proprio partner per assicurarsi che questa configurazione FPolicy sia supportata.
+
+
+
+== Best practice
+
+Gli amministratori del cluster devono configurare un volume per l'archivio persistente in ciascuna SVM dove FPolicy è abilitato. Una volta configurato, un archivio persistente acquisisce tutti gli eventi FPolicy corrispondenti, che vengono ulteriormente elaborati nella pipeline FPolicy e inviati al server esterno.
+
+L'archivio persistente rimane invariato quando è stato ricevuto l'ultimo evento quando si verifica un riavvio imprevisto o FPolicy viene disattivato e riattivato. Dopo un'operazione di takeover, i nuovi eventi verranno memorizzati ed elaborati dal nodo partner. Dopo un'operazione di giveback, l'archivio persistente riprende l'elaborazione degli eventi non elaborati che potrebbero rimanere dal momento in cui si è verificato il takeover del nodo. Gli eventi live avrebbero la priorità rispetto agli eventi non elaborati.
+
+Se il volume dell'archivio persistente si sposta da un nodo a un altro nella stessa SVM, le notifiche che non sono ancora state elaborate verranno spostate anche nel nuovo nodo. Sarà necessario eseguire nuovamente `fpolicy persistent-store create` su uno dei nodi dopo lo spostamento del volume, per garantire che la notifica in sospeso venga inviata al server esterno.
+
+Il volume dello storage persistente viene configurato in base alle singole SVM. Per ogni SVM abilitata per FPolicy dovrai creare un volume archivio persistente.
+
+Crea il volume di archivio persistente sul nodo con LIF che prevedono il monitoraggio del traffico massimo da parte di Fpolicy.
+
+Se le notifiche accumulate nell'archivio permanente superano le dimensioni del volume fornito, FPolicy inizia a interrompere la notifica in arrivo con i messaggi EMS appropriati.
+
+Il nome del volume di archiviazione persistente e il percorso di giunzione specificati al momento della creazione del volume dovrebbero corrispondere.
+
+Impostare il criterio snapshot su `none` per quel volume invece di `default`. In questo modo si garantisce che non vi sia alcun ripristino accidentale dello snapshot che causa la perdita degli eventi correnti e per impedire un'eventuale elaborazione di eventi duplicati.
+
+Rendere il volume dell'archivio persistente inaccessibile per l'accesso al protocollo utente esterno (CIFS/NFS) per evitare il danneggiamento accidentale o l'eliminazione dei record di eventi persistenti. Per ottenere questo risultato, dopo aver attivato FPolicy, smontare il volume in ONTAP per rimuovere il percorso di giunzione; ciò lo rende inaccessibile per l'accesso al protocollo utente.
+
+Per ulteriori informazioni, vedere link:https://docs.netapp.com/us-en/ontap/nas-audit/create-persistent-stores.html["Creare archivi persistenti"].

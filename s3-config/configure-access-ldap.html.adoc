@@ -1,0 +1,91 @@
+---
+permalink: s3-config/configure-access-ldap.html 
+sidebar: sidebar 
+keywords: generate, ldap, s3, access keys, secret keys using API 
+summary: 'Le chiavi per accedere ai client S3 possono essere rigenerate da S3 utenti utilizzando l"API.' 
+---
+= Configurare l'accesso S3 per i servizi di directory esterni
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.14.1, i servizi per le directory esterne sono stati integrati con lo storage a oggetti ONTAP S3. Questa integrazione semplifica la gestione degli utenti e degli accessi tramite servizi di directory esterni.
+
+È possibile fornire ai gruppi utente appartenenti a un servizio di directory esterno l'accesso all'ambiente di storage a oggetti ONTAP. LDAP (Lightweight Directory Access Protocol) è un'interfaccia per la comunicazione con i servizi di directory, come Active Directory, che forniscono un database e servizi per la gestione delle identità e degli accessi (IAM). Per fornire l'accesso, è necessario configurare i gruppi LDAP nell'ambiente ONTAP S3. Dopo aver configurato l'accesso, i membri del gruppo dispongono delle autorizzazioni per i bucket di ONTAP S3. Per informazioni su LDAP, vedere link:../nfs-config/using-ldap-concept.html["Panoramica sull'utilizzo di LDAP"].
+
+È inoltre possibile configurare i gruppi di utenti di Active Directory per la modalità di associazione rapida, in modo che le credenziali utente possano essere convalidate e le applicazioni S3 di terze parti e open-source possano essere autenticate tramite connessioni LDAP.
+
+.Prima di iniziare
+Prima di configurare i gruppi LDAP e attivare la modalità di associazione rapida per l'accesso ai gruppi, verificare quanto segue:
+
+. È stata creata una macchina virtuale di storage abilitata per S3 contenente un server S3. Vedere link:../s3-config/create-svm-s3-task.html["Creare una SVM per S3"].
+. È stato creato un bucket in quella VM per lo storage. Vedere link:../s3-config/create-bucket-task.html["Creare un bucket"].
+. Il DNS è configurato sulla macchina virtuale di storage. Vedere link:../networking/configure_dns_services_manual.html["Configurare i servizi DNS"].
+. Sulla VM di storage viene installato un certificato CA (root Certification Authority) autofirmato del server LDAP. Vedere link:../nfs-config/install-self-signed-root-ca-certificate-svm-task.html["Installare il certificato della CA principale autofirmato su SVM"].
+. Un client LDAP è configurato con TLS attivato nella SVM. Vedere link:../nfs-config/create-ldap-client-config-task.html["Creare una configurazione del client LDAP"] e. link:../nfs-config/enable-ldap-svms-task.html["Associare la configurazione del client LDAP alle SVM per ottenere informazioni"].
+
+
+
+
+== Configurare l'accesso S3 per i servizi di directory esterni
+
+. Specificare LDAP come _name service database_ della SVM per il gruppo e la password per LDAP:
++
+[listing]
+----
+ns-switch modify -vserver <vserver-name> -database group -sources files,ldap
+ns-switch modify -vserver <vserver-name> -database passwd -sources files,ldap
+----
++
+Per ulteriori informazioni su questo comando, vedere `vserver services name-service ns-switch modify` comando.
+
+. Creare un'istruzione del criterio del bucket dell'archivio oggetti con il `principal` Impostare sul gruppo LDAP a cui si desidera concedere l'accesso:
++
+[listing]
+----
+object-store-server bucket policy statement create -bucket <bucket-name> -effect allow -principal nasgroup/<ldap-group-name> -resource <bucket-name>, <bucket-name>/*
+----
++
+Esempio: Nell'esempio seguente viene creata un'istruzione criterio bucket per `buck1`. Il criterio consente l'accesso al gruppo LDAP `group1` alla risorsa (bucket e relativi oggetti) `buck1`.
+
++
+[listing]
+----
+vserver object-store-server bucket policy add-statement -bucket buck1 -effect allow -action
+GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts, ListBucketVersions,GetObjectTagging,PutObjectTagging,DeleteObjectTagging,GetBucketVersioning,PutBucketVersioning -principal nasgroup/group1 -resource buck1, buck1/*
+----
+. Verificare che un utente del gruppo LDAP `group1` È in grado di eseguire operazioni S3 dal client S3.
+
+
+
+
+== Utilizzare la modalità di associazione rapida LDAP per l'autenticazione
+
+. Specificare LDAP come _name service database_ della SVM per il gruppo e la password per LDAP:
++
+[listing]
+----
+ns-switch modify -vserver <vserver-name> -database group -sources files,ldap
+ns-switch modify -vserver <vserver-name> -database passwd -sources files,ldap
+----
++
+Per ulteriori informazioni su questo comando, vedere `vserver services name-service ns-switch modify` comando.
+
+. Assicurarsi che un utente LDAP che accede al bucket S3 disponga delle autorizzazioni definite nei criteri bucket. Per ulteriori informazioni, vedere link:../s3-config/create-modify-bucket-policy-task.html["Modificare una policy bucket"].
+. Verificare che un utente del gruppo LDAP possa eseguire le seguenti operazioni:
++
+.. Configurare la chiave di accesso sul client S3 in questo formato:
+`"NTAPFASBIND" + base64-encode(user-name:password)`
+Esempio: `"NTAPFASTBIND"` + base64-encode(ldapuser:password), che risulta in
+                      `NTAPFASTBINDbGRhcHVzZXI6cGFzc3dvcmQ=`
++
+
+NOTE: Il client S3 potrebbe richiedere una chiave segreta. In assenza di una chiave segreta, è possibile immettere qualsiasi password di almeno 16 caratteri.
+
+.. Eseguire operazioni S3 di base dal client S3 per cui l'utente dispone delle autorizzazioni.
+
+
+

@@ -14,7 +14,7 @@ summary: 'È possibile aggiungere regole di accesso al criterio bucket predefini
 È possibile aggiungere regole di accesso al criterio bucket predefinito. L'ambito del controllo degli accessi è il bucket contenente, quindi è più appropriato quando è presente un singolo bucket.
 
 .Prima di iniziare
-Una SVM abilitata per S3 contenente un server S3 e un bucket deve già esistere.
+Una VM di storage abilitata per S3 contenente un server S3 e un bucket deve già esistere.
 
 Prima di concedere le autorizzazioni, è necessario aver già creato utenti o gruppi.
 
@@ -23,7 +23,7 @@ Prima di concedere le autorizzazioni, è necessario aver già creato utenti o gr
 
 Le autorizzazioni per utenti e gruppi possono essere concesse al momento della creazione del bucket o in seguito in base alle necessità. È inoltre possibile modificare la capacità del bucket e l'assegnazione del gruppo di policy QoS.
 
-A partire da ONTAP 9.9.1 e versioni successive, se si intende supportare la funzionalità di tag degli oggetti client AWS con il server ONTAP S3, le azioni vengono eseguite `GetObjectTagging`, `PutObjectTagging`, e. `DeleteObjectTagging` devono essere consentite utilizzando le policy di gruppo o bucket.
+A partire da ONTAP 9,9.1, se si prevede di supportare la funzionalità di tagging degli oggetti client AWS con il server ONTAP S3, le azioni `GetObjectTagging`, `PutObjectTagging`, e. `DeleteObjectTagging` devono essere consentite utilizzando le policy di gruppo o bucket.
 
 La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
 
@@ -45,6 +45,9 @@ I valori predefiniti *_bucketname_* e *_bucketname/*_* concedono l'accesso a tut
 
 
 
+
+
+NOTE: A partire da ONTAP 9.14.1, è possibile specificare le variabili per il criterio bucket nel campo *risorse*. Queste variabili sono segnaposto che vengono sostituiti con valori contestuali quando il criterio viene valutato. Ad esempio, se `${aws:username}` viene specificata come variabile per un criterio, quindi questa variabile viene sostituita con il nome utente del contesto della richiesta e l'azione del criterio può essere eseguita come configurato per quell'utente.
 
 --
 .CLI
@@ -84,7 +87,7 @@ Un elenco di uno o più utenti o gruppi S3.
 ** È possibile specificare un massimo di 10 utenti o gruppi.
 ** Se viene specificato un gruppo S3, deve essere nel modulo `group/group_name.`
 ** `*` può essere specificato per indicare l'accesso pubblico, ovvero l'accesso senza chiave di accesso e chiave segreta.
-** Se non viene specificato alcun principal, a tutti gli utenti S3 della SVM viene concesso l'accesso.
+** Se non viene specificato alcun principal, a tutti gli utenti S3 nella VM di storage viene concesso l'accesso.
 
 
 
@@ -92,7 +95,7 @@ Un elenco di uno o più utenti o gruppi S3.
  a| 
 `-resource`
  a| 
-Il bucket e qualsiasi oggetto in esso contenuto. I caratteri jolly `*` e. `?` può essere utilizzato per formare un'espressione regolare per specificare una risorsa.
+Il bucket e qualsiasi oggetto in esso contenuto. I caratteri jolly `*` e. `?` può essere utilizzato per formare un'espressione regolare per specificare una risorsa. Per una risorsa, è possibile specificare le variabili in un criterio. Si tratta di variabili dei criteri, che vengono sostituite con i valori contestuali al momento della valutazione del criterio.
 
 |===
 +
@@ -101,17 +104,23 @@ Il bucket e qualsiasi oggetto in esso contenuto. I caratteri jolly `*` e. `?` pu
 
 
 .Esempi
-Nell'esempio seguente viene creata un'istruzione di policy bucket del server archivio oggetti per SVM svm1.example.com e bucket1 che specifica l'accesso consentito a una cartella readme per l'utente dell'utente del server archivio oggetti 1.
+Nell'esempio seguente viene creata un'istruzione del criterio del bucket del server di archiviazione oggetti per la VM di archiviazione svm1.example.com e bucket1 che specifica l'accesso consentito a una cartella Leggimi per l'utente del server di archiviazione oggetti user1.
 
 [listing]
 ----
 cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal user1 -resource bucket1/readme/* -sid "fullAccessToReadmeForUser1"
 ----
-Nell'esempio seguente viene creata un'istruzione di policy bucket del server di archiviazione oggetti per SVM svm1.example.com e bucket1 che specifica l'accesso consentito a tutti gli oggetti per il gruppo di server di archiviazione a oggetti 1.
+Nell'esempio seguente viene creata un'istruzione dei criteri del bucket server di archivio oggetti per la VM di storage svm1.example.com e bucket1 che specifica l'accesso consentito a tutti gli oggetti per il gruppo di server di archivio oggetti group1.
 
 [listing]
 ----
 cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal group/group1 -resource bucket1/* -sid "fullAccessForGroup1"
+----
+A partire da ONTAP 9.14.1, è possibile specificare le variabili per il criterio bucket. L'esempio seguente crea un'istruzione della policy del server bucket di archivi di oggetti per la VM di storage `svm1` e. `bucket1`, e specifica `${aws:username}` come variabile per una risorsa di criterio. Quando il criterio viene valutato, la variabile di criterio viene sostituita con il nome utente del contesto della richiesta e l'azione del criterio può essere eseguita come configurato per quell'utente. Ad esempio, quando viene valutata la seguente istruzione di criterio, `${aws:username}` Viene sostituito con l'utente che esegue l'operazione S3. Se un utente `user1` esegue l'operazione, a cui l'utente può accedere `bucket1` come `bucket1/user1/*`.
+
+[listing]
+----
+cluster1::> object-store-server bucket policy statement create -vserver svm1 -bucket bucket1 -effect allow -action * -principal - -resource bucket1,bucket1/${aws:username}/*##
 ----
 --
 ====

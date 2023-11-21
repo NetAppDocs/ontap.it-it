@@ -1,0 +1,73 @@
+---
+permalink: encryption-at-rest/configure-nve-svm-root-task.html 
+keywords: volume encryption, nve, svm root, encrypt 
+summary: 'NetApp Volume Encryption (NVE) è una tecnologia software per la crittografia dei dati inattivi di un volume alla volta. È possibile configurare NVE su una radice SVM che inizia con ONTAP 9.14.1.' 
+---
+= Configurare la crittografia dei volumi NetApp su un volume root della SVM
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.14.1, puoi abilitare NetApp Volume Encryption (NVE) su un volume root di una Storage VM (SVM). Con NVE, il volume root è crittografato con una chiave univoca, abilitando una maggiore sicurezza sulla SVM.
+
+.A proposito di questa attività
+NVE su un volume root di SVM può essere abilitato solo dopo che è stata creata la SVM.
+
+.Prima di iniziare
+* Il volume root della SVM non deve trovarsi in un aggregato crittografato con crittografia degli aggregati NetApp (NAE).
+* È necessario aver abilitato la crittografia con Onboard Key Manager o con un gestore di chiavi esterno.
+* È necessario eseguire ONTAP 9.14.1 o versione successiva.
+* Per migrare una SVM contenente un volume root crittografato con NVE, al termine della migrazione è necessario convertire il volume root della SVM in un volume di testo normale, quindi crittografare di nuovo il volume root della SVM.
++
+** Se l'aggregato di destinazione della migrazione SVM utilizza NAE, il volume root eredita NAE per impostazione predefinita.
+
+
+* Se la SVM si trova in una relazione di disaster recovery della SVM:
++
+** Le impostazioni di crittografia su una SVM con mirroring non vengono copiate nella destinazione. Se abiliti NVE sull'origine o sulla destinazione, devi abilitare NVE separatamente sul volume root della SVM con mirroring.
+** Se tutti gli aggregati nel cluster di destinazione utilizzano NAE, il volume root della SVM utilizzerà NAE.
+
+
+
+
+.Fasi
+Puoi abilitare NVE su un volume root di SVM con l'interfaccia a riga di comando di ONTAP o System Manager.
+
+[role="tabbed-block"]
+====
+.CLI
+--
+È possibile abilitare NVE sul volume root della SVM in-place o spostando il volume tra aggregati.
+
+.Crittografare il volume root in uso
+. Convertire il volume root in un volume crittografato:
++
+`volume encryption conversion start -vserver _svm_name_ -volume _volume_`
+
+. Conferma crittografia riuscita. Il `volume show -encryption-type volume` Visualizza un elenco di tutti i volumi che utilizzano NVE.
+
+
+.Crittografa il volume root della SVM spostandolo
+. Avvio dello spostamento di un volume:
++
+`volume move start -vserver _svm_name_ -volume _volume_ -destination-aggregate _aggregate_ -encrypt-with-aggr-key false -encrypt-destination true`
+
++
+Per ulteriori informazioni su `volume move`, vedere xref:../volumes/move-volume-task.html[Spostare un volume].
+
+. Confermare `volume move` operazione riuscita con il `volume move show` comando. Il `volume show -encryption-type volume` Visualizza un elenco di tutti i volumi che utilizzano NVE.
+
+
+--
+.System Manager
+--
+. Passare a **archiviazione** > **volumi**.
+. Selezionare, accanto al nome del volume root della SVM che si desidera crittografare image:icon_kabob.gif["tre punti verticali"] Poi **Modifica**.
+. Sotto l'intestazione **archiviazione e ottimizzazione**, selezionare **Abilita crittografia**.
+. Selezionare **Salva**.
+
+
+--
+====

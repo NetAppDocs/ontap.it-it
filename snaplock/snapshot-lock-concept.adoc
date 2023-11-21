@@ -15,6 +15,8 @@ A partire da ONTAP 9.12.1, è possibile bloccare una copia Snapshot su un volume
 
 La funzione clock di conformità SnapLock consente di bloccare le copie Snapshot per un periodo specificato in modo che non possano essere eliminate fino al raggiungimento dell'ora di scadenza. Il blocco delle copie Snapshot le rende a prova di manomissione, proteggendole dalle minacce ransomware. È possibile utilizzare le copie Snapshot bloccate per ripristinare i dati se un volume viene compromesso da un attacco ransomware.
 
+A partire da ONTAP 9.14.1, il blocco delle copie Snapshot supporta la conservazione a lungo termine delle copie Snapshot sulle destinazioni del vault SnapLock e su volumi di destinazione SnapMirror non SnapLock. Il blocco della copia Snapshot viene attivato impostando il periodo di conservazione utilizzando le regole dei criteri di SnapMirror associate a un xref:Modify an existing policy to apply long-term retention[etichetta criterio esistente]. La regola ha la priorità sul periodo di conservazione predefinito impostato sul volume. Se non esiste un periodo di conservazione associato all'etichetta SnapMirror, viene utilizzato il periodo di conservazione predefinito del volume.
+
 .Requisiti e considerazioni sulle copie Snapshot a prova di manomissione
 * Se si utilizza l'interfaccia utente di ONTAP, tutti i nodi del cluster devono eseguire ONTAP 9.12.1 o versione successiva. Se si utilizza Gestore di sistema, tutti i nodi devono eseguire ONTAP 9.13.1 o versione successiva.
 * link:https://docs.netapp.com/us-en/ontap/snaplock/install-license-task.html["La licenza SnapLock deve essere installata sul cluster"].
@@ -284,3 +286,22 @@ cluster1> volume snapshot modify-snaplock-expiry-time -volume vol1 -snapshot sna
 
 --
 ====
+
+
+=== Modifica di un criterio esistente per applicare la conservazione a lungo termine
+
+A partire da ONTAP 9.14.1, è possibile modificare una policy SnapMirror esistente aggiungendo una regola per impostare la conservazione a lungo termine delle copie Snapshot. La regola viene utilizzata per ignorare il periodo di conservazione dei volumi predefinito sulle destinazioni del vault SnapLock e sui volumi di destinazione non SnapLock SnapMirror.
+
+. Aggiunta di una regola a una policy SnapMirror esistente:
++
+`snapmirror policy add-rule -vserver <SVM name> -policy <policy name> -snapmirror-label <label name> -keep <number of Snapshot copies> -retention-period [<integer> days|months|years]`
+
++
+Nell'esempio seguente viene creata una regola che applica un periodo di conservazione di 6 mesi al criterio esistente denominato "lockvault":
+
++
+[listing]
+----
+snapmirror policy add-rule -vserver vs1 -policy lockvault -snapmirror-label test1 -keep 10 -retention-period "6 months"
+----
+

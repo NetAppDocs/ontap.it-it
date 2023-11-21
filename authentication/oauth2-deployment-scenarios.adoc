@@ -1,0 +1,144 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-deployment-scenarios.html 
+keywords: oauth 2.0, deployment, configuration, parameters, local validation, remote introspection 
+summary: 'Quando si definisce un server di autorizzazione per ONTAP, sono disponibili diverse opzioni di configurazione. In base a queste opzioni, è possibile creare un server di autorizzazione appropriato per l"ambiente di distribuzione.' 
+---
+= Scenari di distribuzione di OAuth 2,0
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Quando si definisce un server di autorizzazione per ONTAP, sono disponibili diverse opzioni di configurazione. In base a queste opzioni, è possibile creare un server di autorizzazione appropriato per l'ambiente di distribuzione.
+
+
+
+== Riepilogo dei parametri di configurazione
+
+Quando si definisce un server di autorizzazione per ONTAP, sono disponibili diversi parametri di configurazione. Questi parametri sono generalmente supportati in tutte le interfacce amministrative.
+
+I nomi dei parametri possono variare leggermente a seconda dell'interfaccia amministrativa di ONTAP. Ad esempio, quando si configura l'introspezione remota, l'endpoint viene identificato utilizzando il parametro del comando CLI `-introspection-endpoint`. Con System Manager, il campo equivalente è _Authorization server token introspection URI_. Per soddisfare tutte le interfacce amministrative di ONTAP, viene fornita una descrizione generale dei parametri. Il parametro o il campo esatto dovrebbe essere ovvio in base al contesto.
+
+[cols="25,75"]
+|===
+| Parametro | Descrizione 
+
+
+| Nome | Il nome del server di autorizzazione così come è noto a ONTAP. 
+
+
+| Applicazione | L'applicazione interna ONTAP a cui si applica la definizione. Deve essere *http*. 
+
+
+| URI emittente | FQDN con percorso che identifica il sito o l'organizzazione che emette i token. 
+
+
+| Provider JWKS URI | L'FQDN con percorso e nome file in cui ONTAP ottiene i set di chiavi Web JSON utilizzati per convalidare i token di accesso. 
+
+
+| Intervallo di aggiornamento JWKS | L'intervallo di tempo che determina la frequenza con cui ONTAP aggiorna le informazioni del certificato dall'URI JWKS del provider. Il valore è specificato in formato ISO-8601. 
+
+
+| Endpoint introspezione | L'FQDN con percorso utilizzato da ONTAP per eseguire la convalida dei token remoti tramite introspezione. 
+
+
+| ID client | Il nome del client come definito nel server di autorizzazione. Quando questo valore è incluso, è necessario anche fornire il segreto client associato in base all'interfaccia. 
+
+
+| Proxy in uscita | In questo modo viene fornito l'accesso al server di autorizzazione quando ONTAP è protetto da un firewall. L'URI deve essere in formato Curl. 
+
+
+| Utilizzare i ruoli locali, se presenti | Un flag booleano che determina se vengono utilizzate le definizioni ONTAP locali, inclusi un ruolo REST denominato e gli utenti locali. 
+
+
+| Rimuovere la richiesta di rimborso dell'utente | Un nome alternativo utilizzato da ONTAP per associare gli utenti locali. Utilizzare `sub` nel token di accesso in modo che corrisponda al nome utente locale. 
+|===
+
+
+== Scenari di distribuzione
+
+Di seguito vengono presentati diversi scenari di distribuzione comuni. Sono organizzati in base al fatto che la convalida dei token venga eseguita localmente da ONTAP o in remoto dal server di autorizzazione. Ogni scenario include un elenco delle opzioni di configurazione richieste. Vedere link:../authentication/oauth2-deploy-ontap.html["Implementa OAuth 2,0 in ONTAP"] per esempi dei comandi di configurazione.
+
+
+TIP: Dopo aver definito un server di autorizzazione, è possibile visualizzarne la configurazione tramite l'interfaccia amministrativa di ONTAP. Ad esempio, utilizzare il comando `security oauth2 client show` Con l'interfaccia a riga di comando di ONTAP.
+
+
+
+=== Convalida locale
+
+I seguenti scenari di distribuzione si basano su ONTAP che esegue la convalida dei token localmente.
+
+.Utilizzare gli oscilloscopi autonomi senza proxy
+Questa è l'implementazione più semplice che utilizza solo gli oscilloscopi indipendenti OAuth 2,0. Nessuna delle definizioni di identità ONTAP locali viene utilizzata. È necessario includere i seguenti parametri:
+
+* Nome
+* Applicazione (http)
+* Provider JWKS URI
+* URI emittente
+
+
+È inoltre necessario aggiungere gli ambiti al server di autorizzazione.
+
+.Utilizzare gli oscilloscopi autonomi con un proxy
+Questo scenario di distribuzione utilizza gli oscilloscopi indipendenti OAuth 2,0. Nessuna delle definizioni di identità ONTAP locali viene utilizzata. Ma il server di autorizzazione è protetto da un firewall e quindi è necessario configurare un proxy. È necessario includere i seguenti parametri:
+
+* Nome
+* Applicazione (http)
+* Provider JWKS URI
+* Proxy in uscita
+* URI emittente
+* Pubblico
+
+
+È inoltre necessario aggiungere gli ambiti al server di autorizzazione.
+
+.Utilizzare ruoli utente locali e associazione nome utente predefinita con un proxy
+Questo scenario di distribuzione utilizza ruoli utente locali con mappatura dei nomi predefinita. La richiesta di rimborso dell'utente remoto utilizza il valore predefinito di `sub` quindi questo campo nel token di accesso viene utilizzato per corrispondere al nome utente locale. Il nome utente deve contenere al massimo 40 caratteri. Il server di autorizzazione è protetto da un firewall, quindi è necessario configurare anche un proxy. È necessario includere i seguenti parametri:
+
+* Nome
+* Applicazione (http)
+* Provider JWKS URI
+* Utilizzare i ruoli locali, se presenti (`true`)
+* Proxy in uscita
+* Emittente
+
+
+È necessario assicurarsi che l'utente locale sia definito su ONTAP.
+
+.Utilizzare ruoli utente locali e mapping nome utente alternativo con un proxy
+Questo scenario di distribuzione utilizza ruoli utente locali con un nome utente alternativo utilizzato per associare un utente ONTAP locale. Il server di autorizzazione è protetto da un firewall, quindi è necessario configurare un proxy. È necessario includere i seguenti parametri:
+
+* Nome
+* Applicazione (http)
+* Provider JWKS URI
+* Utilizzare i ruoli locali, se presenti (`true`)
+* Richiesta di rimborso per utenti remoti
+* Proxy in uscita
+* URI emittente
+* Pubblico
+
+
+È necessario assicurarsi che l'utente locale sia definito su ONTAP.
+
+
+
+=== Introspezione remota
+
+Le seguenti configurazioni di distribuzione si basano su ONTAP che esegue la convalida dei token in modalità remota tramite introspezione.
+
+.Utilizzare gli oscilloscopi autonomi senza proxy
+Si tratta di una semplice implementazione basata sull'utilizzo degli oscilloscopi indipendenti OAuth 2,0. Nessuna delle definizioni di identità ONTAP viene utilizzata. È necessario includere i seguenti parametri:
+
+* Nome
+* Applicazione (http)
+* Endpoint introspezione
+* ID client
+* URI emittente
+
+
+È necessario definire gli ambiti, nonché il segreto client e client nel server di autorizzazione.

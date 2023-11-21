@@ -1,0 +1,75 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-mutual-tls.html 
+keywords: tls, mutual tls, mtls, sender-constrained access tokens, confirmation claim 
+summary: 'A seconda delle esigenze di protezione, è possibile configurare il protocollo mTLS (Mutual TLS) per implementare l"autenticazione client avanzata. Quando viene utilizzato con ONTAP come parte di una distribuzione OAuth 2,0, mTLS garantisce che i token di accesso vengano utilizzati solo dai client ai quali sono stati originariamente emessi.' 
+---
+= Autenticazione client mediante TLS reciproco
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+A seconda delle esigenze di protezione, è possibile configurare il protocollo mTLS (Mutual TLS) per implementare l'autenticazione client avanzata. Quando viene utilizzato con ONTAP come parte di una distribuzione OAuth 2,0, mTLS garantisce che i token di accesso vengano utilizzati solo dai client ai quali sono stati originariamente emessi.
+
+
+
+== TLS reciproco con OAuth 2,0
+
+Transport Layer Security (TLS) viene utilizzato per stabilire un canale di comunicazione sicuro tra due applicazioni, in genere un browser client e un server Web. Il TLS reciproco estende questa funzione fornendo una solida identificazione del client tramite un certificato client. Quando viene utilizzata in un cluster ONTAP con OAuth 2,0, la funzionalità mTLS di base viene estesa creando e utilizzando token di accesso con vincoli di mittente.
+
+Un token di accesso vincolato dal mittente può essere utilizzato solo dal client al quale è stato originariamente emesso. Per supportare questa funzione, è necessario presentare una nuova richiesta di conferma (`cnf`) è inserito nel token. Il campo contiene proprietà `x5t#S256` che contiene un digest del certificato client utilizzato quando si richiede il token di accesso. Questo valore viene verificato da ONTAP come parte della convalida del token. I token di accesso emessi dai server di autorizzazione che non sono vincolati dal mittente non includono la richiesta di conferma aggiuntiva.
+
+È necessario configurare ONTAP in modo che utilizzi mTLS separatamente per ogni server di autorizzazione. Ad esempio, il comando CLI `security oauth2 client` include il parametro `use-mutual-tls` Per controllare l'elaborazione mTLS in base a tre valori, come mostrato nella tabella seguente.
+
+
+NOTE: In ogni configurazione, il risultato e l'azione intrapresi da ONTAP dipendono dal valore del parametro di configurazione, dal contenuto del token di accesso e dal certificato client. I parametri nella tabella sono organizzati dal minimo al più restrittivo.
+
+[cols="25,75"]
+|===
+| Parametro | Descrizione 
+
+
+| nessuno | L'autenticazione TLS reciproca OAuth 2,0 è completamente disattivata per il server di autorizzazione. ONTAP non eseguirà l'autenticazione del certificato client mTLS anche se la richiesta di conferma è presente nel token o se viene fornito un certificato client con la connessione TLS. 
+
+
+| richiesta | L'autenticazione reciproca TLS OAuth 2,0 viene applicata se il client presenta un token di accesso con restrizioni del mittente. Vale a dire, mTLS viene applicato solo se la richiesta di conferma (con proprietà `x5t#S256`) è presente nel token di accesso. Questa è l'impostazione predefinita. 
+
+
+| obbligatorio | L'autenticazione TLS reciproca OAuth 2,0 viene applicata per tutti i token di accesso emessi dal server di autorizzazione. Pertanto, tutti i token di accesso devono essere vincolati dal mittente. L'autenticazione e la richiesta dell'API REST non riescono se la richiesta di conferma non è presente nel token di accesso o se è presente un certificato client non valido. 
+|===
+
+
+== Flusso di implementazione di alto livello
+
+Di seguito vengono illustrati i passaggi tipici richiesti quando si utilizza mTLS con OAuth 2,0 in un ambiente ONTAP. Vedere https://www.rfc-editor.org/info/rfc8705["RFC 8705: Autenticazione client OAuth 2,0 Mutual-TLS e token di accesso con associazione a certificati"^] per ulteriori dettagli.
+
+.Passaggio 1: Creare e installare un certificato client
+La definizione dell'identità del client si basa sulla prova della conoscenza di una chiave privata del client. La chiave pubblica corrispondente viene inserita in un certificato X,509 firmato presentato dal cliente. A un livello elevato, i passaggi necessari per la creazione del certificato client includono:
+
+. Generare una coppia di chiavi pubbliche e private
+. Creare una richiesta di firma del certificato
+. Inviare il file CSR a una CA nota
+. CA verifica la richiesta ed emette il certificato firmato
+
+
+In genere è possibile installare il certificato client nel sistema operativo locale o utilizzarlo direttamente con un'utilità comune, ad esempio curl.
+
+.Passaggio 2: Configurare ONTAP per l'utilizzo di mTLS
+È necessario configurare ONTAP per utilizzare mTLS. Questa configurazione viene eseguita separatamente per ogni server di autorizzazione. Ad esempio, con il CLI il comando `security oauth2 client` viene utilizzato con il parametro opzionale `use-mutual-tls`. Vedere link:../authentication/oauth2-deploy-ontap.html["Implementa OAuth 2,0 in ONTAP"] per ulteriori informazioni.
+
+.Passaggio 3: Il client richiede un token di accesso
+Il client deve richiedere un token di accesso dal server di autorizzazione configurato su ONTAP. L'applicazione client deve utilizzare mTLS con il certificato creato e installato nel passaggio 1.
+
+.Passaggio 4: Il server di autorizzazione genera il token di accesso
+Il server di autorizzazione verifica la richiesta del client e genera un token di accesso. Come parte di ciò, crea un riepilogo del messaggio del certificato client che è incluso nel token come richiesta di conferma (campo `cnf`).
+
+.Passaggio 5: L'applicazione client presenta il token di accesso a ONTAP
+L'applicazione client effettua una chiamata API REST al cluster ONTAP e include il token di accesso nell'intestazione della richiesta di autorizzazione come token *bearer*. Il client deve utilizzare mTLS con lo stesso certificato utilizzato per richiedere il token di accesso.
+
+.Passaggio 6: ONTAP verifica client e token.
+ONTAP riceve il token di accesso in una richiesta HTTP e il certificato client utilizzato come parte dell'elaborazione mTLS. ONTAP prima convalida la firma nel token di accesso. In base alla configurazione, ONTAP genera un riepilogo dei messaggi del certificato client e lo confronta con l'attestazione di conferma *cnf* nel token. Se i due valori corrispondono, ONTAP ha confermato che il client che effettua la richiesta API è lo stesso client a cui è stato originariamente emesso il token di accesso.

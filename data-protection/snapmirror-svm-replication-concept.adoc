@@ -1,7 +1,7 @@
 ---
 permalink: data-protection/snapmirror-svm-replication-concept.html 
 sidebar: sidebar 
-keywords: understand, snapmirror, svm, replication, SVM DR storage limits 
+keywords: understand, snapmirror, svm, replication, SVM disaster recovery storage limits 
 summary: È possibile utilizzare SnapMirror per creare una relazione di protezione dei dati tra SVM. In questo tipo di relazione di protezione dei dati, viene replicata tutta o parte della configurazione di SVM, dalle esportazioni NFS e dalle condivisioni SMB a RBAC, nonché i dati nei volumi di proprietà di SVM. 
 ---
 = Informazioni sulla replica di SnapMirror SVM
@@ -26,7 +26,8 @@ A partire da ONTAP 9.9.1, questo comportamento cambia quando si utilizza il crit
 +
 ** Non vengono sovrascritti dall'origine alla destinazione durante le normali operazioni pianificate, gli aggiornamenti e la risincronizzazione
 ** Non vengono cancellati durante le operazioni di interruzione.
-** Non vengono cancellati durante le operazioni flip-resync. Quando si configura una relazione DR SVM utilizzando il criterio del vault mirror con ONTAP 9.9.1 e versioni successive, il criterio si comporta come segue:
+** Non vengono cancellati durante le operazioni flip-resync.
+Quando si configura una relazione di emergenza SVM utilizzando il criterio mirror-vault utilizzando ONTAP 9.9.1 e versioni successive, il criterio si comporta come segue:
 ** I criteri di copia Snapshot definiti dall'utente all'origine non vengono copiati nella destinazione.
 ** I criteri di copia Snapshot definiti dal sistema non vengono copiati nella destinazione.
 ** L'associazione dei volumi con le policy Snapshot definite dall'utente e dal sistema non viene copiata nella destinazione. + SVM.
@@ -104,7 +105,7 @@ I dettagli sulle modifiche di default sono disponibili qui: link:version-flexibl
 
 [NOTE]
 ====
-L'indipendenza dalla versione non è supportata per la replica SVM. In una configurazione DR SVM, la SVM di destinazione deve trovarsi su un cluster che esegue la stessa versione di ONTAP del cluster SVM di origine per supportare le operazioni di failover e failback.
+L'indipendenza dalla versione non è supportata per la replica SVM. In una configurazione di disaster recovery delle SVM, la SVM di destinazione deve trovarsi su un cluster dotato della stessa versione di ONTAP del cluster SVM di origine per supportare le operazioni di failover e failback.
 
 ====
 link:compatible-ontap-versions-snapmirror-concept.html["Versioni ONTAP compatibili per le relazioni SnapMirror"]
@@ -117,7 +118,7 @@ Il contenuto di una relazione di replica SVM è determinato dall'interazione dei
 
 * Il `-identity-preserve true` opzione di `snapmirror create` Il comando replica l'intera configurazione SVM.
 +
-Il `-identity-preserve false` L'opzione replica solo i volumi e le configurazioni di autenticazione e autorizzazione della SVM, nonché le impostazioni del protocollo e del servizio nomi elencate nella link:snapmirror-svm-replication-concept.html#configurations-replicated-in-svm-dr-relationships["Configurazioni replicate nelle relazioni di DR SVM"].
+Il `-identity-preserve false` L'opzione replica solo i volumi e le configurazioni di autenticazione e autorizzazione della SVM, nonché le impostazioni del protocollo e del servizio nomi elencate nella link:snapmirror-svm-replication-concept.html#configurations-replicated-in-svm-dr-relationships["Configurazioni replicate nelle relazioni di disaster recovery delle SVM"].
 
 * Il `-discard-configs network` opzione di `snapmirror policy create` Il comando esclude le LIF e le relative impostazioni di rete dalla replica SVM, da utilizzare nei casi in cui le SVM di origine e di destinazione si trovano in sottoreti diverse.
 * Il `-vserver-dr-protection unprotected` opzione di `volume modify` Il comando esclude il volume specificato dalla replica SVM.
@@ -139,9 +140,21 @@ La seguente tabella mostra i dettagli del supporto per la replica SVM di SnapMir
 
 
  a| 
+Tipi di implementazione
+ a| 
+* Da origine singola a destinazione singola
+* A partire da ONTAP 9.4, fan-out. È possibile eseguire la fan-out solo su due destinazioni.
++
+Per impostazione predefinita, è consentita una sola relazione effettiva -Identity-Preserve per SVM di origine.
+
+
+
+
+
+ a| 
 Tipi di relazione
  a| 
-* Dr. SnapMirror
+* Disaster recovery SnapMirror
 * A partire da ONTAP 9.2, la replica unificata di SnapMirror
 
 
@@ -155,25 +168,6 @@ Solo intercluster. Non è possibile replicare le SVM nello stesso cluster.
 
 
  a| 
-Indipendenza dalla versione
- a| 
-Non supportato.
-
-
-
- a| 
-Tipi di implementazione
- a| 
-* Da origine singola a destinazione singola
-* A partire da ONTAP 9.4, fan-out. È possibile eseguire la fan-out solo su due destinazioni.
-+
-Per impostazione predefinita, è consentita una sola relazione effettiva -Identity-Preserve per SVM di origine.
-
-
-
-
-
- a| 
 Protezione ransomware autonoma
  a| 
 * Supportato a partire da ONTAP 9.12.1. Per ulteriori informazioni, vedere link:https://docs.netapp.com/us-en/ontap/anti-ransomware/index.html["Protezione ransomware autonoma"]
@@ -182,13 +176,9 @@ Protezione ransomware autonoma
 
 
  a| 
-Crittografia dei volumi
+Supporto asincrono gruppi di coerenza
  a| 
-* I volumi crittografati sull'origine vengono crittografati sulla destinazione.
-* I server Onboard Key Manager o KMIP devono essere configurati sulla destinazione.
-* Le nuove chiavi di crittografia vengono generate alla destinazione.
-* Se la destinazione non contiene un nodo che supporta la crittografia .volume, la replica ha esito positivo, ma i volumi di destinazione non vengono crittografati.
-
+A partire da ONTAP 9.14.1, sono supportate massimo 32 relazioni di disaster recovery SVM in presenza di gruppi di coerenza. Vedere link:https://docs.netapp.com/us-en/ontap/consistency-groups/protect-task.html["Proteggere un gruppo di coerenza"] e. link:https://docs.netapp.com/us-en/ontap/consistency-groups/limits.html["Limiti del gruppo di coerenza"] per ulteriori informazioni.
 
 
 
@@ -202,41 +192,66 @@ A partire da ONTAP 9.6, la replica SVM di SnapMirror è supportata con FabricPoo
  a| 
 MetroCluster
  a| 
-A partire da ONTAP 9.11.1, entrambi i lati di una relazione di DR SVM all'interno di una configurazione MetroCluster possono fungere da origine per ulteriori configurazioni di DR SVM.
+A partire da ONTAP 9.11.1, entrambi i lati di una relazione di disaster recovery SVM all'interno di una configurazione MetroCluster possono fungere da origine per ulteriori configurazioni di disaster recovery SVM.
 
 A partire da ONTAP 9.5, la replica SVM di SnapMirror è supportata nelle configurazioni MetroCluster.
 
-* Una configurazione MetroCluster non può essere la destinazione di una relazione DR SVM.
-* Solo una SVM attiva all'interno di una configurazione MetroCluster può essere l'origine di una relazione DR SVM.
+* Una configurazione MetroCluster non può essere la destinazione di una relazione di disaster recovery della SVM.
+* Solo una SVM attiva all'interno di una configurazione MetroCluster può essere l'origine di una relazione di disaster recovery SVM.
 +
 Un'origine può essere una SVM di origine della sincronizzazione prima dello switchover o una SVM di destinazione della sincronizzazione dopo lo switchover.
 
-* Quando una configurazione MetroCluster si trova in uno stato stabile, la SVM di destinazione della sincronizzazione MetroCluster non può essere l'origine di una relazione DR SVM, poiché i volumi non sono online.
-* Quando la SVM di origine della sincronizzazione è l'origine di una relazione DR con SVM, le informazioni di relazione DR con SVM di origine vengono replicate nel partner MetroCluster.
-* Durante i processi di switchover e switchback, la replica alla destinazione DR SVM potrebbe non riuscire.
+* Quando una configurazione MetroCluster si trova in uno stato stabile, la SVM di destinazione della sincronizzazione MetroCluster non può essere l'origine di una relazione di disaster recovery SVM, poiché i volumi non sono online.
+* Quando la SVM sync-source è l'origine di una relazione di disaster recovery della SVM, le informazioni della relazione di disaster recovery della SVM di origine vengono replicate al partner MetroCluster.
+* Durante i processi di switchover e switchback, è possibile che si verifichi un errore nella replica alla destinazione di disaster recovery della SVM.
 +
-Tuttavia, una volta completato il processo di switchover o switchback, gli aggiornamenti pianificati per il DR SVM successivi avranno esito positivo.
+Tuttavia, al termine del processo di switchover o switchback, gli aggiornamenti pianificati del disaster recovery della SVM successivo avranno esito positivo.
 
 
+
+
+
+ a| 
+Gruppo di coerenza
+ a| 
+Supportato a partire da ONTAP 9.14.1. Per ulteriori informazioni, vedere xref:../consistency-groups/protect.html[Proteggere un gruppo di coerenza].
 
 
 
  a| 
 ONTAP S3
  a| 
-Non supportato con DR SVM.
+Non supportato con disaster recovery SVM.
 
 
 
  a| 
 SnapMirror sincrono
  a| 
-Non supportato con DR SVM.
+Non supportato con disaster recovery SVM.
+
+
+
+ a| 
+Indipendenza dalla versione
+ a| 
+Non supportato.
+
+
+
+ a| 
+Crittografia dei volumi
+ a| 
+* I volumi crittografati sull'origine vengono crittografati sulla destinazione.
+* I server Onboard Key Manager o KMIP devono essere configurati sulla destinazione.
+* Le nuove chiavi di crittografia vengono generate alla destinazione.
+* Se la destinazione non contiene un nodo che supporta la crittografia .volume, la replica ha esito positivo, ma i volumi di destinazione non vengono crittografati.
+
 
 |===
 
 
-== Configurazioni replicate nelle relazioni di DR SVM
+== Configurazioni replicate nelle relazioni di disaster recovery delle SVM
 
 La seguente tabella mostra l'interazione di `snapmirror create -identity-preserve` e il `snapmirror policy create -discard-configs network` opzione:
 
@@ -854,9 +869,9 @@ No
 |===
 
 
-== Limiti dello storage DR SVM
+== Limiti storage per il disaster recovery delle SVM
 
-La seguente tabella mostra il numero massimo consigliato di volumi e relazioni di DR SVM supportati per oggetto di storage. Devi essere consapevole che i limiti sono spesso dipendenti dalla piattaforma. Fare riferimento a. link:https://hwu.netapp.com/["Hardware Universe"^] per conoscere i limiti della configurazione specifica.
+Nella tabella seguente viene indicato il numero massimo consigliato di volumi e relazioni di disaster recovery delle SVM supportate per ogni oggetto storage. Devi essere consapevole che i limiti sono spesso dipendenti dalla piattaforma. Fare riferimento a. link:https://hwu.netapp.com/["Hardware Universe"^] per conoscere i limiti della configurazione specifica.
 
 [cols="2*"]
 |===
@@ -882,6 +897,6 @@ Coppia HA
  a| 
 Cluster
  a| 
-128 rapporti di DR con SVM
+128 relazioni di disastro delle SVM
 
 |===

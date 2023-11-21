@@ -1,7 +1,7 @@
 ---
 permalink: encryption-at-rest/configure-netapp-volume-encryption-concept.html 
 sidebar: sidebar 
-keywords: configure, netapp, volume encryption, nve, aggregate-level, support details, data encryption, encrypt data at rest, storage encryption, key 
+keywords: volume encryption, nve, aggregate-level, support details, data encryption, encrypt data at rest, storage encryption, key 
 summary: 'NetApp Volume Encryption (NVE) è una tecnologia software per la crittografia dei dati inattivi di un volume alla volta. Una chiave di crittografia accessibile solo al sistema di storage impedisce la lettura dei dati del volume in caso di riallocazione, restituzione, smarrimento o furto del dispositivo sottostante.' 
 ---
 = Panoramica sulla configurazione di NetApp Volume Encryption
@@ -25,15 +25,14 @@ Con NVE, sia i metadati che i dati (incluse le copie Snapshot) vengono crittogra
 
 A partire da ONTAP 9.7, la crittografia aggregata e del volume è attivata per impostazione predefinita se si dispone di una licenza di crittografia del volume (VE) e si utilizza un gestore di chiavi integrato o esterno. Ogni volta che viene configurato un gestore di chiavi esterno o integrato, viene modificato il modo in cui viene configurata la crittografia dei dati inattivi per aggregati nuovi di zecca e volumi nuovi di zecca. I nuovi aggregati avranno NetApp aggregate Encryption (NAE) abilitato per impostazione predefinita. I volumi nuovi di zecca che non fanno parte di un aggregato NAE avranno NetApp Volume Encryption (NVE) abilitato per impostazione predefinita. Se una macchina virtuale per lo storage dei dati (SVM) viene configurata con un proprio gestore delle chiavi utilizzando la gestione delle chiavi multi-tenant, il volume creato per tale SVM viene configurato automaticamente con NVE.
 
-È possibile attivare la crittografia su un volume nuovo o esistente. NVE supporta la gamma completa di funzionalità per l'efficienza dello storage, tra cui deduplica e compressione.
+È possibile attivare la crittografia su un volume nuovo o esistente. NVE supporta la gamma completa di funzionalità per l'efficienza dello storage, tra cui deduplica e compressione. A partire da ONTAP 9.14.1, è possibile xref:/configure-nve-svm-root-task.html[Abilitazione di NVE su volumi root SVM esistenti].
 
 
 NOTE: Se si utilizza SnapLock, è possibile attivare la crittografia solo su volumi SnapLock nuovi e vuoti. Non è possibile attivare la crittografia su un volume SnapLock esistente.
 
 È possibile utilizzare NVE su qualsiasi tipo di aggregato (HDD, SSD, ibrido, LUN array), con qualsiasi tipo di RAID e in qualsiasi implementazione ONTAP supportata, incluso ONTAP Select. È inoltre possibile utilizzare NVE con crittografia basata su hardware per "crittografare `ddoppio`" i dati su dischi con crittografia automatica.
 
-
-NOTE: I sistemi AFF A220, AFF A800, FAS2720, FAS2750 e versioni successive memorizzano i core dump sul dispositivo di boot. Quando NVE è attivato su questi sistemi, anche il core dump viene crittografato.
+Quando NVE è abilitato, anche il core dump è crittografato.
 
 
 
@@ -72,7 +71,7 @@ L'ambito della gestione esterna delle chiavi determina se i server di gestione d
 
 * È possibile utilizzare un _ambito del cluster_ per configurare la gestione delle chiavi esterne per tutte le SVM nel cluster. L'amministratore del cluster ha accesso a tutte le chiavi memorizzate sui server.
 * A partire da ONTAP 9.6, è possibile utilizzare un _ambito SVM_ per configurare la gestione delle chiavi esterne per una SVM denominata nel cluster. Questo è il meglio per gli ambienti multi-tenant in cui ciascun tenant utilizza una SVM (o un insieme di SVM) diversa per la distribuzione dei dati. Solo l'amministratore SVM di un determinato tenant ha accesso alle chiavi del tenant.
-* A partire da ONTAP 9.10.1, è possibile utilizzare xref:manage-keys-azure-google-task.html[Azure Key Vault e Google Cloud KMS] Per proteggere le chiavi NVE solo per i vserver di dati.
+* A partire da ONTAP 9.10.1, è possibile utilizzare xref:manage-keys-azure-google-task.html[Azure Key Vault e Google Cloud KMS] Proteggere le chiavi NVE solo per dati SVM. Questa funzione è disponibile per i sistemi KMS di AWS a partire dal 9.12.0.
 
 
 È possibile utilizzare entrambi gli ambiti nello stesso cluster. Se i server di gestione delle chiavi sono stati configurati per una SVM, ONTAP utilizza solo questi server per proteggere le chiavi. In caso contrario, ONTAP protegge le chiavi con i server di gestione delle chiavi configurati per il cluster.
@@ -144,7 +143,7 @@ RAID0, RAID4, RAID-DP, RAID-TEC.
  a| 
 Volumi
  a| 
-Volumi di dati e volumi root esistenti. Non è possibile crittografare i dati su un volume root SVM o su volumi di metadati MetroCluster.
+Volumi di dati e volumi root della SVM esistenti. Non puoi crittografare i dati sui volumi di metadati MetroCluster. Nelle versioni di ONTAP precedenti alla 9.14.1, non è possibile crittografare i dati sul volume root della SVM con NVE. A partire da ONTAP 9.14.1, ONTAP supporta xref:configure-nve-svm-root-task.html[NVE su volumi root SVM].
 
 
 

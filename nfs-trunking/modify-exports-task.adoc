@@ -1,0 +1,53 @@
+---
+permalink: nfs-trunking/modify-exports-task.html 
+sidebar: sidebar 
+keywords: NFS, servers, network, NFS trunking, NIC, export, policies, rule, Linux, VMware, datastores, client 
+summary: Per consentire ai client di sfruttare il trunking per le condivisioni di dati esistenti, potrebbe essere necessario modificare i criteri e le regole di esportazione e i volumi a cui sono collegati. 
+---
+= Modificare l'esportazione dei dati per l'accesso client
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per consentire ai client di sfruttare il trunking per le condivisioni di dati esistenti, potrebbe essere necessario modificare i criteri e le regole di esportazione e i volumi a cui sono collegati. Esistono diversi requisiti di esportazione per i client Linux e i datastore VMware.
+
+Requisiti di esportazione client:
+
+* I client Linux devono avere un mount separato e un mount point separato per ogni connessione trunking (vale a dire, per ogni LIF).
++
+Se si esegue l'aggiornamento a ONTAP 9.14.1 ed è già stato esportato un volume, è possibile continuare a utilizzare tale volume in un gruppo trunking.
+
+* I client VMware richiedono solo un punto di montaggio singolo per un volume esportato, con diverse LIF specificate.
++
+I client VMware richiedono l'accesso root nel criterio di esportazione.
+
+
+
+.Fasi
+. Verificare che sia in vigore un criterio di esportazione esistente:
++
+`vserver export-policy show`
+
+. Verificare che le regole dei criteri di esportazione esistenti siano appropriate per la configurazione trunking:
++
+`vserver export-policy rule show -policyname _policy_name_`
+
++
+In particolare, verificare che `-clientmatch` Parametro identifica correttamente i client Linux o VMware che supportano il trunking che montano l'esportazione.
+
++
+Se sono necessarie regolazioni, modificare la regola utilizzando `vserver export-policy rule modify` o creare una nuova regola:
+
++
+`vserver export-policy rule create -vserver _svm_name_ -policyname _policy_name_ -ruleindex integer -protocol nfs4 -clientmatch { text | "text,text,…" } -rorule _security_type_ -rwrule _security_type_ -superuser _security_type_ -anon _user_ID_`
+
++
+Scopri di più link:../nfs-config/add-rule-export-policy-task.html["creazione di regole di esportazione."]
+
+. Verificare che i volumi esportati esistenti siano online:
++
+`volume show -vserver _svm_name_`
+
+

@@ -1,0 +1,51 @@
+---
+permalink: nfs-trunking/reestablish-client-mount-task.html 
+sidebar: sidebar 
+keywords: NFS, servers, network, NFS trunking, data, shares, Linux, VMware, mounts, client 
+summary: Per convertire le connessioni client non trunked in connessioni trunked, i mount esistenti sui client Linux e VMware devono essere smontati e rimontati utilizzando le informazioni sulle LIF. 
+---
+= Ristabilire i montaggi dei client
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per convertire le connessioni client non trunked in connessioni trunked, i mount esistenti sui client Linux e VMware devono essere smontati e rimontati utilizzando le informazioni sulle LIF.
+
+Quando si immettono i comandi mount sui client, è necessario immettere gli indirizzi IP per ogni LIF nel gruppo trunking.
+
+Scopri di più link:index.html#supported-clients["client supportati"].
+
+
+NOTE: L'annullamento del montaggio dei client VMware provoca interruzioni per le macchine virtuali presenti nel datastore. Un'alternativa potrebbe essere creare un nuovo datastore abilitato per il trunking e utilizzare *storage vmotion* per spostare le macchine virtuali dal vecchio datastore al nuovo. Per ulteriori informazioni, consultare la documentazione VMware.
+
+[role="tabbed-block"]
+====
+.Requisiti del client Linux
+--
+È necessario un punto di montaggio separato per ciascuna connessione nel gruppo trunking.
+
+Montare i volumi esportati con comandi simili ai seguenti:
+
+`mount lif1_ip:/vol-test /mnt/test1 -o vers=4.1,max_connect=2`
+
+`mount lif2_ip:/vol-test /mnt/test2 -o vers=4.1,max_connect=2`
+
+Il `vers` il valore deve essere `4.1` o versioni successive.
+
+Il `max_connect` il valore deve corrispondere al numero di connessioni nel gruppo trunking.
+
+--
+.Requisiti del client VMware
+--
+È necessaria un'istruzione mount che includa un indirizzo IP per ciascuna connessione nel gruppo trunking.
+
+Montare il datastore esportato con un comando simile al seguente:
+
+`#esxcli storage nfs41 -H lif1_ip, lif2_ip -s /mnt/sh are1 -v nfs41share`
+
+Il `-H` i valori devono corrispondere alle connessioni nel gruppo trunking.
+
+--
+====

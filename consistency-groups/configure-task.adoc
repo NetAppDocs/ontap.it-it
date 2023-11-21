@@ -13,10 +13,10 @@ summary: 'Crea un singolo gruppo di coerenza per la gestione del carico di lavor
 [role="lead"]
 È possibile creare gruppi di coerenza con volumi esistenti o nuove LUN o volumi (a seconda della versione di ONTAP). È possibile associare un volume o un LUN a un solo gruppo di coerenza alla volta.
 
-.Prima di iniziare
+.A proposito di questa attività
 * In ONTAP dalla versione 9.10.1 alla 9.11.1, la modifica dei volumi membro di un gruppo di coerenza dopo la sua creazione non è supportata.
 +
-A partire da ONTAP 9.12.1, è possibile modificare i volumi dei membri di un gruppo di coerenza. Per ulteriori informazioni su questo processo, fare riferimento a. xref:modify-task.html[Modificare un gruppo di coerenza].
+A partire da ONTAP 9.12.1, è possibile modificare i volumi membri di un gruppo di coerenza. Per ulteriori informazioni su questo processo, fare riferimento a. xref:modify-task.html[Modificare un gruppo di coerenza].
 
 
 
@@ -24,17 +24,21 @@ A partire da ONTAP 9.12.1, è possibile modificare i volumi dei membri di un gru
 
 == Creare un gruppo di coerenza con nuove LUN o volumi
 
-In ONTAP dalla versione 9.10.1 alla versione 9.12.1, è possibile creare un gruppo di coerenza utilizzando nuove LUN. A partire da ONTAP 9.13.1, System Manager supporta anche la creazione di un gruppo di coerenza con nuovi spazi dei nomi NVMe o nuovi volumi NAS. (Questo è supportato anche nell'API REST di ONTAP a partire da ONTAP 9.12.1).
+In ONTAP dalla versione 9.10.1 alla versione 9.12.1, è possibile creare un gruppo di coerenza utilizzando nuove LUN. A partire da ONTAP 9.13.1, System Manager supporta anche la creazione di un gruppo di coerenza con nuovi namespace NVMe o nuovi volumi NAS. (Questo è supportato anche nell'API REST di ONTAP a partire da ONTAP 9.12.1).
 
+[role="tabbed-block"]
+====
+.System Manager
+--
 .Fasi
 . Selezionare *Storage > Consistency groups*.
 . Selezionare *+Aggiungi*, quindi selezionare il protocollo per l'oggetto di storage.
 +
-In ONTAP dalla versione 9.10.1 alla 9.12.1, l'unica opzione per un nuovo oggetto di storage è **l'utilizzo di nuove LUN**. A partire da ONTAP 9.13.1, System Manager supporta la creazione di gruppi di coerenza con nuovi spazi dei nomi NVMe e nuovi volumi NAS.
+In ONTAP dalla versione 9.10.1 alla 9.12.1, l'unica opzione per un nuovo oggetto di storage è **l'utilizzo di nuove LUN**. A partire da ONTAP 9.13.1, System Manager supporta la creazione di gruppi di coerenza con nuovi namespace NVMe e nuovi volumi NAS.
 
 . Assegnare un nome al gruppo di coerenza. Indicare il numero di volumi o LUN e la capacità per volume o LUN.
 +
-.. **Tipo di applicazione**: Se si utilizza ONTAP 9.12.1 o versione successiva, selezionare un tipo di applicazione. Se non viene selezionato alcun valore, al gruppo di coerenza viene assegnato il tipo **Altro** per impostazione predefinita. Scopri di più sulla coerenza dei tag in xref:index.html#application-and-component-tags[Tag di applicazioni e componenti]. Se si intende creare un gruppo di coerenza con un criterio di protezione remota, è necessario utilizzare *Altro*.
+.. **Tipo di applicazione**: Se si utilizza ONTAP 9.12.1 o versione successiva, selezionare un tipo di applicazione. Se non viene selezionato alcun valore, al gruppo di coerenza viene assegnato il tipo **Altro** per impostazione predefinita. Scopri di più sulla coerenza dei tag in xref:modify-tags-task.html[Tag di applicazioni e componenti]. Se si intende creare un gruppo di coerenza con un criterio di protezione remota, è necessario utilizzare *Altro*.
 .. Per **nuovi LUN**: Selezionare il sistema operativo host e il formato LUN. Inserire le informazioni dell'iniziatore host.
 .. Per **nuovi volumi NAS**: Scegliere l'opzione di esportazione appropriata (NFS o SMB/CIFS) in base alla configurazione NAS della SVM.
 .. Per **nuovi spazi dei nomi NVMe**: Selezionare il sistema operativo host e il sottosistema NVMe.
@@ -45,12 +49,48 @@ In ONTAP dalla versione 9.10.1 alla 9.12.1, l'unica opzione per un nuovo oggetto
 . Verificare che il gruppo di coerenza sia stato creato tornando al menu principale del gruppo di coerenza in cui verrà visualizzato una volta completato il lavoro. Se si imposta una policy di protezione, si potrà sapere che è stata applicata quando viene visualizzato uno shield verde sotto la policy appropriata, remota o locale.
 
 
+--
+.CLI
+--
+A partire da ONTAP 9.14.1, puoi creare un nuovo gruppo di coerenza con nuovi volumi utilizzando l'interfaccia a riga di comando di ONTAP. Parametri specifici dipendono se i volumi sono SAN, NVMe o NFS.
+
+.Crea un gruppo di coerenza con i volumi NFS
+. Creare il gruppo di coerenza:
++
+`consistency-group create -vserver _SVM_name_ -consistency-group _consistency-group-name_ -volume _volume-prefix_ -volume-count _number_ -size _size_ -export-policy _policy_name_`
+
+
+
+.Crea un gruppo di coerenza con i volumi SAN
+. Creare il gruppo di coerenza:
++
+`consistency-group create -vserver _SVM_name_ -consistency-group _consistency-group-name_ -lun _lun_name_ -size _size_ -lun-count _number_ -igroup _igroup_name_`
+
+
+
+.Crea un gruppo di coerenza con i namespace NVMe
+. Creare il gruppo di coerenza:
++
+`consistency-group create -vserver _SVM_name_ -consistency-group _consistency_group_name_ -namespace _namespace_name_ -volume-count _number_ -namespace-count _number_ -size _size_ -subsystem _subsystem_name_`
+
+
+
+.Al termine
+. Verificare che il gruppo di coerenza sia stato creato utilizzando `consistency-group show` comando.
+
+
+--
+====
 
 
 == Creare un gruppo di coerenza con i volumi esistenti
 
 È possibile utilizzare i volumi esistenti per creare un gruppo di coerenza.
 
+[role="tabbed-block"]
+====
+.System Manager
+--
 .Fasi
 . Selezionare *Storage > Consistency groups*.
 . Selezionare *+Aggiungi*, quindi *utilizzando volumi esistenti*.
@@ -68,6 +108,21 @@ NOTE: Se si crea un gruppo di coerenza con i volumi esistenti, il gruppo di coer
 . Verificare che il gruppo di coerenza sia stato creato tornando al menu principale del gruppo di coerenza in cui verrà visualizzato una volta completato il lavoro ONTAP. Se è stata scelta una policy di protezione, confermarla selezionando il gruppo di coerenza dal menu. Se si imposta una policy di protezione, si potrà sapere che è stata applicata quando viene visualizzato uno shield verde sotto la policy appropriata, remota o locale.
 
 
+--
+.CLI
+--
+A partire da ONTAP 9.14.1, puoi creare un gruppo di coerenza con i volumi esistenti utilizzando l'interfaccia a riga di comando di ONTAP.
+
+.Fasi
+. Eseguire il `consistency-group create` comando. Il `-volumes` parameter accetta un elenco separato da virgole di nomi di volumi.
++
+`consistency-group create -vserver _SVM_name_ -consistency-group _consistency-group-name_ -volume _volumes_`
+
+. Visualizzare il gruppo di coerenza utilizzando `consistency-group show` comando.
+
+
+--
+====
 .Passi successivi
 * xref:protect-task.html[Proteggere un gruppo di coerenza]
 * xref:modify-task.html[Modificare un gruppo di coerenza]

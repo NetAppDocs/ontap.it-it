@@ -2,7 +2,7 @@
 sidebar: sidebar 
 permalink: consistency-groups/modify-geometry-task.html 
 keywords: consistency group geometry, promote consistency group, demote, add consistency group 
-summary: 'A partire da ONTAP 9.13.1, è possibile modificare la geometria del gruppo di coerenza con un"interruzione delle operazioni io.' 
+summary: 'A partire da ONTAP 9.13.1, è possibile modificare la geometria del proprio gruppo di coerenza con l"interruzione delle operazioni io.' 
 ---
 = Modificare la geometria del gruppo di coerenza
 :allow-uri-read: 
@@ -31,6 +31,12 @@ A partire da ONTAP 9.13.1, è possibile aggiungere un nuovo gruppo di coerenza f
 
 
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.13.1, è possibile eseguire questa operazione con Gestione sistema.
+
 . Selezionare *Storage > Consistency groups*.
 . Selezionare il gruppo di coerenza padre a cui si desidera aggiungere un gruppo di coerenza figlio.
 . Accanto al nome del gruppo di coerenza padre, selezionare **Altro**, quindi **Aggiungi nuovo gruppo di coerenza figlio**.
@@ -44,18 +50,46 @@ A partire da ONTAP 9.13.1, è possibile aggiungere un nuovo gruppo di coerenza f
 . Selezionare **Aggiungi**.
 
 
+--
+.CLI
+--
+A partire da ONTAP 9.14.1, è possibile aggiungere un gruppo di coerenza figlio utilizzando la CLI di ONTAP.
+
+.Aggiungere un gruppo di coerenza figlio con nuovi volumi
+. Creare il nuovo gruppo di coerenza. Fornire i valori per il nome del gruppo di coerenza, il prefisso del volume, il numero di volumi, le dimensioni del volume, il servizio di archiviazione, e nome della policy di esportazione:
++
+`consistency-group create -vserver _SVM_name_ -consistency-group _consistency_group_ -parent-consistency-group _parent_consistency_group_ -volume-prefix _prefix_ -volume-count _number_ -size _size_ -storage-service _service_ -export-policy _policy_name_`
+
+
+
+.Aggiungere un gruppo di coerenza figlio con i volumi esistenti
+. Creare il nuovo gruppo di coerenza. Il `volumes` parameter accetta un elenco separato da virgole di nomi di volumi.
++
+`consistency-group create -vserver _SVM_name_ -consistency-group _new_consistency_group_ -parent-consistency-group _parent_consistency_group_ -volumes _volume_`
+
+
+
+--
+====
 
 
 == Scollegare un gruppo di coerenza figlio
 
-A partire da ONTAP 9.13.1, è possibile rimuovere un gruppo di coerenza figlio dal relativo padre, convertendolo in un singolo gruppo di coerenza.
+A partire da ONTAP 9.13.1, è possibile rimuovere un gruppo di coerenza figlio dal relativo gruppo padre, convertendolo in un singolo gruppo di coerenza.
 
 .Prima di iniziare
 * La rimozione di un gruppo di coerenza figlio causa l'invalidità e l'inaccessibilità degli snapshot del gruppo di coerenza padre. Gli snapshot granulari del volume rimangono validi.
 * Le copie Snapshot esistenti del singolo gruppo di coerenza rimangono valide.
+* Questa operazione non riesce se esiste un singolo gruppo di coerenza esistente con lo stesso nome del gruppo di coerenza figlio che si intende scollegare. Se si verifica questo scenario, è necessario rinominare il gruppo di coerenza quando lo si scollega.
 
 
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.13.1, è possibile eseguire questa operazione con Gestione sistema.
+
 . Selezionare *Storage > Consistency groups*.
 . Selezionare il gruppo di coerenza padre che contiene il figlio che si desidera scollegare.
 . Accanto al gruppo di coerenza figlio che si desidera scollegare, selezionare **Altro**, quindi **Scollega dall'origine**.
@@ -63,9 +97,22 @@ A partire da ONTAP 9.13.1, è possibile rimuovere un gruppo di coerenza figlio d
 . Selezionare **stacca**.
 
 
+--
+.CLI
+--
+A partire da ONTAP 9.14.1, è possibile scollegare un gruppo di coerenza figlio utilizzando l'interfaccia a riga di comando di ONTAP.
+
+. Staccare il gruppo di coerenza. Facoltativamente, rinominare il gruppo di coerenza autonomo con `-new-name` parametro.
++
+`consistency-group detach -vserver _SVM_name_ -consistency-group _child_consistency_group_ -parent-consistency-group _parent_consistency_group_ [-new-name _new_name_]`
 
 
-== Spostare un singolo gruppo di coerenza in un gruppo di coerenza padre
+
+--
+====
+
+
+== Sposta un singolo gruppo di coerenza esistente in un gruppo di coerenza di origine
 
 A partire da ONTAP 9.13.1, è possibile convertire un singolo gruppo di coerenza esistente in un gruppo di coerenza figlio. È possibile spostare il gruppo di coerenza in un gruppo di coerenza padre esistente o creare un nuovo gruppo di coerenza padre durante l'operazione di spostamento.
 
@@ -76,6 +123,12 @@ A partire da ONTAP 9.13.1, è possibile convertire un singolo gruppo di coerenza
 
 
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.13.1, è possibile eseguire questa operazione con Gestione sistema.
+
 . Selezionare *Storage > Consistency groups*.
 . Selezionare il gruppo di coerenza che si desidera convertire.
 . Selezionare **Altro**, quindi **spostarsi in un gruppo di coerenza diverso**.
@@ -89,11 +142,32 @@ A partire da ONTAP 9.13.1, è possibile convertire un singolo gruppo di coerenza
 . Selezionare **Sposta**.
 
 
+--
+.CLI
+--
+A partire da ONTAP 9.14.1, puoi spostare un singolo gruppo di coerenza sotto un gruppo di coerenza di origine utilizzando l'interfaccia a riga di comando di ONTAP.
+
+.Spostare un gruppo di coerenza in un nuovo gruppo di coerenza di origine
+. Creare il nuovo gruppo di coerenza di origine. Il `-consistency-groups` il parametro migrerà tutti i gruppi di coerenza esistenti al nuovo padre.
++
+`consistency-group attach -vserver _svm_name_ -consistency-group _parent_consistency_group_ -consistency-groups _child_consistency_group_`
+
+
+
+.Spostare un gruppo di coerenza in un gruppo di coerenza esistente
+. Spostare il gruppo di coerenza:
++
+`consistency-group add -vserver _SVM_name_ -consistency-group _consistency_group_ -parent-consistency-group _parent_consistency_group_`
+
+
+
+--
+====
 
 
 == Promuovere un gruppo di coerenza figlio
 
-A partire da ONTAP 9.13.1, è possibile promuovere un singolo gruppo di coerenza in un gruppo di coerenza padre. Quando si promuove un singolo gruppo di coerenza a un gruppo padre, si crea anche un nuovo gruppo di coerenza figlio che eredita tutti i volumi nel singolo gruppo di coerenza originale.
+A partire da ONTAP 9.13.1, puoi promuovere un singolo gruppo di coerenza in un gruppo di coerenza di origine. Quando si promuove un singolo gruppo di coerenza a un gruppo padre, si crea anche un nuovo gruppo di coerenza figlio che eredita tutti i volumi nel singolo gruppo di coerenza originale.
 
 .Prima di iniziare
 * Se si desidera convertire un gruppo di coerenza figlio in un gruppo di coerenza padre, è necessario innanzitutto <<detach>> il gruppo di coerenza figlio quindi seguire questa procedura.
@@ -101,6 +175,12 @@ A partire da ONTAP 9.13.1, è possibile promuovere un singolo gruppo di coerenza
 
 
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.13.1, è possibile eseguire questa operazione con Gestione sistema.
+
 . Selezionare *Storage > Consistency groups*.
 . Selezionare il gruppo di coerenza che si desidera promuovere.
 . Selezionare **Altro**, quindi **Promuovi al gruppo di coerenza padre**.
@@ -108,19 +188,52 @@ A partire da ONTAP 9.13.1, è possibile promuovere un singolo gruppo di coerenza
 . Selezionare **Promuovi**.
 
 
+--
+.CLI
+--
+A partire da ONTAP 9.14.1, puoi spostare un singolo gruppo di coerenza sotto un gruppo di coerenza di origine utilizzando l'interfaccia a riga di comando di ONTAP.
+
+. Promuovere il gruppo di coerenza. Questo comando creerà un gruppo di coerenza principale e un gruppo secondario.
++
+`consistency-group promote -vserver _SVM_name_ -consistency-group _existing_consistency_group_ -new-name _new_child_consistency_group_`
+
+
+
+--
+====
 
 
 == Consente di declassare un padre in un singolo gruppo di coerenza
 
-A partire da ONTAP 9.13.1, è possibile ridurre un gruppo di coerenza padre in un singolo gruppo di coerenza. Il deeming del padre appiattisce la gerarchia del gruppo di coerenza, rimuovendo tutti i gruppi di coerenza figlio associati. Tutti i volumi nel gruppo di coerenza rimarranno nel nuovo gruppo di coerenza singolo.
+A partire da ONTAP 9.13.1, puoi demotare un gruppo di coerenza di origine in un singolo gruppo di coerenza. Il deeming del padre appiattisce la gerarchia del gruppo di coerenza, rimuovendo tutti i gruppi di coerenza figlio associati. Tutti i volumi nel gruppo di coerenza rimarranno nel nuovo gruppo di coerenza singolo.
 
 .Prima di iniziare
 * Le copie Snapshot esistenti del gruppo di coerenza padre rimangono valide dopo essere state retrocesse a una singola coerenza. Le copie Snapshot esistenti di uno qualsiasi dei gruppi di coerenza figlio associati di quel padre diventeranno non valide, ma le singole snapshot dei volumi al loro interno continuano ad essere accessibili come snapshot granulari dei volumi.
 
 
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+A partire da ONTAP 9.13.1, è possibile eseguire questa operazione con Gestione sistema.
+
 . Selezionare *Storage > Consistency groups*.
 . Selezionare il gruppo di coerenza padre che si desidera declassare.
 . Selezionare **Altro**, quindi **Demodi a singolo gruppo di coerenza**.
-. Viene visualizzato un avviso che indica che tutti i gruppi di coerenza figlio associati verranno eliminati e i relativi volumi verranno spostati all'interno del nuovo gruppo di coerenza singolo. Selezionare **Demote** per confermare di aver compreso l'impatto.
+. Un avviso informa che tutti i gruppi di coerenza figlio associati verranno eliminati e i relativi volumi verranno spostati nel nuovo gruppo di coerenza singolo. Selezionare **Demote** per confermare di aver compreso l'impatto.
 
+
+--
+.CLI
+--
+A partire da ONTAP 9.14.1, puoi demotizzare un gruppo di coerenza utilizzando l'interfaccia a riga di comando di ONTAP.
+
+. Demotare il gruppo di coerenza. Utilizzare l'opzione `-new-name` parametro per rinominare il gruppo di coerenza.
++
+`consistency-group demote -vserver _SVM_name_ -consistency-group _parent_consistency_group_ [-new-name _new_consistency_group_name_]`
+
+
+
+--
+====

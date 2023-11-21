@@ -1,0 +1,149 @@
+---
+sidebar: sidebar 
+permalink: authentication/overview-oauth2.html 
+keywords: oauth 2.0, oauth2, access token, bearer token, authentication, authorization, mutual tls, mtls, adfs, auth0, oidc 
+summary: 'A partire da ONTAP 9,14, puoi controllare l"accesso ai tuoi cluster ONTAP utilizzando il framework Open Authorization (OAuth 2,0). Puoi configurare questa funzionalità utilizzando qualsiasi interfaccia amministrativa di ONTAP, inclusi l"interfaccia a riga di comando di ONTAP, System Manager e l"API REST. Tuttavia, le decisioni relative all"autorizzazione e al controllo dell"accesso OAuth 2,0 possono essere applicate solo quando un client accede a ONTAP utilizzando l"API REST.' 
+---
+= Panoramica dell'implementazione di ONTAP OAuth 2,0
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+A partire da ONTAP 9,14, puoi controllare l'accesso ai tuoi cluster ONTAP utilizzando il framework Open Authorization (OAuth 2,0). Puoi configurare questa funzionalità utilizzando qualsiasi interfaccia amministrativa di ONTAP, inclusi l'interfaccia a riga di comando di ONTAP, System Manager e l'API REST. Tuttavia, le decisioni relative all'autorizzazione e al controllo dell'accesso OAuth 2,0 possono essere applicate solo quando un client accede a ONTAP utilizzando l'API REST.
+
+
+NOTE: Il supporto di OAuth 2,0 è stato introdotto per la prima volta con ONTAP 9.14.0, pertanto la sua disponibilità dipende dalla versione di ONTAP in uso. Vedere https://library.netapp.com/ecm/ecm_download_file/ECMLP2492508["Note di rilascio di ONTAP"^] per ulteriori informazioni.
+
+
+
+== Caratteristiche e vantaggi
+
+Di seguito sono descritte le principali caratteristiche e i vantaggi dell'utilizzo di OAuth 2,0 con ONTAP.
+
+.Supporto per lo standard OAuth 2,0
+OAuth 2,0 è il quadro di autorizzazione standard del settore. Viene utilizzato per limitare e controllare l'accesso alle risorse protette utilizzando token di accesso firmati. L'utilizzo di OAuth 2,0 offre diversi vantaggi:
+
+* Molte opzioni per la configurazione dell'autorizzazione
+* Non rivelare mai le credenziali del client, incluse le password
+* I token possono essere impostati in modo che scadano in base alla configurazione
+* Ideale per l'uso con API REST
+
+
+.Testato con diversi server di autorizzazione più diffusi
+L'implementazione di ONTAP è progettata per essere compatibile con qualsiasi server di autorizzazione conforme a OAuth 2,0. È stato testato con i seguenti server o servizi comuni, tra cui:
+
+* Auth0
+* Active Directory Federation Service (ADFS)
+* Keycloak
+
+
+.Supporto per più server di autorizzazione simultanei
+È possibile definire fino a otto server di autorizzazione per un singolo cluster ONTAP. Ciò offre la flessibilità necessaria per soddisfare le esigenze dei diversi ambienti di sicurezza.
+
+.Integrazione con i ruoli REST
+Le decisioni di autorizzazione ONTAP si basano in ultima analisi sui ruoli REST assegnati a utenti o gruppi. Questi ruoli vengono riportati nel token di accesso come ambiti indipendenti o in base alle definizioni ONTAP locali insieme ai gruppi Active Directory o LDAP.
+
+.Opzione per utilizzare token di accesso con restrizioni del mittente
+È possibile configurare ONTAP e i server di autorizzazione per utilizzare Mutual Transport Layer Security (mTLS) che rafforza l'autenticazione client. Garantisce che i token di accesso OAuth 2,0 siano utilizzati solo dai client ai quali sono stati originariamente rilasciati. Questa funzionalità supporta e si allinea con diverse raccomandazioni di protezione note, incluse quelle stabilite da FAPI e MITER.
+
+
+
+== Implementazione e configurazione
+
+A un livello elevato, ci sono diversi aspetti di un'implementazione e configurazione di OAuth 2,0 che è necessario considerare quando si inizia.
+
+.OAuth 2,0 entità all'interno di ONTAP
+Il framework di autorizzazione OAuth 2,0 definisce diverse entità che possono essere mappate ad elementi reali o virtuali all'interno del data center o della rete. Le entità OAuth 2,0 e il loro adattamento a ONTAP sono presentati nella tabella seguente.
+
+[cols="30,70"]
+|===
+| Entità OAuth 2,0 | Descrizione 
+
+
+| Risorsa | Gli endpoint delle API REST che forniscono accesso alle risorse ONTAP tramite comandi ONTAP interni. 
+
+
+| Proprietario della risorsa | L'utente del cluster ONTAP che ha creato la risorsa protetta o la possiede per impostazione predefinita. 
+
+
+| Server delle risorse | L'host per le risorse protette, ovvero il cluster ONTAP. 
+
+
+| Client | Un'applicazione che richiede l'accesso a un endpoint API REST per conto o con l'autorizzazione del proprietario della risorsa. 
+
+
+| Server di autorizzazione | In genere, un server dedicato responsabile dell'emissione dei token di accesso e dell'applicazione dei criteri amministrativi. 
+|===
+.Configurazione core ONTAP
+È necessario configurare il cluster ONTAP per abilitare e utilizzare OAuth 2,0. Ciò include la creazione di una connessione al server di autorizzazione e la definizione della configurazione di autorizzazione ONTAP richiesta. È possibile eseguire questa configurazione utilizzando una qualsiasi delle interfacce amministrative, tra cui:
+
+* Interfaccia a riga di comando di ONTAP
+* System Manager
+* API REST di ONTAP
+
+
+.Ambiente e servizi di supporto
+Oltre alle definizioni di ONTAP, è necessario configurare anche i server di autorizzazione. Se si utilizza la mappatura da gruppo a ruolo, è necessario configurare anche i gruppi Active Directory o l'equivalente LDAP.
+
+.Client ONTAP supportati
+A partire da ONTAP 9,14, un client API REST può accedere a ONTAP utilizzando OAuth 2,0. Prima di eseguire una chiamata API REST, è necessario ottenere un token di accesso dal server di autorizzazione. Il client passa quindi questo token al cluster ONTAP come _bearer token_ utilizzando l'intestazione della richiesta di autorizzazione HTTP. A seconda del livello di protezione necessario, è anche possibile creare e installare un certificato nel client per utilizzare token con vincoli di mittente basati su mTLS.
+
+
+
+== Terminologia selezionata
+
+Quando si inizia a esaminare la distribuzione di OAuth 2,0 con ONTAP, è utile acquisire familiarità con alcune parti della terminologia. Vedere link:../authentication/overview-oauth2.html#additional-resources["Risorse aggiuntive"] Per collegamenti a ulteriori informazioni su OAuth 2,0.
+
+Token di accesso:: Token emesso da un server di autorizzazione e utilizzato da un'applicazione client OAuth 2,0 per effettuare richieste di accesso alle risorse protette.
+Token Web JSON:: Lo standard utilizzato per formattare i token di accesso. JSON viene utilizzato per rappresentare le rivendicazioni OAuth 2,0 in formato compatto con le rivendicazioni disposte in tre sezioni principali.
+Token di accesso vincolato dal mittente:: Funzione opzionale basata sul protocollo mTLS (Mutual Transport Layer Security). Utilizzando un'ulteriore richiesta di conferma nel token, questo garantisce che il token di accesso venga utilizzato solo dal client al quale è stato originariamente emesso.
+Set di chiavi Web JSON:: Un JWKS è un insieme di chiavi pubbliche utilizzate da ONTAP per verificare i token JWT presentati dai clienti. I set di chiavi sono generalmente disponibili sul server di autorizzazione tramite un URI dedicato.
+Scopo:: Gli ambiti forniscono un modo per limitare o controllare l'accesso di un'applicazione alle risorse protette come l'API REST ONTAP. Sono rappresentate come stringhe nel token di accesso.
+Ruolo REST di ONTAP:: I ruoli REST sono stati introdotti con ONTAP 9,6 e costituiscono una parte fondamentale del framework RBAC di ONTAP. Questi ruoli sono diversi dai ruoli tradizionali precedenti che sono ancora supportati da ONTAP. L'implementazione di OAuth 2,0 in ONTAP supporta solo i ruoli REST.
+Intestazione autorizzazione HTTP:: Intestazione inclusa nella richiesta HTTP per identificare il client e le autorizzazioni associate come parte di una chiamata API REST. Sono disponibili diverse varianti o implementazioni a seconda della modalità di autenticazione e autorizzazione. Quando si presenta un token di accesso OAuth 2,0 a ONTAP, il token viene identificato come _token bearer_.
+Autenticazione di base HTTP:: Una tecnica di autenticazione HTTP avanzata ancora supportata da ONTAP. Le credenziali in testo normale (nome utente e password) sono concatenate con due punti e codificate in base64. La stringa viene inserita nell'intestazione della richiesta di autorizzazione e inviata al server.
+FAPI:: Un gruppo di lavoro della OpenID Foundation che fornisce protocolli, schemi di dati e raccomandazioni sulla sicurezza per il settore finanziario. L'API era originariamente nota come API di livello finanziario.
+MITRA:: Un'azienda privata senza scopo di lucro che fornisce una guida tecnica e di sicurezza all'aeronautica militare degli Stati Uniti e al governo degli Stati Uniti.
+
+
+
+
+== Risorse aggiuntive
+
+Di seguito sono riportate diverse risorse aggiuntive. Dovreste rivedere questi luoghi per ottenere più informazioni su OAuth 2,0 e sugli standard relativi.
+
+.Protocolli e standard
+* https://www.rfc-editor.org/info/rfc6749["RFC 6749: Framework di autorizzazione OAuth 2,0"^]
+* https://www.rfc-editor.org/info/rfc7519["RFC 7519: Token Web JSON (JWT)"^]
+* https://www.rfc-editor.org/info/rfc7523["RFC 7523: Profilo JSON Web Token (JWT) per l'autenticazione client OAuth 2,0 e le concessioni di autorizzazione"^]
+* https://www.rfc-editor.org/info/rfc7662["RFC 7662: Introspezione token OAuth 2,0"^]
+* https://www.rfc-editor.org/info/rfc7800["RFC 7800: Chiave di prova del possesso per JWT"^]
+* https://www.rfc-editor.org/info/rfc8705["RFC 8705: Autenticazione client OAuth 2,0 Mutual-TLS e token di accesso con associazione a certificati"^]
+
+
+.Governativi
+* https://openid.net["Fondazione OpenID"^]
+* https://openid.net/wg/fapi["Gruppo di lavoro FAPI"^]
+* https://www.mitre.org["MITRA"^]
+* https://www.iana.org/assignments/jwt/jwt.xhtml["IANA - JWT"^]
+
+
+.Prodotti e servizi
+* https://auth0.com["Auth0"^]
+* https://learn.microsoft.com/en-us/windows-server/identity/ad-fs/ad-fs-overview["Panoramica di ADFS"^]
+* https://www.keycloak.org["Keycloak"^]
+
+
+.Strumenti e utilità aggiuntivi
+* https://jwt.io["JWT entro il Auth0"^]
+* https://www.openssl.org["OpenSSL"^]
+
+
+.Documentazione e risorse di NetApp
+* https://docs.netapp.com/us-en/ontap-automation["Automazione ONTAP"^] documentazione
+

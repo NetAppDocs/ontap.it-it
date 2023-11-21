@@ -1,0 +1,139 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-as-servers.html 
+keywords: oauth 2.0, oauth2, access token, grant type, jwt 
+summary: 'I server di autorizzazione svolgono diverse funzioni importanti come componente centrale all"interno del framework OAuth 2,0 Authorization.' 
+---
+= Server di autorizzazione e token di accesso
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+I server di autorizzazione svolgono diverse funzioni importanti come componente centrale all'interno del framework OAuth 2,0 Authorization.
+
+
+
+== Server di autorizzazione OAuth 2,0
+
+I server di autorizzazione sono principalmente responsabili della creazione e della firma dei token di accesso. Questi token contengono informazioni di identità e autorizzazione che consentono a un'applicazione client di accedere in modo selettivo alle risorse protette. I server sono generalmente isolati l'uno dall'altro e possono essere implementati in diversi modi, incluso come server dedicato standalone o come parte di un prodotto di gestione delle identità e degli accessi più ampio.
+
+
+NOTE: A volte è possibile utilizzare una terminologia diversa per un server di autorizzazione, specialmente quando la funzionalità OAuth 2,0 è inclusa in un prodotto o una soluzione di gestione delle identità e degli accessi più ampia. Ad esempio, il termine *provider di identità (IdP)* viene spesso utilizzato in modo intercambiabile con *server di autorizzazione*.
+
+
+
+=== Amministrazione
+
+Oltre all'emissione di token di accesso, i server di autorizzazione forniscono anche servizi amministrativi correlati, in genere tramite un'interfaccia utente Web. Ad esempio, è possibile definire e amministrare:
+
+* Autenticazione degli utenti e degli utenti
+* Ambiti
+* Segregazione amministrativa attraverso locatari e regni
+* Applicazione delle policy
+* Collegamento a vari servizi esterni
+* Supporto per altri protocolli di identità (come SAML)
+
+
+ONTAP è compatibile con i server di autorizzazione conformi allo standard OAuth 2,0.
+
+
+
+=== Definizione di ONTAP
+
+È necessario definire uno o più server di autorizzazione in ONTAP. ONTAP comunica in modo sicuro con ciascun server per verificare i token ed eseguire altre attività correlate a supporto delle applicazioni client.
+
+Di seguito sono illustrati gli aspetti principali della configurazione di ONTAP. Vedere anche link:../authentication/oauth2-deployment-scenarios.html["Scenari di distribuzione di OAuth 2,0"] per ulteriori informazioni.
+
+.Come e dove vengono convalidati i token di accesso
+Sono disponibili due opzioni per la convalida dei token di accesso.
+
+* Convalida locale
++
+ONTAP può convalidare i token di accesso localmente in base alle informazioni fornite dal server di autorizzazione che ha emesso il token. Le informazioni recuperate dal server di autorizzazione vengono memorizzate nella cache da ONTAP e aggiornate a intervalli regolari.
+
+* Introspezione remota
++
+È inoltre possibile utilizzare l'introspezione remota per convalidare i token nel server di autorizzazione. Introspezione è un protocollo che consente alle parti autorizzate di interrogare un server di autorizzazione su un token di accesso. Fornisce a ONTAP un modo per estrarre determinati metadati da un token di accesso e convalidare il token. ONTAP memorizza nella cache alcuni dati per motivi di prestazioni.
+
+
+
+.Posizione di rete
+ONTAP potrebbe essere protetto da un firewall. In questo caso, è necessario identificare un proxy come parte della configurazione.
+
+.Come vengono definiti i server di autorizzazione
+Puoi definire un server di autorizzazione per ONTAP utilizzando qualsiasi interfaccia amministrativa, inclusa CLI, System Manager o API REST. Ad esempio, con l'interfaccia CLI si utilizza il comando `security oauth2 client create`.
+
+.Numero di server di autorizzazione
+È possibile definire fino a otto server di autorizzazione per un singolo cluster ONTAP. Lo stesso server di autorizzazione può essere definito più di una volta nello stesso cluster ONTAP, purché le attestazioni dell'emittente o dell'emittente/pubblico siano univoche. Per esempio, con Keycloak questo sarà sempre il caso quando si usano reami diversi.
+
+
+
+== Utilizzo dei token di accesso OAuth 2,0
+
+I token di accesso OAuth 2,0 emessi dai server di autorizzazione vengono verificati da ONTAP e utilizzati per prendere decisioni di accesso basate sui ruoli per le richieste dei client API REST.
+
+
+
+=== Acquisizione di un token di accesso
+
+È necessario acquisire un token di accesso da un server di autorizzazione definito nel cluster ONTAP in cui si utilizza l'API REST. Per acquisire un token, è necessario contattare direttamente il server di autorizzazione.
+
+
+CAUTION: ONTAP non rilascia token di accesso o reindirizza le richieste dai client ai server di autorizzazione.
+
+Il modo in cui si richiede un token dipende da diversi fattori, tra cui:
+
+* Server di autorizzazione e relative opzioni di configurazione
+* Tipo di concessione OAuth 2,0
+* Client o strumento software utilizzato per emettere la richiesta
+
+
+
+
+=== Tipi di sovvenzione
+
+Un _grant_ è un processo ben definito, che include un insieme di flussi di rete, utilizzato per richiedere e ricevere un token di accesso OAuth 2,0. A seconda dei requisiti del client, dell'ambiente e della protezione, è possibile utilizzare diversi tipi di concessione. Un elenco dei tipi di sovvenzione più comuni è presentato nella tabella seguente.
+
+[cols="25,75"]
+|===
+| Tipo di concessione | Descrizione 
+
+
+| Credenziali client | Tipo di concessione comune basato sull'utilizzo di credenziali (come ID e segreto condiviso). Si presuppone che il client abbia una stretta relazione di trust con il proprietario della risorsa. 
+
+
+| Password | È possibile utilizzare il tipo di concessione delle credenziali della password del proprietario della risorsa nei casi in cui il proprietario della risorsa abbia una relazione di trust stabilita con il client. Può essere utile anche per la migrazione di client HTTP legacy a OAuth 2,0. 
+
+
+| Codice di autorizzazione | Si tratta di un tipo di sovvenzione ideale per i client riservati e si basa su un flusso basato sul reindirizzamento. Può essere utilizzato per ottenere sia un token di accesso che un token di aggiornamento. 
+|===
+
+
+=== Contenuti JWT
+
+Un token di accesso OAuth 2,0 è formattato come JWT. Il contenuto viene creato dal server di autorizzazione in base alla configurazione. Tuttavia, i token sono opachi per le applicazioni client. Un cliente non ha motivo di ispezionare un token o di essere a conoscenza del contenuto.
+
+Ogni token di accesso JWT contiene una serie di attestazioni. Le attestazioni descrivono le caratteristiche dell'emittente e l'autorizzazione basata sulle definizioni amministrative del server di autorizzazione. Alcuni dei reclami registrati con la norma sono descritti nella tabella seguente. Tutte le stringhe rilevano la distinzione tra maiuscole e minuscole.
+
+[cols="20,15,65"]
+|===
+| Reclamo | Parola chiave | Descrizione 
+
+
+| Emittente | iss | Identifica l'entità che ha emesso il token. L'elaborazione della richiesta di rimborso è specifica per l'applicazione. 
+
+
+| Soggetto | sub | L'oggetto o l'utente del token. Il nome è considerato univoco a livello globale o locale. 
+
+
+| Pubblico | aud | I destinatari a cui è destinato il token. Implementato come array di stringhe. 
+
+
+| Scadenza | scad | Il tempo dopo il quale il token scade e deve essere rifiutato. 
+|===
+Vedere https://www.rfc-editor.org/info/rfc7519["RFC 7519: Token Web JSON"^] per ulteriori informazioni.

@@ -1,0 +1,55 @@
+---
+permalink: nas-audit/create-persistent-stores.html 
+sidebar: sidebar 
+keywords: create, persistent store, fpolicy 
+summary: 'A partire da ONTAP 9.14.1, FPolicy consente di configurare un archivio persistente per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l"elaborazione i/o dei client dall"elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone e asincrone non sono supportate.' 
+---
+= Creare archivi persistenti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.14.1, FPolicy consente di impostare un link:persistent-stores.html["Archivi persistenti"] Per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l'elaborazione i/o dei client dall'elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone (obbligatorie o non obbligatorie) e asincrone non sono supportate.
+
+.Best practice
+* Prima di utilizzare la funzionalità di archivio permanente, assicurati che le tue applicazioni partner supportino questa configurazione.
+* Il volume dello storage persistente viene configurato in base alle singole SVM. Per ogni SVM abilitata per FPolicy avrai bisogno di un volume archivio persistente.
+* Il nome del volume di archiviazione persistente e il percorso di giunzione specificati al momento della creazione del volume dovrebbero corrispondere.
+* Crea il volume di archivio persistente sul nodo con LIF che prevedono il monitoraggio del traffico massimo da parte di Fpolicy.
+* Impostare il criterio snapshot su `none` per quel volume invece di `default`. In questo modo si garantisce che non vi sia alcun ripristino accidentale dello snapshot che causa la perdita degli eventi correnti e per impedire un'eventuale elaborazione di eventi duplicati.
+* Rendere il volume dell'archivio persistente inaccessibile per l'accesso al protocollo utente esterno (CIFS/NFS) per evitare il danneggiamento accidentale o l'eliminazione dei record di eventi persistenti. Per ottenere questo risultato, dopo aver attivato FPolicy, smontare il volume in ONTAP per rimuovere il percorso di giunzione; ciò lo rende inaccessibile per l'accesso al protocollo utente.
+
+
+.Fasi
+. Creare un volume vuoto sulla SVM che può essere sottoposto a provisioning per l'archivio persistente:
++
+`volume create -vserver <SVM Name> -volume <volume> -state <online> -junction-path <path> -policy <default> -unix-permissions <777> -size <value> -aggregate <aggregate name> -snapshot-policy <none>`
+
++
+** Le dimensioni del volume dell'archivio persistente si basano sul periodo di tempo per il quale si desidera mantenere gli eventi non inviati al server esterno (applicazione partner).
++
+Ad esempio, se si desidera che 30 minuti di eventi persistano in un cluster con una capacità di 30K notifiche al secondo:
+
++
+Dimensioni del volume richiesto = 30000 x 30 x 60 x 0,6KB (dimensioni medie del record di notifica) = 32400000 KB = ~32 GB
+
++
+Per trovare la percentuale approssimativa di notifica, è possibile contattare l'applicazione partner FPolicy o utilizzare il contatore FPolicy `requests_dispatched_rate`.
+
+** Si prevede che un utente amministratore con privilegi RBAC sufficienti (per creare un volume) creerà un volume (utilizzando il comando cli di volume o l'API REST) della dimensione desiderata e fornirà il nome di quel volume come `-volume` Nell'archivio persistente creare un comando CLI o API REST.
+
+
+. Creare l'archivio persistente:
++
+`vserver fpolicy persistent store create -vserver <SVM> -persistent-store <PS_name> -volume <volume>`
+
++
+** Persistent-store: Il nome dell'archivio persistente
+** Volume: Il volume della memoria persistente
+
+
+. Dopo aver creato l'archivio persistente, è possibile creare il criterio FPolicy e aggiungere il nome dell'archivio persistente a tale criterio.
+Per ulteriori informazioni, vedere link:https://docs.netapp.com/us-en/ontap/nas-audit/create-fpolicy-policy-task.html["Creare il criterio FPolicy"].
+

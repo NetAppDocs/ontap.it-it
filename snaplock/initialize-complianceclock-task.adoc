@@ -1,59 +1,72 @@
 ---
 permalink: snaplock/initialize-complianceclock-task.html 
 sidebar: sidebar 
-keywords: snaplock, complianceclock, initialize, worm, retention, period, node, ntp, reset, resynchronize 
-summary: Il SnapLock ComplianceClock garantisce la protezione da manomissioni che potrebbero alterare il periodo di conservazione dei file WORM. È necessario inizializzare ComplianceClock di sistema su ciascun nodo che ospita un aggregato SnapLock. Una volta inizializzato ComplianceClock su un nodo, non è possibile reinizializzarlo. 
+keywords: snaplock, complianceclock, compliance clock, initialize, worm, retention, period, node, ntp, reset, resynchronize 
+summary: Il SnapLock ComplianceClock garantisce la protezione da manomissioni che potrebbero alterare il periodo di conservazione dei file WORM. È necessario inizializzare il clock di conformità del sistema su ogni nodo che ospita un aggregato SnapLock.  
 ---
-= Inizializzare ComplianceClock
+= Inizializzare il Compliance Clock
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Il SnapLock ComplianceClock garantisce la protezione da manomissioni che potrebbero alterare il periodo di conservazione dei file WORM. È necessario inizializzare _system ComplianceClock_ su ciascun nodo che ospita un aggregato SnapLock. Una volta inizializzato ComplianceClock su un nodo, non è possibile reinizializzarlo.
+SnapLock utilizza _Volume Compliance Clock_ per evitare manomissioni che potrebbero alterare il periodo di conservazione dei file WORM. È necessario prima inizializzare il _system ComplianceClock_ su ogni nodo che ospita un aggregato SnapLock.
 
-.Di cosa hai bisogno
+A partire da ONTAP 9.14.1, è possibile inizializzare o reinizializzare il clock di conformità del sistema quando non ci sono volumi SnapLock o nessun volume con il blocco delle copie Snapshot attivato. La possibilità di reinizializzare consente agli amministratori di sistema di reimpostare l'orologio di conformità del sistema nei casi in cui potrebbe essere stato inizializzato in modo errato o di correggere la deriva dell'orologio sul sistema. In ONTAP 9.13.1 e nelle versioni precedenti, una volta inizializzato il Compliance Clock su un nodo, non è possibile inizializzarlo nuovamente.
+
+.Prima di iniziare
+Per reinizializzare il Compliance Clock:
+
+* Tutti i nodi nel cluster devono essere in stato integro.
+* Tutti i volumi devono essere online.
+* La coda di ripristino non può contenere volumi.
+* Non può essere presente alcun volume SnapLock.
+* Non può essere presente alcun volume con il blocco della copia Snapshot abilitato.
+
+
+Requisiti generali per l'inizializzazione dell'orologio di conformità:
+
 * Per eseguire questa attività, è necessario essere un amministratore del cluster.
 * La licenza SnapLock deve essere installata sul nodo.
 
 
 .A proposito di questa attività
-Il tempo di ComplianceClock del sistema viene ereditato da _volume ComplianceClock_, che controlla il periodo di conservazione dei file WORM sul volume. Il volume ComplianceClock viene inizializzato automaticamente quando si crea un nuovo volume SnapLock.
+L'ora del Compliance Clock del sistema viene ereditata dal _Volume Compliance Clock_, quest'ultimo dei quali controlla il periodo di conservazione dei file WORM sul volume. Il clock di conformità del volume viene inizializzato automaticamente quando si crea un nuovo volume SnapLock.
 
 [NOTE]
 ====
-L'impostazione iniziale di ComplianceClock si basa sull'orologio di sistema corrente. Per questo motivo, prima di inizializzare ComplianceClock, verificare che l'ora e il fuso orario del sistema siano corretti. Una volta inizializzato ComplianceClock su un nodo, non è possibile reinizializzarlo.
+L'impostazione iniziale dell'orologio di conformità del sistema si basa sull'orologio di sistema hardware corrente. Per questo motivo, è necessario verificare che l'ora e il fuso orario del sistema siano corretti prima di inizializzare l'orologio di conformità del sistema su ciascun nodo. Una volta inizializzato il clock di conformità del sistema su un nodo, non è possibile inizializzarlo nuovamente quando sono presenti volumi SnapLock o volumi con blocco abilitato.
 
 ====
+.Fasi
+È possibile utilizzare la CLI di ONTAP per inizializzare l'orologio di conformità oppure, a partire da ONTAP 9.12.1, utilizzare Gestione sistema per inizializzare l'orologio di conformità.
+
 [role="tabbed-block"]
 ====
 .System Manager
 --
-A partire da ONTAP 9.12.1, è possibile utilizzare Gestione sistema per inizializzare il clock di conformità SnapLock.
-
-.Fasi
 . Accedere a *Cluster > Panoramica*.
 . Nella sezione *nodi*, fare clic su *Inizializza clock di conformità SnapLock*.
-. Per visualizzare la colonna Compliance Clock e verificare che il clock di conformità sia inizializzato, nella sezione *Cluster > Panoramica > nodi*, fare clic su *Mostra/Nascondi* e selezionare *SnapLock Compliance Clock*.
+. Per visualizzare la colonna *Orologio conformità* e verificare che l'Orologio conformità sia inizializzato, nella sezione *Cluster > Panoramica > nodi*, fare clic su *Mostra/Nascondi* e selezionare *Orologio conformità SnapLock*.
 
 
 --
 --
 .CLI
-. Inizializzare ComplianceClock di sistema:
+. Inizializzare l'orologio di conformità del sistema:
 +
 `*snaplock compliance-clock initialize -node _node_name_*`
 
 +
-Il seguente comando inizializza ComplianceClock di sistema attivo `node1`:
+Il seguente comando inizializza il Compliance Clock del sistema su `node1`:
 
 +
 [listing]
 ----
 cluster1::> snaplock compliance-clock initialize -node node1
 ----
-. Quando richiesto, verificare che l'orologio di sistema sia corretto e che si desidera inizializzare ComplianceClock:
+. Quando richiesto, confermare che l'orologio di sistema è corretto e che si desidera inizializzare l'orologio di conformità:
 +
 [listing]
 ----
@@ -73,9 +86,9 @@ Do you want to continue? (y|n): y
 ====
 
 
-== Abilitare la risincronizzazione ComplianceClock per un sistema configurato con NTP
+== Abilitare la risincronizzazione del clock di conformità per un sistema configurato con NTP
 
-È possibile attivare la funzione di sincronizzazione dell'ora di SnapLock ComplianceClock quando viene configurato un server NTP.
+È possibile attivare la funzione di sincronizzazione dell'ora dell'orologio di conformità SnapLock quando è configurato un server NTP.
 
 .Di cosa hai bisogno
 * Questa funzione è disponibile solo al livello di privilegio avanzato.
@@ -85,17 +98,17 @@ Do you want to continue? (y|n): y
 
 
 .A proposito di questa attività
-Quando il daemon di clock sicuro di SnapLock rileva un disallineamento oltre la soglia, ONTAP utilizza l'ora di sistema per reimpostare sia il sistema che il volume ComplianceBlocks. Come soglia di disallineamento viene impostato un periodo di 24 ore. Ciò significa che ComplianceClock del sistema viene sincronizzato con l'orologio di sistema solo se l'inclinazione è più di un giorno.
+Quando il daemon di clock sicuro SnapLock rileva un'inclinazione oltre la soglia, ONTAP utilizza l'ora di sistema per reimpostare sia il sistema che i blocchi di conformità del volume. Come soglia di disallineamento viene impostato un periodo di 24 ore. Ciò significa che l'orologio di conformità del sistema è sincronizzato con l'orologio di sistema solo se l'inclinazione è più vecchia di un giorno.
 
-Il daemon di clock sicuro di SnapLock rileva un'inclinazione e modifica ComplianceClock in base all'ora di sistema. Qualsiasi tentativo di modificare l'ora del sistema per forzare la sincronizzazione di ComplianceClock con l'ora del sistema non riesce, poiché ComplianceClock si sincronizza con l'ora del sistema solo se l'ora del sistema è sincronizzata con l'ora NTP.
+Il daemon dell'orologio sicuro SnapLock rileva un'inclinazione e modifica l'orologio di conformità all'ora del sistema. Qualsiasi tentativo di modifica dell'ora di sistema per forzare la sincronizzazione dell'orologio di conformità con l'ora di sistema non riesce, poiché l'orologio di conformità si sincronizza con l'ora di sistema solo se l'ora di sistema è sincronizzata con l'ora NTP.
 
 .Fasi
-. Attivare la funzione di sincronizzazione dell'ora di SnapLock ComplianceClock quando è configurato un server NTP:
+. Attivare la funzione sincronizzazione orologio conformità SnapLock quando è configurato un server NTP:
 +
 `*snaplock compliance-clock ntp*`
 
 +
-Il seguente comando attiva la funzione di sincronizzazione dell'ora ComplianceClock del sistema:
+Il seguente comando abilita la funzione di sincronizzazione dell'ora dell'orologio di conformità del sistema:
 
 +
 [listing]
@@ -108,7 +121,7 @@ cluster1::*> snaplock compliance-clock ntp modify -is-sync-enabled true
 `*snaplock compliance-clock ntp show*`
 
 +
-Il seguente comando verifica che la funzione di sincronizzazione dell'ora ComplianceClock del sistema sia attivata:
+Il seguente comando verifica che la funzione di sincronizzazione dell'ora del clock di conformità del sistema sia attivata:
 
 +
 [listing]

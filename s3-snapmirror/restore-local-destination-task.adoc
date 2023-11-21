@@ -1,10 +1,10 @@
 ---
 sidebar: sidebar 
 permalink: s3-snapmirror/restore-local-destination-task.html 
-keywords: restore a bucket from the destination storage VM remote cluster 
-summary: In caso di perdita o danneggiamento dei dati in un bucket di origine, è necessario ripopolare i dati ripristinando i dati da un bucket di destinazione. 
+keywords: restore a bucket from the destination storage VM local cluster 
+summary: In caso di perdita o danneggiamento dei dati in un bucket di origine, sarà possibile ricompilare i dati ripristinandoli da un bucket di destinazione. 
 ---
-= Ripristino di un bucket dalla destinazione (cluster locale)
+= Ripristino di un bucket dalla VM di storage di destinazione (cluster locale)
 :toc: macro
 :hardbreaks:
 :toclevels: 1
@@ -19,14 +19,14 @@ summary: In caso di perdita o danneggiamento dei dati in un bucket di origine, �
 
 
 [role="lead"]
-In caso di perdita o danneggiamento dei dati in un bucket di origine, è necessario ripopolare i dati ripristinando i dati da un bucket di destinazione.
+In caso di perdita o danneggiamento dei dati in un bucket di origine, sarà possibile ripopolare i dati ripristinando gli oggetti da un bucket di destinazione.
 
 .A proposito di questa attività
-È possibile ripristinare il bucket di destinazione su un bucket esistente o su un nuovo bucket. Il bucket di destinazione per l'operazione di ripristino deve essere più grande dello spazio logico utilizzato del bucket di destinazione.
+È possibile ripristinare il bucket di destinazione su un bucket esistente o su un nuovo bucket. Il bucket di destinazione per l'operazione di ripristino deve essere più grande del bucket di destinazione;s spazio logico utilizzato.
 
 Se si utilizza un bucket esistente, questo deve essere vuoto quando si avvia un'operazione di ripristino. Il ripristino non "esegue il rollback" di un bucket nel tempo, ma popola un bucket vuoto con i contenuti precedenti.
 
-L'operazione di ripristino deve essere avviata dal cluster remoto.
+L'operazione di ripristino deve essere avviata dal cluster locale.
 
 [role="tabbed-block"]
 ====
@@ -51,7 +51,8 @@ Ripristinare i dati di backup:
 ** Per ripristinare un *nuovo bucket*, immettere i seguenti valori:
 +
 *** Il cluster e la VM di storage per ospitare il nuovo bucket.
-*** Il nome, la capacità e il livello di servizio delle performance del nuovo bucket. Vedere link:../s3-config/storage-service-definitions-reference.html["Livelli di servizio dello storage"] per ulteriori informazioni.
+*** Il nome, la capacità e il livello di servizio delle prestazioni della nuova benna.
+Vedere link:../s3-config/storage-service-definitions-reference.html["Livelli di servizio dello storage"] per ulteriori informazioni.
 *** Contenuto del certificato CA del server S3 di destinazione.
 
 
@@ -61,10 +62,20 @@ Ripristinare i dati di backup:
 . Fare clic su *protezione* > Relazioni per monitorare l'avanzamento del ripristino.
 
 
+.Ripristinare i bucket bloccati
+A partire da ONTAP 9.14.1, puoi eseguire il backup dei bucket bloccati e ripristinarli in base alle necessità.
+
+È possibile ripristinare un bucket object-locked in un bucket nuovo o esistente. È possibile selezionare un bucket a blocco di oggetti come destinazione nei seguenti scenari:
+
+* *Ripristina in un nuovo bucket*: Quando il blocco degli oggetti è attivato, è possibile ripristinare un bucket creando un bucket che ha anche il blocco degli oggetti attivato. Quando si ripristina un bucket bloccato, la modalità di blocco degli oggetti e il periodo di conservazione del bucket originale vengono replicati. È inoltre possibile definire un periodo di blocco diverso per la nuova benna. Questo periodo di conservazione viene applicato a oggetti non bloccati provenienti da altre origini.
+* *Ripristina in un bucket esistente*: Un bucket a blocco di oggetti può essere ripristinato in un bucket esistente, purché nel bucket esistente siano attivate la versione e una simile modalità di blocco di oggetti. Viene mantenuto il mantenimento del mantenimento della posizione di ritenzione della benna originale.
+* *Restore non-locked bucket*: Anche se il blocco degli oggetti non è abilitato in un bucket, è possibile ripristinarlo in un bucket che ha il blocco degli oggetti attivato e si trova nel cluster di origine. Quando si ripristina il bucket, tutti gli oggetti non bloccati vengono bloccati e la modalità di conservazione e il mantenimento del bucket di destinazione diventano applicabili.
+
+
 --
 .CLI
 --
-. Se si sta ripristinando un nuovo bucket, creare il nuovo bucket. Per ulteriori informazioni, vedere link:create-local-mirror-new-bucket-task.html["Creare una relazione mirror per un nuovo bucket (cluster locale)"].
+. Se si ripristinano oggetti in un nuovo bucket, creare il nuovo bucket. Per ulteriori informazioni, vedere link:create-cloud-backup-new-bucket-task.html["Creare una relazione di backup per un nuovo bucket (target cloud)"].
 . Avviare un'operazione di ripristino per il bucket di destinazione:
 `snapmirror restore -source-path _svm_name_:/bucket/_bucket_name_ -destination-path _svm_name_:/bucket/_bucket_name_`
 

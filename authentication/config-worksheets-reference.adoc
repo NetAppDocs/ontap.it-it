@@ -17,7 +17,7 @@ Prima di creare account di accesso e impostare RBAC (role-based access control),
 
 == Creare o modificare gli account di accesso
 
-Questi valori vengono forniti con `security login create` Quando si abilitano gli account di accesso per accedere a una SVM (Storage Virtual Machine). Vengono forniti gli stessi valori con `security login modify` Quando si modifica il modo in cui un account accede a una SVM.
+Questi valori vengono forniti con `security login create` Comando quando abiliti gli account di accesso per accedere a una VM di storage. Vengono forniti gli stessi valori con `security login modify` Comando quando si modifica il modo in cui un account accede a una VM storage.
 
 [cols="3*"]
 |===
@@ -29,7 +29,7 @@ Questi valori vengono forniti con `security login create` Quando si abilitano gl
  a| 
 `-vserver`
  a| 
-Il nome della SVM a cui accede l'account. Il valore predefinito è il nome della SVM amministrativa per il cluster.
+Il nome della VM di storage a cui accede l'account. Il valore predefinito è il nome della VM storage di amministrazione per il cluster.
  a| 
 
 
@@ -45,7 +45,7 @@ Il nome utente o il nome del gruppo dell'account. Specificando un nome di gruppo
  a| 
 `-application`
  a| 
-L'applicazione utilizzata per accedere a SVM:
+Applicazione utilizzata per accedere alla VM di storage:
 
 * `http`
 * `ontapi`
@@ -87,8 +87,8 @@ L'indirizzo IP dello switch remoto. Lo switch remoto può essere uno switch del 
  a| 
 Il ruolo di controllo degli accessi assegnato all'account:
 
-* Per il cluster (SVM admin), il valore predefinito è `admin`.
-* Per un SVM dati, il valore predefinito è `vsadmin`.
+* Per il cluster (la VM di storage di amministrazione), il valore predefinito è `admin`.
+* Per una macchina virtuale per lo storage dei dati, il valore predefinito è `vsadmin`.
 
  a| 
 
@@ -113,18 +113,12 @@ Se l'account è un account di gruppo LDAP o NIS (`yes` oppure `no`).
  a| 
 `-second-authentication-method`
  a| 
-Secondo metodo di autenticazione in caso di autenticazione a più fattori in *ONTAP 9.3*:
+Secondo metodo di autenticazione in caso di autenticazione multifattore:
 
 * `none` se non si utilizza l'autenticazione a più fattori, valore predefinito
 * `publickey` per l'autenticazione a chiave pubblica quando `authmethod` è password o nsswitch
 * `password` per l'autenticazione della password utente quando `authmethod` è chiave pubblica
 * `nsswitch` per l'autenticazione della password utente quando il metodo authmethod è publickey
-+
-[NOTE]
-====
-A partire da ONTAP 9.4, è disponibile il supporto per nsswitch.
-
-====
 
 
 L'ordine di autenticazione è sempre la chiave pubblica seguita dalla password.
@@ -136,6 +130,106 @@ L'ordine di autenticazione è sempre la chiave pubblica seguita dalla password.
 `-is-ldap-fastbind`
  a| 
 A partire da ONTAP 9.11.1, se impostato su true, attiva il binding rapido LDAP per l'autenticazione nsswitch; l'impostazione predefinita è false. Per utilizzare l'associazione rapida LDAP, il `-authentication-method` il valore deve essere impostato su `nsswitch`. link:../nfs-admin/ldap-fast-bind-nsswitch-authentication-task.html["Scopri di più su LDAP fastbind per l'autenticazione nsswitch."]
+ a| 
+
+|===
+
+
+== Configurare le informazioni di protezione di Cisco Duo
+
+Questi valori vengono forniti con `security login duo create` Comando quando si attiva l'autenticazione a due fattori Cisco Duo con gli accessi SSH per una VM di storage.
+
+[cols="3*"]
+|===
+
+
+| Campo | Descrizione | Il tuo valore 
+
+
+ a| 
+`-vserver`
+ a| 
+La VM di storage (denominata vserver nell'interfaccia CLI di ONTAP) a cui si applicano le impostazioni di autenticazione Duo.
+ a| 
+
+
+
+ a| 
+`-integration-key`
+ a| 
+La chiave di integrazione, ottenuta durante la registrazione dell'applicazione SSH con Duo.
+ a| 
+
+
+
+ a| 
+`-secret-key`
+ a| 
+La chiave segreta, ottenuta durante la registrazione dell'applicazione SSH con Duo.
+ a| 
+
+
+
+ a| 
+`-api-host`
+ a| 
+Il nome host API, ottenuto durante la registrazione dell'applicazione SSH con Duo. Ad esempio:
+
+[listing]
+----
+api-<HOSTNAME>.duosecurity.com
+---- a| 
+
+
+
+ a| 
+`-fail-mode`
+ a| 
+In caso di errori di configurazione o di servizio che impediscono l'autenticazione Duo, non viene eseguita correttamente `safe` (consentire l'accesso) o. `secure` (negare l'accesso). L'impostazione predefinita è `safe`, Il che significa che l'autenticazione Duo viene ignorata se non riesce a causa di errori quali il server Duo API non è accessibile.
+ a| 
+
+
+
+ a| 
+`-http-proxy`
+ a| 
+Utilizzare il proxy HTTP specificato. Se il proxy HTTP richiede l'autenticazione, includere le credenziali nell'URL del proxy. Ad esempio:
+
+[listing]
+----
+http-proxy=http://username:password@proxy.example.org:8080
+---- a| 
+
+
+
+ a| 
+`-autopush`
+ a| 
+Entrambi `true` oppure `false`. Il valore predefinito è `false`. Se `true`, Duo invia automaticamente una richiesta di accesso push al telefono dell'utente, tornando a una chiamata telefonica se non è disponibile il push. Si noti che in questo modo l'autenticazione con codice di accesso viene disattivata. Se `false`, all'utente viene richiesto di scegliere un metodo di autenticazione.
+
+Se configurato con `autopush = true`, si consiglia l'impostazione `max-prompts = 1`.
+ a| 
+
+
+
+ a| 
+`-max-prompts`
+ a| 
+Se un utente non riesce ad autenticarsi con un secondo fattore, Duo richiede all'utente di eseguire nuovamente l'autenticazione. Questa opzione consente di impostare il numero massimo di richieste visualizzate da Duo prima di negare l'accesso. Deve essere `1`, `2`, o. `3`. Il valore predefinito è `1`.
+
+Ad esempio, quando `max-prompts = 1`, l'utente deve eseguire correttamente l'autenticazione al primo prompt, mentre se `max-prompts = 2`, se l'utente immette informazioni errate al prompt iniziale, gli verrà richiesto di eseguire nuovamente l'autenticazione.
+
+Se configurato con `autopush = true`, si consiglia l'impostazione `max-prompts = 1`.
+
+Per una migliore esperienza, un utente con solo autenticazione a chiave pubblica avrà sempre `max-prompts` impostare su `1`.
+ a| 
+
+
+
+ a| 
+`-enabled`
+ a| 
+Attiva l'autenticazione a due fattori Duo. Impostare su `true` per impostazione predefinita. Quando questa opzione è attivata, l'autenticazione Duo a due fattori viene applicata durante il login SSH in base ai parametri configurati. Quando Duo è disattivato (impostato su `false`), l'autenticazione Duo viene ignorata.
  a| 
 
 |===
@@ -155,7 +249,7 @@ Questi valori vengono forniti con `security login role create` quando si definis
  a| 
 `-vserver`
  a| 
-(Facoltativo) il nome della SVM associata al ruolo.
+(Opzionale) il nome della VM di storage (chiamato vserver nella CLI di ONTAP) associata al ruolo.
  a| 
 
 
@@ -221,7 +315,7 @@ Questi valori vengono forniti con `security login publickey create` Quando si as
  a| 
 `-vserver`
  a| 
-(Facoltativo) il nome della SVM a cui accede l'account.
+(Facoltativo) il nome della VM di storage a cui l'account accede.
  a| 
 
 
@@ -284,7 +378,7 @@ Quando si associa un certificato X.509 alla chiave pubblica SSH, ONTAP verifica 
 
 == Installare un certificato digitale del server firmato dalla CA
 
-Questi valori vengono forniti con `security certificate generate-csr` Quando si genera una richiesta di firma del certificato digitale (CSR) da utilizzare per l'autenticazione di una SVM come server SSL.
+Questi valori vengono forniti con `security certificate generate-csr` Comando quando si genera una richiesta di firma digitale del certificato (CSR) da utilizzare per l'autenticazione di una VM di storage come server SSL.
 
 [cols="3*"]
 |===
@@ -312,7 +406,7 @@ Il numero di bit nella chiave privata. Maggiore è il valore, maggiore sarà la 
  a| 
 `-country`
  a| 
-Il paese della SVM, in un codice di due lettere. Il valore predefinito è `US`. Consultare le pagine man per un elenco di codici.
+Il paese della macchina virtuale di archiviazione, in un codice di due lettere. Il valore predefinito è `US`. Consultare le pagine man per un elenco di codici.
  a| 
 
 
@@ -320,7 +414,7 @@ Il paese della SVM, in un codice di due lettere. Il valore predefinito è `US`. 
  a| 
 `-state`
  a| 
-Stato o provincia della SVM.
+Lo stato o la provincia della macchina virtuale di storage.
  a| 
 
 
@@ -328,7 +422,7 @@ Stato o provincia della SVM.
  a| 
 `-locality`
  a| 
-La località di SVM.
+La località della macchina virtuale storage.
  a| 
 
 
@@ -336,7 +430,7 @@ La località di SVM.
  a| 
 `-organization`
  a| 
-L'organizzazione di SVM.
+L'organizzazione della macchina virtuale di storage.
  a| 
 
 
@@ -344,7 +438,7 @@ L'organizzazione di SVM.
  a| 
 `-unit`
  a| 
-L'unità nell'organizzazione della SVM.
+L'unità nell'organizzazione della VM di storage.
  a| 
 
 
@@ -352,7 +446,7 @@ L'unità nell'organizzazione della SVM.
  a| 
 `-email-addr`
  a| 
-L'indirizzo e-mail dell'amministratore del contatto per SVM.
+L'indirizzo e-mail dell'amministratore del contatto per la VM di storage.
  a| 
 
 
@@ -364,7 +458,7 @@ Funzione di hashing crittografico per la firma del certificato. Il valore predef
  a| 
 
 |===
-Questi valori vengono forniti con `security certificate install` Quando si installa un certificato digitale firmato dalla CA per l'autenticazione del cluster o della SVM come server SSL. Nella tabella seguente sono riportate solo le opzioni relative alla configurazione dell'account.
+Questi valori vengono forniti con `security certificate install` Comando quando si installa un certificato digitale con firma CA da utilizzare per l'autenticazione del cluster o della VM di storage come server SSL. Nella tabella seguente sono riportate solo le opzioni relative alla configurazione dell'account.
 
 [cols="3*"]
 |===
@@ -376,7 +470,7 @@ Questi valori vengono forniti con `security certificate install` Quando si insta
  a| 
 `-vserver`
  a| 
-Il nome della SVM su cui deve essere installato il certificato.
+Il nome della VM di archiviazione su cui deve essere installato il certificato.
  a| 
 
 
@@ -398,7 +492,7 @@ Il tipo di certificato:
 
 == Configurare l'accesso al controller di dominio Active Directory
 
-Questi valori vengono forniti con `security login domain-tunnel create` Quando è già stato configurato un server SMB per una SVM dati e si desidera configurare la SVM come gateway o _tunnel_ per l'accesso al cluster da parte del controller di dominio Active Directory.
+Questi valori vengono forniti con `security login domain-tunnel create` Comando quando è già stato configurato un server SMB per una macchina virtuale per lo storage dei dati e si desidera configurare la macchina virtuale per lo storage come gateway o _tunnel_ per l'accesso al cluster da parte del controller di dominio Active Directory.
 
 [cols="3*"]
 |===
@@ -410,11 +504,11 @@ Questi valori vengono forniti con `security login domain-tunnel create` Quando �
  a| 
 `-vserver`
  a| 
-Il nome della SVM per cui è stato configurato il server SMB.
+Nome della VM di storage per cui è stato configurato il server SMB.
  a| 
 
 |===
-Questi valori vengono forniti con `vserver active-directory create` Comando quando non è stato configurato un server SMB e si desidera creare un account di computer SVM nel dominio Active Directory.
+Questi valori vengono forniti con `vserver active-directory create` Comando quando non è stato configurato un server SMB e si desidera creare un account di un computer VM di archiviazione nel dominio Active Directory.
 
 [cols="3*"]
 |===
@@ -426,7 +520,7 @@ Questi valori vengono forniti con `vserver active-directory create` Comando quan
  a| 
 `-vserver`
  a| 
-Il nome della SVM per la quale si desidera creare un account di computer Active Directory.
+Il nome della VM di storage per cui si desidera creare un account di computer Active Directory.
  a| 
 
 
@@ -458,13 +552,8 @@ L'unità organizzativa nel dominio. Il valore predefinito è `CN=Computers`. ONT
 
 == Configurare l'accesso al server LDAP o NIS
 
-Questi valori vengono forniti con `vserver services name-service ldap client create` Quando si crea una configurazione client LDAP per SVM.
+Questi valori vengono forniti con `vserver services name-service ldap client create` Comando quando si crea una configurazione del client LDAP per la VM di storage.
 
-[NOTE]
-====
-A partire da ONTAP 9.2, la `-ldap-servers` il campo sostituisce `-servers` campo. Questo nuovo campo può assumere un nome host o un indirizzo IP come valore per il server LDAP.
-
-====
 Nella seguente tabella sono riportate solo le opzioni relative alla configurazione dell'account:
 
 [cols="3*"]
@@ -477,7 +566,7 @@ Nella seguente tabella sono riportate solo le opzioni relative alla configurazio
  a| 
 `-vserver`
  a| 
-Il nome della SVM per la configurazione del client.
+Nome della VM di storage per la configurazione client.
  a| 
 
 
@@ -491,17 +580,9 @@ Il nome della configurazione del client.
 
 
  a| 
-`-servers`
- a| 
-*ONTAP 9.0, 9.1*: Un elenco separato da virgole di indirizzi IP per i server LDAP a cui si connette il client.
- a| 
-
-
-
- a| 
 `-ldap-servers`
  a| 
-*ONTAP 9.2*: Un elenco separato da virgole di indirizzi IP e nomi host per i server LDAP a cui si connette il client.
+Elenco separato da virgole di indirizzi IP e nomi host per i server LDAP a cui si connette il client.
  a| 
 
 
@@ -521,12 +602,12 @@ Se il client utilizza Start TLS per crittografare la comunicazione con il server
 
 [NOTE]
 ====
-Start TLS è supportato solo per l'accesso ai dati SVM. Non è supportato per l'accesso alle SVM amministrative.
+Start TLS è supportato solo per l'accesso alle macchine virtuali storage dei dati. Non è supportato per l'accesso alle VM di amministrazione dello storage.
 
 ==== a| 
 
 |===
-Questi valori vengono forniti con `vserver services name-service ldap create` Quando si associa una configurazione del client LDAP a SVM.
+Questi valori vengono forniti con `vserver services name-service ldap create` Comando quando si associa una configurazione client LDAP alla VM di storage.
 
 [cols="3*"]
 |===
@@ -538,7 +619,7 @@ Questi valori vengono forniti con `vserver services name-service ldap create` Qu
  a| 
 `-vserver`
  a| 
-Il nome della SVM a cui deve essere associata la configurazione del client.
+Nome della VM di storage a cui deve essere associata la configurazione client.
  a| 
 
 
@@ -554,17 +635,12 @@ Il nome della configurazione del client.
  a| 
 `-client-enabled`
  a| 
-Se SVM può utilizzare la configurazione del client LDAP (`true` oppure `false`).
+Se la VM di storage può utilizzare la configurazione del client LDAP (`true` oppure `false`).
  a| 
 
 |===
-Questi valori vengono forniti con `vserver services name-service nis-domain create` Quando si crea una configurazione di dominio NIS su una SVM.
+Questi valori vengono forniti con `vserver services name-service nis-domain create` Quando crei una configurazione di dominio NIS su una VM di storage.
 
-[NOTE]
-====
-A partire da ONTAP 9.2, la `-nis-servers` il campo sostituisce `-servers` campo. Questo nuovo campo può assumere un nome host o un indirizzo IP come valore per il server NIS.
-
-====
 [cols="3*"]
 |===
 
@@ -575,7 +651,7 @@ A partire da ONTAP 9.2, la `-nis-servers` il campo sostituisce `-servers` campo.
  a| 
 `-vserver`
  a| 
-Il nome della SVM su cui deve essere creata la configurazione del dominio.
+Nome della VM di storage su cui deve essere creata la configurazione del dominio.
  a| 
 
 
@@ -607,7 +683,7 @@ Se il dominio è attivo (`true` oppure `false`).
  a| 
 `-nis-servers`
  a| 
-*ONTAP 9.2*: Un elenco separato da virgole di indirizzi IP e nomi host per i server NIS utilizzati dalla configurazione del dominio.
+Elenco separato da virgole di indirizzi IP e nomi host per i server NIS utilizzati dalla configurazione di dominio.
  a| 
 
 |===
@@ -623,7 +699,7 @@ Questi valori vengono forniti con `vserver services name-service ns-switch creat
  a| 
 `-vserver`
  a| 
-Il nome della SVM in cui deve essere configurato l'ordine di ricerca del servizio di nomi.
+Il nome della VM di storage su cui deve essere configurato l'ordine di ricerca del servizio dei nomi.
  a| 
 
 

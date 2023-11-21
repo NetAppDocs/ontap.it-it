@@ -4,7 +4,7 @@ permalink: anti-ransomware/manage-parameters-task.html
 keywords: anti-ransomware overview, ransomware, security, modify, security anti-ransomware attack, parameters 
 summary: A partire da ONTAP 9.11.1, i parametri di rilevamento della protezione autonoma dal ransomware possono essere modificati in base al workload. 
 ---
-= Gestire i parametri di rilevamento degli attacchi ARP
+= Gestire i parametri di rilevamento degli attacchi tramite protezione autonoma dal ransomware
 :toc: macro
 :hardbreaks:
 :toclevels: 1
@@ -14,7 +14,7 @@ summary: A partire da ONTAP 9.11.1, i parametri di rilevamento della protezione 
 :nofooter: 
 :icons: font
 :linkattrs: 
-:imagesdir: ./media/
+:imagesdir: ../media/
 :toc-position: content
 
 
@@ -34,6 +34,8 @@ In ONTAP 9.10.1, ARP genera un avviso se rileva entrambe le seguenti condizioni:
 
 
 A partire da ONTAP 9.11.1, ARP emette un avviso di minaccia se _solo_ viene soddisfatta una condizione. Ad esempio, se si osservano più di 20 file con estensioni che non sono state precedentemente osservate nel volume entro un periodo di 24 ore, ARP lo classificherà come una minaccia _indipendentemente_ dall'entropia osservata. (I valori dei file 24 ore e 20 sono predefiniti, che possono essere modificati).
+
+A partire da ONTAP 9.14.1, è possibile configurare gli avvisi quando ARP osserva una nuova estensione di file e quando ARP crea un'istantanea. Per ulteriori informazioni, vedere <<modify-alerts>>
 
 Alcuni volumi e carichi di lavoro richiedono parametri di rilevamento diversi. Ad esempio, il volume abilitato per ARP può ospitare numerosi tipi di estensioni di file, nel qual caso è possibile modificare il conteggio delle soglie per le estensioni di file mai viste prima a un numero maggiore del valore predefinito di 20 o disattivare gli avvisi in base alle estensioni di file mai viste prima. A partire da ONTAP 9.11.1, puoi modificare i parametri di rilevamento degli attacchi per adattarli meglio ai tuoi carichi di lavoro specifici.
 
@@ -78,7 +80,7 @@ Per un elenco completo dei parametri, vedere link:https://docs.netapp.com/us-en/
 
 ARP continua a modificare i valori di base per i parametri di rilevamento anche in modalità attiva. Se conoscete i picchi nella vostra attività di volume--o un aumento una volta o un aumento che è caratteristica di una nuova normale--dovreste segnalarlo come sicuro. La segnalazione manuale di questi picchi come sicuri aiuta a migliorare l'accuratezza delle valutazioni delle minacce di ARP.
 
-.Salite una tantum
+.Segnalare un aumento di una tantum
 . Se in circostanze note si verifica un picco una tantum e si desidera che ARP segnali un aumento simile in circostanze future, eliminare il picco dal comportamento del carico di lavoro:
 +
 `security anti-ransomware volume workload-behavior clear-surge -vserver _svm_name_ -volume _volume_name_`
@@ -92,6 +94,67 @@ ARP continua a modificare i valori di base per i parametri di rilevamento anche 
 
 
 
+
+
+== Configurare gli avvisi ARP
+
+A partire da ONTAP 9.14.1, ARP consente di specificare gli avvisi per due eventi ARP:
+
+* Osservazione della nuova estensione di un file su un volume
+* Creazione di un'istantanea ARP
+
+
+È possibile impostare avvisi per questi due eventi su singoli volumi o per l'intera SVM. Se abiliti gli avvisi per la SVM, le impostazioni degli avvisi vengono ereditate solo dai volumi creati in seguito all'attivazione della funzione di avviso. Per impostazione predefinita, gli avvisi non sono attivati su alcun volume.
+
+Gli avvisi di eventi possono essere controllati con verifica multi-admin. Per ulteriori informazioni, vedere xref:use-cases-restrictions-concept.html#multi-admin-verification-with-volumes-protected-with-ARP[Verifica multi-admin con volumi protetti con ARP].
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Impostare gli avvisi per un volume
+. Passare a **volumi**. Selezionare il singolo volume per il quale si desidera modificare le impostazioni.
+. Selezionare la scheda **sicurezza**, quindi **Impostazioni protezione eventi**.
+. Per ricevere avvisi relativi a **Nuova estensione rilevata** e **istantanea ransomware creata**, selezionare il menu a discesa sotto l'intestazione **gravità**. Modificare l'impostazione da **non generare evento** a **Avviso**.
+. Selezionare **Salva**.
+
+
+.Impostare gli avvisi per una SVM
+. Accedere a **Storage VM** quindi selezionare la SVM per la quale si desidera abilitare le impostazioni.
+. Sotto l'intestazione **sicurezza**, individuare la scheda **Anti-ransomware**. Selezionare image:../media/icon_kabob.gif["tre punti"] Quindi **Modifica gravità evento ransomware**.
+. Per ricevere avvisi relativi a **Nuova estensione rilevata** e **istantanea ransomware creata**, selezionare il menu a discesa sotto l'intestazione **gravità**. Modificare l'impostazione da **non generare evento** a **Avviso**.
+. Selezionare **Salva**.
+
+
+--
+.CLI
+--
+.Impostare gli avvisi per un volume
+* Per impostare gli avvisi per una nuova estensione file:
++
+`security anti-ransomware volume event-log modify -vserver _svm_name_ -is-enabled-on-new-file-extension-seen true`
+
+* Per impostare gli avvisi per la creazione di un'istantanea ARP:
++
+`security anti-ransomware volume event-log modify -vserver _svm_name_ -is-enabled-on-snapshot-copy-creation true`
+
+* Confermare le impostazioni con `anti-ransomware volume event-log show` comando.
+
+
+.Impostare gli avvisi per una SVM
+* Per impostare gli avvisi per una nuova estensione file:
++
+`security anti-ransomware vserver event-log modify -vserver _svm_name_ -is-enabled-on-new-file-extension-seen true`
+
+* Per impostare gli avvisi per la creazione di un'istantanea ARP:
++
+`security anti-ransomware vserver event-log modify -vserver _svm_name_ -is-enabled-on-snapshot-copy-creation true`
+
+* Confermare le impostazioni con `security anti-ransomware vserver event-log show` comando.
+
+
+--
+====
 .Ulteriori informazioni
 * link:https://kb.netapp.com/onprem/ontap/da/NAS/Understanding_Autonomous_Ransomware_Protection_attacks_and_the_Autonomous_Ransomware_Protection_snapshot["Comprendere gli attacchi di protezione autonoma da ransomware e lo snapshot di protezione autonoma da ransomware"^]
 

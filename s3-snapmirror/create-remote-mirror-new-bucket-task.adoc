@@ -70,7 +70,11 @@ Vedere link:../task_object_provision_add_s3_users_groups.html["Aggiungere utenti
 +
 *** *Principal* e *Effect* - selezionare i valori corrispondenti alle impostazioni del gruppo di utenti o accettare le impostazioni predefinite.
 *** *Azioni*- assicurarsi che vengano visualizzati i seguenti valori:
-`GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts`
++
+[listing]
+----
+GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts
+----
 *** *Risorse* - utilizzare le impostazioni predefinite `(_bucketname, bucketname_/*)` o altri valori di cui hai bisogno.
 +
 Vedere link:../task_object_provision_manage_bucket_access.html["Gestire l'accesso degli utenti ai bucket"] per ulteriori informazioni su questi campi.
@@ -96,13 +100,17 @@ Vedere link:../task_object_provision_manage_bucket_access.html["Gestire l'access
 
 
 
+. Selezionare *Use the same certificate on the destination* (Usa lo stesso certificato sulla destinazione) se si utilizza un certificato firmato da un vendor CA esterno.
+. Se si fa clic su *Destination Settings* (Impostazioni destinazione), è anche possibile inserire i propri valori al posto dei valori predefiniti per il nome del bucket, la capacità e il livello di servizio delle performance.
+. Fare clic su *Save* (Salva). Viene creato un nuovo bucket nella VM per lo storage di origine e viene eseguito il mirroring in un nuovo bucket che viene creato la VM per lo storage di destinazione.
 
 
-Selezionare *Use the same certificate on the destination* (Usa lo stesso certificato sulla destinazione) se si utilizza un certificato firmato da un vendor CA esterno.
+.Backup delle benne bloccate
+A partire da ONTAP 9.14.1, è possibile eseguire il backup di bucket S3 bloccati e ripristinarli secondo necessità.
 
-Se si fa clic su *Destination Settings* (Impostazioni destinazione), è anche possibile inserire i propri valori al posto dei valori predefiniti per il nome del bucket, la capacità e il livello di servizio delle performance.
+Quando si definiscono le impostazioni di protezione per un bucket nuovo o esistente, è possibile attivare il blocco di oggetti nei bucket di destinazione, a condizione che i cluster di origine e di destinazione eseguano ONTAP 9.14.1 o versioni successive e che il blocco degli oggetti sia abilitato nel bucket di origine. La modalità di blocco degli oggetti e il mantenimento del blocco del bucket di origine diventano applicabili agli oggetti replicati nel bucket di destinazione. È inoltre possibile definire un periodo di blocco diverso per il bucket di destinazione nella sezione *Impostazioni destinazione*. Questo periodo di conservazione viene applicato anche a tutti gli oggetti non bloccati replicati dal bucket di origine e dalle interfacce S3.
 
-Quando si fa clic su *Save* (Salva), viene creato un nuovo bucket nella VM di storage di origine e viene eseguito il mirroring su un nuovo bucket che viene creato nella VM di storage di destinazione.
+Per informazioni su come attivare il blocco degli oggetti in un bucket, vedere link:../s3-config/create-bucket-task.html["Creare un bucket"].
 
 --
 .CLI
@@ -134,15 +142,15 @@ Non rigenerare la chiave se ne esiste già una.
 ----
 src_cluster::> vserver object-store-server bucket policy add-statement -bucket test-bucket -effect allow -action GetObject,PutObject,DeleteObject,ListBucket,GetBucketAcl,GetObjectAcl,ListBucketMultipartUploads,ListMultipartUploadParts -principal - -resource test-bucket, test-bucket /*
 ----
-. Sulla SVM di origine, creare un criterio S3 SnapMirror se non si dispone di uno esistente e non si desidera utilizzare il criterio predefinito:
+. Nella SVM di origine, crea una policy SnapMirror S3 se non ne hai già una e non vuoi utilizzare la policy predefinita:
 `snapmirror policy create -vserver _svm_name_ -policy policy_name -type continuous [-rpo _integer_] [-throttle _throttle_type_] [-comment _text_] [_additional_options_]`
 +
 Parametri:
 
 +
-** tipo `continuous` – L'unico tipo di policy per le relazioni di S3 SnapMirror (obbligatorio).
-** `-rpo` – specifica il tempo per l'obiettivo del punto di ripristino, in secondi (facoltativo).
-** `-throttle` – specifica il limite massimo di throughput/larghezza di banda, in kilobyte/secondi (opzionale).
+** tipo `continuous` - L'unico tipo di policy per le relazioni SnapMirror S3 (obbligatorio).
+** `-rpo` - specifica il tempo per l'obiettivo del punto di ripristino, in secondi (facoltativo).
+** `-throttle` - specifica il limite superiore di throughput/larghezza di banda, in kilobyte/secondi (opzionale).
 +
 .Esempio
 [listing]

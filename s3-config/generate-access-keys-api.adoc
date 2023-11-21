@@ -1,0 +1,120 @@
+---
+permalink: s3-config/generate-access-keys-api.html 
+sidebar: sidebar 
+keywords: generate, ldap, s3, access keys, secret keys using API 
+summary: 'Le chiavi per accedere ai client S3 possono essere rigenerate da S3 utenti utilizzando l"API.' 
+---
+= Consentire agli utenti LDAP o di dominio di generare le proprie chiavi di accesso S3
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.14.1, in qualità di amministratore ONTAP, è possibile creare ruoli personalizzati e concederli a gruppi locali o di dominio o a gruppi LDAP (Lightweight Directory Access Protocol), in modo che gli utenti appartenenti a tali gruppi possano generare le proprie chiavi di accesso e segrete per l'accesso client S3.
+
+.Prima di iniziare
+Verificare quanto segue:
+
+. È stata creata una macchina virtuale di storage abilitata per S3 contenente un server S3. Vedere link:../s3-config/create-svm-s3-task.html["Creare una SVM per S3"].
+. È stato creato un bucket in quella VM per lo storage. Vedere link:../s3-config/create-bucket-task.html["Creare un bucket"].
+. Il DNS è configurato sulla macchina virtuale di storage. Vedere link:../networking/configure_dns_services_manual.html["Configurare i servizi DNS"].
+. Sulla VM di storage viene installato un certificato CA (root Certification Authority) autofirmato del server LDAP. Vedere link:../nfs-config/install-self-signed-root-ca-certificate-svm-task.html["Installare il certificato della CA principale autofirmato su SVM"].
+. Un client LDAP è configurato con TLS attivato sulla macchina virtuale di storage. Vedere link:../nfs-config/create-ldap-client-config-task.html["Creare una configurazione del client LDAP"] e. link:../nfs-config/enable-ldap-svms-task.html["Associare la configurazione del client LDAP alle SVM"].
+
+
+
+
+== Configurare gli utenti per la generazione delle chiavi di accesso
+
+. Specificare LDAP come _name service database_ della VM di archiviazione per il gruppo e la password per LDAP:
++
+[listing]
+----
+ns-switch modify -vserver <vserver-name> -database group -sources files,ldap
+ns-switch modify -vserver <vserver-name> -database passwd -sources files,ldap
+----
++
+Per ulteriori informazioni su questo comando, vedere `vserver services name-service ns-switch modify` comando.
+
+. Creare un ruolo personalizzato con accesso all'endpoint API REST per S3 utenti:
+`security login rest-role create -vserver <vserver-name> -role <custom-role-name> -api "/api/protocols/s3/services/*/users" -access <access-type>`
+In questo esempio, il `s3-role` Viene generato un ruolo per gli utenti sulla VM di storage `svm-1`, a cui vengono concessi tutti i diritti di accesso, lettura, creazione e aggiornamento.
++
+[listing]
+----
+security login rest-role create -vserver svm-1 -role s3role -api "/api/protocols/s3/services/*/users" -access all
+----
++
+Per ulteriori informazioni su questo comando, vedere `security login rest-role create` comando.
+
+. Creare un gruppo di utenti LDAP con il comando di accesso alla sicurezza e aggiungere il nuovo ruolo personalizzato per accedere all'endpoint dell'API REST utente S3. Per ulteriori informazioni su questo comando, vedere `security login create` comando.
++
+[listing]
+----
+security login create -user-or-group-name <ldap-group-name> -application http -authentication-method nsswitch -role <custom-role-name> -is-ns-switch-group yes
+----
++
+In questo esempio, il gruppo LDAP `ldap-group-1` viene creato in `svm-1`e il ruolo personalizzato `s3role` Viene aggiunto per accedere all'endpoint API, oltre ad abilitare l'accesso LDAP in modalità di associazione rapida.
+
++
+[listing]
+----
+security login create -user-or-group-name ldap-group-1 -application http -authentication-method nsswitch -role s3role -is-ns-switch-group yes -second-authentication-method none -vserver svm-1 -is-ldap-fastbind yes
+----
++
+Per ulteriori informazioni, vedere link:../nfs-admin/ldap-fast-bind-nsswitch-authentication-task.html["Utilizza il binding rapido LDAP per l'autenticazione nsswitch"].
+
+
+
+L'aggiunta del ruolo personalizzato al dominio o al gruppo LDAP consente agli utenti di quel gruppo di accedere in modo limitato a ONTAP `/api/protocols/s3/services/{svm.uuid}/users` endpoint. Richiamando l'API, gli utenti del dominio o del gruppo LDAP possono generare il proprio accesso e le proprie chiavi segrete per accedere al client S3. Possono generare le chiavi solo per se stessi e non per altri utenti.
+
+
+
+== Come utente S3 o LDAP, generare le proprie chiavi di accesso
+
+A partire da ONTAP 9.14.1, è possibile generare le proprie chiavi di accesso e segrete per l'accesso ai client S3, se l'amministratore ha concesso il ruolo di generazione delle proprie chiavi. Puoi generare le chiavi solo per te utilizzando il seguente endpoint dell'API REST ONTAP.
+
+.Metodo HTTP ed endpoint
+Questa chiamata API REST utilizza il metodo e l'endpoint seguenti. Per informazioni sugli altri metodi di questo endpoint, vedere il riferimento https://docs.netapp.com/us-en/ontap-automation/reference/api_reference.html#access-a-copy-of-the-ontap-rest-api-reference-documentation["Documentazione API"].
+
+[cols="25,75"]
+|===
+| Metodo HTTP | Percorso 
+
+
+| POST | /api/protocolli/s3/servizi/{svm.uuid}/utenti 
+|===
+.Esempio di arricciamento
+[source, curl]
+----
+curl --request POST \
+--location "https://$FQDN_IP /api/protocols/s3/services/{svm.uuid}/users " \
+--include \
+--header "Accept: */*" \
+--header "Authorization: Basic $BASIC_AUTH"
+----
+.Esempio di output JSON
+[listing]
+----
+{
+  "records": [
+    {
+      "access_key": "Pz3SB54G2B_6dsXQPrA5HrTPcf478qoAW6_Xx6qyqZ948AgZ_7YfCf_9nO87YoZmskxx3cq41U2JAH2M3_fs321B4rkzS3a_oC5_8u7D8j_45N8OsBCBPWGD_1d_ccfq",
+      "_links": {
+        "next": {
+          "href": "/api/resourcelink"
+        },
+        "self": {
+          "href": "/api/resourcelink"
+        }
+      },
+      "name": "user-1",
+      "secret_key": "A20_tDhC_cux2C2BmtL45bXB_a_Q65c_96FsAcOdo14Az8V31jBKDTc0uCL62Bh559gPB8s9rrn0868QrF38_1dsV2u1_9H2tSf3qQ5xp9NT259C6z_GiZQ883Qn63X1"
+    }
+  ],
+  "num_records": "1"
+}
+
+----

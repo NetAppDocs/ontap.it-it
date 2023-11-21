@@ -1,0 +1,101 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-prepare.html 
+keywords: oauth 2.0, oauth2, prepare, plan, deployment plan 
+summary: Prima di configurare OAuth 2,0 in un ambiente ONTAP, è necessario prepararsi per la distribuzione. 
+---
+= Preparati a implementare OAuth 2,0 con ONTAP
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Prima di configurare OAuth 2,0 in un ambiente ONTAP, è necessario prepararsi per la distribuzione. Di seguito è riportato un riepilogo delle principali attività e decisioni. La disposizione delle sezioni è generalmente allineata con l'ordine da seguire. Tuttavia, sebbene sia applicabile per la maggior parte delle implementazioni, è consigliabile adattarlo all'ambiente in base alle esigenze. È inoltre opportuno prendere in considerazione la creazione di un piano di distribuzione formale.
+
+
+TIP: In base all'ambiente in uso, è possibile selezionare la configurazione per i server di autorizzazione definiti in ONTAP. Sono inclusi i valori dei parametri da specificare per ogni tipo di distribuzione. Vedere link:../authentication/oauth2-deployment-scenarios.html["Scenari di distribuzione di OAuth 2,0"] per ulteriori informazioni.
+
+
+
+== Risorse protette e applicazioni client
+
+OAuth 2,0 è un framework di autorizzazione per controllare l'accesso alle risorse protette. In questo caso, un primo passo importante per qualsiasi distribuzione consiste nel determinare quali sono le risorse disponibili e quali client devono accedervi.
+
+.Identificare le applicazioni client
+È necessario decidere quali client utilizzeranno OAuth 2,0 per l'emissione di chiamate API REST e a quali endpoint API devono accedere.
+
+.Esaminare i ruoli REST ONTAP esistenti e gli utenti locali
+È necessario esaminare le definizioni di identità ONTAP esistenti, inclusi i ruoli REST e gli utenti locali. A seconda della configurazione di OAuth 2,0, queste definizioni possono essere utilizzate per prendere decisioni sugli accessi.
+
+.Transizione globale a OAuth 2,0
+Sebbene sia possibile implementare l'autorizzazione OAuth 2,0 gradualmente, è anche possibile spostare immediatamente tutti i client API REST in OAuth 2,0 impostando un flag globale per ogni server di autorizzazione. In questo modo, è possibile prendere decisioni di accesso in base alla configurazione ONTAP esistente senza dover creare ambiti autonomi.
+
+
+
+== Server di autorizzazione
+
+I server di autorizzazione svolgono un ruolo importante nella distribuzione di OAuth 2,0 rilasciando token di accesso e applicando criteri amministrativi.
+
+.Selezionare e installare il server di autorizzazione
+È necessario selezionare e installare uno o più server di autorizzazione. È importante acquisire familiarità con le opzioni di configurazione e le procedure dei provider di identità, incluse le modalità di definizione degli ambiti.
+
+.Determinare se è necessario installare il certificato CA principale di autorizzazione
+ONTAP utilizza il certificato del server di autorizzazione per convalidare i token di accesso firmati presentati dai client. A tale scopo, ONTAP necessita del certificato della CA principale e di eventuali certificati intermedi. Questi potrebbero essere preinstallati con ONTAP. In caso contrario, è necessario installarli.
+
+.Valutare la posizione e la configurazione della rete
+Se il server di autorizzazione è protetto da un firewall, ONTAP deve essere configurato per utilizzare un server proxy.
+
+
+
+== Autenticazione e autorizzazione del client
+
+È necessario prendere in considerazione diversi aspetti dell'autenticazione e dell'autorizzazione dei client.
+
+.Ambiti indipendenti o definizioni di identità ONTAP locali
+A un livello elevato, è possibile definire ambiti indipendenti definiti nel server di autorizzazione o fare affidamento sulle definizioni di identità ONTAP locali esistenti, inclusi ruoli e utenti.
+
+.Opzioni con elaborazione ONTAP locale
+Se si utilizzano le definizioni di identità ONTAP, è necessario decidere quale applicare, tra cui:
+
+* Ruolo REST denominato
+* Far corrispondere gli utenti locali
+* Active Directory o gruppi LDAP
+
+
+.Convalida locale o introspezione remota
+È necessario decidere se i token di accesso verranno convalidati localmente da ONTAP o dal server di autorizzazione tramite introspezione. Ci sono anche diversi valori correlati da prendere in considerazione, come l'intervallo di aggiornamento.
+
+.Token di accesso con restrizioni del mittente
+Per gli ambienti che richiedono un alto livello di protezione, è possibile utilizzare token di accesso con limitazioni di invio basati su mTLS. Questo richiede un certificato per ciascun client.
+
+.Interfaccia amministrativa
+È possibile eseguire l'amministrazione di OAuth 2,0 tramite una qualsiasi delle interfacce ONTAP, tra cui:
+
+* Interfaccia della riga di comando
+* System Manager
+* API REST
+
+
+.Modalità con cui i client richiedono i token di accesso
+Le applicazioni client devono richiedere i token di accesso direttamente dal server di autorizzazione. È necessario decidere in che modo eseguire questa operazione, incluso il tipo di concessione.
+
+
+
+== Configure ONTAP (Configura SNMP)
+
+È necessario eseguire diverse attività di configurazione di ONTAP.
+
+.Definire i ruoli REST e gli utenti locali
+In base alla configurazione dell'autorizzazione, è possibile utilizzare l'elaborazione dell'identificazione ONTAP locale. In questo caso, è necessario rivedere e definire i ruoli REST e le definizioni utente.
+
+.Configurazione di base
+Per eseguire la configurazione di base di ONTAP sono necessari tre passaggi principali, tra cui:
+
+* Se si desidera, installare il certificato di origine (e qualsiasi certificato intermedio) per la CA che ha firmato il certificato del server di autorizzazione.
+* Definire il server di autorizzazione.
+* Abilitare l'elaborazione OAuth 2,0 per il cluster.
+
