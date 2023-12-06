@@ -14,15 +14,60 @@ summary: 'È possibile creare un volume FlexCache nello stesso cluster per migli
 È possibile creare un volume FlexCache nello stesso cluster per migliorare le prestazioni quando si accede a un oggetto hot. Se i data center si trovano in posizioni diverse, è possibile creare volumi FlexCache su cluster remoti per accelerare l'accesso ai dati.
 
 .A proposito di questa attività
-Il volume FlexCache è sempre un volume FlexGroup e non un volume FlexVol.
+A partire da ONTAP 9,5, FlexCache supporta i volumi FlexVol come volumi di origine e i volumi FlexGroup come volumi FlexCache.  A partire da ONTAP 9,7 sia il volume FlexVol che i volumi FlexGroup sono supportati come volumi di origine.
 
-A partire da ONTAP 9.7, i volumi FlexGroup sono supportati anche all'origine della relazione FlexCache.
+.Prima di iniziare
+* È necessario eseguire ONTAP 9,5 o versione successiva
+* Se si utilizza ONTAP 9,6 o versione precedente, è necessario link:add-license-task.html["Aggiungere una licenza FlexCache"].
++
+Non è richiesta una licenza FlexCache per ONTAP 9,7 o versioni successive.
+
+
+
+
+NOTE: Se è in uso una coppia ha link:https://docs.netapp.com/us-en/ontap/encryption-at-rest/support-storage-encryption-concept.html["Crittografia dei dischi SAS o NVMe (SED, NSE, FIPS)"], è necessario seguire le istruzioni riportate nell'argomento link:https://docs.netapp.com/us-en/ontap/encryption-at-rest/return-seds-unprotected-mode-task.html["Ripristino di un'unità FIPS o SED in modalità non protetta"] Per tutti i dischi all'interno della coppia ha prima dell'inizializzazione del sistema (opzioni di avvio 4 o 9). Il mancato rispetto di questa procedura potrebbe causare la perdita di dati in futuro se i dischi vengono riutilizzati.
 
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Se il volume FlexCache si trova su un cluster diverso da quello del volume di origine, creare una relazione di peer del cluster:
++
+.. Nel cluster locale, fare clic su *protezione > Panoramica*.
+.. Espandere *Impostazioni intercluster*, fare clic su *Aggiungi interfacce di rete* e aggiungere interfacce di rete intercluster per il cluster.
++
+Ripetere questo passaggio sul cluster remoto.
+
+.. Nel cluster remoto, fare clic su *protezione > Panoramica*. Fare clic su image:icon_kabob.gif["icona delle opzioni di menu"] Nella sezione Cluster Peers (peer cluster), fare clic su *generate Passphrase* (genera passphrase)
+.. Copiare la passphrase generata e incollarla nel cluster locale.
+.. Nel cluster locale, in Cluster Peers, fare clic su *Peer Clusters* e eseguire il peer dei cluster locali e remoti.
+
+
+. Se il volume FlexCache si trova sullo stesso cluster del volume di origine, ma si trova in una SVM differente, creare una relazione peer intercluster SVM di tipo "FlexCache":
++
+In peer Storage VM, fare clic su image:icon_kabob.gif["icona delle opzioni di menu"] E poi *Peer Storage VM* per eseguire il peer delle VM di storage.
+
+. Selezionare *Storage > Volumes* (Storage > volumi).
+. Selezionare *Aggiungi*.
+. Selezionare *altre opzioni*, quindi selezionare *Aggiungi come cache per un volume remoto*.
++
+.. Se si utilizza ONTAP 9.8 o versione successiva e si desidera disattivare la qualità del servizio o scegliere un criterio di qualità del servizio personalizzato, fare clic su *altre opzioni*, quindi in *archiviazione e ottimizzazione* selezionare *livello di servizio delle prestazioni*.
+
+
+
+
+--
+.CLI
+--
 . Se il volume FlexCache da creare si trova in un cluster diverso, creare una relazione peer del cluster:
 +
-.. Sul cluster di destinazione, creare una relazione peer con il cluster di origine per la protezione dei dati: +
-`cluster peer create -generate-passphrase -offer-expiration MM/DD/YYYY HH:MM:SS|1...7days|1...168hours -peer-addrs _peer_LIF_IPs_ -initial-allowed-vserver-peers _svm_name_,..|* -ipspace _ipspace_name_`
+.. Nel cluster di destinazione, creare una relazione di peer con il cluster di origine per la protezione dei dati:
++
+[source, cli]
+----
+cluster peer create -generate-passphrase -offer-expiration MM/DD/YYYY HH:MM:SS|1...7days|1...168hours -peer-addrs <peer_LIF_IPs> -initial-allowed-vserver-peers <svm_name>,..|* -ipspace <ipspace_name>
+----
 +
 A partire da ONTAP 9.6, la crittografia TLS viene attivata per impostazione predefinita quando si crea una relazione peer del cluster. La crittografia TLS è supportata per la comunicazione tra i cluster tra i volumi di origine e FlexCache. Se necessario, è anche possibile disattivare la crittografia TLS per la relazione peer del cluster.
 
@@ -39,8 +84,12 @@ cluster02::> cluster peer create -generate-passphrase -offer-expiration 2days -i
 
 Warning: make a note of the passphrase - it cannot be displayed again.
 ----
-.. Nel cluster di origine, autenticare il cluster di origine nel cluster di destinazione: +
-`cluster peer create -peer-addrs _peer_LIF_IPs_ -ipspace _ipspace_`
+.. Nel cluster di origine, autenticare il cluster di origine nel cluster di destinazione:
++
+[source, cli]
+----
+cluster peer create -peer-addrs <peer_LIF_IPs> -ipspace <ipspace>
+----
 +
 [listing]
 ----
@@ -58,8 +107,12 @@ Clusters cluster02 and cluster01 are peered.
 
 . Se il volume FlexCache si trova in una SVM diversa da quella del volume di origine, creare una relazione peer SVM con `flexcache` come applicazione:
 +
-.. Se SVM si trova in un cluster diverso, creare un'autorizzazione SVM per le SVM di peering: +
-`vserver peer permission create -peer-cluster _cluster_name_ -vserver _svm-name_ -applications flexcache`
+.. Se la SVM si trova in un cluster diverso, creare un permesso SVM per il peering delle SVM:
++
+[source, cli]
+----
+vserver peer permission create -peer-cluster <cluster_name> -vserver <svm-name> -applications flexcache
+----
 +
 Nell'esempio seguente viene illustrato come creare un'autorizzazione peer SVM applicabile a tutte le SVM locali:
 
@@ -72,14 +125,20 @@ Warning: This Vserver peer permission applies to all local Vservers. After that 
 "vserver peer accept" command required for Vserver peer relationship creation request
 from peer cluster "cluster2" with any of the local Vservers. Do you want to continue? {y|n}: y
 ----
-.. Creare la relazione peer SVM: +
-`vserver peer create -vserver local_SVM -peer-vserver _remote_SVM_ -peer-cluster _cluster_name_ -applications flexcache`
+.. Creare la relazione di peer dell'SVM:
++
+[source, cli]
+----
+vserver peer create -vserver <local_SVM> -peer-vserver <remote_SVM> -peer-cluster <cluster_name> -applications flexcache
+----
 
 
 . Creare un volume FlexCache:
 +
-`volume flexcache create -vserver _cache_svm_ -volume _cache_vol_name_ -auto-provision-as flexgroup -size _vol_size_ -origin-vserver _origin_svm_ -origin-volume _origin_vol_name_`
-
+[source, cli]
+----
+volume flexcache create -vserver <cache_svm> -volume <cache_vol_name> -auto-provision-as flexgroup -size <vol_size> -origin-vserver <origin_svm> -origin-volume <origin_vol_name>
+----
 +
 Nell'esempio seguente viene creato un volume FlexCache e vengono selezionati automaticamente gli aggregati esistenti per il provisioning:
 
@@ -100,8 +159,12 @@ cluster1::> flexcache create -vserver vs34 -volume fc4 -aggr-list aggr34,aggr43 
 ----
 . Verificare la relazione FlexCache dal volume FlexCache e dal volume di origine.
 +
-.. Visualizzare la relazione FlexCache nel cluster: +
-`volume flexcache show`
+.. Visualizzare la relazione di FlexCache nel cluster:
++
+[source, cli]
+----
+volume flexcache show
+----
 +
 [listing]
 ----
@@ -126,6 +189,8 @@ vs_1           vol_1           vs_1             fc1            cluster1
 
 
 
+--
+====
 
 
 == Risultato
@@ -134,5 +199,3 @@ Il volume FlexCache è stato creato correttamente. I client possono montare il v
 
 .Informazioni correlate
 link:../peering/index.html["Peering di cluster e SVM"]
-
-http://docs.netapp.com/ontap-9/topic/com.netapp.doc.dot-cm-cmpr/GUID-5CB10C70-AC11-41C0-8C16-B4D0DF916E9B.html["Comandi di ONTAP 9"^]
