@@ -44,16 +44,19 @@ Durante il processo di Takeover si verificano le seguenti fasi:
 
 . Se il Takeover negoziato è avviato dall'utente, i dati aggregati vengono spostati dal nodo partner al nodo che sta eseguendo il Takeover. Una breve interruzione si verifica quando il proprietario corrente di ciascun aggregato (ad eccezione dell'aggregato root) passa al nodo di Takeover. Questa interruzione è più breve di un'interruzione che si verifica durante un'acquisizione senza ricollocazione aggregata.
 +
+
+NOTE: Un takover negoziato durante il panico non può verificarsi in caso di panico.  Un takeover può derivare da un errore non associato a un panico. Si verifica un errore quando la comunicazione tra un nodo e il suo partner viene persa, chiamata anche perdita heartbeat. In caso di takeover a causa di un guasto, l'interruzione potrebbe essere più lunga poiché il nodo partner ha bisogno di tempo per rilevare la perdita di heartbeat.
+
++
 ** È possibile monitorare l'avanzamento utilizzando `storage failover show‑takeover` comando.
 ** È possibile evitare il trasferimento dell'aggregato durante questa istanza di Takeover utilizzando `‑bypass‑optimization` con il `storage failover takeover` comando.
 +
-
-NOTE: Gli aggregati vengono ricollocati in modo seriale durante le operazioni di Takeover pianificate per ridurre l'interruzione del servizio del client. Se il trasferimento aggregato viene ignorato, si verifica un'interruzione più lunga del client durante gli eventi di acquisizione pianificati.
+Gli aggregati vengono ricollocati in modo seriale durante le operazioni di Takeover pianificate per ridurre l'interruzione del servizio del client. Se il trasferimento aggregato viene ignorato, si verifica un'interruzione più lunga del client durante gli eventi di acquisizione pianificati.
 
 
 
 . Se il Takeover avviato dall'utente è un Takeover negoziato, il nodo di destinazione si spegne senza problemi, seguito dal Takeover dell'aggregato root del nodo di destinazione e degli aggregati che non sono stati ricollocati nella fase 1.
-. Prima dell'inizio del processo di acquisizione dello storage, le LIF dei dati (interfacce logiche) migrano dal nodo di destinazione al nodo di acquisizione o a qualsiasi altro nodo del cluster in base alle regole di failover LIF. È possibile evitare la migrazione LIF utilizzando `‑skip‑lif-migration` con il `storage failover takeover` comando.
+. Le interfacce logiche (LIF) dei dati migrano dal nodo di destinazione al nodo di takeover o a qualsiasi altro nodo del cluster in base alle regole di failover della LIF. È possibile evitare la migrazione LIF utilizzando `‑skip‑lif-migration` con il `storage failover takeover` comando. In caso di takeover avviato dall'utente, le LIF dati vengono migrate prima dell'inizio del takeover dello storage.  In caso di panico o guasto, le LIF dati e lo storage vengono migrati insieme.
 . Le sessioni SMB esistenti vengono disconnesse quando si verifica il takeover.
 +
 
