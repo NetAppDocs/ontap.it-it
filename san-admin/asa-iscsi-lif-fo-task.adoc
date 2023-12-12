@@ -1,173 +1,65 @@
 ---
 permalink: san-admin/asa-iscsi-lif-fo-task.html 
 sidebar: sidebar 
-keywords: failover, iscsi, all flash san array, cli, system manager, auto-revert, revert network interface 
-summary: 'A partire da ONTAP 9.11.1 sulle piattaforme ASA (All-Flash SAN Array), la funzionalità di failover iSCSI LIF supporta la migrazione automatica e manuale delle LIF iSCSI in un failover dei partner SFO (quando una LIF iSCSI si sposta dal nodo/porta home al nodo/porta partner ha e viceversa) e in un failover locale (quando una LIF iSCSI si sposta dalla porta guasta a una porta funzionante del nodo home corrente e viceversa). Questa funzione offre una ripresa i/o più rapida per i carichi di lavoro SAN eseguiti su ISCSI.' 
+keywords: failover, iscsi, all san array, cli, system manager, auto-revert, revert network interface 
+summary: 'Dopo l"upgrade a ONTAP 9.11.1 o versione successiva, dovresti attivare manualmente il failover LIF automatico su tutte le LIF iSCSI create in ONTAP 9.10.1 o versione precedente.' 
 ---
-= Failover LIF iSCSI per piattaforme ASA
+= Attiva o disattiva il failover automatico della LIF iSCSI
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-A partire da ONTAP 9.11.1 sulle piattaforme ASA (All-Flash SAN Array), la funzionalità di failover iSCSI LIF supporta la migrazione automatica e manuale delle LIF iSCSI in un failover dei partner SFO (quando una LIF iSCSI si sposta dal nodo/porta home al nodo/porta partner ha e viceversa) e in un failover locale (quando una LIF iSCSI si sposta dalla porta guasta a una porta funzionante del nodo home corrente e viceversa). Questa funzione offre una ripresa i/o più rapida per i carichi di lavoro SAN eseguiti su ISCSI.
+Dopo l'upgrade a ONTAP 9.11.1 o versione successiva, dovresti attivare manualmente il failover LIF automatico su tutte le LIF iSCSI create in ONTAP 9.10.1 o versione precedente.
+
+A partire da ONTAP 9.11.1, puoi abilitare il failover LIF automatico per LIF iSCSI su piattaforme di array SAN all-flash. In caso di failover dello storage, la LIF iSCSI viene automaticamente migrata dal nodo home o dalla porta al nodo partner di ha o alla porta, per poi tornare indietro una volta completato il failover.  Oppure, se la porta per LIF iSCSI diventa guasta, la LIF viene migrata automaticamente a una porta funzionante nel suo nodo home corrente e quindi di nuovo alla porta originale una volta che la porta è nuovamente funzionante.  Consente ai carichi di lavoro SAN in esecuzione su iSCSI di riprendere più rapidamente il servizio i/o dopo un failover.
+
+In ONTAP 9.11.1 e versioni successive, per impostazione predefinita, le LIF iSCSI appena create vengono attivate per il failover automatico della LIF se si verifica una delle seguenti condizioni:
+
+* Non ci sono LIF iSCSI nell'SVM
+* Tutte le LIF iSCSI presenti nella SVM sono abilitate per il failover automatico della LIF
 
 
 
-== Informazioni sull'attivazione del failover LIF iSCSI
 
-[role="Lead"]
-È necessario acquisire familiarità con gli aspetti relativi all'attivazione automatica del failover LIF iSCSI e al momento in cui è necessario attivarlo manualmente, incluso il modo in cui vengono influenzati i LIF iSCSI appena creati e quelli esistenti.
+== Attiva il failover automatico della LIF iSCSI
 
-* La migrazione automatica di una LIF iSCSI è un failover e un autorevert LIF, che viene attivato in determinati eventi, come failover pianificato o non pianificato, un collegamento ethernet fisico inattivo o un nodo che esce dal quorum del database replicato (RDB).
+Per impostazione predefinita, le LIF iSCSI create in ONTAP 9.10.1 e versioni precedenti non sono abilitate per il failover automatico della LIF.  Se nell'SVM sono presenti LIF iSCSI non abilitate per il failover automatico della LIF, nemmeno le LIF create di recente saranno abilitate per il failover automatico della LIF.  Se il failover automatico della LIF non è abilitato e in caso di failover, la LIF iSCSI non migrerà.
+
+.Fase
+. Attivazione del failover automatico per una LIF iSCSI:
 +
-** Dopo l'aggiornamento della coppia ASA ha a ONTAP 9.11.1, questa funzione viene attivata automaticamente sulle nuove LIF iSCSI create se non esistono LIF iSCSI nella VM di storage specificata o se tutte le LIF iSCSI esistenti nella VM di storage specificata sono già attivate con il failover LIF iSCSI.
-** Per le LIF iSCSI create prima dell'aggiornamento a ONTAP 9.11.1, per utilizzare la funzione di failover LIF iSCSI, è necessario abilitarla utilizzando l'interfaccia CLI di ONTAP. (L'attivazione della funzione di failover e della funzione di autorevert implica la modifica della policy di failover su `sfo-partner-only` e designazione del valore di autorevert su `true`.)
+[source, cli]
+----
+network interface modify -vserver SVM_name -lif iscsi_lif –failover-policy sfo-partner-only -auto-revert true
+----
 +
-<<Gestire le LIF iSCSI utilizzando la CLI di ONTAP>>
+Per aggiornare tutte le LIF iSCSI nella SVM, utilizza `-lif*` invece di `lif`.
 
+
+
+
+
+== Disattiva il failover automatico della LIF iSCSI
+
+Se in precedenza hai abilitato il failover automatico di una LIF iSCSI creato in ONTAP 9.10.1 o versione precedente, puoi disabilitarlo.
+
+.Fase
+. Disattivare il failover automatico per una LIF iSCSI:
 +
-Se non si attiva il failover LIF iSCSI sulle LIF iSCSI esistenti, quando si verifica un evento di failover, le LIF iSCSI non effettueranno il failover.
-
+[source, cli]
+----
+network interface modify -vserver SVM_name -lif iscsi_lif –failover-policy disabled -auto-revert false
+----
 +
-Inoltre, se dopo l'aggiornamento a ONTAP 9.11.1 o versioni successive si dispone di LIF iSCSI esistenti in una VM di storage che non sono state abilitate con la funzione di failover LIF iSCSI e si creano nuove LIF iSCSI nella stessa VM di storage, le nuove LIF iSCSI assumono la stessa policy di failover (`disabled`) Delle LIF iSCSI esistenti nella VM di storage.
+Per aggiornare tutte le LIF iSCSI nella SVM, utilizza `-lif*` invece di `lif`.
 
 
 
-* La migrazione manuale di un LIF iSCSI è una migrazione e un revert LIF, che viene avviata dall'amministratore del cluster utilizzando l'interfaccia utente di ONTAP o Gestione di sistema.
-+
-<<Migrare e ripristinare una LIF iSCSI>>
+.Informazioni correlate
+* link:../networking/create_a_lif.html["Creare una LIF"]
+* Manualmente link:../networking/migrate_a_lif.html["Migrazione di una LIF"]
+* Manualmente link:../networking/revert_a_lif_to_its_home_port.html["Ripristina una LIF nella porta home"]
+* link:.../networking/configure_failover_settings_on_a_lif.html["Configurare le impostazioni di failover su una LIF"]
 
-+
-La migrazione e il ripristino manuale di una LIF iSCSI avviene nei seguenti casi:
-
-+
-** Quando sono necessarie operazioni di manutenzione o sostituzione programmate.
-** Se si dispone di una LIF iSCSI preesistente, ciò significa che la LIF iSCSI è stata creata prima dell'aggiornamento della coppia ha a ONTAP 9.11.1 o versione successiva e che non è stata attivata la funzione di failover LIF iSCSI sulla LIF.
-
-
-* Il failover e la migrazione LIF iSCSI avvengono all'interno del dominio di broadcast della porta home della LIF. Verificare la configurazione del dominio di trasmissione utilizzando `network port broadcast-domain show` comando.
-+
-
-IMPORTANT: Assicurati che i domini di broadcast associati alle LIF iSCSI contengano porte di rete che rappresentano entrambi i nodi di una coppia ha, così che è possibile migrare ed eseguire il failover delle LIF iSCSI tra entrambi i nodi, in base alle necessità.
-
-
-
-
-
-== Funzionamento del failover LIF iSCSI
-
-[role="Lead"]
-Per le LIF con failover LIF iSCSI attivato (automaticamente o manualmente), si applica quanto segue.
-
-* Per i file LIF che utilizzano `data-iscsi` policy di servizio, la policy di failover è limitata a. `sfo-partner-only`, `local-only`, e. `disabled`.
-* Le LIF iSCSI possono eseguire il failover solo al partner ha quando la policy di failover è impostata su `sfo-partner-only`.
-* L'autorevert dei LIF avviene quando l'autorevert è impostato su `true` E quando la porta home di LIF è in buone condizioni e in grado di ospitare LIF.
-* In caso di takeover pianificato o non pianificato, il LIF iSCSI sul nodo che viene sostituito esegue il failover al partner ha. La porta su cui si verifica il failover di LIF è determinata da VIF Manager.
-* Una volta completato il failover, il LIF iSCSI funziona normalmente.
-* Quando viene avviato un giveback, la LIF iSCSI torna al nodo e alla porta home, se l'opzione di revert automatico è impostata su `true`.
-* Quando un collegamento ethernet su una porta che ospita una o più LIF iSCSI, VIF Manager esegue la migrazione delle LIF dalla porta downport a una porta diversa nello stesso dominio di broadcast. La nuova porta potrebbe trovarsi nello stesso nodo o nel suo partner ha. Una volta ripristinato il collegamento e se l'autorevert è impostato su `true`, VIF Manager ripristina le LIF iSCSI al nodo principale e alla porta home.
-* Quando un nodo esce dal quorum del database replicato (RDB), VIF Manager esegue la migrazione delle LIF iSCSI dal nodo out of quorum al proprio partner ha. Una volta che il nodo torna al quorum e se l'autorevert è impostato su `true`, VIF Manager ripristina le LIF iSCSI al nodo principale e alla porta home.
-
-
-
-
-== Migrare e ripristinare una LIF iSCSI
-
-[role="Lead"]
-È possibile utilizzare Gestione di sistema o l'interfaccia CLI di ONTAP per migrare manualmente un LIF iSCSI su una porta diversa sullo stesso nodo o su una porta diversa del partner ha, quindi ripristinare il LIF al nodo principale e alla porta home.
-
-
-
-=== Migrare e ripristinare una LIF iSCSI utilizzando System Manager
-
-[role="Lead"]
-È possibile utilizzare System Manager per migrare e ripristinare manualmente una o più LIF iSCSI (interfacce di rete) su un'altra porta dello stesso nodo o su una porta del partner ha.
-
-.Prima di iniziare
-È necessario disporre di una coppia ha della piattaforma ASA e che sia in esecuzione ONTAP 9.11.1 o versione successiva.
-
-
-
-==== Migrare una LIF
-
-.Fasi
-. In System Manager, fare clic su *Network > Overview > Network Interfaces* (rete > Panoramica > interfacce di rete)
-. Selezionare il LIF che si desidera migrare, fare clic su image:icon_kabob.gif["Icona Kabob"], Quindi fare clic su *Migrate*.
-. Nella finestra di dialogo *Migrate Interface*, selezionare il nodo di destinazione e la porta del partner ha.
-+
-
-NOTE: È possibile eseguire la migrazione permanente di LIF iSCSI selezionando la casella di controllo. Comprendere che la LIF iSCSI deve essere offline prima di eseguire la migrazione permanente. Inoltre, una volta migrata in modo permanente, una LIF iSCSI non può essere annullata. Non esiste alcuna opzione di revert.
-
-. Fare clic su *Migra*.
-
-
-
-
-==== Ripristinare una LIF
-
-.Fasi
-. In System Manager, fare clic su *Network > Overview > Network Interfaces* (rete > Panoramica > interfacce di rete).
-. Selezionare la LIF che si desidera ripristinare, quindi fare clic su image:icon_kabob.gif["Icona Kabob"] Quindi fare clic su *Ripristina interfaccia di rete*.
-. Nella finestra di dialogo *Ripristina interfaccia di rete*, fare clic su *Ripristina*.
-
-
-
-
-=== Migrare e ripristinare una LIF iSCSI utilizzando la CLI ONTAP
-
-[role="Lead"]
-È possibile utilizzare la CLI ONTAP per migrare e ripristinare manualmente una o più LIF iSCSI su un'altra porta dello stesso nodo o su una porta del partner ha.
-
-.Prima di iniziare
-È necessario disporre di una coppia ha della piattaforma ASA e che sia in esecuzione ONTAP 9.11.1 o versione successiva.
-
-|===
-
-
-| Se si desidera... | Utilizzare questo comando... 
-
-
-| Migrare un LIF iSCSI su un altro nodo/porta | Vedere link:../networking/migrate_a_lif.html["Migrare una LIF"] per i comandi disponibili. 
-
-
-| Ripristinare un LIF iSCSI al nodo/porta principale | Vedere link:../networking/revert_a_lif_to_its_home_port.html["Ripristinare la porta home di un LIF"] per i comandi disponibili. 
-|===
-
-
-== Gestire le LIF iSCSI utilizzando la CLI di ONTAP
-
-È possibile utilizzare l'interfaccia utente di ONTAP per gestire le LIF iSCSI, inclusa la creazione di nuove LIF iSCSI e l'abilitazione della funzione di failover LIF iSCSI per le LIF preesistenti.
-
-.Prima di iniziare
-È necessario disporre di una coppia ha della piattaforma ASA e che sia in esecuzione ONTAP 9.11.1 o versione successiva.
-
-.A proposito di questa attività
-Vedere https://docs.netapp.com/us-en/ontap-cli-9141/index.html["Riferimento al comando ONTAP"^] per un elenco completo di `network interface` comandi.
-
-|===
-
-
-| Se si desidera... | Utilizzare questo comando... 
-
-
-| Creare una LIF iSCSI | `network interface create -vserver _SVM_name_ -lif _iscsi_lif_ -service-policy default-data-blocks -data-protocol iscsi -home-node _node_name_ -home-port _port_name_ -address _IP_address_ -netmask _netmask_value_`Se necessario, vedere link:../networking/create_a_lif.html["Creare una LIF"] per ulteriori informazioni. 
-
-
-| Verificare che la LIF sia stata creata correttamente | `network interface show -vserver _SVM_name_ -fields failover-policy,failover-group,auto-revert,is-home` 
-
-
-| Verificare se è possibile ignorare l'impostazione predefinita di auto-revert sulle LIF iSCSI | `network interface modify -vserver _SVM_name_ -lif _iscsi_lif_ -auto-revert false` 
-
-
-| Eseguire un failover dello storage su una LIF iSCSI | `storage failover takeover -ofnode _node_name_ -option normal`Viene visualizzato un avviso: `A takeover will be initiated. Once the partner node reboots, a giveback will be automatically initiated. Do you want to continue? {y/n}:`R `y` Response visualizza un messaggio di takeover dal partner ha. 
-
-
-| Abilitare la funzione di failover LIF iSCSI per LIF preesistenti | Per le LIF iSCSI create prima dell'aggiornamento del cluster a ONTAP 9.11.1 o versioni successive, è possibile attivare la funzione di failover LIF iSCSI (modificando il criterio di failover in `sfo-partner-only` e modificando la funzionalità di autorevert in `true`):
-`network interface modify -vserver _SVM_name_ -lif _iscsi_lif_ –failover-policy sfo-partner-only -auto-revert true`Questo comando può essere eseguito su tutte le LIF iSCSI di una Storage VM specificando "-lif*" e mantenendo tutti gli altri parametri uguali. 
-
-
-| Disattiva la funzione di failover LIF iSCSI per LIF preesistenti | Per le LIF iSCSI create prima dell'aggiornamento del cluster a ONTAP 9.11.1 o versioni successive, è possibile disattivare la funzione di failover LIF iSCSI e la funzione di autorevert:
-`network interface modify -vserver _SVM_name_ -lif _iscsi_lif_ –failover-policy disabled -auto-revert false`Questo comando può essere eseguito su tutte le LIF iSCSI di una VM di storage specificando "-lif*" e mantenendo tutti gli altri parametri uguali. 
-|===
