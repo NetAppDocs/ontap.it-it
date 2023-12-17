@@ -2,7 +2,7 @@
 permalink: upgrade/task_verify_cluster_after_upgrade.html 
 sidebar: sidebar 
 keywords: ontap, upgrade, upgrade, verify, status, health, post, after 
-summary: 'Dopo l"aggiornamento, verificare il cluster.' 
+summary: 'Dopo l"upgrade di ONTAP, verificare la versione del cluster, la salute del cluster e la salute dello storage.  Per le configurazioni FC di MetroCluster, verificare che sia attivato lo switchover automatico non pianificato.' 
 ---
 = Verifica del cluster dopo l'aggiornamento di ONTAP
 :allow-uri-read: 
@@ -11,7 +11,7 @@ summary: 'Dopo l"aggiornamento, verificare il cluster.'
 
 
 [role="lead"]
-Dopo l'upgrade di ONTAP, dovresti verificare la versione del cluster, la salute del cluster e la salute dello storage.  Se il cluster utilizza una configurazione FC MetroCluster, occorre anche verificare che il cluster sia abilitato per lo switchover automatico e non pianificato.
+Dopo l'upgrade di ONTAP, verificare la versione del cluster, la salute del cluster e la salute dello storage.  Per le configurazioni FC di MetroCluster, verifica anche che il cluster sia abilitato per uno switchover automatico e non pianificato.
 
 
 
@@ -23,12 +23,16 @@ La versione del cluster è la versione più bassa di ONTAP in esecuzione su qual
 
 . Verificare che la versione del cluster sia la release ONTAP di destinazione:
 +
-`version`
-
+[source, cli]
+----
+version
+----
 . Se la versione del cluster non è la release ONTAP di destinazione, è necessario verificare lo stato di aggiornamento di tutti i nodi:
 +
-`system node upgrade-revert show`
-
+[source, cli]
+----
+system node upgrade-revert show
+----
 
 
 
@@ -39,8 +43,10 @@ Dopo aver aggiornato un cluster, è necessario verificare che i nodi siano integ
 
 . Verificare che i nodi del cluster siano online e idonei a partecipare al cluster:
 +
-`cluster show`
-
+[source, cli]
+----
+cluster show
+----
 +
 [listing]
 ----
@@ -55,8 +61,10 @@ Se un nodo non è integro o non è idoneo, controllare i registri EMS per verifi
 
 . Impostare il livello di privilegio su Advanced (avanzato):
 +
-`set -privilege advanced`
-
+[source, cli]
+----
+set -privilege advanced
+----
 . Verificare i dettagli di configurazione per ciascun processo RDB.
 +
 ** L'epoca del database relazionale e l'epoca del database devono corrispondere per ciascun nodo.
@@ -115,7 +123,12 @@ node2     vldb     154      154      14847    node0     secondary
 node3     vldb     154      154      14847    node0     secondary
 4 entries were displayed.
 ----
-. Se si opera in un ambiente SAN, verificare che ciascun nodo si trovi in un quorum SAN: `cluster kernel-service show`
+. Se si opera in un ambiente SAN, verificare che ciascun nodo si trovi in un quorum SAN:
++
+[source, cli]
+----
+cluster kernel-service show
+----
 +
 [listing]
 ----
@@ -138,15 +151,15 @@ link:../system-admin/index.html["Amministrazione del sistema"]
 
 Se il cluster si trova in una configurazione FC MetroCluster, devi verificare l'abilitazione dello switchover automatico non pianificato dopo l'upgrade del ONTAP.
 
-.A proposito di questa attività
-
-NOTE: Questa procedura viene eseguita solo per le configurazioni MetroCluster FC. Se si utilizza una configurazione IP MetroCluster, ignorare questa procedura.
+Se si utilizza una configurazione IP MetroCluster, ignorare questa procedura.
 
 .Fasi
 . Controllare se è attivato lo switchover automatico non pianificato:
 +
-`metrocluster show`
-
+[source, cli]
+----
+metrocluster show
+----
 +
 Se è attivato lo switchover automatico non pianificato, nell'output del comando viene visualizzata la seguente istruzione:
 
@@ -157,9 +170,16 @@ AUSO Failure Domain  auso-on-cluster-disaster
 ----
 . Se l'istruzione non viene visualizzata, attivare uno switchover automatico non pianificato:
 +
-`metrocluster modify -auto-switchover-failure-domain auso-on-cluster-disaster`
-
-. Verificare che sia stato attivato uno switchover automatico non pianificato ripetendo il passaggio 1.
+[source, cli]
+----
+metrocluster modify -auto-switchover-failure-domain auso-on-cluster-disaster
+----
+. Verificare che sia stato abilitato uno switchover non pianificato automatico:
++
+[source, cli]
+----
+metrocluster show
+----
 
 
 .Informazioni correlate

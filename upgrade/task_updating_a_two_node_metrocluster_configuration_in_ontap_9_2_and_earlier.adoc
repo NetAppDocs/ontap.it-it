@@ -2,35 +2,46 @@
 permalink: upgrade/task_updating_a_two_node_metrocluster_configuration_in_ontap_9_2_and_earlier.html 
 sidebar: sidebar 
 keywords: ontap, upgrade, two-node, metrocluster, mcc, 9.2, earlier 
-summary: 'Se si dispone di una configurazione MetroCluster a 2 nodi che esegue 9,2 o una versione precedente, utilizzare questa procedura per l"aggiornamento del ONTAP.' 
+summary: Le modalità di aggiornamento di una configurazione MetroCluster a due nodi variano a seconda della versione di ONTAP utilizzata. Utilizzare questa procedura per gli aggiornamenti da ONTAP 9,2 o versioni precedenti. 
 ---
-= Upgrade manuale e senza interruzioni di una configurazione MetroCluster a due nodi in ONTAP 9,2 o versione precedente
+= Upgrade senza interruzioni di una configurazione MetroCluster a due nodi in ONTAP 9,2 o versione precedente
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-È possibile aggiornare ONTAP senza interruzioni per una configurazione MetroCluster a due nodi. Questo metodo prevede diversi passaggi: Avvio di uno switchover negoziato, aggiornamento del cluster nel sito "`failed`", avvio dello switchback e ripetizione del processo sul cluster nell'altro sito.
+Le modalità di aggiornamento di una configurazione MetroCluster a due nodi variano a seconda della versione di ONTAP utilizzata. Se si utilizza ONTAP 9,2 o versioni precedenti, utilizzare questa procedura per eseguire un aggiornamento manuale senza interruzioni che include l'avvio di uno switchover negoziato, l'aggiornamento del cluster nel sito "`failed''", l'avvio dello switchback e la ripetizione del processo sul cluster nell'altro sito.
 
-[NOTE]
-====
-Questa procedura è valida solo per le configurazioni MetroCluster a due nodi che eseguono ONTAP 9.2 o versioni precedenti.
+Se si possiede una configurazione MetroCluster a due nodi che esegue ONTAP 9,3 o versione successiva, eseguire una xref:task_upgrade_andu_sm.html[Upgrade automatico con System Manager].
 
-Se si possiede una configurazione MetroCluster a due nodi che esegue ONTAP 9,3 o versione successiva, eseguire una xref:task_upgrade_andu_sm.html[Upgrade automatico senza interruzioni con System Manager].
-
-====
-. Impostare il livello di privilegio su Advanced (avanzato), immettendo *y* quando viene richiesto di continuare: `set -privilege advanced`
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato), immettendo *y* quando viene richiesto di continuare:
++
+[source, cli]
+----
+set -privilege advanced
+----
 +
 Il prompt avanzato (`*>`).
 
-. Sul cluster da aggiornare, installare la nuova immagine del software ONTAP come predefinita: `system node image update -package package_location -setdefault true -replace-package true`
+. Sul cluster da aggiornare, installare la nuova immagine del software ONTAP come predefinita:
++
+[source, cli]
+----
+system node image update -package package_location -setdefault true -replace-package true
+----
 +
 [listing]
 ----
 cluster_B::*> system node image update -package http://www.example.com/NewImage.tgz -setdefault true -replace-package true
 ----
-. Verificare che l'immagine software di destinazione sia impostata come immagine predefinita: `system node image show`
+. Verificare che l'immagine software di destinazione sia impostata come immagine predefinita:
++
+[source, cli]
+----
+system node image show
+----
 +
 L'esempio seguente mostra questo `NewImage` viene impostato come immagine predefinita:
 
@@ -46,9 +57,24 @@ node_B_1
          NewImage  true    false   Y.Y.Y                MM/DD/YYYY TIME
 2 entries were displayed.
 ----
-. Se l'immagine software di destinazione non è impostata come immagine predefinita, modificarla: `system image modify {-node * -iscurrent false} -isdefault true`
-. Verificare che tutte le SVM del cluster si trovino in uno stato di integrità: `metrocluster vserver show`
-. Sul cluster che non viene aggiornato, avviare uno switchover negoziato: `metrocluster switchover`
+. Se l'immagine software di destinazione non è impostata come immagine predefinita, modificarla:
++
+[source, cli]
+----
+system image modify {-node * -iscurrent false} -isdefault true
+----
+. Verificare che tutte le SVM del cluster si trovino in uno stato di integrità:
++
+[source, cli]
+----
+metrocluster vserver show
+----
+. Sul cluster che non viene aggiornato, avviare uno switchover negoziato:
++
+[source, cli]
+----
+metrocluster switchover
+----
 +
 L'operazione può richiedere alcuni minuti. È possibile utilizzare il comando MetroCluster Operation show per verificare che lo switchover sia stato completato.
 
@@ -67,8 +93,18 @@ Warning: negotiated switchover is about to start. It will stop all the data
          cluster "cluster_B".
 Do you want to continue? {y|n}: y
 ----
-. Verificare che tutte le SVM del cluster si trovino in uno stato di integrità: `metrocluster vserver show`
-. Risincronizzare gli aggregati di dati nel cluster "`surving`": `metrocluster heal -phase aggregates`
+. Verificare che tutte le SVM del cluster si trovino in uno stato di integrità:
++
+[source, cli]
+----
+metrocluster vserver show
+----
+. Risincronizzare gli aggregati di dati nel cluster "`surving`":
++
+[source, cli]
+----
+metrocluster heal -phase aggregates
+----
 +
 Dopo l'aggiornamento delle configurazioni MetroCluster IP a ONTAP 9.5 o versioni successive, gli aggregati si trovano in uno stato degradato per un breve periodo prima di risincronizzare e tornare a uno stato mirrorato.
 
@@ -78,7 +114,12 @@ Dopo l'aggiornamento delle configurazioni MetroCluster IP a ONTAP 9.5 o versioni
 cluster_A::> metrocluster heal -phase aggregates
 [Job 130] Job succeeded: Heal Aggregates is successful.
 ----
-. Verificare che l'operazione di riparazione sia stata completata correttamente: `metrocluster operation show`
+. Verificare che l'operazione di riparazione sia stata completata correttamente:
++
+[source, cli]
+----
+metrocluster operation show
+----
 +
 [listing]
 ----
@@ -89,14 +130,24 @@ Start Time: MM/DD/YYYY TIME
 End Time: MM/DD/YYYY TIME
 Errors: -
 ----
-. Risincronizzare gli aggregati root sul cluster "`surving`": `metrocluster heal -phase root-aggregates`
+. Risincronizzare gli aggregati root sul cluster "`surving`":
++
+[source, cli]
+----
+metrocluster heal -phase root-aggregates
+----
 +
 [listing]
 ----
 cluster_A::> metrocluster heal -phase root-aggregates
 [Job 131] Job succeeded: Heal Root Aggregates is successful.
 ----
-. Verificare che l'operazione di riparazione sia stata completata correttamente: `metrocluster operation show`
+. Verificare che l'operazione di riparazione sia stata completata correttamente:
++
+[source, cli]
+----
+metrocluster operation show
+----
 +
 [listing]
 ----
@@ -107,10 +158,30 @@ Start Time: MM/DD/YYYY TIME
 End Time: MM/DD/YYYY TIME
 Errors: -
 ----
-. Sul cluster arrestato, avviare il nodo dal prompt DEL CARICATORE: `boot_ontap`
-. Attendere il completamento del processo di avvio, quindi verificare che tutte le SVM del cluster si trovino in uno stato di integrità: `metrocluster vserver show`
-. Eseguire uno switchback dal cluster "`surving`": `metrocluster switchback`
-. Verificare che lo switchback sia stato completato correttamente: `metrocluster operation show`
+. Sul cluster arrestato, avviare il nodo dal prompt DEL CARICATORE:
++
+[source, cli]
+----
+boot_ontap
+----
+. Attendere il completamento del processo di avvio, quindi verificare che tutte le SVM del cluster si trovino in uno stato di integrità:
++
+[source, cli]
+----
+metrocluster vserver show
+----
+. Eseguire uno switchback dal cluster "`surving`":
++
+[source, cli]
+----
+metrocluster switchback
+----
+. Verificare che lo switchback sia stato completato correttamente:
++
+[source, cli]
+----
+metrocluster operation show
+----
 +
 [listing]
 ----
@@ -121,11 +192,21 @@ Start Time: MM/DD/YYYY TIME
 End Time: MM/DD/YYYY TIME
 Errors: -
 ----
-. Verificare che tutte le SVM del cluster si trovino in uno stato di integrità: `metrocluster vserver show`
+. Verificare che tutte le SVM del cluster si trovino in uno stato di integrità:
++
+[source, cli]
+----
+metrocluster vserver show
+----
 . Ripetere tutti i passaggi precedenti sull'altro cluster.
 . Verificare che la configurazione di MetroCluster sia corretta:
 +
-.. Controllare la configurazione: `metrocluster check run`
+.. Controllare la configurazione:
++
+[source, cli]
+----
+metrocluster check run
+----
 +
 [listing]
 ----
@@ -147,9 +228,44 @@ operation, run "metrocluster switchover -simulate" or "metrocluster
 switchback -simulate", respectively.
 ----
 .. Per visualizzare risultati più dettagliati, utilizzare il comando MetroCluster check run:
-.. Impostare il livello di privilegio su Advanced (avanzato): `set -privilege advanced`
-.. Simulare l'operazione di switchover: `metrocluster switchover -simulate`
-.. Esaminare i risultati della simulazione dello switchover: `metrocluster operation show`
++
+[source, cli]
+----
+metrocluster check aggregate show
+----
++
+[source, cli]
+----
+metrocluster check config-replication show
+----
++
+[source, cli]
+----
+metrocluster check lif show
+----
++
+[source, cli]
+----
+metrocluster check node show
+----
+.. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+.. Simulare l'operazione di switchover:
++
+[source, cli]
+----
+metrocluster switchover -simulate
+----
+.. Esaminare i risultati della simulazione dello switchover:
++
+[source, cli]
+----
+metrocluster operation show
+----
 +
 [listing]
 ----
@@ -160,13 +276,19 @@ cluster_A::*> metrocluster operation show
      End time: MM/DD/YYYY TIME
        Errors: -
 ----
-.. Tornare al livello di privilegio admin: `set -privilege admin`
+.. Tornare al livello di privilegio admin:
++
+[source, cli]
+----
+set -privilege admin
+----
 .. Ripetere questi passaggi secondari sull'altro cluster.
 
 
 
 
-È necessario eseguire qualsiasi attività successiva all'aggiornamento.
+.Al termine
+Eseguire qualsiasi link:task_what_to_do_after_upgrade.html["attività successive all'aggiornamento"].
 
 .Informazioni correlate
 link:https://docs.netapp.com/us-en/ontap-metrocluster/disaster-recovery/concept_dr_workflow.html["Disaster recovery MetroCluster"]
