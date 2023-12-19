@@ -65,31 +65,60 @@ NOTE: Tutti i dati del sistema e dell'utente, provenienti da tutti i dischi coll
 .Fasi
 . Impostare il livello di privilegio su avanzato:
 +
-`*set -privilege advanced*`
-
-. Verificare se un nodo del cluster contiene epsilon:
-+
-`*cluster show -epsilon true*`
-
-+
-.. Se un nodo contiene epsilon, modificarne l'idoneità in false.
-+
-`*cluster modify -node <node_name> -eligibility false*`
-
-
-
-. Se il nodo che si desidera rimuovere è il nodo master corrente, abilitare un altro nodo del cluster a essere selezionato come nodo master modificando l'idoneità del cluster del nodo master in `false`:
-+
-`*cluster modify –eligibility false*`
-
-+
-Il nodo master è il nodo che contiene processi come "`mgmt`", "`vldb`", "`vifmgr`", "`bcomd`" e "`crs`". Il `cluster ring show` il comando advanced mostra il nodo master corrente.
-
-+
-[listing]
+[source, cli]
 ----
-cluster::*> cluster modify -node node1 -eligibility false
+set -privilege advanced
 ----
+. Verificare se un nodo sul cluster contiene epsilon:
++
+[source, cli]
+----
+cluster show -epsilon true
+----
+. Se un nodo nel cluster contiene epsilon e quel nodo verrà disaccoppiato, spostare epsilon in un nodo che non verrà disaccoppiato:
++
+.. Spostare epsilon dal nodo che si intende disunire
++
+[source, cli]
+----
+cluster modify -node <name_of_node_to_be_unjoined> -epsilon false
+----
+.. Spostare epsilon in un nodo che non verrà disUnito:
++
+[source, cli]
+----
+cluster modify -node <node_name> -epsilon true
+----
+
+
+. Identificare il nodo master corrente:
++
+[source, cli]
+----
+cluster ring show
+----
++
+Il nodo master è il nodo che contiene processi come "`mgmt`", "`vldb`", "`vifmgr`", "`bcomd`" e "`crs`".
+
+. Se il nodo che si desidera rimuovere è il nodo master corrente, abilitare l'elezione di un altro nodo nel cluster come nodo master:
++
+.. Rendere il nodo master corrente non idoneo a partecipare al cluster:
++
+[source, cli]
+----
+cluster modify – node <node_name> -eligibility false
+----
++
+Quando il nodo master non è idoneo, uno dei nodi rimanenti viene selezionato dal quorum del cluster come nuovo master.
+
+.. Rendere il nodo master precedente idoneo a partecipare nuovamente al cluster:
++
+[source, cli]
+----
+cluster modify – node <node_name> -eligibility true
+----
+
+
 . Accedere alla LIF di gestione dei nodi remoti o alla LIF di gestione dei cluster su un nodo diverso da quello da rimuovere.
 . Rimuovere il nodo dal cluster:
 +
@@ -100,15 +129,19 @@ cluster::*> cluster modify -node node1 -eligibility false
  a| 
 ONTAP 9.3
  a| 
-`*cluster unjoin*`
-
+[source, cli]
+----
+cluster unjoin
+----
 
 
  a| 
 ONTAP 9.4 e versioni successive
  a| 
-`*cluster remove-node*`
-
+[source, cli]
+----
+cluster remove-node*
+----
 |===
 +
 Se si dispone di un cluster con versione mista e si sta rimuovendo l'ultimo nodo della versione inferiore, utilizzare `-skip-last-low-version-node-check` con questi comandi.
@@ -134,13 +167,15 @@ Il nodo viene riavviato automaticamente dopo che è stato rimosso dal cluster.
 . Se si sta ridisponendo il nodo, cancellare la configurazione del nodo e inizializzare tutti i dischi:
 +
 .. Durante il processo di avvio, premere Ctrl-C per visualizzare il menu di avvio quando richiesto.
-.. Selezionare l'opzione del menu di boot *(4) clean Configuration (pulizia configurazione) e inizializzare tutti i dischi*.
+.. Selezionare l'opzione del menu di avvio (4) pulizia della configurazione e inizializzazione di tutti i dischi.
 
 
 . Torna al livello di privilegio admin:
 +
-`*set -privilege admin*`
-
+[source, cli]
+----
+set -privilege admin
+----
 . Ripetere i passaggi precedenti per rimuovere il partner di failover dal cluster.
 
 
