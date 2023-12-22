@@ -1,0 +1,110 @@
+---
+permalink: antivirus/install-ontap-antivirus-connector-task.html 
+sidebar: sidebar 
+keywords: install, ontap, task, antivirus connector 
+summary: Installare il connettore antivirus ONTAP sul server Vscan per consentire la comunicazione tra il sistema che esegue ONTAP e il server Vscan. 
+---
+= Installare il connettore antivirus ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Installare il connettore antivirus ONTAP sul server Vscan per abilitare la comunicazione tra il sistema che esegue ONTAP e il server Vscan. Una volta installato il connettore antivirus ONTAP, il software antivirus è in grado di comunicare con una o più Storage Virtual Machine (SVM).
+
+.A proposito di questa attività
+* Vedere link:https://docs.netapp.com/us-en/ontap/antivirus/vscan-partner-solutions.html["Soluzioni partner di Vscan"^] Per informazioni sui protocolli supportati, le versioni del software dei fornitori antivirus, le versioni di ONTAP, i requisiti di interoperabilità e i server Windows.
+* È necessario installare .NET 4.5.1 o versione successiva.
+* Il connettore antivirus ONTAP può essere eseguito su una macchina virtuale. Tuttavia, per ottenere prestazioni ottimali, NetApp consiglia di utilizzare una macchina virtuale dedicata per la scansione antivirus.
+* SMB 2,0 deve essere attivato sul server Windows su cui si sta installando ed eseguendo il connettore antivirus ONTAP.
+
+
+.Prima di iniziare
+* Scaricare il file di installazione di ONTAP Antivirus Connector dal sito di assistenza e salvarlo in una directory sul disco rigido.
+* Verificare di soddisfare i requisiti per l'installazione del connettore antivirus ONTAP.
+* Verificare di disporre dei privilegi di amministratore per installare il connettore antivirus.
+
+
+.Fasi
+. Avviare l'installazione guidata del connettore antivirus eseguendo il file di installazione appropriato.
+. Selezionare _Avanti_. Viene visualizzata la finestra di dialogo cartella di destinazione.
+. Selezionare _Avanti_ per installare il connettore antivirus nella cartella elencata oppure selezionare _Cambia_ per eseguire l'installazione in una cartella diversa.
+. Viene visualizzata la finestra di dialogo credenziali servizio Windows connettore AV ONTAP.
+. Immettere le credenziali del servizio Windows o selezionare *Aggiungi* per selezionare un utente. Per un sistema ONTAP, questo utente deve essere un utente di dominio valido e deve esistere nella configurazione del pool di scanner per la SVM.
+. Selezionare *Avanti*. Viene visualizzata la finestra di dialogo Pronto per l'installazione del programma.
+. Selezionare *Installa* per avviare l'installazione o selezionare *Indietro* se si desidera apportare modifiche alle impostazioni.
+Viene visualizzata una finestra di stato che illustra l'avanzamento dell'installazione, seguita dalla finestra di dialogo InstallShield Wizard Completed (Installazione guidata InstallShield completata).
+. Selezionare la casella di controllo Configura LIF ONTAP per continuare con la configurazione di LIF dati o gestione ONTAP.
+Devi configurare almeno una gestione ONTAP o un'interfaccia LIF dati prima che questo server Vscan possa essere utilizzato.
+. Selezionare la casella di controllo Mostra registro *Windows Installer* se si desidera visualizzare i registri di installazione.
+. Selezionare *fine* per terminare l'installazione e chiudere la procedura guidata InstallShield.
+L'icona *Configura LIF ONTAP* viene salvata sul desktop per configurare le LIF ONTAP.
+. Aggiungere una SVM al connettore antivirus.
+Puoi aggiungere una SVM al connettore antivirus aggiungendo una LIF di gestione ONTAP, che viene interrogata per recuperare l'elenco di LIF dati, oppure configurando direttamente la LIF o la LIF dati.
+Se la LIF di gestione ONTAP è configurata, devi anche fornire le informazioni di polling e le credenziali dell'account amministratore di ONTAP.
++
+** Verifica che la LIF di gestione o l'indirizzo IP della SVM sia abilitato per `management-https`. Non è necessario quando si configurano solo LIF dati.
+** Verificare di aver creato un account utente per l'applicazione HTTP e di aver assegnato un ruolo con accesso (almeno di sola lettura) a `/api/network/ip/interfaces` API REST.
+Per ulteriori informazioni sulla creazione di un utente, vedere la link:https://docs.netapp.com/us-en/ontap-cli-9131//security-login-role-create.html["creazione del ruolo di accesso di sicurezza"^] e. link:https://docs.netapp.com/us-en/ontap-cli-9131//security-login-create.html["creazione dell'accesso di sicurezza"^] Pagine man di ONTAP.
+
+
+
+
+
+NOTE: Puoi anche utilizzare l'utente di dominio come account aggiungendo una SVM con tunnel di autenticazione per una SVM amministrativa. Per ulteriori informazioni, consultare link:https://docs.netapp.com/us-en/ontap-cli-9131//security-login-domain-tunnel-create.html["login di sicurezza creazione del tunnel di dominio"^] Pagina man di ONTAP o utilizzare `/api/security/acccounts` e. `/api/security/roles` REST API per configurare l'account e il ruolo di amministratore.
+
+.Fasi
+. Fare clic con il pulsante destro del mouse sull'icona *Configure ONTAP LIF*, salvata sul desktop al termine dell'installazione di Antivirus Connector, quindi selezionare *Esegui come amministratore*.
+. Nella finestra di dialogo Configura LIF ONTAP, selezionare il tipo di configurazione preferito, quindi eseguire le seguenti operazioni:
++
+[cols="35,65"]
+|===
+
+
+| Per creare questo tipo di LIF... | Eseguire questa procedura... 
+
+
+ a| 
+LIF dati
+ a| 
+.. Impostare "ruolo" su "dati"
+.. Impostare "protocollo dati" su "cifs"
+.. Impostare "policy firewall" su "data"
+.. Impostare "politica di servizio" su "file-dati-predefiniti"
+
+
+
+
+ a| 
+LIF di gestione
+ a| 
+.. Impostare "ruolo* su "dati"
+.. Impostare "protocollo dati" su "nessuno"
+.. Impostare "policy firewall" su "Mgmt"
+.. Impostare "politica di servizio" su "gestione predefinita"
+
+
+|===
++
+Scopri di più link:https://docs.netapp.com/us-en/ontap/networking/create_a_lif.html["Creazione di una LIF"^].
+
++
+Dopo aver creato una LIF, inserisci i dati o l'indirizzo IP della LIF di gestione o della SVM che desideri aggiungere. Puoi anche inserire la LIF di gestione cluster. Se specifichi la LIF di gestione cluster, tutte le SVM del cluster che servono SMB potranno utilizzare il server Vscan.
+
++
+[NOTE]
+====
+Quando è richiesta l'autenticazione Kerberos per i server Vscan, ogni LIF dati SVM deve avere un nome DNS univoco ed è necessario registrarlo come nome principale server (SPN) con Windows Active Directory. Quando non è disponibile un nome DNS univoco per ogni LIF dati o registrato come SPN, il server Vscan utilizza il meccanismo NT LAN Manager per l'autenticazione. Se si aggiungono o modificano i nomi DNS e gli SPN dopo la connessione del server Vscan, è necessario riavviare il servizio Antivirus Connector sul server Vscan per applicare le modifiche.
+
+====
+. Per configurare una LIF di gestione, inserisci la durata del polling in secondi. La durata del poll è la frequenza con cui il connettore antivirus verifica le modifiche alle SVM o alla configurazione LIF del cluster. L'intervallo di polling predefinito è di 60 secondi.
+. Inserisci il nome dell'account e la password dell'amministratore ONTAP per configurare una LIF di gestione.
+. Fare clic su *Test* per controllare la connettività e verificare l'autenticazione. L'autenticazione viene verificata solo per una configurazione LIF di gestione.
+. Fare clic su *Update* (Aggiorna) per aggiungere la LIF all'elenco delle LIF a cui eseguire il polling o connettersi.
+. Fare clic su *Salva* per salvare la connessione al Registro di sistema.
+. Fare clic su *Esporta* se si desidera esportare l'elenco delle connessioni in un file di importazione del Registro di sistema o di esportazione del Registro di sistema.
+Ciò è utile se più server Vscan utilizzano lo stesso set di LIF di gestione o di dati.
+
+
+Vedere link:configure-ontap-antivirus-connector-task.html["Configurare la pagina ONTAP Antivirus Connector"] per le opzioni di configurazione.

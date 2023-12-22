@@ -78,7 +78,10 @@ Il supporto per altre configurazioni e tipi di volume è disponibile nelle segue
 
 | Verifica multi-admin | ✓ | ✓ |  |  |  
 |===
-.Interoperabilità di SnapMirror e ARP
+
+
+==== Interoperabilità di SnapMirror e ARP
+
 A partire da ONTAP 9.12.1, ARP è supportato sui volumi di destinazione asincroni di SnapMirror. ARP è **non** supportato con SnapMirror Synchronous.
 
 Se un volume di origine SnapMirror è abilitato per ARP, il volume di destinazione SnapMirror acquisisce automaticamente lo stato di configurazione ARP (apprendimento, abilitato, ecc.), i dati di training ARP e l'istantanea creata da ARP del volume di origine. Non è richiesta alcuna abilitazione esplicita.
@@ -87,10 +90,11 @@ Mentre il volume di destinazione è costituito da copie Snapshot di sola lettura
 
 In ONTAP 9.10.1 e 9.11.1, SnapMirror non trasferisce lo stato di configurazione ARP, i dati di training e le copie Snapshot dai volumi di origine a quelli di destinazione. Quindi, quando il volume di destinazione SnapMirror viene convertito in RW, ARP sul volume di destinazione deve essere esplicitamente abilitato in modalità di apprendimento dopo la conversione.
 
-.ARP con VMDK su NFS
-[%collapsible]
-====
-Se si prevede di utilizzare ARP in una configurazione VMDK su NFS, ci sono limitazioni alla protezione di ARP. ARP offre protezione in VDMK sulle configurazioni NFS, tuttavia non è consigliato per i carichi di lavoro con file ad entropia elevata all'interno della VM.
+
+
+==== ARP e macchine virtuali
+
+ARP è supportato con macchine virtuali (VM). Il rilevamento ARP si comporta in modo diverso per le modifiche all'interno e all'esterno della VM. L'ARP non è consigliato per i carichi di lavoro con file ad entropia elevata all'interno della VM.
 
 .Modifiche esterne alla macchina virtuale
 ARP può rilevare le modifiche all'estensione di un file su un volume NFS esterno alla VM se una nuova estensione entra nel volume crittografato o se cambia l'estensione di un file. Le modifiche all'estensione dei file rilevabili sono:
@@ -110,11 +114,10 @@ ARP può rilevare le modifiche all'estensione di un file su un volume NFS estern
 
 
 .Modifiche all'interno della VM
-Se l'attacco ransomware riguarda la macchina virtuale e i file all'interno della macchina virtuale vengono alterati senza apportare modifiche all'esterno della macchina virtuale, ARP rileva la minaccia se l'entropia predefinita della macchina virtuale è bassa (ad esempio file .txt, .docx o .mp4). Anche se ARP creerà un'istantanea di protezione in questo scenario, non genererà un avviso di minaccia perché le estensioni dei file al di fuori della VM non sono state manomesse.
+Se l'attacco ransomware riguarda la macchina virtuale e i file all'interno della macchina virtuale vengono alterati senza apportare modifiche all'esterno della macchina virtuale, ARP rileva la minaccia se l'entropia predefinita della macchina virtuale è bassa (ad esempio file .txt, .docx o .mp4). Anche se ARP crea un'istantanea di protezione in questo scenario, non genera un avviso di minaccia perché le estensioni di file esterne alla VM non sono state manomesse.
 
-Se, per impostazione predefinita, i file sono ad entropia elevata (ad esempio file .gzip o protetti da password), ARP non rileverà una modifica nell'entropia della linea di base e quindi non rileverà la minaccia.
+Se, per impostazione predefinita, i file sono ad entropia elevata (ad esempio file .gzip o protetti da password), le funzionalità di rilevamento di ARP sono limitate. In questo caso, ARP può ancora acquisire istantanee proattive, tuttavia non verrà attivato alcun avviso se le estensioni dei file non sono state manomesse esternamente.
 
-====
 
 
 === Configurazioni non supportate
