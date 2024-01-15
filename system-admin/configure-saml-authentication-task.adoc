@@ -13,9 +13,26 @@ summary: 'A partire da ONTAP 9.3, è possibile configurare l"autenticazione SAML
 [role="lead"]
 A partire da ONTAP 9.3, è possibile configurare l'autenticazione SAML (Security Assertion Markup Language) per i servizi Web. Quando l'autenticazione SAML è configurata e abilitata, gli utenti vengono autenticati da un provider di identità esterno (IdP) invece che dai provider di servizi di directory come Active Directory e LDAP.
 
-.Di cosa hai bisogno
-* È necessario aver configurato IdP per l'autenticazione SAML.
-* È necessario disporre dell'URI IdP.
+
+
+== Abilitare l'autenticazione SAML
+
+Per attivare l'autenticazione SAML con System Manager o con la CLI, attenersi alla seguente procedura. Se il cluster esegue ONTAP 9,7 o versione precedente, la procedura indicata è diversa da quella illustrata in System Manager. Fare riferimento alla guida in linea di System Manager disponibile sul sistema.
+
+
+NOTE: Dopo aver attivato l'autenticazione SAML, solo gli utenti remoti possono accedere alla GUI di System Manager. Gli utenti locali non possono accedere alla GUI di System Manager dopo l'attivazione dell'autenticazione SAML.
+
+image:workflow_security_mfa_setup.gif["Diagramma del flusso di lavoro dell'attività per impostare l'autenticazione a più fattori con SAML"]
+
+.Prima di iniziare
+* È necessario configurare l'IdP che si intende utilizzare per l'autenticazione remota.
++
+[NOTE]
+====
+Consultare la documentazione fornita dall'IdP configurato.
+
+====
+* È necessario disporre dell'URI dell'IdP.
 
 
 .A proposito di questa attività
@@ -42,7 +59,34 @@ I seguenti IDP sono stati convalidati con System Manager:
 * Shibboleth
 
 
+A seconda dell'ambiente in uso, effettuare le seguenti operazioni:
+
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Fare clic su *Cluster > Settings* (Cluster > Impostazioni).
+. Accanto a *SAML Authentication*, fare clic su image:icon_gear.gif["icona ingranaggio"].
+. Verificare che la casella di controllo *Enable SAML Authentication* (attiva autenticazione SAML) sia selezionata.
+. Inserire l'URL dell'URI IdP (incluso "https://"[]).
+. Modificare l'indirizzo del sistema host, se necessario.
+. Assicurarsi di utilizzare il certificato corretto:
++
+** Se il sistema è stato mappato con un solo certificato di tipo "server", il certificato viene considerato predefinito e non viene visualizzato.
+** Se il sistema è stato mappato con più certificati come tipo "server", viene visualizzato uno dei certificati. Per selezionare un certificato diverso, fare clic su *Cambia*.
+
+
+. Fare clic su *Save* (Salva). Una finestra di conferma visualizza le informazioni sui metadati, che sono state copiate automaticamente negli Appunti.
+. Accedere al sistema IdP specificato e copiare i metadati dagli Appunti per aggiornare i metadati del sistema.
+. Tornare alla finestra di conferma (in System Manager) e selezionare la casella di controllo *ho configurato IdP con l'URI host o i metadati*.
+. Fare clic su *Logout* per attivare l'autenticazione basata su SAML. Il sistema IdP visualizza una schermata di autenticazione.
+. Nel sistema IdP, immettere le credenziali basate su SAML. Una volta verificate le credenziali, viene visualizzata la home page di System Manager.
+
+
+--
+.CLI
+--
 . Creare una configurazione SAML in modo che ONTAP possa accedere ai metadati IdP:
 +
 `*security saml-sp create -idp-uri _idp_uri_ -sp-host _ontap_host_name_*`
@@ -121,16 +165,29 @@ admin1         http        password      backup           no     none
 
 
 
+--
+====
 
 
 == Disattiva l'autenticazione SAML
 
 È possibile disattivare l'autenticazione SAML quando si desidera interrompere l'autenticazione degli utenti Web utilizzando un provider di identità (IdP) esterno. Quando l'autenticazione SAML è disattivata, i provider di servizi di directory configurati come Active Directory e LDAP vengono utilizzati per l'autenticazione.
 
-.Di cosa hai bisogno
-È necessario effettuare l'accesso dalla console.
+A seconda dell'ambiente in uso, effettuare le seguenti operazioni:
 
 .Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Fare clic su *Cluster > Settings* (Cluster > Impostazioni).
+. In *SAML Authentication*, fare clic sul pulsante di commutazione *Enabled*.
+. _Opzionale_: È anche possibile fare clic su image:icon_gear.gif["icona ingranaggio"] Accanto a *SAML Authentication*, quindi deselezionare la casella di controllo *Enable SAML Authentication* (attiva autenticazione SAML).
+
+
+--
+.CLI
+--
 . Disattiva autenticazione SAML:
 +
 `*security saml-sp modify -is-enabled false*`
@@ -141,6 +198,8 @@ admin1         http        password      backup           no     none
 
 
 
+--
+====
 
 
 == Risolvere i problemi relativi alla configurazione SAML
