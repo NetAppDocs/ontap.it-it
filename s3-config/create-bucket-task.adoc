@@ -17,46 +17,46 @@ Gli oggetti S3 sono conservati in _bucket_--non sono nidificati come file all'in
 Una VM di storage contenente un server S3 deve già esistere.
 
 .A proposito di questa attività
-Per la CLI, quando si crea un bucket, sono disponibili due opzioni di provisioning:
-
-* Lasciare ONTAP Select gli aggregati sottostanti e i componenti FlexGroup (impostazione predefinita)
+* A partire da ONTAP 9.14.1, il ridimensionamento automatico è stato abilitato sui volumi FlexGroup S3 quando vengono creati i bucket su di essi. In questo modo si elimina l'allocazione eccessiva di capacità durante la creazione del bucket su volumi FlexGroup nuovi ed esistenti. I volumi FlexGroup vengono ridimensionati a una dimensione minima richiesta in base alle seguenti linee guida. La dimensione minima richiesta è la dimensione totale di tutti i bucket S3 in un volume FlexGroup.
 +
-** ONTAP crea e configura un volume FlexGroup per il primo bucket selezionando automaticamente gli aggregati. Verrà selezionato automaticamente il livello di servizio più alto disponibile per la piattaforma oppure sarà possibile specificare il livello di servizio storage. Tutti i bucket aggiuntivi che Aggiungi in seguito nella VM di storage avranno lo stesso volume FlexGroup sottostante.
-** In alternativa, è possibile specificare se il bucket verrà utilizzato per il tiering, nel qual caso ONTAP tenta di selezionare supporti a basso costo con performance ottimali per i dati su più livelli.
+** A partire da ONTAP 9.14.1, se viene creato un volume FlexGroup S3 come parte di una nuova creazione di bucket, il volume FlexGroup viene creato con le dimensioni minime richieste.
+** Se è stato creato un volume S3 FlexGroup prima di ONTAP 9.14.1, il primo bucket creato o eliminato successivamente a ONTAP 9.14.1 ridimensiona il volume FlexGroup alla dimensione minima richiesta.
+** Se un volume S3 FlexGroup è stato creato prima di ONTAP 9.14.1 e aveva già le dimensioni minime richieste, la creazione o l'eliminazione di un bucket successivo a ONTAP 9.14.1 mantiene le dimensioni del volume S3 FlexGroup.
 
 
-* Si selezionano gli aggregati sottostanti e i componenti FlexGroup (richiede opzioni avanzate di comando dei privilegi)
+* I livelli di servizio dello storage sono gruppi di criteri QoS (Quality of Service) adattivi predefiniti, con livelli predefiniti _value_, _performance_ e _Extreme_. Invece di uno dei livelli di servizio storage predefiniti, è possibile definire un gruppo di policy QoS personalizzato e applicarlo a un bucket. Per ulteriori informazioni sulle definizioni dei servizi di archiviazione, vedere link:storage-service-definitions-reference.html["Definizioni dei servizi di storage"]. Per ulteriori informazioni sulla gestione delle prestazioni, vedere link:../performance-admin/index.html["Gestione delle performance"].
+A partire da ONTAP 9.8, quando si esegue il provisioning dello storage, la qualità del servizio viene attivata per impostazione predefinita. È possibile disattivare la QoS o scegliere una policy QoS personalizzata durante il processo di provisioning o in un secondo momento.
+
+
+* Se stai configurando il tiering locale della capacità, creerai bucket e utenti in una VM per lo storage dei dati, non nella VM di storage del sistema in cui si trova il server S3.
+* Per l'accesso client remoto, è necessario configurare i bucket in una VM di storage abilitata per S3. Se si crea un bucket in una VM storage non abilitata per S3, sarà disponibile solo per il tiering locale.
+* A partire da ONTAP 9.14.1, è possibile link:create-bucket-mcc-task.html["Crea un bucket su un aggregato con mirroring o senza mirror in una configurazione MetroCluster"].
+* Per la CLI, quando si crea un bucket, sono disponibili due opzioni di provisioning:
 +
-** È possibile selezionare manualmente gli aggregati su cui creare il bucket e il volume FlexGroup contenente, quindi specificare il numero di componenti su ciascun aggregato. Quando si aggiungono bucket aggiuntivi:
+** Lasciare ONTAP Select gli aggregati sottostanti e i componenti FlexGroup (impostazione predefinita)
++
+*** ONTAP crea e configura un volume FlexGroup per il primo bucket selezionando automaticamente gli aggregati. Verrà selezionato automaticamente il livello di servizio più alto disponibile per la piattaforma oppure sarà possibile specificare il livello di servizio storage. Tutti i bucket aggiuntivi che Aggiungi in seguito nella VM di storage avranno lo stesso volume FlexGroup sottostante.
+*** In alternativa, è possibile specificare se il bucket verrà utilizzato per il tiering, nel qual caso ONTAP tenta di selezionare supporti a basso costo con performance ottimali per i dati su più livelli.
+
+
+** Si selezionano gli aggregati sottostanti e i componenti FlexGroup (richiede opzioni avanzate dei comandi con privilegi): Si può selezionare manualmente gli aggregati in cui deve essere creato il bucket e il volume FlexGroup contenente, quindi specificando il numero dei componenti in ogni aggregato. Quando si aggiungono bucket aggiuntivi:
 +
 *** Se si specificano aggregati e costituenti per un nuovo bucket, verrà creato un nuovo FlexGroup per il nuovo bucket.
 *** Se non si specificano aggregati e componenti per un nuovo bucket, il nuovo bucket verrà aggiunto a un FlexGroup esistente. Vedere xref:../flexgroup/index.html[Gestione dei volumi FlexGroup] per ulteriori informazioni.
 +
 Quando si specificano aggregati e costituenti durante la creazione di un bucket, non vengono applicati gruppi di criteri QoS, predefiniti o personalizzati. È possibile farlo in un secondo momento con `vserver object-store-server bucket modify` comando.
 
++
+Vedere link:https://docs.netapp.com/us-en/ontap-cli-9141/vserver-object-store-server-show.html["vserver object-store-server modifica bucket"] per ulteriori informazioni.
 
-
-
-
-
-
-A partire da ONTAP 9.14.1, è possibile link:create-bucket-mcc-task.html["Crea un bucket su un aggregato con mirroring o senza mirror in una configurazione MetroCluster"].
-
++
 *Nota:* se si utilizzano bucket da Cloud Volumes ONTAP, è necessario utilizzare la procedura CLI. Si consiglia di selezionare manualmente gli aggregati sottostanti per assicurarsi che utilizzino un solo nodo. L'utilizzo di aggregati di entrambi i nodi può influire sulle performance, poiché i nodi si trovano in zone di disponibilità separate geograficamente e quindi suscettibili a problemi di latenza.
 
-I livelli di servizio dello storage sono gruppi di criteri QoS (Quality of Service) adattivi predefiniti, con livelli predefiniti _value_, _performance_ e _Extreme_. Invece di uno dei livelli di servizio storage predefiniti, è possibile definire un gruppo di policy QoS personalizzato e applicarlo a un bucket.
 
-A partire da ONTAP 9.8, quando si esegue il provisioning dello storage, la qualità del servizio viene attivata per impostazione predefinita. È possibile disattivare la QoS o scegliere una policy QoS personalizzata durante il processo di provisioning o in un secondo momento.
 
-Per ulteriori informazioni sulle definizioni dei servizi di archiviazione, vedere link:storage-service-definitions-reference.html["Definizioni dei servizi di storage"]
 
-Se stai configurando il tiering locale della capacità, creerai bucket e utenti in una VM per lo storage dei dati, non nella VM di storage del sistema in cui si trova il server S3.
 
-Per l'accesso client remoto, è necessario configurare i bucket in una VM di storage abilitata per S3. Se si crea un bucket in una VM storage non abilitata per S3, sarà disponibile solo per il tiering locale.
 
-Per ulteriori informazioni sulla gestione delle prestazioni, vedere link:../performance-admin/index.html["Gestione delle performance"]
-
-Vedere `vserver object-store-server bucket` pagine man per ulteriori opzioni di configurazione e visualizzazione.
 
 
 
@@ -115,7 +115,7 @@ Il valore predefinito di `-aggr-list-multiplier` il parametro è 4.
 
 
 .Esempio
-L'esempio seguente crea un bucket per la macchina virtuale di storage VS1 di dimensione 1TB e specifica l'aggregato:
+L'esempio seguente crea un bucket per VM di storage `vs1` di dimensione `1TB` e specificando l'aggregato:
 
 [listing]
 ----
@@ -180,7 +180,7 @@ Per ulteriori informazioni, vedere link:../s3-snapmirror/create-remote-mirror-ne
 
 === Verificare l'accesso alla benna
 
-Nelle applicazioni client S3 (ONTAP S3 o un'applicazione esterna di 3^°^), è possibile verificare l'accesso al bucket appena creato immettendo quanto segue:
+Nelle applicazioni client S3 (ONTAP S3 o un'applicazione esterna di terze parti), è possibile verificare l'accesso al bucket appena creato immettendo quanto segue:
 
 * Certificato CA del server S3.
 * La chiave di accesso e la chiave segreta dell'utente.
