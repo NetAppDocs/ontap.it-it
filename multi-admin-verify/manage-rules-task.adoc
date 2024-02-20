@@ -15,7 +15,7 @@ Si creano regole di verifica multi-amministratore (MAV) per designare le operazi
 
 Le regole possono essere create prima di abilitare MAV da qualsiasi amministratore con funzionalità RBAC appropriate, ma una volta attivata la MAV, qualsiasi modifica al set di regole richiede l'approvazione MAV.
 
-È possibile creare regole per i seguenti comandi a partire da ONTAP 9.11.1.
+È possibile creare regole per proteggere i seguenti comandi, a partire da ONTAP 9.11.1.
 
 [cols="2*"]
 |===
@@ -61,21 +61,29 @@ Le regole possono essere create prima di abilitare MAV da qualsiasi amministrato
 `vserver peer delete`
 
 |===
-È possibile creare regole per il seguente comando a partire da ONTAP 9.13.1:
+È possibile creare regole per proteggere il seguente comando a partire da ONTAP 9.13.1:
 
 * `volume snaplock modify`
 
 
-Inoltre, i seguenti comandi sono protetti per impostazione predefinita quando MAV è attivato, ma è possibile modificare le regole per rimuovere la protezione per questi comandi.
+È possibile creare regole per proteggere i seguenti comandi a partire da ONTAP 9.14.1:
+
+* `volume recovery-query modify`
+* `volume recovery-query purge`
+* `volume recovery-query purge-all`
+* `vserver modify`
+
+
+Oltre ai comandi definiti dal sistema, i seguenti comandi sono protetti per impostazione predefinita quando è attivata la verifica multi-admin, ma è possibile modificare le regole per rimuovere la protezione per questi comandi.
 
 * `security login password`
 * `security login unlock`
 * `set`
 
 
-Le regole per i comandi MAV di default del sistema – il `security multi-admin-verify` comandi – non può essere modificato.
+Le regole per i comandi MAV di default del sistema, il `security multi-admin-verify` link:../multi-admin-verify/index.html#how-multi-admin-verification-works["comandi"], non può essere modificato.
 
-Quando si crea una regola, è possibile specificare il `-query` opzione per limitare la richiesta a un sottoinsieme della funzionalità del comando. Ad esempio, nel comando set predefinito, `-query` è impostato su `-privilege diag`, ovvero viene generata una richiesta per il comando set solo quando viene specificato -privilege diag.
+Quando si crea una regola, è possibile specificare il `-query` opzione per limitare la richiesta a un sottoinsieme della funzionalità del comando. Ad esempio, nel comando set predefinito, `-query` è impostato su `-privilege diag`, che significa che viene generata una richiesta per il comando set solo quando `-privilege diag` viene specificato.
 
 [listing]
 ----
@@ -86,7 +94,7 @@ Vserver Operation                              Approvers Groups
 vs01    set                                    -         -
           Query: -privilege diagnostic
 ----
-Per impostazione predefinita, le regole specificano un corrispondente `security multi-admin-verify request create _“protected_operation”_` il comando viene generato automaticamente quando si inserisce un'operazione protetta. È possibile modificare questa impostazione predefinita in modo che richieda `request create` il comando deve essere inserito separatamente.
+Per impostazione predefinita, le regole specificano un corrispondente `security multi-admin-verify request create _“protected_operation”_` il comando viene generato automaticamente quando si inserisce un'operazione protetta. È possibile modificare questa impostazione predefinita in modo che richieda `request create` il comando deve essere immesso separatamente.
 
 Per impostazione predefinita, le regole ereditano le seguenti impostazioni MAV globali, anche se è possibile specificare eccezioni specifiche della regola:
 
@@ -138,11 +146,11 @@ NOTE: Tutto `security multi-admin-verify rule` I comandi richiedono l'approvazio
 
 
 | Modificare le credenziali degli amministratori correnti  a| 
-`security login modify _<parameters>_`
+`security login modify <parameters>`
 
 *Esempio*: La seguente regola richiede l'approvazione per eliminare il volume root.
 
-`security multi-admin-verify rule create  -operation "volume delete" -query "-vserver vs0`
+`security multi-admin-verify rule create  -operation "volume delete" -query "-vserver vs0"`
 
 
 
