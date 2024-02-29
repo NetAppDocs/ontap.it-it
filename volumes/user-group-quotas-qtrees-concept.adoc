@@ -14,19 +14,34 @@ summary: 'Le quote della struttura limitano le dimensioni complessive del qtree.
 Le quote della struttura limitano le dimensioni complessive del qtree. Per impedire a singoli utenti o gruppi di utilizzare l'intero qtree, specificare una quota utente o di gruppo per tale qtree.
 
 .Esempio di quota utente in un qtree
-Supponiamo di avere il seguente file di quote:
+Si supponga di disporre delle seguenti regole di quota:
 
 [listing]
 ----
+cluster1::> volume quota policy rule show -vserver vs0 -volume vol1
 
-#Quota target type            disk files thold sdisk sfile
-#-----------  ----            ---- ----- ----- ----- -----
-*             user@/vol/vol1  50M   -     45M
-jsmith        user@/vol/vol1  80M   -     75M
+Vserver: vs0               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+user   ""        ""      off          50MB        -       -        -       45MB
+user   jsmith    ""      off          80MB        -       -        -       75MB
 ----
-Viene alla tua attenzione che un determinato utente, i kjones, occupa troppo spazio in un qtree critico, qt1, che risiede in vol2. È possibile limitare lo spazio di questo utente aggiungendo la seguente riga al file delle quote:
+Si noti che un determinato utente, kjones, occupa troppo spazio in un qtree critico, proj1, che risiede nel vol1. È possibile limitare lo spazio di questo utente aggiungendo la seguente regola di quota:
 
 [listing]
 ----
-kjones        user@/vol/vol2/qt1  20M  -   15M
+cluster1::> volume quota policy rule create -vserver vs0 -volume vol1 -policy-name default -type user -target "kjones" -qtree "proj1" -disk-limit 20m -threshold 15m
+
+cluster1::> volume quota policy rule show -vserver vs0 -volume vol1
+
+Vserver: vs0               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+user   ""        ""      off          50MB        -       -        -       45MB
+user   jsmith    ""      off          80MB        -       -        -       75MB
+user   kjones    proj1   off          20MB        -       -        -       15MB
 ----

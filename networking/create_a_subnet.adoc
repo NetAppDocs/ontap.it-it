@@ -1,8 +1,8 @@
 ---
 sidebar: sidebar 
 permalink: networking/create_a_subnet.html 
-keywords: move, moving, broadcast, domain, ipspace, create a subnet, network subnet create, network subnet show -ipspace 
-summary: Creare una subnet 
+keywords: move, moving, broadcast, domain, ipspace, create a subnet, network subnet create, network subnet show -ipspace, force-update-lif-associations, network subnet rename 
+summary: Creare una subnet per allocare o riservare blocchi specifici di indirizzi IP per la configurazione di rete ONTAP 
 ---
 = Creare una subnet
 :hardbreaks:
@@ -20,6 +20,14 @@ In questo modo è possibile creare LIF più facilmente specificando un nome di s
 
 .Prima di iniziare
 Per eseguire questa attività, è necessario essere un amministratore del cluster.
+
+Il dominio di trasmissione e l'IPSpace in cui si intende aggiungere la subnet devono già esistere.
+
+.A proposito di questa attività
+* Tutti i nomi di subnet devono essere univoci all'interno di un IPSpace.
+* Quando si aggiungono intervalli di indirizzi IP a una subnet, assicurarsi che non vi siano indirizzi IP sovrapposti nella rete in modo che sottoreti o host diversi non tentino di utilizzare lo stesso indirizzo IP.
+* Se si specifica un gateway durante la definizione di una subnet, un percorso predefinito per tale gateway viene aggiunto automaticamente alla SVM quando viene creata una LIF utilizzando tale subnet. Se non si utilizzano sottoreti o se non si specifica un gateway durante la definizione di una subnet, è necessario utilizzare `route create` Comando per aggiungere manualmente un percorso alla SVM.
+
 
 .Procedura
 La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
@@ -53,22 +61,44 @@ A partire da ONTAP 9.12.0, è possibile utilizzare Gestore di sistema per creare
 --
 Utilizzare la CLI per creare una subnet.
 
-.Fasi
-. Creare una subnet.
+....
+network subnet create -subnet-name subnet_name -broadcast-domain <broadcast_domain_name> [- ipspace <ipspace_name>] -subnet <subnet_address> [-gateway <gateway_address>] [-ip-ranges <ip_address_list>] [-force-update-lif-associations <true>]
+....
+* `subnet_name` è il nome della subnet di livello 3 che si desidera creare.
 +
-`network subnet create -broadcast-domain _ipspace1_ -ipspace _ipspace1_ -subnet-name _ipspace1_ -subnet _10.0.0.0/24_ -gateway _10.0.0.1_ -ip-ranges _"10.0.0.128-10.0.0.130,10.0.0.132"_`
+Il nome può essere una stringa di testo come "Mgmt" o un valore IP di subnet specifico come 192.0.2.0/24.
 
+* `broadcast_domain_name` è il nome del dominio di trasmissione in cui risiede la subnet.
+* `ipspace_name` È il nome dell'IPSpace di cui fa parte il dominio di trasmissione.
 +
-Il nome della subnet può essere un valore IP della subnet, ad esempio `192.0.2.0/24` o una stringa come `ipspace1` come quello utilizzato in questo esempio.
+L'IPSpace "predefinito" viene utilizzato a meno che non si specifichi un valore per questa opzione.
 
-. Verificare che la configurazione della subnet sia corretta.
+* `subnet_address` È l'indirizzo IP e la maschera della subnet, ad esempio 192.0.2.0/24.
+* `gateway_address` è il gateway per il percorso predefinito della subnet, ad esempio 192.0.2.1.
+* `ip_address_list` Indica l'elenco o l'intervallo di indirizzi IP che verranno assegnati alla subnet.
 +
-L'output di questo esempio mostra le informazioni sulla subnet denominata ipspace1 nell'IPSpace di ipspace1. La subnet appartiene al nome di dominio di trasmissione ipspace1. È possibile assegnare gli indirizzi IP di questa subnet ai dati LIF per le SVM create in ipspace1 IPSpace.
+Gli indirizzi IP possono essere singoli, un intervallo di indirizzi IP o una combinazione in un elenco separato da virgole.
 
+* Il valore `true` può essere impostato per `-force-update-lif-associations` opzione.
 +
-`network subnet show -ipspace _ipspace1_`
+Questo comando non riesce se un processore di servizio o un'interfaccia di rete sta attualmente utilizzando gli indirizzi IP nell'intervallo specificato. Impostando questo valore su true, tutte le interfacce indirizzate manualmente vengono associate alla subnet corrente e il comando viene eseguito correttamente.
 
 
+
+Il seguente comando crea la subnet sub1 nel dominio di trasmissione Default-1 nell'IPSpace predefinito. Aggiunge un indirizzo IP e una maschera della subnet IPv4, il gateway e un intervallo di indirizzi IP:
+
+....
+network subnet create -subnet-name sub1 -broadcast-domain Default-1 -subnet 192.0.2.0/24 - gateway 192.0.2.1 -ip-ranges 192.0.2.1-192.0.2.100, 192.0.2.122
+....
+Il seguente comando crea la subnet sub2 nel dominio di trasmissione predefinito in IPSpace "Default". Aggiunge una serie di indirizzi IPv6:
+
+....
+network subnet create -subnet-name sub2 -broadcast-domain Default -subnet 3FFE::/64 - gateway 3FFE::1 -ip-ranges "3FFE::10-3FFE::20"
+....
+.Al termine
+È possibile assegnare le SVM e le interfacce a un IPSpace utilizzando gli indirizzi nella subnet.
+
+Se è necessario modificare il nome di una subnet esistente, utilizzare `network subnet rename` comando.
 
 --
 ====

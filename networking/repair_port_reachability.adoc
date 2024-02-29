@@ -16,6 +16,51 @@ summary: Se una porta viene ricablata o la configurazione dello switch viene mod
 [role="lead"]
 I domini di broadcast vengono creati automaticamente. Tuttavia, se una porta viene cablata o la configurazione dello switch viene modificata, potrebbe essere necessario riparare una porta in un dominio di trasmissione diverso (nuovo o esistente).
 
+ONTAP è in grado di rilevare e consigliare automaticamente soluzioni ai problemi di cablaggio di rete in base alla raggiungibilità Layer-2 di un costituente del dominio di trasmissione (porte ethernet).
+
+Un cablaggio errato durante potrebbe causare un'assegnazione imprevista della porta del dominio di trasmissione. A partire da ONTAP 9.10.1, il cluster verifica automaticamente i problemi di cablaggio di rete verificando la raggiungibilità delle porte dopo l'installazione del cluster o quando un nuovo nodo si unisce a un cluster esistente.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Se viene rilevato un problema di raggiungibilità delle porte, System Manager consiglia un'operazione di riparazione per risolvere il problema.
+
+Dopo aver configurato il cluster, i problemi di cablaggio di rete vengono segnalati nella dashboard.
+
+Dopo aver Unito un nuovo nodo a un cluster, i problemi di cablaggio di rete vengono visualizzati nella pagina Nodes (nodi).
+
+È inoltre possibile visualizzare lo stato del cablaggio di rete sul diagramma di rete. I problemi di raggiungibilità delle porte sono indicati sul diagramma di rete da un'icona di errore rossa.
+
+== impostazione post-quadro strumenti
+
+Dopo aver configurato il cluster, se il sistema rileva un problema di cablaggio di rete, viene visualizzato un messaggio sul dashboard.
+
+image:auto-detect-01.png["Messaggio di post-installazione del cluster"]
+
+.Fasi
+. Correggere il cablaggio come suggerito nel messaggio.
+. Fare clic sul collegamento per avviare la finestra di dialogo Update Broadcast Domains (Aggiorna domini di trasmissione). Viene visualizzata la finestra di dialogo Update Broadcast Domains (Aggiorna domini broadcast).image:auto-detect-02.png["Finestra di dialogo Update Broadcast Domains (Aggiorna domini broadcast"]
+. Esaminare le informazioni relative alla porta, inclusi il nodo, i problemi, il dominio di trasmissione corrente e il dominio di trasmissione previsto.
+. Selezionare le porte che si desidera riparare e fare clic su *Fix*. Il sistema sposta le porte dal dominio di trasmissione corrente al dominio di trasmissione previsto.
+
+
+== Post node join
+
+Dopo aver collegato un nuovo nodo a un cluster, se il sistema rileva un problema di cablaggio di rete, viene visualizzato un messaggio nella pagina Nodes (nodi).
+
+image:auto-detect-03.png["Messaggio di Unione del nodo post"]
+
+.Fasi
+. Correggere il cablaggio come suggerito nel messaggio.
+. Fare clic sul collegamento per avviare la finestra di dialogo Update Broadcast Domains (Aggiorna domini di trasmissione). Viene visualizzata la finestra di dialogo Update Broadcast Domains (Aggiorna domini broadcast).image:auto-detect-02.png["Finestra di dialogo Update Broadcast Domains (Aggiorna domini broadcast"]
+. Esaminare le informazioni relative alla porta, inclusi il nodo, i problemi, il dominio di trasmissione corrente e il dominio di trasmissione previsto.
+. Selezionare le porte da riparare e fare clic su *Fix*. Il sistema sposta le porte dal dominio di trasmissione corrente al dominio di trasmissione previsto.
+
+
+--
+.CLI
+--
 .Prima di iniziare
 Per eseguire questa attività, è necessario essere un amministratore del cluster.
 
@@ -120,8 +165,6 @@ Se lo stato di raggiungibilità è "sconosciuto", attendere alcuni minuti e prov
 |===
 Dopo aver riparato una porta, verificare la presenza di LIF e VLAN spostate. Se la porta faceva parte di un gruppo di interfacce, è necessario comprendere anche cosa è successo a quel gruppo di interfacce.
 
-
-
 == LIF
 
 Quando una porta viene riparata e spostata in un dominio di trasmissione diverso, a tutte le LIF configurate sulla porta riparata viene automaticamente assegnata una nuova porta home. La porta home viene selezionata dallo stesso dominio di broadcast sullo stesso nodo, se possibile. In alternativa, viene selezionata una porta home da un altro nodo oppure, se non esistono porte home adatte, la porta home viene cancellata.
@@ -146,8 +189,6 @@ Se sono presenti LIF smontati, è necessario:
 
 
 
-
-
 == VLAN
 
 Se la porta riparata era dotata di VLAN, tali VLAN vengono automaticamente eliminate, ma vengono anche registrate come "spostate". È possibile visualizzare queste VLAN smontate:
@@ -166,12 +207,12 @@ Se sono presenti VLAN smontate, è necessario:
 
 
 
-
-
-== Gruppi di interfacce
+== gruppi di interfacce
 
 Se la porta riparata faceva parte di un gruppo di interfacce, viene rimossa da quel gruppo di interfacce. Se si tratta dell'unica porta membro assegnata al gruppo di interfacce, il gruppo di interfacce stesso viene rimosso.
 
+--
+====
 .Argomenti correlati
 link:https://docs.netapp.com/us-en/ontap/networking/verify_your_network_configuration.html["Verificare la configurazione di rete dopo l'aggiornamento"]
 

@@ -1,0 +1,301 @@
+---
+sidebar: sidebar 
+permalink: networking/use_lldp_to_detect_network_connectivity.html 
+keywords: display, view, show, network, connectivity, neighbor, discovery, protocol, ndp, link, layer, lldp, use lldp to detect network connectivity, enable or disable lldp, view lldp neighbor information, adjust the interval for transmitting lldp advertisements 
+summary: 'L"utilizzo di LLDP per rilevare la connettività di rete consiste nell"esaminare le considerazioni di implementazione, abilitarla su tutte le porte, visualizzare i dispositivi adiacenti e regolare i valori di configurazione LLDP in base alle necessità.' 
+---
+= Utilizzare LLDP per rilevare la connettività di rete
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+L'utilizzo di LLDP per rilevare la connettività di rete consiste nell'esaminare le considerazioni di implementazione, abilitarla su tutte le porte, visualizzare i dispositivi adiacenti e regolare i valori di configurazione LLDP in base alle necessità.
+
+LLDP deve essere abilitato anche su qualsiasi switch e router prima di poter visualizzare le informazioni sui dispositivi vicini.
+
+ONTAP attualmente riporta le seguenti strutture TLV (Type-length-value Structures):
+
+* ID chassis
+* ID porta
+* TTL (Time-to-Live)
+* Nome del sistema
++
+Il nome di sistema TLV non viene inviato sui dispositivi CNA.
+
+
+
+Alcuni adattatori di rete convergenti (CNA), come l'adattatore X1143 e le porte integrate UTA2, contengono il supporto di offload per LLDP:
+
+* L'offload LLDP viene utilizzato per il Data Center Bridging (DCB).
+* Le informazioni visualizzate potrebbero differire tra il cluster e lo switch.
++
+I dati relativi all'ID dello chassis e all'ID della porta visualizzati dallo switch potrebbero essere diversi per le porte CNA e non CNA.
+
+
+
+Ad esempio:
+
+* Per porte non CNA:
++
+** L'ID dello chassis è un indirizzo MAC fisso di una delle porte sul nodo
+** Port ID (ID porta) è il nome della porta corrispondente sul nodo
+
+
+* Per le porte CNA:
++
+** ID chassis e ID porta sono gli indirizzi MAC delle rispettive porte sul nodo.
+
+
+
+
+Tuttavia, i dati visualizzati dal cluster sono coerenti per questi tipi di porte.
+
+
+NOTE: La specifica LLDP definisce l'accesso alle informazioni raccolte tramite un MIB SNMP. Tuttavia, ONTAP attualmente non supporta il MIB LDP.
+
+
+
+== Attiva o disattiva LLDP
+
+Per rilevare e inviare annunci pubblicitari ai dispositivi adiacenti conformi a LLDP, è necessario attivare LLDP su ciascun nodo del cluster. A partire da ONTAP 9.7, LLDP è attivato per impostazione predefinita su tutte le porte di un nodo.
+
+.A proposito di questa attività
+Per ONTAP 9.10.1 e versioni precedenti, la `lldp.enable` L'opzione controlla se LLDP è attivato o disattivato sulle porte di un nodo:
+
+* `on` Attiva LLDP su tutte le porte.
+* `off` Disattiva LLDP su tutte le porte.
+
+
+Per ONTAP 9.11.1 e versioni successive, la `lldp.enable` L'opzione controlla se LLDP è attivato o disattivato sulle porte non cluster e non storage di un nodo:
+
+* `on` Attiva LLDP su tutte le porte non cluster e non storage.
+* `off` Disattiva LLDP su tutte le porte non cluster e non storage.
+
+
+.Fasi
+. Visualizza l'impostazione LLDP corrente per un nodo o per tutti i nodi di un cluster:
++
+** Nodo singolo: `run -node node_name options lldp.enable`
+** All Node (tutti i nodi): Opzioni `lldp.enable`
+
+
+. Attivare o disattivare LLDP su tutte le porte di un nodo o su tutte le porte di tutti i nodi di un cluster:
++
+[cols="30,70"]
+|===
+
+
+| Per attivare o disattivare LLDP on... | Inserisci... 
+
+
+ a| 
+Un nodo
+ a| 
+`run -node node_name options lldp.enable {on|off}`
+
+
+
+ a| 
+Tutti i nodi di un cluster
+ a| 
+`options lldp.enable {on|off}`
+
+|===
++
+** Nodo singolo:
++
+....
+run -node node_name options lldp.enable {on|off}
+....
+** Tutti i nodi:
++
+....
+options lldp.enable {on|off}
+....
+
+
+
+
+
+
+== Visualizzare le informazioni LLDP neighbor
+
+È possibile visualizzare informazioni sui dispositivi vicini collegati a ciascuna porta dei nodi del cluster, a condizione che la porta sia collegata a un dispositivo compatibile con LLDP. Il comando network device-Discovery show consente di visualizzare le informazioni sulle periferiche vicine.
+
+.Fase
+. Visualizza informazioni su tutti i dispositivi compatibili con LLDP collegati alle porte di un nodo del cluster:
++
+....
+network device-discovery show -node node -protocol lldp
+....
++
+Il seguente comando mostra i vicini collegati alle porte sul nodo cluster-1_01. L'output elenca i dispositivi abilitati LLDP collegati a ciascuna porta del nodo specificato. Se il `-protocol` Viene omessa, l'output elenca anche i dispositivi abilitati per CDP.
+
++
+....
+network device-discovery show -node cluster-1_01 -protocol lldp
+Node/       Local  Discovered
+Protocol    Port   Device                    Interface         Platform
+----------- ------ ------------------------- ----------------  ----------------
+cluster-1_01/lldp
+            e2a    0013.c31e.5c60            GigabitEthernet1/36
+            e2b    0013.c31e.5c60            GigabitEthernet1/35
+            e2c    0013.c31e.5c60            GigabitEthernet1/34
+            e2d    0013.c31e.5c60            GigabitEthernet1/33
+....
+
+
+
+
+== Regolare l'intervallo di trasmissione degli annunci LLDP
+
+Gli annunci LLDP vengono inviati ai vicini LLDP a intervalli periodici. È possibile aumentare o ridurre l'intervallo di invio degli annunci LLDP in base al traffico di rete e alle modifiche della topologia di rete.
+
+.A proposito di questa attività
+L'intervallo predefinito consigliato da IEEE è 30 secondi, ma è possibile immettere un valore compreso tra 5 secondi e 300 secondi.
+
+.Fasi
+. Visualizza l'intervallo di tempo di annuncio LLDP corrente per un nodo o per tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.interval
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.interval
+....
+
+
+. Regolare l'intervallo per l'invio di annunci LLDP per tutte le porte di un nodo o per tutte le porte di tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.interval <interval>
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.interval <interval>
+....
+
+
+
+
+
+
+== Regola il valore del time-to-live per gli annunci LLDP
+
+TTL (Time-to-Live) è il periodo di tempo per il quale gli annunci LLDP vengono memorizzati nella cache nei dispositivi compatibili con LLDP vicini. Il TTL viene pubblicizzato in ciascun pacchetto LLDP e viene aggiornato ogni volta che un pacchetto LLDP viene ricevuto da un nodo. TTL può essere modificato nei frame LLDP in uscita.
+
+.A proposito di questa attività
+* TTL è un valore calcolato, il prodotto dell'intervallo di trasmissione (`lldp.xmit.interval`) e il moltiplicatore hold (`lldp.xmit.hold`) più uno.
+* Il valore predefinito del moltiplicatore Hold è 4, ma è possibile immettere valori compresi tra 1 e 100.
+* Il TTL predefinito è quindi di 121 secondi, come consigliato da IEEE, ma regolando l'intervallo di trasmissione e i valori del moltiplicatore di mantenimento, è possibile specificare un valore per i frame in uscita da 6 secondi a 30001 secondi.
+* Se un indirizzo IP viene rimosso prima della scadenza del TTL, le informazioni LLDP vengono memorizzate nella cache fino alla scadenza del TTL.
+
+
+.Fasi
+. Visualizza il valore del moltiplicatore di mantenimento corrente per un nodo o per tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.hold
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.hold
+....
+
+
+. Regolare il valore del moltiplicatore Hold su tutte le porte di un nodo o su tutte le porte di tutti i nodi di un cluster:
++
+** Nodo singolo:
++
+....
+run -node <node_name> options lldp.xmit.hold <hold_value>
+....
+** Tutti i nodi:
++
+....
+options lldp.xmit.hold <hold_value>
+....
+
+
+
+
+
+
+== Visualizzare o cancellare le statistiche LLDP
+
+È possibile visualizzare le statistiche LLDP per il cluster e le porte non del cluster su ciascun nodo per rilevare potenziali problemi di connettività di rete. Le statistiche LLDP sono cumulative a partire dall'ultima cancellazione.
+
+.A proposito di questa attività
+Per ONTAP 9.10.1 e versioni precedenti, poiché LLDP è sempre abilitato per le porte del cluster, le statistiche LLDP vengono sempre visualizzate per il traffico su tali porte. LLDP deve essere attivato sulle porte non cluster per visualizzare le statistiche per tali porte.
+
+Per ONTAP 9.11.1 e versioni successive, poiché LLDP è sempre abilitato per le porte di cluster e storage, le statistiche LLDP vengono sempre visualizzate per il traffico su tali porte. LLDP deve essere abilitato sulle porte non cluster e non storage per visualizzare le statistiche per tali porte.
+
+.Fase
+Visualizzare o cancellare le statistiche LLDP correnti per tutte le porte su un nodo:
+
+[cols="40,60"]
+|===
+
+
+| Se si desidera... | Inserisci... 
+
+
+ a| 
+Visualizzare le statistiche LLDP
+ a| 
+`run -node node_name lldp stats`
+
+
+
+ a| 
+Cancellare le statistiche LLDP
+ a| 
+`run -node node_name lldp stats -z`
+
+|===
+
+
+=== Mostra e cancella esempio di statistiche
+
+Il comando seguente mostra le statistiche LLDP prima che vengano cancellate. L'output visualizza il numero totale di pacchetti inviati e ricevuti dall'ultima cancellazione delle statistiche.
+
+....
+cluster-1::> run -node vsim1 lldp stats
+
+RECEIVE
+ Total frames:     190k  | Accepted frames:   190k | Total drops:         0
+TRANSMIT
+ Total frames:     5195  | Total failures:      0
+OTHER
+ Stored entries:      64
+....
+Il seguente comando cancella le statistiche LLDP.
+
+....
+cluster-1::> The following command clears the LLDP statistics:
+run -node vsim1 lldp stats -z
+run -node node1 lldp stats
+
+RECEIVE
+ Total frames:        0  | Accepted frames:     0  | Total drops:         0
+TRANSMIT
+ Total frames:        0  | Total failures:      0
+OTHER
+ Stored entries:      64
+....
+Una volta cancellate, le statistiche iniziano ad accumularsi dopo l'invio o la ricezione del successivo annuncio LLDP.

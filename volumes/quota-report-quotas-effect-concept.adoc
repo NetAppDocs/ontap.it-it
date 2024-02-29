@@ -18,27 +18,30 @@ I seguenti esempi mostrano i report delle quote per diversi tipi di quote applic
 .Esempio senza quote utente specificate per il qtree
 In questo esempio, esiste un qtree, q1, contenuto nel volume vol1. L'amministratore ha creato tre quote:
 
-* Un limite predefinito di quota tree su vol1 di 400 MB
-* Un limite di quota utente predefinito su vol1 di 100 MB
-* Un limite di quota utente esplicito su vol1 di 200 MB per l'utente jsmith
+* Un limite predefinito di quota della struttura su vol1 di 400MB
+* Un limite di quota utente predefinito su vol1 di 100MB
+* Un limite di quota utente esplicito su vol1 di 200MB per l'utente jsmith
 
 
-Il file delle quote per queste quote è simile al seguente estratto:
-
-[listing]
-----
-
-#Quota target type            disk files  thold sdisk  sfile
-#-----------  ----            ---  -----  ----  -----  -----
-*             tree@/vol/vol1  400M
-*             user@/vol/vol1  100M
-jsmith        user@/vol/vol1  200M
-----
-Il report delle quote per queste quote è simile al seguente estratto:
+Le regole di quota per questi contingenti sono simili a quelle dell'esempio seguente:
 
 [listing]
 ----
+cluster1::*> volume quota policy rule show -vserver vs1 -volume vol1
 
+Vserver: vs1               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+tree   ""        ""      -           400MB        -       -        -          -
+user   ""        ""      off         100MB        -       -        -          -
+user   jsmith    ""      off         200MB        -       -        -          -
+----
+Il rapporto sulle quote per queste quote è simile al seguente esempio:
+
+[listing]
+----
 cluster1::> volume quota report
 Vserver: vs1
                                     ----Disk----  ----Files-----   Quota
@@ -46,13 +49,12 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 -------  --------  ------  -------  -----  -----  ------  ------   ---------
 vol1     -          tree   *           0B  400MB       0       -   *
 vol1     -          user   *           0B  100MB       0       -   *
-vol1     -          user   corp/jsmith
-                                     150B  200MB       7       -   corp/jsmith
+vol1     -          user   jsmith    150B  200MB       7       -   jsmith
 vol1     q1         tree   1           0B  400MB       6       -   q1
 vol1     q1         user   *           0B  100MB       0       -
-vol1     q1         user   corp/jsmith 0B  100MB       5       -
-vol1     -          user   root        0B   0MB        1       -
-vol1     q1         user   root        0B   0MB        8       -
+vol1     q1         user   jsmith      0B  100MB       5       -
+vol1     -          user   root        0B    0MB       1       -
+vol1     q1         user   root        0B    0MB       8       -
 ----
 Le prime tre righe del report di quota visualizzano le tre quote specificate dall'amministratore. Poiché due di queste quote sono quote predefinite, ONTAP crea automaticamente le quote derivate.
 
@@ -60,7 +62,7 @@ La quarta riga visualizza la quota tree derivata dalla quota tree predefinita pe
 
 La quinta riga visualizza la quota utente predefinita creata per il qtree in seguito all'esistenza della quota utente predefinita sul volume e sulla quota del qtree.
 
-La sesta riga visualizza la quota utente derivata creata per jsmith sul qtree perché esiste una quota utente predefinita per il qtree (riga 5) e l'utente jsmith possiede i file su quel qtree. Si noti che il limite applicato all'utente jsmith nel qtree q1 non è determinato dal limite di quota utente esplicito (200 MB). Questo perché il limite di quota utente esplicito si trova sul volume, quindi non influisce sui limiti per il qtree. Invece, il limite di quota utente derivato per il qtree è determinato dalla quota utente predefinita per il qtree (100 MB).
+La sesta riga visualizza la quota utente derivata creata per jsmith sul qtree perché esiste una quota utente predefinita per il qtree (riga 5) e l'utente jsmith possiede i file su quel qtree. Si noti che il limite applicato all'utente jsmith nel qtree Q1 non è determinato dal limite di quota utente esplicito (200MB). Questo perché il limite di quota utente esplicito si trova sul volume, quindi non influisce sui limiti per il qtree. Il limite di quota utente derivato per il qtree è invece determinato dalla quota utente predefinita per il qtree (100MB).
 
 Le ultime due righe visualizzano più quote utente derivate dalle quote utente predefinite sul volume e sul qtree. È stata creata una quota utente derivata per l'utente root sia sul volume che sul qtree, in quanto l'utente root possedeva file sia sul volume che sul qtree. Poiché l'utente root riceve un trattamento speciale in termini di quote, le quote derivate monitorano solo le quote.
 
@@ -69,25 +71,29 @@ Questo esempio è simile a quello precedente, ad eccezione del fatto che l'ammin
 
 Esiste ancora un volume, vol1 e un qtree, q1. L'amministratore ha creato le seguenti quote:
 
-* Un limite predefinito di quota tree su vol1 di 400 MB
-* Un limite di quota utente predefinito su vol1 di 100 MB
-* Un limite di quota utente esplicito su vol1 per l'utente jsmith di 200 MB
-* Un limite di quota utente predefinito su qtree q1 di 50 MB
-* Un limite di quota utente esplicito su qtree q1 per l'utente jsmith di 75 MB
+* Un limite predefinito di quota della struttura su vol1 di 400MB
+* Un limite di quota utente predefinito su vol1 di 100MB
+* Un limite di quota utente esplicito su vol1 per l'utente jsmith di 200MB
+* Limite di quota utente predefinito per il qtree Q1 di 50MB
+* Un limite di quota utente esplicito sul qtree Q1 per l'utente jsmith di 75MB
 
 
-Il file delle quote per queste quote è simile al seguente:
+Le regole di quota per queste quote sono le seguenti:
 
 [listing]
 ----
+cluster1::> volume quota policy rule show -vserver vs1 -volume vol1
 
-#Quota target type             disk files  thold sdisk  sfile
-#-----------  ----             ---  -----  ----  -----  -----
-*             tree@/vol/vol1   400M
-*             user@/vol/vol1   100M
-jsmith        user@/vol/vol1   200M
-*             user@/vol/vol1/q1 50M
-jsmith        user@/vol/vol1/q1 75M
+Vserver: vs1               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+tree   ""        ""      -           400MB        -       -        -          -
+user   ""        ""      off         100MB        -       -        -          -
+user   ""        q1      off          50MB        -       -        -          -
+user   jsmith    ""      off         200MB        -       -        -          -
+user   jsmith    q1      off          75MB        -       -        -          -
 ----
 Il report delle quote per queste quote è simile al seguente:
 
@@ -101,13 +107,12 @@ Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
 -------  --------  ------  -------  -----  -----  ------  ------   ---------
 vol1     -          tree   *           0B  400MB       0       -   *
 vol1     -          user   *           0B  100MB       0       -   *
-vol1     -          user   corp/jsmith
-                                    2000B  200MB       7       -   corp/jsmith
+vol1     -          user   jsmith   2000B  200MB       7       -   jsmith
 vol1     q1         user   *           0B   50MB       0       -   *
-vol1     q1         user   corp/jsmith 0B  75MB        5       -   corp/jsmith
-vol1     q1         tree   1           0B 400MB        6       -   q1
-vol1     -          user   root        0B   0MB        2       -
-vol1     q1         user   root        0B   0MB        1       -
+vol1     q1         user   jsmith      0B   75MB       5       -   jsmith
+vol1     q1         tree   1           0B  400MB       6       -   q1
+vol1     -          user   root        0B    0MB       2       -
+vol1     q1         user   root        0B    0MB       1       -
 ----
 Le prime cinque righe del report delle quote visualizzano le cinque quote create dall'amministratore. Poiché alcune di queste quote sono quote predefinite, ONTAP crea automaticamente quote derivate.
 
