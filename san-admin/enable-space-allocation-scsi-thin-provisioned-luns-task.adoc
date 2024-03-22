@@ -11,10 +11,28 @@ summary: 'Se si imposta l"opzione di allocazione dello spazio su abilitato, ONTA
 
 
 [role="lead"]
-Se si imposta `space-allocation` opzione a. `enabled`, ONTAP notifica all'host quando il volume ha esaurito lo spazio e il LUN nel volume non può accettare le scritture. Questa opzione consente inoltre a ONTAP di recuperare automaticamente lo spazio quando l'host elimina i dati.
+Se l'host supporta il thin provisioning SCSI, è possibile attivare l'allocazione dello spazio per i LUN SCSI con thin provisioning in ONTAP.  Quando l'allocazione dello spazio è attivata, ONTAP invia una notifica all'host quando lo spazio del volume è esaurito e il LUN del volume non può accettare scritture. ONTAP recupera automaticamente anche spazio quando l'host elimina i dati.
+
+Negli host che non supportano il thin provisioning SCSI, quando il volume contenente il LUN esaurisce lo spazio e non può crescere automaticamente, ONTAP porta il LUN offline. Sugli host che supportano il thin provisioning SCSI, ONTAP non porta il LUN offline quando si esaurisce lo spazio. Il LUN rimane in linea in modalità di sola lettura e all'host viene notificato che il LUN non può più accettare le scritture.
+
+Inoltre, quando i dati vengono eliminati su un host che supporta il thin provisioning SCSI, la gestione dello spazio sul lato host identifica i blocchi di dati eliminati sul file system host ed emette automaticamente uno o più `SCSI UNMAP` comandi per liberare i blocchi corrispondenti sul sistema storage.
+
+.Prima di iniziare
+Per attivare l'allocazione dello spazio, il thin provisioning SCSI deve essere supportato dall'host. Il thin provisioning SCSI utilizza il provisioning a blocchi logici come definito nello standard SCSI SBC-3. Solo gli host che supportano questo standard possono utilizzare il thin provisioning SCSI in ONTAP.
+
+I seguenti host attualmente supportano il thin provisioning SCSI quando si attiva l'allocazione dello spazio:
+
+* Citrix XenServer 6,5 e versioni successive
+* ESXi 5,0 e versioni successive
+* Kernel Oracle Linux 6,2 UEK o versione successiva
+* RHEL 6,2 e versioni successive
+* SLES11 e versioni successive
+* Solaris 11,1 e versioni successive
+* Windows
+
 
 .A proposito di questa attività
-Il `space-allocation` l'opzione è impostata su `disabled` Per impostazione predefinita, è necessario impostare il LUN offline per attivare l'allocazione dello spazio. Dopo aver attivato l'allocazione dello spazio, è necessario eseguire il rilevamento sull'host prima che l'host riconosca che l'allocazione dello spazio è stata attivata.
+Per impostazione predefinita, l'allocazione dello spazio è disattivata per tutti i LUN. Per attivare l'allocazione dello spazio, è necessario portare il LUN in modalità non in linea; quindi è necessario eseguire la ricerca sull'host prima che l'host riconosca che l'allocazione dello spazio è stata abilitata.
 
 .Fasi
 . Portare il LUN offline.

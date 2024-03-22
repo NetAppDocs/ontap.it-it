@@ -18,3 +18,84 @@ In genere, si desidera che tutte le porte iniziatore dell'host o gli iniziatori 
 È possibile creare igroups che specifichino quali iniziatori hanno accesso alle LUN prima o dopo la creazione delle LUN, ma è necessario creare igroups prima di poter mappare una LUN a un igroup.
 
 I gruppi iniziatori possono avere più iniziatori e più igroups possono avere lo stesso iniziatore. Tuttavia, non è possibile mappare un LUN a più igroups con lo stesso iniziatore. Un iniziatore non può essere un membro di igroups di diversi ostype.
+
+
+
+== Esempio di come gli igroups forniscono l'accesso al LUN
+
+È possibile creare più igroups per definire quali LUN sono disponibili per gli host. Ad esempio, se si dispone di un cluster host, è possibile utilizzare igroups per garantire che LUN specifiche siano visibili a un solo host del cluster o a tutti gli host del cluster.
+
+La seguente tabella illustra come quattro igroups consentono l'accesso alle LUN per quattro diversi host che accedono al sistema di storage. Gli host in cluster (Host3 e Host4) sono entrambi membri dello stesso igroup (group3) e possono accedere alle LUN mappate a questo igroup. L'igroup denominato group4 contiene le WWPN di Host4 per memorizzare informazioni locali che non sono destinate al partner.
+
+[cols="4*"]
+|===
+| Host con HBA WWPN, IQN o EUI | igroups | WWPN, IQN, EUI aggiunti a igroups | LUN mappati a igroups 
+
+
+ a| 
+Host 1, percorso singolo (iSCSI software initiator)
+
+iqn.1991-05.com.microsoft:host1
+ a| 
+gruppo 1
+ a| 
+iqn.1991-05.com.microsoft:host1
+ a| 
+`/vol/vol2/lun1`
+
+
+
+ a| 
+Host2, multipath (due HBA)
+
+10:00:00:00:c9:2b:6b:3c
+
+10:00:00:00:c9:2b:02:3c
+ a| 
+gruppo 2
+ a| 
+10:00:00:00:c9:2b:6b:3c
+
+10:00:00:00:c9:2b:02:3c
+ a| 
+`/vol/vol2/lun2`
+
+
+
+ a| 
+Host3, multipath, in cluster con host 4
+
+10:00:00:00:c9:2b:32:1b
+
+10:00:00:00:c9:2b:41:02
+ a| 
+gruppo 3
+ a| 
+10:00:00:00:c9:2b:32:1b
+
+10:00:00:00:c9:2b:41:02
+
+10:00:00:00:c9:2b:51:2c
+
+10:00:00:00:c9:2b:47:a2
+ a| 
+`/vol/vol2/qtree1/lun3`
+
+
+
+ a| 
+Host4, multipath, in cluster (non visibile all'host 3)
+
+10:00:00:00:c9:2b:51:2c
+
+10:00:00:00:c9:2b:47:a2
+ a| 
+gruppo 4
+ a| 
+10:00:00:00:c9:2b:51:2c
+
+10:00:00:00:c9:2b:47:a2
+ a| 
+`/vol/vol2/qtree2/lun4` `/vol/vol2/qtree1/lun5`
+
+|===
