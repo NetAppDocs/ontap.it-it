@@ -16,10 +16,14 @@ summary: Le copie snapshot vengono create quando ARP rileva un potenziale attacc
 
 
 [role="lead"]
-Le copie Snapshot denominate "Anti_ransomware_backup" vengono create quando la protezione ransomware autonoma (ARP) rileva un potenziale attacco. È possibile ripristinare i dati da queste copie ARP o da altre copie Snapshot.
+La protezione autonoma dal ransomware (ARP) crea copie Snapshot denominate `Anti_ransomware_backup` quando rileva una potenziale minaccia ransomware. È possibile utilizzare una di queste copie snapshot ARP o un'altra copia Snapshot del volume per ripristinare i dati.
 
 .A proposito di questa attività
 Se il volume presenta relazioni SnapMirror, replicare manualmente tutte le copie mirror del volume immediatamente dopo il ripristino da una copia Snapshot. In caso contrario, le copie mirror non possono essere utilizzabili e devono essere eliminate e ricreate.
+
+Per eseguire il ripristino da uno Snapshot diverso da `Anti_ransomware_backup` Snapshot dopo aver identificato un attacco di sistema, è necessario prima rilasciare lo snapshot ARP.
+
+Se non è stato segnalato alcun attacco al sistema, è necessario prima eseguire il ripristino da `Anti_ransomware_backup` La copia Snapshot, quindi, completa un successivo ripristino del volume dalla copia Snapshot scelta.
 
 .Fasi
 Per ripristinare i dati, è possibile utilizzare Gestione di sistema o l'interfaccia utente di ONTAP.
@@ -28,25 +32,15 @@ Per ripristinare i dati, è possibile utilizzare Gestione di sistema o l'interfa
 ====
 .System Manager
 --
-. Se desideri ripristinare i dati da copie Snapshot precedenti invece che dalle copie ARP, devi rilasciare il blocco anti-ransomware Snapshot. Se si desidera eseguire il ripristino dalle copie ARP, non è necessario rilasciare il blocco ed è possibile saltare questo passaggio.
+.Ripristino dopo un attacco di sistema
+. Per eseguire il ripristino dall'istantanea ARP, passare direttamente al punto 2. Per eseguire il ripristino da una copia Snapshot precedente, è necessario prima rilasciare il blocco sull'istantanea ARP.
 +
-[cols="2"]
-|===
-| Se è stato identificato un attacco di sistema, eseguire questa operazione... | Se non è stato identificato un attacco di sistema, eseguire questa operazione... 
-
-
- a| 
 .. Selezionare *Storage > Volumes* (Storage > volumi).
 .. Selezionare *sicurezza*, quindi *Visualizza tipi di file sospetti*
 .. Contrassegnare i file come "False Positive" (Falso positivo).
 .. Selezionare *Aggiorna* e *Cancella tipi di file sospetti*
 
- a| 
-Per rilasciare il blocco Snapshot, è necessario eseguire il ripristino dalle copie ARP prima di eseguire il ripristino dalle copie Snapshot precedenti.
 
-Seguire i passaggi 2-3 per ripristinare i dati dalle copie ARP, quindi ripetere la procedura per il ripristino dalle copie Snapshot precedenti.
-
-|===
 . Visualizzare le copie Snapshot nei volumi:
 +
 Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot Copies*.
@@ -54,35 +48,33 @@ Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot C
 . Selezionare image:icon_kabob.gif["Opzione di menu"] Accanto alla copia istantanea che si desidera ripristinare, quindi *Restore*.
 
 
+.Ripristinare se non è stato identificato un attacco di sistema
+. Visualizzare le copie Snapshot nei volumi:
++
+Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot Copies*.
+
+. Selezionare image:icon_kabob.gif["Opzione di menu"] loro scelgono il `Anti_ransomware_backup` Istantanea.
+. Selezionare *Restore* (Ripristina).
+. Tornare al menu *Snapshot Copies*, quindi scegliere la copia istantanea che si desidera utilizzare. Selezionare *Restore* (Ripristina).
+
+
 --
 .CLI
 --
-. Se si desidera ripristinare i dati da copie Snapshot precedenti, anziché da copie ARP, è necessario eseguire le seguenti operazioni per rilasciare il blocco Snapshot anti-ransomware. Se si desidera eseguire il ripristino dalle copie ARP, non è necessario rilasciare il blocco ed è possibile saltare questo passaggio.
+.Ripristino dopo un attacco di sistema
+. Per eseguire il ripristino dalla copia snapshot ARP, passare direttamente al punto 2. Per ripristinare i dati da copie Snapshot precedenti, è necessario rilasciare il blocco sullo snapshot ARP.
 +
 
 NOTE: È necessario rilasciare il SnapLock anti-ransomware solo prima di eseguire il ripristino dalle copie Snapshot precedenti, se si utilizza `volume snap restore` come descritto di seguito. Se si ripristinano i dati utilizzando Flex Clone, Single file Snap Restore o altri metodi, ciò non è necessario.
 
 +
-[cols="2"]
-|===
-| Se è stato identificato un attacco di sistema, eseguire questa operazione... | Se non è stato identificato un attacco di sistema, eseguire questa operazione... 
-
-
- a| 
-Contrassegna l'attacco come "falso positivo" e "chiaro sospetto".
-
+Contrassegnare l'attacco come "falso positivo" e "chiaro sospetto":
 `anti-ransomware volume attack clear-suspect -vserver _svm_name_ -volume _vol_name_ [_extension identifiers_] -false-positive true`
-
 Per identificare gli interni, utilizzare uno dei seguenti parametri:
 `[-seq-no _integer_]` Numero di sequenza del file nell'elenco dei file sospetti.
 `[-extension _text_, … ]` Estensioni di file
 `[-start-time _date_time_ -end-time _date_time_]` Orari di inizio e fine dell'intervallo di file da cancellare, nel formato "MM/GG/AAAA HH:MM:SS".
- a| 
-Per rilasciare il blocco Snapshot, è necessario eseguire il ripristino dalle copie ARP prima di eseguire il ripristino dalle copie Snapshot precedenti.
 
-Seguire i passaggi 2-3 per ripristinare i dati dalle copie ARP, quindi ripetere la procedura per il ripristino dalle copie Snapshot precedenti.
-
-|===
 . Elencare le copie Snapshot in un volume:
 +
 `volume snapshot show -vserver _SVM_ -volume _volume_`
@@ -120,6 +112,47 @@ Nell'esempio riportato di seguito viene ripristinato il contenuto di `vol1`:
 ----
 cluster1::> volume snapshot restore -vserver vs0 -volume vol1 -snapshot daily.2013-01-25_0010
 ----
+
+
+.Ripristinare se non è stato identificato un attacco di sistema
+. Elencare le copie Snapshot in un volume:
++
+`volume snapshot show -vserver _SVM_ -volume _volume_`
+
++
+L'esempio seguente mostra le copie Snapshot in `vol1`:
+
++
+[listing]
+----
+
+clus1::> volume snapshot show -vserver vs1 -volume vol1
+
+Vserver Volume Snapshot                State    Size  Total% Used%
+------- ------ ---------- ----------- ------   -----  ------ -----
+vs1	 vol1   hourly.2013-01-25_0005  valid   224KB     0%    0%
+               daily.2013-01-25_0010   valid   92KB      0%    0%
+               hourly.2013-01-25_0105  valid   228KB     0%    0%
+               hourly.2013-01-25_0205  valid   236KB     0%    0%
+               hourly.2013-01-25_0305  valid   244KB     0%    0%
+               hourly.2013-01-25_0405  valid   244KB     0%    0%
+               hourly.2013-01-25_0505  valid   244KB     0%    0%
+
+7 entries were displayed.
+----
+. Ripristinare il contenuto di un volume da una copia Snapshot:
++
+`volume snapshot restore -vserver _SVM_ -volume _volume_ -snapshot _snapshot_`
+
++
+Nell'esempio riportato di seguito viene ripristinato il contenuto di `vol1`:
+
++
+[listing]
+----
+cluster1::> volume snapshot restore -vserver vs0 -volume vol1 -snapshot daily.2013-01-25_0010
+----
+. Ripetere i passaggi 1 e 2 per ripristinare il volume utilizzando la copia Snapshot desiderata.
 
 
 --

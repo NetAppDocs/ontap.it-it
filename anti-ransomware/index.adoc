@@ -89,11 +89,11 @@ NOTE: Nessun sistema di rilevamento ransomware o prevenzione può garantire comp
 
 ARP dispone di due modalità:
 
-. Apprendimento (o modalità "dry run")
-. Attivo (o modalità "abilitata")
+* *Apprendimento* (o modalità "dry run")
+* *Attivo* (o modalità "abilitato")
 
 
-Quando si attiva ARP, questo viene eseguito in modalità di apprendimento. In modalità di apprendimento, il sistema ONTAP sviluppa un profilo di avviso basato sulle aree di analisi: Entropia, tipi di estensione dei file e IOPS dei file. Dopo aver eseguito ARP in modalità di apprendimento per un tempo sufficiente a valutare le caratteristiche del carico di lavoro, è possibile passare alla modalità attiva e iniziare a proteggere i dati. Una volta che ARP è passato alla modalità attiva, ONTAP crea snapshot ARP per proteggere i dati in caso di rilevamento di una minaccia.
+Quando si attiva ARP, viene eseguito in _modalità di apprendimento_. In modalità di apprendimento, il sistema ONTAP sviluppa un profilo di avviso basato sulle aree di analisi: Entropia, tipi di estensione dei file e IOPS dei file. Dopo aver eseguito ARP in modalità di apprendimento per un tempo sufficiente a valutare le caratteristiche del carico di lavoro, è possibile passare alla modalità attiva e iniziare a proteggere i dati. Una volta che ARP è passato alla modalità attiva, ONTAP crea copie snapshot ARP per proteggere i dati se viene rilevata una minaccia.
 
 Si consiglia di lasciare ARP in modalità di apprendimento per 30 giorni. A partire da ONTAP 9.13.1, ARP determina automaticamente l'intervallo ottimale del periodo di apprendimento e automatizza lo switch, che può verificarsi prima di 30 giorni.
 
@@ -103,7 +103,7 @@ A partire da ONTAP 9.11.1, è possibile personalizzare i parametri di rilevament
 
 
 
-== Valutazione delle minacce e snapshot ARP
+== Valutazione delle minacce e copie snapshot ARP
 
 In modalità attiva, ARP valuta la probabilità di minaccia in base ai dati in entrata misurati in base alle analisi apprese. Viene assegnata una misurazione quando ARP rileva una minaccia:
 
@@ -115,23 +115,23 @@ In modalità attiva, ARP valuta la probabilità di minaccia in base ai dati in e
 
 
 
-In una situazione di basso rischio, ONTAP rileva un'anomalia e crea un'istantanea del volume per creare il punto di ripristino migliore. L'istantanea ARP utilizza `anti-ransomware-backup` tag ed è identificabile dal suo nome, ad esempio `Anti_ransomware_backup.2022-12-20_1248`.
+In una situazione di basso rischio, ONTAP rileva un'anomalia e crea una copia Snapshot del volume per creare il punto di recovery migliore. ONTAP anticipa il nome della copia snapshot ARP con `Anti-ransomware-backup` per renderla facilmente identificabile, per esempio `Anti_ransomware_backup.2022-12-20_1248`.
 
 Dopo che ONTAP ha eseguito un report di analytics, la minaccia passa a moderata. Ciò determina se l'anomalia corrisponde a un profilo ransomware. Le minacce che rimangono a basso livello sono registrate e visibili nella sezione **Eventi** di System Manager. Quando la probabilità di attacco è moderata, ONTAP genera una notifica EMS che richiede di valutare la minaccia. ONTAP non invia avvisi relativi a minacce basse, tuttavia, a partire da ONTAP 9.14.1, è possibile xref:manage-parameters-task.html#modify-alerts[modificare le impostazioni degli avvisi]. Per ulteriori informazioni, vedere xref:respond-abnormal-task.html[Rispondere ad attività anomale].
 
 È possibile visualizzare informazioni su una minaccia, indipendentemente dal livello, nella sezione **Eventi** di System Manager o con `security anti-ransomware volume show` comando.
 
-Gli snapshot ARP vengono conservati per un minimo di due giorni. A partire da ONTAP 9.11.1, è possibile modificare le impostazioni di conservazione. Per ulteriori informazioni, vedere xref:modify-automatic-shapshot-options-task.html[Modificare le opzioni per le copie Snapshot].
+Le copie Snapshot ARP vengono conservate per un minimo di due giorni. A partire da ONTAP 9.11.1, è possibile modificare le impostazioni di conservazione. Per ulteriori informazioni, vedere xref:modify-automatic-shapshot-options-task.html[Modificare le opzioni per le copie Snapshot].
 
 
 
 == Come ripristinare i dati in ONTAP dopo un attacco ransomware
 
-Quando si sospetta un attacco, il sistema esegue una copia Snapshot del volume in quel momento e blocca tale copia. Se l'attacco viene confermato in un secondo momento, è possibile ripristinare il volume in questa Snapshot, riducendo al minimo la perdita di dati.
+Quando si sospetta un attacco, il sistema esegue una copia Snapshot del volume in quel momento e blocca tale copia. Se l'attacco viene confermato in seguito, il volume può essere ripristinato utilizzando la copia snapshot ARP.
 
 Le copie Snapshot bloccate non possono essere eliminate con mezzi normali. Tuttavia, se in seguito decidi di contrassegnare l'attacco come falso positivo, la copia bloccata verrà eliminata.
 
-Con la conoscenza dei file interessati e del tempo di attacco, è possibile ripristinare selettivamente i file interessati da varie copie Snapshot, invece di ripristinare semplicemente l'intero volume in una delle snapshot.
+Conoscendo i file interessati e il momento dell'attacco, è possibile recuperare in modo selettivo i file interessati da varie copie Snapshot, piuttosto che semplicemente riportare l'intero volume in una delle copie Snapshot.
 
 ARP si basa quindi sulla comprovata tecnologia di protezione dei dati e disaster recovery di ONTAP per rispondere agli attacchi ransomware. Per ulteriori informazioni sul ripristino dei dati, consultare i seguenti argomenti.
 
