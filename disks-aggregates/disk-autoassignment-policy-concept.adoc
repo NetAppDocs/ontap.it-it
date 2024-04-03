@@ -2,7 +2,7 @@
 permalink: disks-aggregates/disk-autoassignment-policy-concept.html 
 sidebar: sidebar 
 keywords: disk, auto-assign, spare, policy, automatic, assignment, disk ownership 
-summary: 'L"assegnazione automatica dei dischi non proprietari è attivata per impostazione predefinita. Le assegnazioni automatiche della proprietà dei dischi avvengono 10 minuti dopo l"inizializzazione del sistema e ogni cinque minuti durante il normale funzionamento del sistema.' 
+summary: 'L"assegnazione automatica dei dischi non proprietari è attivata per impostazione predefinita. L"assegnazione automatica della proprietà del disco avviene 10 minuti dopo l"inizializzazione della coppia ha e ogni cinque minuti durante il normale funzionamento del sistema.' 
 ---
 = Informazioni sull'assegnazione automatica della proprietà del disco
 :allow-uri-read: 
@@ -11,16 +11,16 @@ summary: 'L"assegnazione automatica dei dischi non proprietari è attivata per i
 
 
 [role="lead"]
-L'assegnazione automatica dei dischi non proprietari è attivata per impostazione predefinita. Le assegnazioni automatiche della proprietà dei dischi avvengono 10 minuti dopo l'inizializzazione del sistema e ogni cinque minuti durante il normale funzionamento del sistema.
+L'assegnazione automatica dei dischi non proprietari è attivata per impostazione predefinita. L'assegnazione automatica della proprietà del disco avviene 10 minuti dopo l'inizializzazione della coppia ha e ogni cinque minuti durante il normale funzionamento del sistema.
 
-Quando si aggiungono nuovi dischi a un sistema, ad esempio quando si sostituiscono dischi guasti, si risponde a un messaggio di riserva bassa o si aggiunge capacità, il criterio di assegnazione automatica predefinito assegna la proprietà del disco a un nodo come spare. È possibile disattivare l'assegnazione automatica o selezionare un criterio di assegnazione automatica diverso utilizzando `storage disk option modify` comando.
+Quando Aggiungi un nuovo disco a una coppia ha, ad esempio quando si sostituisce un disco guasto, si risponde a un messaggio di "low spare" o si aggiunge capacità, la policy predefinita di assegnazione automatica assegna la proprietà del disco a un nodo come spare.
 
-Il criterio di assegnazione automatica predefinito si basa su caratteristiche specifiche della piattaforma, ma utilizza uno dei seguenti metodi per assegnare la proprietà del disco:
+La policy di assegnazione automatica predefinita si basa su caratteristiche specifiche della piattaforma o sullo shelf DS460C, se la coppia ha dispone solo di questi shelf, e utilizza uno dei seguenti metodi (policy) per assegnare la proprietà dei dischi:
 
 |===
 
 
-| Metodo di assegnazione | Effetto sulle assegnazioni dei nodi | Piattaforme 
+| Metodo di assegnazione | Effetto sulle assegnazioni dei nodi | Configurazioni di piattaforma predefinite per il metodo di assegnazione 
 
 
  a| 
@@ -28,7 +28,7 @@ baia
  a| 
 Gli alloggiamenti con numero pari sono assegnati al nodo A e quelli con numero dispari al nodo B.
  a| 
-Sistemi entry-level in una configurazione ha con un singolo shelf condiviso.
+Sistemi entry-level in una configurazione ha Pair con un singolo shelf condiviso.
 
 
 
@@ -37,16 +37,18 @@ shelf
  a| 
 Tutti i dischi nello shelf sono assegnati al nodo A.
  a| 
-Sistemi entry-level in una configurazione ha con uno stack di due o più shelf e configurazioni MetroCluster con uno stack per nodo, due o più shelf.
+Sistemi entry-level in configurazione con coppia ha con uno stack di due o più shelf e configurazioni MetroCluster con uno stack per nodo, due o più shelf.
 
 
 
  a| 
 shelf separato
+
+Questa politica rientra nel valore "default" per il `-autoassign-policy` del parametro `storage disk option` comando per le configurazioni di piattaforma e shelf applicabili.
  a| 
-I dischi sul lato sinistro dello shelf sono assegnati al nodo A e sul lato destro al nodo B. Gli shelf parziali sui nuovi sistemi vengono spediti dalla fabbrica con i dischi popolati dal bordo dello shelf verso il centro.
+I dischi sul lato sinistro dello shelf sono assegnati al nodo A e sul lato destro al nodo B. Gli shelf parziali sulle coppie ha vengono spediti dalla fabbrica con dischi popolati dal bordo dello shelf verso il centro.
  a| 
-Sistemi AFF C190 e alcune configurazioni MetroCluster.
+La maggior parte delle piattaforme AFF e alcune configurazioni MetroCluster.
 
 
 
@@ -57,20 +59,61 @@ Tutti i dischi nello stack vengono assegnati al nodo A.
  a| 
 Sistemi entry-level autonomi e tutte le altre configurazioni.
 
+
+
+ a| 
+mezzo cassetto
+
+Questa politica rientra nel valore "default" per il `-autoassign-policy` del parametro `storage disk option` comando per le configurazioni di piattaforma e shelf applicabili.
+ a| 
+Tutti i dischi nella metà sinistra di un cassetto da DS460C GB (alloggiamenti per unità da 0 a 5) sono assegnati al nodo A; tutti i dischi nella metà destra di un cassetto (alloggiamenti per unità da 6 a 11) sono assegnati al nodo B.
+
+Quando si inizializza una coppia ha con solo DS460C shelf, l'assegnazione automatica della proprietà del disco non è supportata. È necessario assegnare manualmente la proprietà per le unità contenenti unità root/container che hanno la partizione root in base al criterio half-cassetti.
+ a| 
+Coppie HA con solo DS460C shelf, dopo l'inizializzazione della coppia ha (avvio).
+
+Dopo l'avvio di una coppia ha, l'assegnazione automatica della proprietà del disco viene attivata automaticamente e utilizza la policy a mezzo cassetto per assegnare la proprietà ai dischi rimanenti (ad eccezione dei dischi root/container che hanno la partizione root) e a eventuali dischi aggiunti in futuro.
+
+Se la coppia ha ha ha DS460C shelf oltre agli altri modelli, non verrà utilizzata la policy a mezzo cassetto. Il criterio predefinito utilizzato è dettato dalle caratteristiche specifiche della piattaforma.
+
 |===
-Se il metodo di assegnazione predefinito non è consigliabile nell'ambiente in uso, è possibile specificare il metodo di assegnazione dell'alloggiamento, dello shelf o dello stack utilizzando `-autoassign-policy` al `storage disk option modify` comando. Osservare le seguenti regole:
+Impostazioni e modifiche dell'assegnazione automatica:
 
-* Se si tenta di utilizzare `bay autoassign-policy` per una piattaforma non entry-level, si verificherà un errore.
-* Non esiste alcun criterio non predefinito corrispondente per specificare il metodo di shelf suddiviso.
+* È possibile visualizzare le impostazioni di assegnazione automatica correnti (on/off) con `storage disk option show` comando.
+* È possibile disattivare l'assegnazione automatica utilizzando `storage disk option modify` comando.
+* Se il criterio di assegnazione automatica predefinito non è consigliabile nell'ambiente in uso, è possibile specificare (modificare) il metodo di assegnazione alloggiamento, shelf o stack utilizzando `-autoassign-policy` nel `storage disk option modify` comando.
++
+Scopri come link:configure-auto-assignment-disk-ownership-task.html["Modificare le impostazioni per l'assegnazione automatica della proprietà del disco"].
+
++
+[NOTE]
+====
+I criteri di assegnazione automatica predefiniti a mezzo cassetto e a scaffale diviso sono univoci perché non possono essere impostati dagli utenti come i criteri di alloggiamento, scaffale e stack.
+
+====
 
 
-È inoltre possibile gestire manualmente l'assegnazione dei dischi utilizzando `storage disk assign` comando.
+Nei sistemi ADP (Advanced Drive Partitioning), per eseguire l'assegnazione automatica di shelf half-popled, i dischi devono essere installati negli alloggiamenti corretti in base al tipo di shelf di cui si dispone:
 
-* Se si disattiva l'assegnazione automatica, i nuovi dischi non saranno disponibili come unità di riserva fino a quando non saranno assegnati a un nodo con `storage disk assign` comando.
+* Se il tuo shelf non è uno shelf da DS460C, installa i dischi in maniera equilibrata sul lato sinistro e sul lato destro, spostandoti al centro. Ad esempio, sei dischi negli alloggiamenti 0-5 e sei dischi negli alloggiamenti 18-23 di uno shelf DS224C.
+* Se lo shelf è DS460C, installare i dischi della prima fila (alloggiamenti 0, 3, 6 e 9) di ciascun cassetto. Per le unità rimanenti, distribuirle uniformemente su ciascun cassetto riempiendo le file dei cassetti dalla parte anteriore a quella posteriore. Se non hai dischi sufficienti per riempire le file, installali in coppia in modo che i dischi occupino uniformemente il lato sinistro e destro di un cassetto.
++
+L'installazione dei comandi nella fila anteriore di ciascun cassetto consente il corretto flusso d'aria ed evita il surriscaldamento.
+
+
+
+[NOTE]
+====
+Se i dischi non sono installati negli alloggiamenti corretti sugli shelf popolati a metà, in caso di guasto e sostituzione del disco di un container, ONTAP non assegna automaticamente la proprietà. In questo caso, l'assegnazione della nuova unità contenitore deve essere eseguita manualmente. Dopo aver assegnato la proprietà ai dischi del container, ONTAP gestisce automaticamente tutte le assegnazioni necessarie per le partizioni e il partizionamento dei dischi.
+
+====
+In alcune situazioni in cui l'assegnazione automatica non funziona, è necessario assegnare manualmente la proprietà del disco tramite `storage disk assign` comando:
+
+* Se si disattiva l'assegnazione automatica, i nuovi dischi non sono disponibili come spare fino a quando non verranno assegnati manualmente a un nodo.
 * Se si desidera che i dischi vengano assegnati automaticamente e si dispone di più stack o shelf che devono avere proprietà diverse, un disco deve essere stato assegnato manualmente su ogni stack o shelf in modo che l'assegnazione automatica della proprietà funzioni su ogni stack o shelf.
 * Se l'assegnazione automatica è attivata e si assegna manualmente un singolo disco a un nodo non specificato nel criterio attivo, l'assegnazione automatica smette di funzionare e viene visualizzato un messaggio EMS.
 
 
-Scopri di più link:manual-assign-ownership-partitioned-disks-task.html["assegnazione manuale della proprietà del disco"].
+Scopri come link:manual-assign-disks-ownership-manage-task.html["Assegnare manualmente la proprietà dei dischi non partizionati"].
 
-È possibile visualizzare le impostazioni di assegnazione automatica correnti con `storage disk option show` comando.
+Scopri come link:manual-assign-ownership-partitioned-disks-task.html["Assegnare manualmente la proprietà dei dischi partizionati"].

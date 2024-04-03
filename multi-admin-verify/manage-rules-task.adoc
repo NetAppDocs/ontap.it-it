@@ -15,6 +15,8 @@ Si creano regole di verifica multi-amministratore (MAV) per designare le operazi
 
 Le regole possono essere create prima di abilitare MAV da qualsiasi amministratore con funzionalità RBAC appropriate, ma una volta attivata la MAV, qualsiasi modifica al set di regole richiede l'approvazione MAV.
 
+È possibile creare una sola regola MAV per operazione; ad esempio, non è possibile creare più regole `volume-snapshot-delete` regole. Tutti i vincoli di regola desiderati devono essere contenuti all'interno di una regola.
+
 
 
 == Comandi protetti da regole
@@ -75,9 +77,9 @@ Le regole possono essere create prima di abilitare MAV da qualsiasi amministrato
 
 È possibile creare regole per proteggere i seguenti comandi a partire da ONTAP 9.14.1:
 
-* `volume recovery-query modify`
-* `volume recovery-query purge`
-* `volume recovery-query purge-all`
+* `volume recovery-queue modify`
+* `volume recovery-queue purge`
+* `volume recovery-queue purge-all`
 * `vserver modify`
 
 
@@ -90,7 +92,13 @@ Oltre ai comandi definiti dal sistema, i seguenti comandi sono protetti per impo
 * `set`
 
 
-Quando si crea una regola, è possibile specificare il `-query` opzione per limitare la richiesta a un sottoinsieme della funzionalità del comando. Ad esempio, nel comando set predefinito, `-query` è impostato su `-privilege diag`, che significa che viene generata una richiesta per il comando set solo quando `-privilege diag` viene specificato.
+
+
+== Vincoli della regola
+
+Quando si crea una regola, è possibile specificare il `-query` opzione per limitare la richiesta a un sottoinsieme della funzionalità del comando. Il `-query` Può essere utilizzata anche per limitare gli elementi di configurazione, come SVM, volume e nomi delle Snapshot.
+
+Ad esempio, in `volume snapshot delete` comando, `-query` può essere impostato su `-snapshot !hourly*,!daily*,!weekly*`, Ovvero, le istantanee del volume con attributi orari, giornalieri o settimanali sono escluse dalle protezioni MAV.
 
 [listing]
 ----
@@ -98,9 +106,12 @@ smci-vsim20::> security multi-admin-verify rule show
                                                Required  Approval
 Vserver Operation                              Approvers Groups
 ------- -------------------------------------- --------- -------------
-vs01    set                                    -         -
-          Query: -privilege diagnostic
+vs01    volume snapshot delete                 -         -
+          Query: -snapshot !hourly*,!daily*,!weekly*
 ----
+
+NOTE: Tutti gli elementi di configurazione esclusi non sono protetti da MAV e qualsiasi amministratore può eliminarli o rinominarli.
+
 Per impostazione predefinita, le regole specificano un corrispondente `security multi-admin-verify request create _“protected_operation”_` il comando viene generato automaticamente quando si inserisce un'operazione protetta. È possibile modificare questa impostazione predefinita in modo che richieda `request create` il comando deve essere immesso separatamente.
 
 Per impostazione predefinita, le regole ereditano le seguenti impostazioni MAV globali, anche se è possibile specificare eccezioni specifiche della regola:

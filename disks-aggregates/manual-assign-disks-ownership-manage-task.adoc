@@ -2,23 +2,39 @@
 permalink: disks-aggregates/manual-assign-disks-ownership-manage-task.html 
 sidebar: sidebar 
 keywords: manual, assign, disk, ownership 
-summary: 'I dischi devono essere di proprietà di un nodo prima di poter essere utilizzati in un Tier locale (aggregato). Se il cluster non è configurato per utilizzare l"assegnazione automatica della proprietà del disco, è necessario assegnare la proprietà manualmente. Non è possibile riassegnare la proprietà di un disco in uso in un Tier locale.' 
+summary: 'Se la coppia ha non è configurata per l"utilizzo dell"assegnazione automatica della proprietà del disco, devi assegnare manualmente la proprietà. Se stai inizializzando una coppia ha con solo DS460C shelf, devi assegnare manualmente la proprietà dei dischi root.' 
 ---
-= Assegnare manualmente la proprietà del disco
+= Assegnare manualmente la proprietà dei dischi non partizionati
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-I dischi devono essere di proprietà di un nodo prima di poter essere utilizzati in un Tier locale (aggregato).
+Se la coppia ha non è configurata per l'utilizzo dell'assegnazione automatica della proprietà del disco, devi assegnare manualmente la proprietà. Se stai inizializzando una coppia ha con solo DS460C shelf, devi assegnare manualmente la proprietà dei dischi root.
 
-Se il cluster non è configurato per utilizzare l'assegnazione automatica della proprietà del disco, è necessario assegnare la proprietà manualmente.
+.A proposito di questa attività
+* Se stai assegnando manualmente la proprietà a una coppia ha che non viene inizializzata e che non ha solo DS460C shelf, utilizza l'opzione 1.
+* Se stai inizializzando una coppia ha con solo DS460C shelf, puoi utilizzare l'opzione 2 per assegnare manualmente la proprietà dei dischi root.
 
-Non è possibile riassegnare la proprietà di un disco in uso in un Tier locale.
+
+.Opzione 1: Maggior parte delle coppie ha
+[%collapsible]
+====
+Per una coppia ha non inizializzata e che non dispone solo di DS460C shelf, utilizza questa procedura per assegnare manualmente la proprietà.
+
+.A proposito di questa attività
+* I dischi per i quali si assegna la proprietà devono trovarsi in uno shelf collegato fisicamente al nodo a cui si assegna la proprietà.
+* Se si utilizzano dischi in un Tier locale (aggregato):
++
+** I dischi devono essere di proprietà di un nodo prima di poter essere utilizzati in un Tier locale (aggregato).
+** Non è possibile riassegnare la proprietà di un disco in uso in un Tier locale (aggregato).
+
+
+
 
 .Fasi
-. Utilizzando la CLI, visualizzare tutti i dischi non posseduti:
+. Utilizzare la CLI per visualizzare tutti i dischi non posseduti:
 +
 `storage disk show -container-type unassigned`
 
@@ -30,3 +46,58 @@ Non è possibile riassegnare la proprietà di un disco in uso in un Tier locale.
 È possibile utilizzare il carattere jolly per assegnare più di un disco alla volta. Se si sta riassegnando un disco spare già di proprietà di un nodo diverso, è necessario utilizzare l'opzione "`-force`".
 
 
+
+====
+.Opzione 2: Coppia ha con solo DS460C shelf
+[%collapsible]
+====
+Per una coppia ha in fase di inizializzazione e dotata di soli DS460C shelf, utilizza questa procedura per assegnare manualmente la proprietà dei dischi root.
+
+.A proposito di questa attività
+* Quando esegui l'inizializzazione di una coppia ha con soli DS460C shelf, devi assegnare manualmente i dischi root in modo che siano conformi alla policy a mezzo cassetto.
++
+Dopo l'inizializzazione (boot up) della coppia ha, l'assegnazione automatica della proprietà del disco viene attivata automaticamente e utilizza la policy a mezzo cassetto per assegnare la proprietà ai dischi rimanenti (diversi dai dischi root) e a tutti i dischi aggiunti in futuro, come ad esempio la sostituzione dei dischi guasti, in risposta a un messaggio di "low spare", o aggiungere capacità.
+
++
+Scoprite la politica di metà cassetto nell'argomento link:disk-autoassignment-policy-concept.html["Informazioni sull'assegnazione automatica della proprietà del disco"].
+
+* RAID richiede un minimo di 10 dischi per ciascuna coppia ha (5 per ogni nodo) per ogni più grande di 8TB dischi NL-SAS in uno shelf DS460C.
+
+
+.Fasi
+. Se gli shelf DS460C non sono completamente popolati, completare i seguenti passaggi secondari; in caso contrario, passare alla fase successiva.
++
+.. Innanzitutto, installare le unità nella fila anteriore (alloggiamenti 0, 3, 6 e 9) di ciascun cassetto.
++
+L'installazione dei comandi nella fila anteriore di ciascun cassetto consente il corretto flusso d'aria ed evita il surriscaldamento.
+
+.. Per i dischi rimanenti, distribuirli in modo uniforme in ciascun cassetto.
++
+Riempire le file dei cassetti dalla parte anteriore a quella posteriore. Se non hai dischi sufficienti per riempire le file, installali in coppia in modo che i dischi occupino uniformemente il lato sinistro e destro di un cassetto.
+
++
+L'illustrazione seguente mostra la numerazione degli alloggiamenti delle unità e le posizioni in un cassetto DS460C.
+
++
+image::../media/dwg_trafford_drawer_with_hdds_callouts.gif[cassetto dwg trafford con didascalie hdd]
+
+
+
+. Effettua l'accesso al cluster usando la LIF di gestione nodi o la LIF di gestione cluster.
+. Assegnare manualmente le unità principali in ciascun cassetto in modo che siano conformi al criterio del mezzo cassetto, attenendosi alla seguente procedura:
++
+Nel criterio A mezzo cassetto è stata assegnata la metà sinistra delle unità di un cassetto (alloggiamenti da 0 a 5) al nodo A e la metà destra delle unità di un cassetto (alloggiamenti da 6 a 11) al nodo B.
+
++
+.. Visualizza tutti i dischi non posseduti:
+`storage disk show -container-type unassigned``
+.. Assegnare i dischi principali:
+`storage disk assign -disk disk_name -owner owner_name`
++
+È possibile utilizzare il carattere jolly per assegnare più di un disco alla volta.
+
+
+
+
+
+====

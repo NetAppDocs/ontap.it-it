@@ -2,7 +2,7 @@
 permalink: disks-aggregates/manual-assign-ownership-partitioned-disks-task.html 
 sidebar: sidebar 
 keywords: manual, assign, disk, ownership, partition, disks 
-summary: 'È possibile impostare la proprietà del disco container o delle partizioni manualmente o utilizzando l"assegnazione automatica, proprio come avviene per i dischi non partizionati.' 
+summary: 'Puoi assegnare manualmente la proprietà del disco del container o delle partizioni sui sistemi ADP (Advanced Disk Partitioning). Se si sta inizializzando una coppia ha con solo DS460C shelf, è necessario assegnare manualmente la proprietà per i dischi dei container che includeranno le partizioni root.' 
 ---
 = Assegnare manualmente la proprietà dei dischi partizionati
 :allow-uri-read: 
@@ -11,21 +11,27 @@ summary: 'È possibile impostare la proprietà del disco container o delle parti
 
 
 [role="lead"]
-Utilizzando l'interfaccia CLI, è possibile impostare manualmente la proprietà del disco container o delle partizioni oppure utilizzando l'assegnazione automatica, come avviene per i dischi non partizionati.
+Puoi assegnare manualmente la proprietà del disco del container o delle partizioni sui sistemi ADP (Advanced Disk Partitioning). Se si sta inizializzando una coppia ha con solo DS460C shelf, è necessario assegnare manualmente la proprietà per i dischi dei container che includeranno le partizioni root.
 
-[NOTE]
-====
-Se un disco container si guasta in uno shelf a metà popolato e viene sostituito, ONTAP non assegnerà automaticamente la proprietà. In questo caso, qualsiasi assegnazione di nuovi dischi dovrà essere eseguita manualmente. Per eseguire l'assegnazione automatica su shelf a metà popolata, posizionare i dischi in modo uguale sulla metà inferiore e 6 sugli alloggiamenti più a destra. Vale a dire, 6 dischi dagli alloggiamenti 0-5 e 6 dischi dagli alloggiamenti 18-23. Una volta assegnato il disco container in un sistema configurato con ADP, il software ONTAP gestirà le assegnazioni di partizioni e partizioni richieste, senza l'intervento dell'utente.
+.A proposito di questa attività
+* Il tipo di sistema di storage stabilito determina il metodo di ADP supportato, root-data (RD) o root-data-data (RD2).
++
+I sistemi storage FAS utilizzano la RD e i sistemi storage AFF RD2.
 
-====
-Nella CLI è possibile eseguire le seguenti attività:
+* Se si assegna manualmente la proprietà in una coppia ha che non viene inizializzata e non ha solo DS460C shelf, utilizzare l'opzione 1 per assegnare manualmente i dischi con partizione root-data (RD) oppure utilizzare l'opzione 2 per assegnare manualmente i dischi con partizione root-data-data (RD2).
+* Se si sta inizializzando una coppia ha con solo DS460C shelf, utilizzare l'opzione 3 per assegnare manualmente la proprietà ai dischi dei container che hanno la partizione root.
 
-.Assegnare manualmente i dischi con partizione dei dati root
+
+.Opzione 1: Assegnazione manuale dei dischi con partizione root-data (RD)
 [%collapsible]
 ====
 Per la partizione dei dati root, esistono tre entità possedute (il disco container e le due partizioni) collettivamente di proprietà della coppia ha.
 
-Il disco container e le due partizioni non devono essere tutte di proprietà dello stesso nodo della coppia ha, purché siano tutte di proprietà di uno dei nodi della coppia ha. Tuttavia, quando si utilizza una partizione in un Tier locale (aggregato), questa deve essere di proprietà dello stesso nodo proprietario del Tier locale.
+.A proposito di questa attività
+* Il disco container e le due partizioni non devono essere tutte di proprietà dello stesso nodo della coppia ha, purché siano tutte di proprietà di uno dei nodi della coppia ha. Tuttavia, quando si utilizza una partizione in un Tier locale (aggregato), questa deve essere di proprietà dello stesso nodo proprietario del Tier locale.
+* Se un disco contenitore si guasta in uno shelf mezzo popolato e viene sostituito, potrebbe essere necessario assegnare manualmente la proprietà del disco perché in questo caso ONTAP non sempre assegna automaticamente la proprietà.
+* Una volta assegnato il disco del container, il software ONTAP gestisce automaticamente tutte le partizioni e le assegnazioni necessarie.
+
 
 .Fasi
 . Utilizzare la CLI per visualizzare la proprietà corrente del disco partizionato:
@@ -37,6 +43,9 @@ Il disco container e le due partizioni non devono essere tutte di proprietà del
 `set -privilege advanced`
 
 . Immettere il comando appropriato, a seconda dell'entità di proprietà per cui si desidera assegnare la proprietà:
++
+Se una delle entità di proprietà è già di proprietà, devi includere l'opzione "`-force`".
+
 +
 [cols="25,75"]
 |===
@@ -65,24 +74,23 @@ Partizione root
 `storage disk assign -disk _disk_name_ -owner _owner_name_ -root true`
 
 |===
-+
-Se una delle entità di proprietà è già di proprietà, devi includere l'opzione "`-force`".
-
 
 
 ====
-.Assegnare manualmente i dischi con partizione root-data-data
+.Opzione 2: Assegnazione manuale dei dischi con partizione root-data-data (RD2)
 [%collapsible]
 ====
-Per la partizione root-data-data, esistono quattro entità possedute (il disco container e le tre partizioni) collettivamente di proprietà della coppia ha.
-
-La partizione root-data-data crea una partizione piccola come partizione root e due partizioni più grandi e di pari dimensioni per i dati.
+Per la partizione root-data-data, esistono quattro entità possedute (il disco container e le tre partizioni) collettivamente di proprietà della coppia ha. La partizione root-data-data crea una partizione piccola come partizione root e due partizioni più grandi e di pari dimensioni per i dati.
 
 .A proposito di questa attività
-I parametri devono essere utilizzati con `disk assign` comando per assegnare la partizione corretta di un disco partizionato root-data-data. Non è possibile utilizzare questi parametri con dischi che fanno parte di un pool di storage. Il valore predefinito è "`false`".
+* I parametri devono essere utilizzati con `disk assign` comando per assegnare la partizione corretta di un disco partizionato root-data-data. Non è possibile utilizzare questi parametri con dischi che fanno parte di un pool di storage. Il valore predefinito è "`false`".
++
+** Il `-data1 true` il parametro assegna la partizione "`data1`" di un disco partizionato root-data1-data2.
+** Il `-data2 true` il parametro assegna la partizione "`data2`" di un disco partizionato root-data1-data2.
 
-* Il `-data1 true` il parametro assegna la partizione "`data1`" di un disco partizionato root-data1-data2.
-* Il `-data2 true` il parametro assegna la partizione "`data2`" di un disco partizionato root-data1-data2.
+
+* Se un disco contenitore si guasta in uno shelf mezzo popolato e viene sostituito, potrebbe essere necessario assegnare manualmente la proprietà del disco perché in questo caso ONTAP non sempre assegna automaticamente la proprietà.
+* Una volta assegnato il disco del container, il software ONTAP gestisce automaticamente tutte le partizioni e le assegnazioni necessarie.
 
 
 .Fasi
@@ -95,6 +103,9 @@ I parametri devono essere utilizzati con `disk assign` comando per assegnare la 
 `set -privilege advanced`
 
 . Immettere il comando appropriato, a seconda dell'entità di proprietà per cui si desidera assegnare la proprietà:
++
+Se una delle entità di proprietà è già di proprietà, devi includere l'opzione "`-force`".
+
 +
 [cols="25,75"]
 |===
@@ -132,6 +143,54 @@ Partizione root
 |===
 
 
-Se una delle entità di proprietà è già di proprietà, devi includere l'opzione "`-force`".
+====
+.Opzione 3: Assegnare manualmente DS460C unità contenitore che hanno la partizione root
+[%collapsible]
+====
+Se si sta inizializzando una coppia ha con solo DS460C shelf, occorre assegnare manualmente la proprietà per i dischi dei container che hanno la partizione root, conformemente al criterio half-cassetto.
+
+.A proposito di questa attività
+* Quando si inizializza una coppia ha con solo DS460C shelf, le opzioni 9a e 9b del menu di boot ADP (disponibile con ONTAP 9,2 e versioni successive) non supportano l'assegnazione automatica della proprietà dei dischi. È necessario assegnare manualmente le unità contenitore che hanno la partizione root in base al criterio half-cassetti.
++
+Dopo l'inizializzazione (avvio) della coppia ha, l'assegnazione automatica della proprietà del disco viene attivata automaticamente e utilizza la policy a mezzo cassetto per assegnare la proprietà ai dischi rimanenti (diversi dai dischi dei container che hanno la partizione root) e a eventuali dischi aggiunti in futuro, come ad esempio la sostituzione dei dischi guasti, risposta a un messaggio di "riserva insufficiente" o aggiunta di capacità.
+
+* Scoprite la politica di metà cassetto nell'argomento link:disk-autoassignment-policy-concept.html["Informazioni sull'assegnazione automatica della proprietà del disco"].
+
+
+.Fasi
+. Se gli shelf DS460C non sono completamente popolati, completare i seguenti passaggi secondari; in caso contrario, passare alla fase successiva.
++
+.. Innanzitutto, installare le unità nella fila anteriore (alloggiamenti 0, 3, 6 e 9) di ciascun cassetto.
++
+L'installazione dei comandi nella fila anteriore di ciascun cassetto consente il corretto flusso d'aria ed evita il surriscaldamento.
+
+.. Per i dischi rimanenti, distribuirli in modo uniforme in ciascun cassetto.
++
+Riempire le file dei cassetti dalla parte anteriore a quella posteriore. Se non hai dischi sufficienti per riempire le file, installali in coppia in modo che i dischi occupino uniformemente il lato sinistro e destro di un cassetto.
+
++
+L'illustrazione seguente mostra la numerazione degli alloggiamenti delle unità e le posizioni in un cassetto DS460C.
+
++
+image::../media/dwg_trafford_drawer_with_hdds_callouts.gif[cassetto dwg trafford con didascalie hdd]
+
+
+
+. Effettua l'accesso al cluster usando la LIF di gestione nodi o la LIF di gestione cluster.
+. Per ogni cassetto, assegnare manualmente le unità contenitore che hanno la partizione root in base al criterio Half-Drawer utilizzando i seguenti passaggi secondari:
++
+Nel criterio A mezzo cassetto è stata assegnata la metà sinistra delle unità di un cassetto (alloggiamenti da 0 a 5) al nodo A e la metà destra delle unità di un cassetto (alloggiamenti da 6 a 11) al nodo B.
+
++
+.. Visualizza tutti i dischi non posseduti:
+`storage disk show -container-type unassigned`
+.. Assegnare le unità contenitore che hanno la partizione root:
+`storage disk assign -disk disk_name -owner owner_name`
++
+È possibile utilizzare il carattere jolly per assegnare più unità alla volta.
+
+
+
+
 
 ====
