@@ -38,27 +38,28 @@ Vedere xref:configure_dynamic_dns_services.html[Configurare i servizi DNS dinami
 . Abilitare il DNS sulla SVM:
 +
 ....
-vserver services name-service dns create -vserver vserver_name -domains domain_name - name-servers ip_addresses -state enabled
+vserver services name-service dns create -vserver <vserver_name> -domains <domain_name> -name-servers <ip_addresses> -state enabled
 ....
 +
 Il seguente comando abilita i server DNS esterni su SVM vs1:
 
 +
 ....
-vserver services name-service dns create -vserver <vs1.example.com> -domains <example.com> -name-servers <192.0.2.201,192.0.2.202> -state <enabled>
+vserver services name-service dns create -vserver vs1.example.com -domains example.com -name-servers 192.0.2.201,192.0.2.202 -state enabled
 ....
 +
 
-NOTE: Il comando di creazione dns dei servizi vserver esegue una convalida automatica della configurazione e segnala un messaggio di errore se ONTAP non è in grado di contattare il server dei nomi.
+NOTE: Il `vserver services name-service dns create` Il comando esegue una convalida automatica della configurazione e segnala un messaggio di errore se ONTAP non riesce a contattare il server dei nomi.
 
 . Convalidare lo stato dei server dei nomi utilizzando `vserver services name-service dns check` comando.
 +
 ....
 vserver services name-service dns check -vserver vs1.example.com
-VserverName       Server     Status    Status Details
-----------------  ---------- -------   --------------------------
-vs1.example.com   10.0.0.50  up        Response time (msec): 2
-vs1.example.com   10.0.0.51  up        Response time (msec): 2
+                                    Name Server
+Vserver             Name Server     Status       Status Details
+-------------       --------------- ------------ --------------------------
+vs1.example.com     10.0.0.50       up           Response time (msec): 2
+vs1.example.com     10.0.0.51       up           Response time (msec): 2
 ....
 
 
@@ -77,18 +78,18 @@ Per consentire a ONTAP di consultare il servizio di nomi locale o esterno per re
 . Aggiungere le voci necessarie alla tabella dei name service switch:
 +
 ....
-vserver services name-service <ns-switch> create -vserver <vserver_name> -database <database_name> -source <source_names>
+vserver services name-service ns-switch modify -vserver <vserver_name> -database <database_name> -source <source_names>
 ....
 . Verificare che la tabella name service switch contenga le voci previste nell'ordine desiderato:
 +
 ....
-vserver services name-service <ns-switch> show -vserver <vserver_name>
+vserver services name-service ns-switch show -vserver <vserver_name>
 ....
 
 
 .Esempio
-Nell'esempio riportato di seguito viene creata una voce nella tabella name service switch per SVM vs1 in modo da utilizzare prima il file hosts locale e poi un server DNS esterno per risolvere i nomi host:
+Nell'esempio seguente viene modificata una voce nella tabella degli switch del servizio nomi per SVM VS1 in modo da utilizzare prima il file hosts locale e poi un server DNS esterno per risolvere i nomi host:
 
 ....
-vserver services name-service ns-switch create -vserver vs1 -database hosts -sources files dns
+vserver services name-service ns-switch modify -vserver vs1 -database hosts -sources files,dns
 ....
