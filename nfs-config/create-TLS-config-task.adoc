@@ -1,0 +1,155 @@
+---
+permalink: nfs-config/create-tls-config-task.html 
+sidebar: sidebar 
+keywords: enable, tls, data, lif 
+summary: 'È possibile utilizzare `vserver nfs tls interface enable` Comando per abilitare TLS in una data LIF per client NFS. In questo modo, le SVM possono utilizzare i servizi di sicurezza TLS per NFS.' 
+---
+= Attiva o disattiva TLS per i client NFS
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Puoi abilitare o disabilitare TLS in una data LIF per i client NFS. Quando si attiva NFS su TLS, la SVM utilizza TLS per crittografare tutti i dati inviati sulla rete tra il client NFS e ONTAP. Questo aumenta la sicurezza delle connessioni NFS.
+
+
+NOTE: NFS over TLS è disponibile in ONTAP 9.15.1 come anteprima pubblica. Come offerta di anteprima, NFS su TLS non è supportato per i carichi di lavoro di produzione in ONTAP 9.15.1.
+
+
+
+== Attiva TLS
+
+È possibile attivare la crittografia TLS per i client NFS per aumentare la sicurezza dei dati in transito.
+
+.Prima di iniziare
+* Fare riferimento a. link:tls-nfs-strong-security-concept.html["requisiti"^] Per NFS su TLS prima di iniziare.
+* Fare riferimento a. https://docs.netapp.com/us-en/ontap-cli-9151/vserver-nfs-tls-interface-enable.html["attivazione interfaccia vserver nfs tls"^] pagina manual per ulteriori informazioni sul comando di questa procedura.
+
+
+.Fasi
+. Scegli una macchina virtuale per lo storage e un'interfaccia logica (LIF) su cui abilitare TLS.
+. Abilitazione di TLS per le connessioni NFS su quella VM storage e sull'interfaccia. Sostituire i valori tra parentesi <> con le informazioni dell'ambiente:
++
+[source, console]
+----
+vserver nfs tls interface enable -vserver <STORAGE_VM> -lif <LIF_NAME> -certificate-name <CERTIFICATE_NAME>
+----
+. Utilizzare `vserver nfs tls interface show` per visualizzare i risultati:
++
+[source, console]
+----
+vserver nfs tls interface show
+----
+
+
+.Esempio
+Il seguente comando attiva NFS su TLS su `data1` LIF del `vs1` Macchina virtuale di storage:
+
+[source, console]
+----
+vserver nfs tls interface enable -vserver vs1 -lif data1 -certificate-name cert_vs1
+----
+[source, console]
+----
+vserver nfs tls interface show
+----
+....
+               Logical
+Vserver        Interface     Address         TLS Status TLS Certificate Name
+-------------- ------------- --------------- ---------- -----------------------
+vs1            data1         10.0.1.1        enabled    cert_vs1
+vs2            data2         10.0.1.2        disabled   -
+2 entries were displayed.
+....
+
+
+== Disattiva TLS
+
+Se non hai più bisogno di una maggiore sicurezza per i dati in transito, puoi disattivare TLS per i client NFS.
+
+
+NOTE: Quando si disattiva NFS su TLS, il certificato TLS utilizzato per la connessione NFS viene rimosso. Se in futuro sarà necessario attivare NFS su TLS, sarà necessario specificare nuovamente il nome di un certificato durante l'attivazione.
+
+.Prima di iniziare
+Fare riferimento a. https://docs.netapp.com/us-en/ontap-cli-9151/vserver-nfs-tls-interface-disable.html["interfaccia vserver nfs tls disattivata"^] pagina manual per ulteriori informazioni sul comando di questa procedura.
+
+.Fasi
+. Scegli una macchina virtuale per lo storage e un'interfaccia logica (LIF) su cui disattivare TLS.
+. Disattiva TLS per connessioni NFS su quella VM storage e sull'interfaccia. Sostituire i valori tra parentesi <> con le informazioni dell'ambiente:
++
+[source, console]
+----
+vserver nfs tls interface disable -vserver <STORAGE_VM> -lif <LIF_NAME>
+----
+. Utilizzare `vserver nfs tls interface show` per visualizzare i risultati:
++
+[source, console]
+----
+vserver nfs tls interface show
+----
+
+
+.Esempio
+Il seguente comando disattiva NFS su TLS su `data1` LIF del `vs1` Macchina virtuale di storage:
+
+[source, console]
+----
+vserver nfs tls interface disable -vserver vs1 -lif data1
+----
+[source, console]
+----
+vserver nfs tls interface show
+----
+....
+               Logical
+Vserver        Interface     Address         TLS Status TLS Certificate Name
+-------------- ------------- --------------- ---------- -----------------------
+vs1            data1         10.0.1.1        disabled   -
+vs2            data2         10.0.1.2        disabled   -
+2 entries were displayed.
+....
+
+
+== Modificare una configurazione TLS
+
+È possibile modificare le impostazioni di una configurazione NFS su TLS esistente. Ad esempio, è possibile utilizzare questa procedura per aggiornare il certificato TLS.
+
+.Prima di iniziare
+Fare riferimento a. https://docs.netapp.com/us-en/ontap-cli-9151/vserver-nfs-tls-interface-modify.html["vserver nfs tls interface modifica"^] pagina manual per ulteriori informazioni sul comando di questa procedura.
+
+.Fasi
+. Scegliere una macchina virtuale per lo storage e un'interfaccia logica (LIF) in cui modificare la configurazione TLS per i client NFS.
+. Modificare la configurazione. Se si specifica un `status` di `enable`, è necessario specificare anche `certificate-name` parametro. Sostituire i valori tra parentesi <> con le informazioni dell'ambiente:
++
+[source, console]
+----
+vserver nfs tls interface modify -vserver <STORAGE_VM> -lif <LIF_NAME> -status <STATUS> -certificate-name <CERTIFICATE_NAME>
+----
+. Utilizzare `vserver nfs tls interface show` per visualizzare i risultati:
++
+[source, console]
+----
+vserver nfs tls interface show
+----
+
+
+.Esempio
+Il seguente comando modifica la configurazione NFS su TLS su `data2` LIF del `vs2` Macchina virtuale di storage:
+
+[source, console]
+----
+vserver nfs tls interface modify -vserver vs2 -lif data2 -status enable -certificate-name new_cert
+----
+[source, console]
+----
+vserver nfs tls interface show
+----
+....
+               Logical
+Vserver        Interface     Address         TLS Status TLS Certificate Name
+-------------- ------------- --------------- ---------- -----------------------
+vs1            data1         10.0.1.1        disabled   -
+vs2            data2         10.0.1.2        enabled    new_cert
+2 entries were displayed.
+....

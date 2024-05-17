@@ -2,7 +2,7 @@
 permalink: volumes/determine-space-usage-volume-aggregate-concept.html 
 sidebar: sidebar 
 keywords: determine, space usage, volume, aggregate 
-summary: 'L"attivazione di una funzione in ONTAP potrebbe consumare spazio non noto o più spazio del previsto. ONTAP ti aiuta a determinare il consumo di spazio fornendo tre prospettive da cui visualizzare lo spazio: Il volume, l"impatto di un volume all"interno dell"aggregato e l"aggregato.' 
+summary: 'ONTAP consente di determinare il consumo di spazio in base al volume, al footprint di un volume all"interno dell"aggregato e all"aggregato.' 
 ---
 = Determinare l'utilizzo dello spazio in un volume o aggregato
 :allow-uri-read: 
@@ -11,7 +11,11 @@ summary: 'L"attivazione di una funzione in ONTAP potrebbe consumare spazio non n
 
 
 [role="lead"]
-L'abilitazione di una funzione in ONTAP potrebbe occupare più spazio del previsto. ONTAP ti aiuta a determinare il consumo di spazio fornendo tre prospettive da cui visualizzare lo spazio: Il volume, l'impatto di un volume all'interno dell'aggregato e l'aggregato.
+In alcuni casi, l'attivazione di una funzione in ONTAP potrebbe occupare più spazio del previsto. ONTAP ti aiuta a determinare il consumo di spazio fornendo tre prospettive da cui visualizzare lo spazio: Il volume, l'impatto di un volume all'interno dell'aggregato e l'aggregato.
+
+
+
+== Visualizzare l'allocazione dello spazio
 
 Un volume può esaurire lo spazio a causa del consumo di spazio o dello spazio insufficiente all'interno del volume, dell'aggregato o di una combinazione di entrambi. Visualizzando una suddivisione orientata alle funzioni dell'utilizzo dello spazio da diverse prospettive, è possibile valutare quali funzioni si desidera regolare o disattivare o se è necessario eseguire altre azioni (come l'aumento delle dimensioni dell'aggregato o del volume).
 
@@ -25,7 +29,7 @@ Questa prospettiva fornisce dettagli sull'utilizzo dello spazio all'interno del 
 Utilizzare `volume show-space` per visualizzare l'utilizzo dello spazio di un volume.
 
 +
-A partire da ONTAP 9.14.1, su volumi con xref:enable-temperature-sensitive-efficiency-concept.html[Efficienza dello storage sensibile alla temperatura (TSSE)] attivata, la quantità di spazio utilizzata sul volume riportato da `volume show-space -physical used` Il comando include i risparmi di spazio ottenuti come risultato di TSSE.
+A partire da ONTAP 9.14.1, sui volumi con xref:enable-temperature-sensitive-efficiency-concept.html[Efficienza dello storage sensibile alla temperatura (TSSE)] attivata, la quantità di spazio utilizzata sul volume riportato da `volume show-space -physical used` Il comando include i risparmi di spazio ottenuti come risultato di TSSE.
 
 * L'impatto del volume all'interno dell'aggregato
 +
@@ -36,13 +40,13 @@ Utilizzare `volume show-footprint` per visualizzare l'impatto di un volume con l
 
 * L'utilizzo dello spazio dell'aggregato
 +
-Questa prospettiva include i totali delle impronte dei volumi di tutti i volumi contenuti nell'aggregato, lo spazio riservato per le copie Snapshot aggregate e altri metadati aggregati.
+Questa prospettiva include i totali dell'impatto dei volumi di tutti i volumi contenuti nell'aggregato, lo spazio riservato alle copie Snapshot aggregate e altri metadati aggregati.
 
 +
 WAFL riserva il 10% dello spazio totale su disco per le performance e i metadati a livello aggregato. Lo spazio utilizzato per mantenere i volumi nell'aggregato esce dalla WAFL Reserve e non può essere modificato.
 
 +
-A partire dal ONTAP 9.12.1, la riserva WAFL per gli aggregati superiori a 30TB si riduce dal 10% al 5% per le piattaforme AFF e FAS500f.  A partire dal sistema ONTAP 9.14.1, questa stessa riduzione si applica agli aggregati su tutte le piattaforme FAS, producendo il 5% di spazio utilizzabile in più negli aggregati.
+A partire da ONTAP 9.12.1, la riserva WAFL per gli aggregati superiori a 30TB si riduce dal 10% al 5% per le piattaforme AFF e FAS500f.  A partire dal sistema ONTAP 9.14.1, questa stessa riduzione si applica agli aggregati su tutte le piattaforme FAS, producendo il 5% di spazio utilizzabile in più negli aggregati.
 
 +
 Utilizzare `storage aggregate show-space` per visualizzare l'utilizzo dello spazio dell'aggregato.
@@ -55,3 +59,27 @@ Alcune funzionalità, come il backup su nastro e la deduplica, utilizzano lo spa
 * link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Space_Usage["Articolo della Knowledge base: Utilizzo dello spazio"^]
 * link:https://www.netapp.com/blog/free-up-storage-capacity-upgrade-ontap/["Liberate fino al 5% della vostra capacità di storage eseguendo l'upgrade a ONTAP 9.12.1"^]
 
+
+
+
+== Reporting di metadati dei volumi e metriche dei dati
+
+Storicamente, diverse metriche di spazio di volume hanno riportato il totale dei dati consumati come una combinazione di due metriche: Metadati e dati utente. A partire da ONTAP 9.15.1, i metadati e le metriche dei dati utente vengono riportati separatamente. Sono stati introdotti due nuovi contatori di metadati per supportare questo:
+
+* metadati totali
++
+Questo contatore fornisce le dimensioni totali dei metadati all'interno del volume. Non include i metadati del volume residente aggregato. La creazione di rapporti separati consente di determinare i dati logici assegnati dall'utente.
+
+* impatto totale dei metadati
++
+Questo contatore rappresenta la somma dei metadati residenti nel volume e dei metadati del volume residente aggregato. Fornisce il footprint di metadati totale del volume all'interno dell'aggregato. La creazione di report separati aiuta a determinare i dati fisici assegnati dall'utente.
+
+
+
+Inoltre, diversi contatori esistenti sono stati aggiornati per rimuovere il componente dei metadati e presentare solo i dati utente:
+
+* Dati dell'utente
+* Impatto dei dati del volume
+
+
+Queste modifiche forniscono una visualizzazione più accurata dei dati consumati dall'utente. Questo presenta diversi vantaggi, tra cui la capacità di prendere decisioni di chargeback più precise.

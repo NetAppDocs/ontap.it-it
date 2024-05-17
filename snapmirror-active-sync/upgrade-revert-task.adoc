@@ -1,0 +1,116 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/upgrade-revert-task.html 
+keywords: upgrade, revert, snapmirror active sync, SMBC, SM-BC 
+summary: 'L"aggiornamento o il ripristino di ONTAP ha implicazioni sulla relazione di sincronizzazione attiva di SnapMirror, in particolare nel passaggio a ONTAP 9.9.1 o versione successiva o 9,7 e versioni precedenti.' 
+---
+= Aggiorna e ripristina ONTAP con la sincronizzazione attiva SnapMirror
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+La sincronizzazione attiva di SnapMirror è supportata a partire da ONTAP 9,9.1. L'aggiornamento e il ripristino del cluster ONTAP ha implicazioni per le relazioni di sincronizzazione attiva SnapMirror, a seconda della versione di ONTAP a cui si sta eseguendo l'aggiornamento o il ripristino.
+
+
+
+== Aggiornare ONTAP con la sincronizzazione attiva SnapMirror
+
+Per utilizzare la sincronizzazione attiva di SnapMirror, tutti i nodi dei cluster di origine e destinazione devono eseguire ONTAP 9.9.1 o versione successiva.
+
+Quando esegui l'aggiornamento di ONTAP con relazioni di sincronizzazione attive SnapMirror, utilizza xref:../upgrade/automated-upgrade-task.html[Upgrade automatici e senza interruzioni (ANDU)]. L'utilizzo di ANDU garantisce che le relazioni di sincronizzazione attive di SnapMirror siano sincronizzate e integre durante il processo di upgrade.
+
+Non ci sono passaggi di configurazione per preparare le implementazioni di SnapMirror Active Sync per gli aggiornamenti di ONTAP. Tuttavia, prima e dopo l'aggiornamento, si consiglia di verificare che:
+
+* Le relazioni di sincronizzazione attive di SnapMirror sono sincronizzate.
+* Nel registro eventi non sono presenti errori correlati a SnapMirror.
+* Il mediatore è online e sano da entrambi i cluster.
+* Tutti gli host sono in grado di visualizzare correttamente tutti i percorsi per proteggere le LUN.
+
+
+
+NOTE: Quando esegui l'upgrade dei cluster da ONTAP 9.9.1 o 9.9.1 a ONTAP 9.10.1 e versioni successive, ONTAP crea nuove funzionalità xref:../consistency-groups/index.html[gruppi di coerenza] Sui cluster di origine e destinazione per relazioni di sincronizzazione attiva SnapMirror, che possono essere configurate usando System Manager.
+
+
+NOTE: Il `snapmirror quiesce` e. `snampirror resume` I comandi non sono supportati con la sincronizzazione attiva di SnapMirror.
+
+
+
+== Ripristinare ONTAP 9.9.1 da ONTAP 9.10.1
+
+Per ripristinare le relazioni da 9.10.1 a 9,9.1, è necessario eliminare le relazioni di sincronizzazione attive di SnapMirror, seguite dall'istanza del gruppo di coerenza 9.10.1. Non è possibile eliminare i gruppi di coerenza con una relazione di sincronizzazione attiva SnapMirror. Tutti i volumi FlexVol che sono stati aggiornati alla versione 9.10.1 precedentemente associati a un altro smart container o a un'applicazione aziendale nel 9.9.1 o precedente non saranno più associati al revert. L'eliminazione dei gruppi di coerenza non elimina i volumi costituenti o le snapshot granulari del volume. Fare riferimento a. link:../consistency-groups/delete-task.html["Eliminare un gruppo di coerenza"] Per ulteriori informazioni su questa attività in ONTAP 9.10.1 e versioni successive.
+
+
+
+== Ripristina da ONTAP 9.9.1
+
+
+NOTE: La sincronizzazione attiva di SnapMirror non è supportata con cluster ONTAP misti ma include release precedenti a ONTAP 9,9.1.
+
+Quando si passa da ONTAP 9.9.1 a una versione precedente di ONTAP, è necessario tenere presente quanto segue:
+
+* Se il cluster ospita una destinazione di sincronizzazione attiva di SnapMirror, il ritorno a ONTAP 9,8 o versione precedente non è consentito fino a quando la relazione non viene interrotta ed eliminata.
+* Se il cluster ospita un'origine di sincronizzazione attiva SnapMirror, il ripristino a ONTAP 9,8 o versione precedente non è consentito fino al rilascio della relazione.
+* Tutti i criteri di sincronizzazione attiva SnapMirror personalizzati creati dall'utente devono essere eliminati prima di tornare a ONTAP 9,8 o versione precedente.
+
+
+Per soddisfare questi requisiti, vedere link:remove-configuration-task.html["Rimozione della configurazione di sincronizzazione attiva SnapMirror"].
+
+.Fasi
+. Conferma la tua prontezza all'annullamento, immettendo il seguente comando da uno dei cluster nella relazione di sincronizzazione attiva di SnapMirror:
++
+`cluster::> system node revert-to -version 9.7 -check-only`
+
++
+Nell'output di esempio riportato di seguito viene visualizzato un cluster non pronto per l'ripristino con istruzioni per la pulizia.
+
++
+[listing]
+----
+cluster::> system node revert-to -version 9.7 -check-only
+Error: command failed: The revert check phase failed. The following issues must be resolved before revert can be completed. Bring the data LIFs down on running vservers. Command to list the running vservers: vserver show -admin-state running Command to list the data LIFs that are up: network interface show -role data -status-admin up Command to bring all data LIFs down: network interface modify {-role data} -status-admin down
+Disable snapshot policies.
+    Command to list snapshot policies: "snapshot policy show".
+    Command to disable snapshot policies: "snapshot policy modify -vserver
+   * -enabled false"
+
+   Break off the initialized online data-protection (DP) volumes and delete
+   Uninitialized online data-protection (DP) volumes present on the local
+   node.
+    Command to list all online data-protection volumes on the local node:
+   volume show -type DP -state online -node <local-node-name>
+    Before breaking off the initialized online data-protection volumes,
+   quiesce and abort transfers on associated SnapMirror relationships and
+   wait for the Relationship Status to be Quiesced.
+    Command to quiesce a SnapMirror relationship: snapmirror quiesce
+    Command to abort transfers on a SnapMirror relationship: snapmirror
+   abort
+    Command to see if the Relationship Status of a SnapMirror relationship
+   is Quiesced: snapmirror show
+    Command to break off a data-protection volume: snapmirror break
+    Command to break off a data-protection volume which is the destination
+   of a SnapMirror relationship with a policy of type "vault": snapmirror
+   break -delete-snapshots
+    Uninitialized data-protection volumes are reported by the "snapmirror
+   break" command when applied on a DP volume.
+    Command to delete volume: volume delete
+
+   Delete current version snapshots in advanced privilege level.
+    Command to list snapshots: "snapshot show -fs-version 9.9.1"
+    Command to delete snapshots: "snapshot prepare-for-revert -node
+   <nodename>"
+
+   Delete all user-created policies of the type active-strict-sync-mirror
+   and active-sync-mirror.
+   The command to see all active-strict-sync-mirror and active-sync-mirror
+   type policies is:
+    snapmirror policy show -type
+   active-strict-sync-mirror,active-sync-mirror
+   The command to delete a policy is :
+    snapmirror policy delete -vserver <SVM-name> -policy <policy-name>
+----
+. Una volta soddisfatti i requisiti del controllo di indirizzamento, vedere link:../revert/index.html["Ripristina ONTAP"].
+

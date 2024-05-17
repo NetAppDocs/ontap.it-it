@@ -1,7 +1,7 @@
 ---
 sidebar: sidebar 
 permalink: task_nas_enable_linux_nfs.html 
-keywords: ontap, netapp, provision nas storage, linux, enable, nfs, modify storage VM, configure DNS, configure name server, configure Kerberos 
+keywords: ontap, netapp, provision nas storage, linux, enable, nfs, modify storage VM, configure DNS, configure name server, configure Kerberos, configure TLS, TLS, NMFS over TLS 
 summary: Modificare le VM di storage per abilitare i server NFS per la distribuzione dei dati ai client Linux. 
 ---
 = Abilitare lo storage NAS per i server Linux utilizzando NFS
@@ -18,21 +18,24 @@ summary: Modificare le VM di storage per abilitare i server NFS per la distribuz
 [role="lead"]
 Creare o modificare le VM di storage per abilitare i server NFS per la distribuzione dei dati ai client Linux.
 
-Questa procedura abilita una VM di storage nuova o esistente per il protocollo NFS. Si presuppone che i dettagli di configurazione siano disponibili per qualsiasi servizio di rete, autenticazione o sicurezza richiesto nel proprio ambiente.
+Abilitazione di una macchina virtuale di storage nuova o esistente per il protocollo NFS mediante questa procedura.
 
-image:workflow_nas_enable_linux_nfs.gif["Diagramma di flusso di lavoro per abilitare NAS per server Linux utilizzando NFS"]
+image:workflow_nas_enable_linux_nfs.png["Diagramma di flusso di lavoro per abilitare NAS per server Linux utilizzando NFS"]
+
+.Prima di iniziare
+Assicurarsi di aver preso nota dei dettagli di configurazione per tutti i servizi di rete, autenticazione o protezione richiesti nell'ambiente.
 
 .Fasi
 . Abilitare NFS su una VM di storage.
 +
-.. Per le nuove macchine virtuali storage: Fare clic su *Storage > Storage VMS*, fare clic su *Add* (Aggiungi), inserire il nome di una macchina virtuale storage e nella scheda *SMB/CIFS, NFS, S3*, selezionare *Enable NFS* (attiva NFS).
+** Per le nuove VM di storage: Fare clic su *Storage > Storage VM*, fare clic su *Add*, immettere un nome di VM di storage e nella scheda *SMB/CIFS, NFS, S3*, selezionare *Enable NFS*.
 +
-*** Confermare la lingua predefinita.
-*** Aggiungere interfacce di rete.
-*** Aggiornare le informazioni dell'account amministratore della VM di storage (opzionale).
+... Confermare la lingua predefinita.
+... Aggiungere interfacce di rete.
+... Aggiornare le informazioni dell'account amministratore della VM di storage (opzionale).
 
 
-.. Per le VM di storage esistenti: Fare clic su *Storage > Storage VM*, selezionare una VM di storage, fare clic su *Settings* (Impostazioni), quindi fare clic su image:icon_gear.gif["icona delle impostazioni"] Sotto *NFS*.
+** Per le VM di storage esistenti: Fare clic su *Storage > Storage VM*, selezionare una VM di storage, fare clic su *Settings* (Impostazioni), quindi fare clic su image:icon_gear.gif["icona delle impostazioni"] Sotto *NFS*.
 
 
 . Aprire il criterio di esportazione del volume root della VM di storage:
@@ -51,13 +54,43 @@ image:workflow_nas_enable_linux_nfs.gif["Diagramma di flusso di lavoro per abili
 . Configurare i name service secondo necessità.
 +
 .. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, fare clic su *Settings*, quindi fare clic su for image:icon_gear.gif["icona delle impostazioni"] LDAP o NIS.
-.. Includere eventuali modifiche nel file name Services switch: Fare clic su image:icon_pencil.gif["icona edit (modifica)"] Nel riquadro Name Services Switch.
+.. Fare clic su image:icon_pencil.gif["icona edit (modifica)"] Nel riquadro Name Services Switch per includere eventuali modifiche.
 
 
-. Configurare Kerberos se necessario:
+. Configurare la crittografia se necessario:
+
+
+[role="tabbed-block"]
+====
+.Configurare TLS per i client NFS
+--
+
+NOTE: NFS over TLS è disponibile in ONTAP 9.15.1 come anteprima pubblica. Come offerta di anteprima, NFS su TLS non è supportato per i carichi di lavoro di produzione in ONTAP 9.15.1.
+
+.Fasi
+. Fare riferimento a. link:nfs-admin/tls-nfs-strong-security-concept.html["requisiti"^] Per NFS su TLS prima di iniziare.
+. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, quindi fare clic su *Settings* (Impostazioni).
+. Nel riquadro *NFS*, fare clic su *NFS su impostazioni TLS*.
+. Nell'area *NFS over TLS settings*, selezionare un'interfaccia di rete NFS per la quale si desidera abilitare TLS.
+. Fare clic su image:icon_kabob.gif["Icona Opzioni"] per quella interfaccia.
+. Fare clic su *Enable* (attiva).
+. Nella finestra di dialogo *Configurazione TLS interfaccia di rete*, includere un certificato da utilizzare con TLS selezionando una delle seguenti opzioni:
 +
-.. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, quindi fare clic su *Settings* (Impostazioni).
-.. Fare clic su image:icon_arrow.gif["icona a forma di freccia"] Nel riquadro Kerberos, quindi fare clic su *Aggiungi*.
+** *Certificato installato*: Scegliere un certificato installato in precedenza dall'elenco a discesa.
+** *Nuovo certificato*: Scegliere un nome comune per il certificato.
+** *Certificato CA esterno*: Seguire le istruzioni per incollare il contenuto del certificato e della chiave privata nelle caselle.
 
 
+. Fare clic su *Save* (Salva).
 
+
+--
+.Configurare Kerberos
+--
+.Fasi
+. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, quindi fare clic su *Settings* (Impostazioni).
+. Fare clic su image:icon_arrow.gif["icona a forma di freccia"] Nel riquadro Kerberos, quindi fare clic su *Aggiungi*.
+
+
+--
+====

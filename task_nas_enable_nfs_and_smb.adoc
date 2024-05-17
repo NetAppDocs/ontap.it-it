@@ -18,29 +18,29 @@ summary: Modificare le VM di storage per consentire ai server NFS e SMB di forni
 [role="lead"]
 Creare o modificare le VM di storage per consentire ai server NFS e SMB di fornire dati ai client Linux e Windows.
 
-Questa procedura consente a una VM di storage nuova o esistente di servire protocolli NFS e SMB. Si presuppone che i dettagli di configurazione siano disponibili per qualsiasi servizio di rete, autenticazione o sicurezza richiesto nel proprio ambiente.
+Abilitare una macchina virtuale per lo storage nuova o esistente che supporti i protocolli NFS e SMB utilizzando questa procedura.
 
-image:workflow_nas_enable_nfs_and_smb.gif["Diagramma del flusso di lavoro per abilitare NAS per server Linux e Windows utilizzando NFS e SMB"]
+image:workflow_nas_enable_nfs_and_smb.png["Diagramma del flusso di lavoro per abilitare NAS per server Linux e Windows utilizzando NFS e SMB"]
+
+.Prima di iniziare
+Assicurarsi di aver preso nota dei dettagli di configurazione per tutti i servizi di rete, autenticazione o protezione richiesti nell'ambiente.
 
 .Fasi
 . Abilitare NFS e SMB su una VM di storage.
 +
 .. Per le nuove macchine virtuali storage: Fare clic su *Storage > Storage VMS*, fare clic su *Add* (Aggiungi), inserire il nome di una macchina virtuale storage e nella scheda *SMB/CIFS, NFS, S3*, selezionare *Enable SMB/CIFS* (attiva SMB/CIFS*) e *Enable NFS* (attiva NFS*).
+.. Inserire le seguenti informazioni:
 +
-*** Inserire le seguenti informazioni:
-+
-**** Nome e password dell'amministratore
-**** Nome del server
-**** Dominio Active Directory
+*** Nome e password dell'amministratore
+*** Nome del server
+*** Dominio Active Directory
 
 
-*** Confermare l'unità organizzativa.
-*** Confermare i valori DNS.
-*** Confermare la lingua predefinita.
-*** Aggiungere interfacce di rete.
-*** Aggiornare le informazioni dell'account amministratore della VM di storage (opzionale).
-
-
+.. Confermare l'unità organizzativa.
+.. Confermare i valori DNS.
+.. Confermare la lingua predefinita.
+.. Aggiungere interfacce di rete.
+.. Aggiornare le informazioni dell'account amministratore della VM di storage (opzionale).
 .. Per le VM di storage esistenti: Fare clic su *Storage > Storage VM*, selezionare una VM di storage, quindi fare clic su *Settings* (Impostazioni). Se NFS o SMB non sono già abilitati, completare i seguenti passaggi secondari.
 +
 *** Fare clic su image:icon_gear.gif["icona delle impostazioni"] Sotto *NFS*.
@@ -78,9 +78,44 @@ image:workflow_nas_enable_nfs_and_smb.gif["Diagramma del flusso di lavoro per ab
 .. Includere eventuali modifiche nel file name Services switch: Fare clic su image:icon_pencil.gif["icona edit (modifica)"] Sotto *Name Services Switch*.
 
 
-. Configurare Kerberos se necessario: Fare clic su image:icon_arrow.gif["icona a forma di freccia"] Nel riquadro Kerberos, quindi fare clic su *Aggiungi*.
+. Configurare l'autenticazione e la crittografia se richiesto:
++
+[role="tabbed-block"]
+====
+.Configurare TLS per i client NFS
+--
+
+NOTE: NFS over TLS è disponibile in ONTAP 9.15.1 come anteprima pubblica. Come offerta di anteprima, NFS su TLS non è supportato per i carichi di lavoro di produzione in ONTAP 9.15.1.
+
+.Fasi
+.. Fare riferimento a. link:nfs-admin/tls-nfs-strong-security-concept.html["requisiti"^] Per NFS su TLS prima di iniziare.
+.. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, quindi fare clic su *Settings* (Impostazioni).
+.. Nel riquadro *NFS*, fare clic su *NFS su impostazioni TLS*.
+.. Nell'area *NFS over TLS settings*, selezionare un'interfaccia di rete NFS per la quale si desidera abilitare TLS.
+.. Fare clic su image:icon_kabob.gif["Icona Opzioni"] per quella interfaccia.
+.. Fare clic su *Enable* (attiva).
+.. Nella finestra di dialogo *Configurazione TLS interfaccia di rete*, includere un certificato da utilizzare con TLS selezionando una delle seguenti opzioni:
++
+*** *Certificato installato*: Scegliere un certificato installato in precedenza dall'elenco a discesa.
+*** *Nuovo certificato*: Scegliere un nome comune per il certificato.
+*** *Certificato CA esterno*: Seguire le istruzioni per incollare il contenuto del certificato e della chiave privata nelle caselle.
+
+
+.. Fare clic su *Save* (Salva).
+
+
+--
+.Configurare Kerberos
+--
+.Fasi
+.. Fare clic su *Storage > Storage VM*, selezionare la VM di storage, quindi fare clic su *Settings* (Impostazioni).
+.. Fare clic su image:icon_arrow.gif["icona a forma di freccia"] Nel riquadro Kerberos, quindi fare clic su *Aggiungi*.
+
+
+--
+====
 . Se necessario, mappare i nomi utente UNIX e Windows: Fare clic su image:icon_arrow.gif["icona a forma di freccia"] In *mappatura nome* e fare clic su *Aggiungi*.
 +
-Utilizzare questa procedura solo se il sito dispone di account utente Windows e UNIX che non vengono mappati implicitamente, ovvero quando la versione minuscola di ciascun nome utente Windows corrisponde al nome utente UNIX. Questa procedura può essere eseguita utilizzando LDAP, NIS o utenti locali. Se si dispone di due set di utenti che non corrispondono, è necessario configurare la mappatura dei nomi.
+È necessario eseguire questa operazione solo se il sito dispone di account utente Windows e UNIX che non vengono mappati implicitamente, ovvero quando la versione minuscola di ciascun nome utente Windows corrisponde al nome utente UNIX. È possibile mappare i nomi utente utilizzando LDAP, NIS o utenti locali. Se si dispone di due set di utenti che non corrispondono, è necessario configurare la mappatura dei nomi.
 
 

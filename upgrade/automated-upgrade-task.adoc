@@ -31,11 +31,36 @@ Se si sta eseguendo un link:https://docs.netapp.com/us-en/ontap/upgrade/concept_
 
 * Per ogni coppia ha, ogni nodo deve avere una o più porte sullo stesso dominio di trasmissione.
 +
-Se si dispone di 8 o più nodi, il metodo di aggiornamento in batch viene utilizzato nell'aggiornamento automatico senza interruzioni.  In ONTAP 9.7 e versioni precedenti, se viene utilizzato il metodo batch, i file LIF vengono migrati al partner ha del nodo da aggiornare.  Se i partner non hanno porte nello stesso dominio di broadcast, la migrazione LIF non riesce.
+Se il cluster ONTAP ha 8 o più nodi, viene utilizzato il metodo batch upgrade nell'upgrade automatico e senza interruzioni per forzare in modo preventivo la migrazione LIF dei dati prima del takeover SFO.  Le modalità di migrazione delle LIF durante un batch upgrade variano a seconda della tua versione di ONTAP.
 
 +
-In ONTAP 9.8 e versioni successive, se viene utilizzato il metodo batch, i file LIF vengono migrati nell'altro gruppo batch.
+[cols="2"]
+|===
+| Se si utilizza ONTAP... | Migrazione delle LIF... 
 
+
+ a| 
+** 9.15.1 o versione successiva
+** 9.14.1P5
+** 9.13.1P10
+** 9.12.1P13
+** 9.11.1P16, P17
+** 9.10.1P19
+
+| A un nodo nell'altro gruppo batch.
+
+Se la migrazione all'altro gruppo batch ha esito negativo, le LIF vengono migrate nel partner di ha del nodo nello stesso gruppo batch. 
+
+
+| da 9,8 a 9.14.1 | A un nodo nell'altro gruppo batch.
+
+Se il dominio di broadcast di rete non consente la migrazione LIF all'altro gruppo di batch, la migrazione LIF non riesce e SI mette in pausa. 
+
+
+| 9.7 o versioni precedenti | Al partner di ha del nodo da aggiornare.
+
+Se il partner non ha porte nello stesso dominio di broadcast, la migrazione LIF non riesce e viene messa in pausa. 
+|===
 * Se stai eseguendo l'upgrade di ONTAP in una configurazione FC di MetroCluster, il cluster dovrebbe essere abilitato per uno switchover automatico e non pianificato.
 * Se non si prevede di monitorare l'avanzamento del processo di aggiornamento, è necessario link:../error-messages/configure-ems-notifications-sm-task.html["Richiedere notifiche EMS di errori che potrebbero richiedere un intervento manuale"].
 * Se disponi di un cluster a nodo singolo, segui la link:../system-admin/single-node-clusters.html["upgrade con interruzioni automatiche"] processo.

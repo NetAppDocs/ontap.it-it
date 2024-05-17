@@ -1,34 +1,53 @@
 ---
 permalink: nas-audit/create-persistent-stores.html 
 sidebar: sidebar 
-keywords: create, persistent store, fpolicy 
-summary: 'A partire da ONTAP 9.14.1, FPolicy consente di configurare un archivio persistente per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l"elaborazione i/o dei client dall"elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone e asincrone non sono supportate.' 
+keywords: create, persistent store, fpolicy, asynchronous, non, mandatory 
+summary: A partire da ONTAP 9.14.1, FPolicy consente di impostare un archivio persistente per acquisire gli eventi di accesso ai file per i criteri asincroni non obbligatori. 
 ---
-= Creare archivi persistenti
+= Creare archivi persistenti di FPolicy
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-A partire da ONTAP 9.14.1, FPolicy consente di impostare un link:persistent-stores.html["Archivi persistenti"] Per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l'elaborazione i/o dei client dall'elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone (obbligatorie o non obbligatorie) e asincrone non sono supportate.
+Gli archivi persistenti possono aiutare a separare l'elaborazione i/o dei client dall'elaborazione delle notifiche FPolicy per ridurre la latenza dei client. A partire da ONTAP 9.14.1, FPolicy consente di configurare link:persistent-stores.html["archivi persistenti"] Per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Le configurazioni obbligatorie sincrone (obbligatorie o non obbligatorie) e asincrone non sono supportate.
 
-.Best practice
-* Prima di utilizzare la funzionalità di archivio permanente, assicurati che le tue applicazioni partner supportino questa configurazione.
-* Il volume dello storage persistente viene configurato in base alle singole SVM. Per ogni SVM abilitata per FPolicy avrai bisogno di un volume archivio persistente.
-* Il nome del volume di archiviazione persistente e il percorso di giunzione specificati al momento della creazione del volume dovrebbero corrispondere.
-* Crea il volume di archivio persistente sul nodo con LIF che prevedono il monitoraggio del traffico massimo da parte di Fpolicy.
-* Impostare il criterio snapshot su `none` per quel volume invece di `default`. In questo modo si garantisce che non vi sia alcun ripristino accidentale dello snapshot che causa la perdita degli eventi correnti e per impedire un'eventuale elaborazione di eventi duplicati.
-* Rendere il volume dell'archivio persistente inaccessibile per l'accesso al protocollo utente esterno (CIFS/NFS) per evitare il danneggiamento accidentale o l'eliminazione dei record di eventi persistenti. Per ottenere questo risultato, dopo aver attivato FPolicy, smontare il volume in ONTAP per rimuovere il percorso di giunzione; ciò lo rende inaccessibile per l'accesso al protocollo utente.
+A partire da ONTAP 9.15.1, la configurazione dell'archivio persistente di FPolicy è semplificata. Il `persistent-store create` Questo comando automatizza la creazione del volume per la SVM e configura il volume per l'archivio persistente.
+
+Esistono due modi per creare un archivio permanente, a seconda della versione di ONTAP:
+
+* ONTAP 9.15.1 o versione successiva: Quando si crea l'archivio persistente, ONTAP crea e configura automaticamente il proprio volume allo stesso tempo. Ciò semplifica la configurazione persistente dell'archivio FPolicy e implementa tutte le Best practice.
+* ONTAP 9.14.1: Crea e configura manualmente un volume, quindi crea un archivio persistente per il volume appena creato.
+
+
+È possibile configurare un solo archivio persistente per ciascuna SVM. Questo singolo archivio persistente deve essere utilizzato per tutte le configurazioni FPolicy su tale SVM, anche se le policy provengono da partner diversi.
+
+
+
+== Creare un archivio permanente (ONTAP 9.15.1 o versione successiva)
+
+A partire da ONTAP 9.15.1, utilizzare `fpolicy persistent-store create` Comando per creare l'archivio persistente FPolicy con creazione e configurazione del volume inline. ONTAP blocca automaticamente il volume dall'accesso al protocollo utente esterno (CIFS/NFS).
+
+.Prima di iniziare
+* La SVM in cui creare l'archivio persistente deve avere almeno un aggregato.
+* Devi disporre dell'accesso agli aggregati disponibili per la SVM e di permessi sufficienti per creare i volumi.
 
 
 .Fasi
-. Creare un volume vuoto sulla SVM che può essere sottoposto a provisioning per l'archivio persistente:
+. Creare l'archivio persistente, che crea e configura automaticamente il volume:
 +
-`volume create -vserver <SVM Name> -volume <volume> -state <online> -junction-path <path> -policy <default> -unix-permissions <777> -size <value> -aggregate <aggregate name> -snapshot-policy <none>`
+`vserver fpolicy persistent-store create -vserver <vserver> -persistent-store <name> -volume <volume_name> -size <size> -autosize-mode <off|grow|grow_shrink>`
 
 +
-** Le dimensioni del volume dell'archivio persistente si basano sul periodo di tempo per il quale si desidera mantenere gli eventi non inviati al server esterno (applicazione partner).
+** Il `vserver` Parameter è il nome della SVM.
+** Il `persistent-store` parametro è il nome dell'archivio permanente.
+** Il `volume` parametro è il nome del volume di memorizzazione persistente.
++
+
+NOTE: Se si desidera utilizzare un volume vuoto esistente, utilizzare `volume show` per individuarlo e specificarlo nel parametro volume.
+
+** Il `size` il parametro si basa sul tempo per il quale si desidera mantenere gli eventi che non vengono consegnati al server esterno (applicazione partner).
 +
 Ad esempio, se si desidera che 30 minuti di eventi persistano in un cluster con una capacità di 30K notifiche al secondo:
 
@@ -38,7 +57,57 @@ Dimensioni del volume richiesto = 30000 x 30 x 60 x 0,6KB (dimensioni medie del 
 +
 Per trovare la percentuale approssimativa di notifica, è possibile contattare l'applicazione partner FPolicy o utilizzare il contatore FPolicy `requests_dispatched_rate`.
 
-** Si prevede che un utente amministratore con privilegi RBAC sufficienti (per creare un volume) creerà un volume (utilizzando il comando cli di volume o l'API REST) della dimensione desiderata e fornirà il nome di quel volume come `-volume` Nell'archivio persistente creare un comando CLI o API REST.
++
+
+NOTE: Se si utilizza un volume esistente, il parametro size è opzionale. Se si fornisce un valore per il parametro size, il volume verrà modificato con la dimensione specificata.
+
+** Il `autosize-mode` parametro specifica la modalità di dimensionamento automatico del volume. Le modalità di dimensionamento automatico supportate sono:
++
+*** Disattivato - il volume non aumenta o riduce le dimensioni in risposta alla quantità di spazio utilizzato.
+*** Aumenta - il volume cresce automaticamente quando lo spazio utilizzato nel volume è al di sopra della soglia di crescita.
+*** Grow_shrink - il volume cresce o si riduce in risposta alla quantità di spazio utilizzato.
+
+
+
+
+. Creare il criterio FPolicy e aggiungere il nome archivio permanente a tale criterio. Per ulteriori informazioni, vedere link:create-fpolicy-policy-task.html["Creare il criterio FPolicy"].
+
+
+
+
+== Creare un archivio persistente (ONTAP 9.14.1)
+
+Puoi creare un volume e quindi un archivio persistente per utilizzarlo. È possibile quindi bloccare il volume appena creato dall'accesso al protocollo utente esterno (CIFS/NFS).
+
+.Fasi
+. Creare un volume vuoto sulla SVM che può essere sottoposto a provisioning per l'archivio persistente:
++
+`volume create -vserver <SVM Name> -volume <volume> -state <online> -policy <default> -unix-permissions <777> -size <value> -aggregate <aggregate name> -snapshot-policy <none>`
+
++
+Ci si aspetta che un utente amministratore con privilegi RBAC sufficienti (per creare un volume) crei un volume (utilizzando il comando cli di volume o l'API REST) della dimensione desiderata e fornisca il nome di quel volume come `-volume` Nell'archivio persistente creare un comando CLI o API REST.
+
++
+** Il `vserver` Parameter è il nome della SVM.
+** Il `volume` parametro è il nome del volume di memorizzazione persistente.
+** Il `state` il parametro deve essere impostato su online in modo che il volume sia disponibile per l'uso.
+** Il `policy` Il parametro è impostato sulla politica di servizio FPolicy, se ne è già configurata una. In caso contrario, è possibile utilizzare `volume modify` in seguito, per aggiungere il criterio.
+** Il `unix-permissions` il parametro è facoltativo.
+** Il `size` il parametro si basa sul tempo per il quale si desidera mantenere gli eventi che non vengono consegnati al server esterno (applicazione partner).
++
+Ad esempio, se si desidera che 30 minuti di eventi persistano in un cluster con una capacità di 30K notifiche al secondo:
+
++
+Dimensioni del volume richiesto = 30000 x 30 x 60 x 0,6KB (dimensioni medie del record di notifica) = 32400000 KB = ~32 GB
+
++
+Per trovare la percentuale approssimativa di notifica, è possibile contattare l'applicazione partner FPolicy o utilizzare il contatore FPolicy `requests_dispatched_rate`.
+
+** Il parametro aggregate è necessario per i volumi FlexVol, in caso contrario non è necessario.
+** Il `snapshot-policy` il parametro deve essere impostato su nessuno. Ciò garantisce che non vi sia alcun ripristino accidentale dello snapshot che causa la perdita degli eventi correnti e impedisce l'elaborazione di eventuali duplicati degli eventi.
++
+Se si desidera utilizzare un volume vuoto esistente, utilizzare `volume show` per trovarlo e l' `volume modify` per apportare le modifiche necessarie. Verificare il criterio, le dimensioni e la `snapshot-policy` i parametri sono impostati correttamente per l'archivio permanente.
+
 
 
 . Creare l'archivio persistente:
@@ -46,10 +115,10 @@ Per trovare la percentuale approssimativa di notifica, è possibile contattare l
 `vserver fpolicy persistent store create -vserver <SVM> -persistent-store <PS_name> -volume <volume>`
 
 +
-** Persistent-store: Il nome dell'archivio persistente
-** Volume: Il volume della memoria persistente
+** Il `vserver` Parameter è il nome della SVM.
+** Il `persistent-store` parametro è il nome dell'archivio permanente.
+** Il `volume` parametro è il nome del volume di memorizzazione persistente.
 
 
-. Dopo aver creato l'archivio persistente, è possibile creare il criterio FPolicy e aggiungere il nome dell'archivio persistente a tale criterio.
-Per ulteriori informazioni, vedere link:https://docs.netapp.com/us-en/ontap/nas-audit/create-fpolicy-policy-task.html["Creare il criterio FPolicy"].
+. Creare il criterio FPolicy e aggiungere il nome archivio permanente a tale criterio. Per ulteriori informazioni, vedere link:create-fpolicy-policy-task.html["Creare il criterio FPolicy"].
 

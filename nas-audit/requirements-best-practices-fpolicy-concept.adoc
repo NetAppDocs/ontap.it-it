@@ -2,7 +2,7 @@
 permalink: nas-audit/requirements-best-practices-fpolicy-concept.html 
 sidebar: sidebar 
 keywords: requirements, considerations, best practices, configure, fpolicy 
-summary: 'Prima di creare e configurare le configurazioni FPolicy sulle macchine virtuali dello storage (SVM), è necessario essere a conoscenza di determinati requisiti, considerazioni e Best practice per la configurazione di FPolicy.' 
+summary: Prima di creare e configurare le configurazioni FPolicy sulle SVM, occorre essere consapevoli di determinati requisiti, considerazioni e Best practice. 
 ---
 = Requisiti, considerazioni e Best practice per la configurazione di FPolicy
 :allow-uri-read: 
@@ -11,7 +11,7 @@ summary: 'Prima di creare e configurare le configurazioni FPolicy sulle macchine
 
 
 [role="lead"]
-Prima di creare e configurare le configurazioni FPolicy sulle SVM, è necessario conoscere alcuni requisiti, considerazioni e Best practice per la configurazione di FPolicy.
+Prima di creare e configurare le configurazioni FPolicy sulle macchine virtuali dello storage (SVM), è necessario essere a conoscenza di determinati requisiti, considerazioni e Best practice per la configurazione di FPolicy.
 
 Le funzionalità di FPolicy sono configurate tramite l'interfaccia a riga di comando (CLI) o tramite API REST.
 
@@ -43,7 +43,6 @@ Sono inclusi i LIF utilizzati per le connessioni pass-through-Read.
 
 
 
-* A partire da ONTAP 9.14.1, FPolicy consente di configurare un archivio persistente per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l'elaborazione i/o dei client dall'elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone (obbligatorie o non obbligatorie) e asincrone non sono supportate.
 
 
 
@@ -53,6 +52,64 @@ Sono inclusi i LIF utilizzati per le connessioni pass-through-Read.
 Durante la configurazione di FPolicy su macchine virtuali di storage (SVM), acquisire familiarità con le Best practice e i consigli generali per la configurazione di FPolicy per garantire performance di monitoraggio e risultati affidabili che soddisfino i requisiti.
 
 Per le linee guida specifiche relative a performance, dimensionamento e configurazione, utilizzare l'applicazione partner FPolicy.
+
+
+
+=== Archivi persistenti
+
+A partire da ONTAP 9.14.1, FPolicy consente di configurare un archivio persistente per acquisire eventi di accesso ai file per policy asincrone non obbligatorie nella SVM. Gli archivi persistenti possono aiutare a separare l'elaborazione i/o dei client dall'elaborazione delle notifiche FPolicy per ridurre la latenza dei client. Le configurazioni obbligatorie sincrone (obbligatorie o non obbligatorie) e asincrone non sono supportate.
+
+* Prima di utilizzare la funzionalità di archiviazione persistente, assicurarsi che le applicazioni partner supportino questa configurazione.
+* Ti serve un archivio persistente per ogni SVM in cui è abilitato FPolicy.
++
+** È possibile configurare un solo archivio persistente per ciascuna SVM. Questo singolo archivio persistente deve essere utilizzato per tutte le configurazioni FPolicy su tale SVM, anche se le policy provengono da partner diversi.
+
+
+* ONTAP 9.15.1 o versione successiva:
++
+** L'archivio persistente, il relativo volume e la relativa configurazione del volume vengono gestiti automaticamente quando si crea l'archivio persistente.
+
+
+* ONTAP 9.14.1:
++
+** L'archivio persistente, il relativo volume e la relativa configurazione del volume vengono gestiti manualmente.
+
+
+* Crea il volume di archivio persistente sul nodo con LIF che prevedono il monitoraggio del traffico massimo da parte di FPolicy.
++
+** ONTAP 9.15.1 o versioni successive: I volumi vengono creati e configurati automaticamente durante la creazione dell'archivio persistente.
+** ONTAP 9.14.1: Gli amministratori del cluster devono creare e configurare un volume per l'archivio persistente su ogni SVM dove è abilitato FPolicy.
+
+
+* Se le notifiche accumulate nell'archivio permanente superano le dimensioni del volume fornito, FPolicy inizia a interrompere la notifica in arrivo con i messaggi EMS appropriati.
++
+** ONTAP 9.15.1 o versione successiva: In aggiunta al `size` , il `autosize-mode` parametro può aiutare il volume ad aumentare o ridurre in risposta alla quantità di spazio utilizzato.
+** ONTAP 9.14.1: Il `size` il parametro è configurato durante la creazione del volume per fornire un limite massimo.
+
+
+* Impostare il criterio snapshot su `none` per il volume dell'archivio persistente invece di `default`. In questo modo si garantisce che non vi sia alcun ripristino accidentale dello snapshot che causa la perdita degli eventi correnti e per impedire un'eventuale elaborazione di eventi duplicati.
++
+** ONTAP 9.15.1 o versione successiva: Il `snapshot-policy` il parametro viene configurato automaticamente su nessuno durante la creazione dell'archivio permanente.
+** ONTAP 9.14.1: Il `snapshot-policy` il parametro è configurato su `none` durante la creazione del volume.
+
+
+* Rendere il volume dell'archivio persistente inaccessibile per l'accesso al protocollo utente esterno (CIFS/NFS) per evitare il danneggiamento accidentale o l'eliminazione dei record di eventi persistenti.
++
+** ONTAP 9.15.1 o versioni successive: ONTAP blocca automaticamente il volume dall'accesso al protocollo utente esterno (CIFS/NFS) durante la creazione dell'archivio persistente.
+** ONTAP 9.14.1: Dopo aver attivato FPolicy, smontare il volume in ONTAP per rimuovere il percorso di giunzione. Questo lo rende inaccessibile per l'accesso ai protocolli utente esterni (CIFS/NFS).
+
+
+
+
+Per ulteriori informazioni, fare riferimento a. link:persistent-stores.html["Archivi persistenti di FPolicy"] e. link:create-persistent-stores.html["Creare archivi persistenti"].
+
+
+
+==== Failover e sconto del negozio persistente
+
+L'archivio persistente rimane invariato quando è stato ricevuto l'ultimo evento, quando si verifica un riavvio imprevisto o FPolicy viene disattivato e riattivato. Dopo un'operazione di takeover, i nuovi eventi vengono memorizzati ed elaborati dal nodo partner. Dopo un'operazione di giveback, l'archivio persistente riprende l'elaborazione degli eventi non elaborati che potrebbero rimanere dal momento in cui si è verificato il takeover del nodo. Gli eventi live avrebbero la priorità rispetto agli eventi non elaborati.
+
+Se il volume dell'archivio persistente si sposta da un nodo a un altro nella stessa SVM, le notifiche che non devono ancora essere elaborate vengono spostate anche nel nuovo nodo. È necessario eseguire nuovamente `fpolicy persistent-store create` su uno dei nodi dopo lo spostamento del volume, per garantire che le notifiche in sospeso vengano inviate al server esterno.
 
 
 

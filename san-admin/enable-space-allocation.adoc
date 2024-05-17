@@ -1,0 +1,68 @@
+---
+permalink: san-admin/enable-space-allocation.html 
+sidebar: sidebar 
+keywords: enable, space allocation, space reclamation, unmap 
+summary: 'Se si imposta l"opzione di allocazione dello spazio su abilitato, ONTAP notifica all"host quando il volume ha esaurito lo spazio e il LUN nel volume non può accettare le scritture. Questa opzione consente inoltre a ONTAP di recuperare automaticamente lo spazio quando l"host elimina i dati.' 
+---
+= Attivare l'allocazione dello spazio per SAN
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Se l'host FC o iSCSI supporta il thin provisioning SCSI, è possibile attivare l'allocazione dello spazio.  Quando l'allocazione dello spazio è attivata e un volume esaurisce lo spazio, il LUN del volume rimane online ed è impostato sulla modalità di sola lettura.  L'host viene quindi avvisato che il LUN non può più accettare scritture.  Se l'allocazione dello spazio non è supportata sull'host o non è abilitata, quando un volume esaurisce lo spazio e non può crescere automaticamente, ONTAP porta il LUN offline.
+
+Inoltre, quando l'allocazione dello spazio è attivata, la gestione dello spazio sul lato host identifica i blocchi di dati che sono stati eliminati sul file system host ed emette automaticamente uno o più `SCSI UNMAP` Consentono a ONTAP di liberare i blocchi corrispondenti sul sistema storage e di recuperare spazio.
+
+.Prima di iniziare
+Per attivare l'allocazione dello spazio, il thin provisioning SCSI deve essere supportato dall'host. Il thin provisioning SCSI utilizza il provisioning a blocchi logici come definito nello standard SCSI SBC-3. Solo gli host che supportano questo standard possono utilizzare il thin provisioning SCSI in ONTAP.
+
+I seguenti host attualmente supportano il thin provisioning SCSI quando si attiva l'allocazione dello spazio:
+
+* Citrix XenServer 6.5 e versioni successive
+* ESXi 5,0 e versioni successive
+* Kernel Oracle Linux 6,2 UEK e versioni successive
+* Red Hat Enterprise Linux 6.2 e versioni successive
+* SUSE Linux Enterprise Server 11 e versioni successive
+* Solaris 11,1 e versioni successive
+* Windows
+
+
+L'allocazione dello spazio non è supportata sugli host NVMe.
+
+.A proposito di questa attività
+A partire da ONTAP 9.15.1, l'allocazione dello spazio è abilitata per impostazione predefinita per le LUN VMware e Hyper-V appena create ed è disabilitata per tutte le LUN appena create non utilizzate da VMware e Hyper-V.
+
+
+NOTE: Quando aggiorni il cluster a ONTAP 9.15.1, l'impostazione di allocazione dello spazio per tutte le LUN create prima dell'upgrade del software rimane invariata dopo l'upgrade, indipendentemente dal tipo di host.  Ad esempio, se in ONTAP 9.13.1 è stato creato un LUN per un host VMware con allocazione dello spazio disattivata, l'allocazione dello spazio su tale LUN rimane disattivata dopo l'aggiornamento a ONTAP 9.15.1.
+
+Per attivare l'allocazione dello spazio, è necessario portare il LUN in modalità non in linea; quindi è necessario eseguire la ricerca sull'host prima che l'host riconosca che l'allocazione dello spazio è stata abilitata.
+
+.Fasi
+. Portare il LUN offline:
++
+[source, cli]
+----
+lun modify -vserver vserver_name -volume volume_name -lun lun_name -state offline
+----
+. Attiva allocazione spazio:
++
+[source, cli]
+----
+lun modify -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -space-allocation enabled
+----
+. Verificare che l'allocazione dello spazio sia attivata:
++
+[source, cli]
+----
+lun show -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -fields space-allocation
+----
+. Portare il LUN online:
++
+[source, cli]
+----
+lun modify -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -state online
+----
+. Sull'host, eseguire nuovamente la scansione di tutti i dischi per assicurarsi che la modifica apportata a `-space-allocation` l'opzione è stata rilevata correttamente.
+

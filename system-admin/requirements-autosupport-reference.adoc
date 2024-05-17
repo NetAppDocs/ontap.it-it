@@ -1,83 +1,154 @@
 ---
-permalink: system-admin/requirements-autosupport-reference.html 
 sidebar: sidebar 
-keywords: requirements, autosupport, messages, http, smtp, https, configuration, support, protocols 
-summary: 'È necessario utilizzare HTTPS con TLSv1.2 o SMTP sicuro per l"invio dei messaggi AutoSupport per garantire la massima sicurezza e per supportare tutte le funzionalità AutoSupport più recenti.' 
+permalink: system-admin/requirements-autosupport-reference.html 
+keywords: requirements, autosupport, messages, http, https, smtp, smtps 
+summary: È necessario utilizzare HTTPS con TLSv1,2 o SMTP protetto per la consegna dei messaggi AutoSupport per garantire la massima sicurezza e supportare le funzioni AutoSupport più recenti. 
 ---
-= Requisiti per l'utilizzo di AutoSupport
+= Preparare l'uso di AutoSupport
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-È necessario utilizzare HTTPS con TLSv1.2 o SMTP sicuro per l'invio dei messaggi AutoSupport per garantire la massima sicurezza e per supportare tutte le funzionalità AutoSupport più recenti. I messaggi AutoSupport inviati con qualsiasi altro protocollo verranno rifiutati.
+È possibile configurare un cluster ONTAP per inviare messaggi AutoSupport a NetApp. Inoltre, è possibile inviare una copia dei messaggi agli indirizzi e-mail locali, in genere all'interno dell'organizzazione. È necessario prepararsi a configurare AutoSupport esaminando le opzioni disponibili.
 
 
 
-== Protocolli supportati
+== Consegna dei messaggi AutoSupport a NetApp
 
-Tutti questi protocolli vengono eseguiti su IPv4 o IPv6, in base alla famiglia di indirizzi a cui il nome viene risolto.
-
-|===
-| Protocollo e porta | Descrizione 
+I messaggi AutoSupport possono essere recapitati a NetApp utilizzando il protocollo HTTP o SMTP. Per migliorare la protezione, è possibile utilizzare TLS con HTTP. A partire da ONTAP 9.15.1, è anche possibile utilizzare TLS con SMTP.
 
 
- a| 
-HTTPS sulla porta 443
- a| 
-Questo è il protocollo predefinito. Se possibile, utilizzare questa opzione.
+TIP: Se possibile, utilizzare HTTP con TLS (HTTPS).
 
-Questo protocollo supporta AutoSupport OnDemand e upload di file di grandi dimensioni.
+Notare anche quanto segue:
 
-Il certificato proveniente dal server remoto viene convalidato in base al certificato root, a meno che non venga disattivata la convalida.
-
-Il recapito utilizza una richiesta HTTPS PUT. Con PUT, se la richiesta non riesce durante la trasmissione, la richiesta viene riavviata da dove è stata interrotta. Se il server che riceve la richiesta non supporta PUT, il recapito utilizza una richiesta HTTPS POST.
+* Per i messaggi AutoSupport è possibile configurare un solo canale di recapito per NetApp. Non è possibile utilizzare due protocolli per inviare i messaggi AutoSupport a NetApp.
+* AutoSupport limita le dimensioni massime dei file per ciascun protocollo. Se le dimensioni di un messaggio AutoSupport superano il limite configurato, AutoSupport recapita la maggior parte del messaggio possibile, ma si verifica il troncamento.
+* Se necessario, è possibile modificare la dimensione massima del file. Vedere il comando `system node autosupport modify` per ulteriori informazioni.
+* Entrambi i protocolli possono essere trasportati su IPv4 o IPv6 in base alla famiglia di indirizzi a cui il nome risolve.
+* La connessione TCP stabilita da ONTAP per l'invio di messaggi AutoSupport è temporanea e di breve durata.
 
 
 
- a| 
-HTTP sulla porta 80
- a| 
-Questo protocollo è preferito rispetto a SMTP.
 
-Questo protocollo supporta il caricamento di file di grandi dimensioni, ma non AutoSupport OnDemand.
+=== HTTP
 
-Il recapito utilizza una richiesta HTTPS PUT. Con PUT, se la richiesta non riesce durante la trasmissione, la richiesta viene riavviata da dove è stata interrotta. Se il server che riceve la richiesta non supporta PUT, il recapito utilizza una richiesta HTTPS POST.
+Ciò fornisce le funzioni più robuste. Tenere presente quanto segue:
+
+* AutoSupport OnDemand e il trasferimento di file di grandi dimensioni sono supportati.
+* Viene tentata prima una richiesta HTTP PUT. Se la richiesta non riesce durante la trasmissione, la richiesta viene riavviata nel punto in cui è stata arrestata.
+* Se il server non supporta PUT, viene utilizzato il metodo HTTP POST.
+* Il limite predefinito per i trasferimenti HTTP è di 25 MB.
+* Il protocollo HTTP non protetto utilizza la porta 80.
 
 
 
- a| 
-SMTP sulla porta 25 o su un'altra porta
- a| 
-Utilizzare questo protocollo solo se la connessione di rete non consente HTTPS.
 
-Il valore predefinito della porta è 25, ma è possibile configurare AutoSupport in modo che utilizzi una porta diversa.
+=== SMTP
 
-Tenere presenti le seguenti limitazioni quando si utilizza SMTP:
+Come regola generale, è necessario utilizzare SMTP solo se HTTPS/HTTP non è consentito o non è supportato per qualche motivo. Tenere presente quanto segue:
 
-* AutoSupport OnDemand e upload di file di grandi dimensioni non sono supportati.
-* I dati non sono crittografati.
+* AutoSupport OnDemand e i trasferimenti di file di grandi dimensioni non sono supportati.
+* Se le credenziali di accesso SMTP sono configurate, vengono inviate in modo non crittografato e in chiaro.
+* Il limite predefinito per i trasferimenti HTTP è di 5 MB.
+* Il protocollo SMTP non protetto utilizza la porta 25.
+
+
+
+
+=== Migliora la sicurezza con TLS
+
+Quando si utilizza HTTP o SMTP, tutto il traffico viene decrittografato e può essere facilmente intercettato e letto. Quando si utilizza HTTP, è necessario configurare sempre il protocollo in modo che utilizzi anche TLS (HTTPS).
+
+
+NOTE: A partire da ONTAP 9.15.1 è possibile utilizzare TLS anche con SMTP (SMTPS). In questo caso, viene utilizzato _Explicit TLS_ che attiva il canale protetto dopo che è stata stabilita la connessione TCP.
+
+.Per protocolli sicuri
+Le seguenti porte vengono generalmente utilizzate per le versioni sicure di questi protocolli:
+
+* HTTPS - porta 443
+* SMTPS - porta 587
+
+
+.Convalida del certificato
+Con TLS, il certificato scaricato dal server viene convalidato da ONTAP in base al certificato della CA principale. Prima di utilizzare HTTPS o SMTPS, è necessario assicurarsi che il certificato di origine sia installato in ONTAP. Vedere <<Installare il certificato del server>> per ulteriori informazioni.
+
+
+
+== Ulteriori considerazioni sulla configurazione
+
+Durante la configurazione di AutoSupport, è necessario tenere in considerazione alcune considerazioni aggiuntive.
+
+
+
+=== Invio di una copia locale tramite e-mail
+
+Indipendentemente dal protocollo utilizzato per inviare i messaggi AutoSupport a NetApp, è anche possibile inviare una copia di ciascun messaggio a uno o più indirizzi e-mail locali. Ad esempio, è possibile inviare messaggi all'organizzazione di assistenza interna o a un'organizzazione partner.
+
+
+NOTE: Se si recapitano messaggi a NetApp utilizzando SMTP (o SMTPS) e si inviano copie locali di tali messaggi e-mail, viene utilizzata la stessa configurazione del server di posta elettronica.
+
+
+
+=== Proxy HTTP
+
+A seconda della configurazione di rete, il protocollo HTTPS potrebbe richiedere un'ulteriore configurazione di un URL proxy. Se HTTPS viene utilizzato per inviare messaggi AutoSupport al supporto tecnico e si dispone di un proxy, è necessario identificare l'URL del proxy. Se il proxy utilizza una porta diversa da quella predefinita (porta 3128), è possibile specificare la porta per tale proxy. Facoltativamente, è anche possibile specificare un nome utente e una password per l'autenticazione proxy.
+
+
+
+== Installare il certificato del server
+
+Se si utilizza TLS (HTTPS o SMTPS), è necessario assicurarsi che ONTAP possa convalidare il certificato del server. Questa convalida viene eseguita in base alla CA che ha firmato il certificato del server.
+
+ONTAP include un gran numero di certificati CA principali preinstallati. Pertanto, in molti casi, il certificato per il server verrà immediatamente riconosciuto da ONTAP senza ulteriori configurazioni. Tuttavia, a seconda di come è stato firmato il certificato del server, potrebbe essere necessario installare un certificato della CA principale ed eventuali certificati intermedi.
+
+Seguire le istruzioni fornite di seguito per installare il certificato, se necessario. È necessario installare tutti i certificati richiesti a livello di cluster.
+
+.Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+. In System Manager, selezionare *Cluster* > *Impostazioni*.
+. Scorrere fino alla sezione *protezione*.
+. Selezionare image:icon_arrow.gif["freccia destra"] Accanto a *certificati*.
+. Nella scheda *autorità di certificazione attendibili* fare clic su *Aggiungi*.
+. Fare clic su *Importa* e selezionare il file del certificato.
+. Completare i parametri di configurazione dell'ambiente.
+. Fare clic su *Aggiungi*.
+
+
+--
+.CLI
+--
+. Avviare l'installazione:
 +
-SMTP invia i dati in testo chiaro, rendendo il testo nel messaggio AutoSupport facile da intercettare e leggere.
+`security certificate install -type server-ca`
 
-* È possibile introdurre limitazioni sulla lunghezza del messaggio e della linea.
+. Cercare il seguente messaggio della console:
++
+`Please enter Certificate: Press <Enter> when done`
+
+. Aprire il file del certificato con un editor di testo.
+. Copiare l'intero certificato, incluse le seguenti righe:
++
+`-----BEGIN CERTIFICATE-----`
+
++
+`-----END CERTIFICATE-----`
+
+. Incollare il certificato nel terminale dopo il prompt dei comandi.
+. Premere *Invio* per completare l'installazione.
+. Verificare che il certificato sia installato utilizzando una delle seguenti opzioni:
++
+`security certificate show-user-installed`
+
++
+`security certificate show`
 
 
-|===
-Se si configura AutoSupport con indirizzi e-mail specifici per l'organizzazione di supporto interna o per un'organizzazione di partner di supporto, tali messaggi vengono sempre inviati tramite SMTP.
 
-Ad esempio, se si utilizza il protocollo consigliato per inviare messaggi al supporto tecnico e si desidera anche inviare messaggi all'organizzazione di supporto interna, i messaggi verranno trasportati utilizzando sia HTTPS che SMTP, rispettivamente.
-
-AutoSupport limita le dimensioni massime dei file per ciascun protocollo. L'impostazione predefinita per i trasferimenti HTTP e HTTPS è 25 MB. L'impostazione predefinita per i trasferimenti SMTP è 5 MB. Se le dimensioni del messaggio AutoSupport superano il limite configurato, AutoSupport recapita la maggior parte del messaggio possibile. È possibile modificare le dimensioni massime modificando la configurazione di AutoSupport. Vedere `system node autosupport modify` pagina man per ulteriori informazioni.
-
-
-NOTE: AutoSupport sovrascrive automaticamente il limite massimo delle dimensioni dei file per i protocolli HTTPS e HTTP quando si generano e inviano messaggi AutoSupport che caricano i file core dump o di archivio delle performance al sito di supporto NetApp o a un URI specificato. L'override automatica si applica solo quando si caricano i file utilizzando `system node autosupport invoke-core-upload` o il `system node autosupport invoke-performance-archive` comandi.
-
-
-
-== Requisiti di configurazione
-
-A seconda della configurazione di rete, il protocollo HTTPS potrebbe richiedere un'ulteriore configurazione di un URL proxy. Se HTTPS invia messaggi AutoSupport al supporto tecnico e si dispone di un proxy, è necessario identificare l'URL per tale proxy. Se il proxy utilizza una porta diversa da quella predefinita, ovvero 3128, è possibile specificare la porta per tale proxy. È inoltre possibile specificare un nome utente e una password per l'autenticazione del proxy.
-
-Se si utilizza SMTP per inviare messaggi AutoSupport all'organizzazione di supporto interna o al supporto tecnico, è necessario configurare un server di posta esterno. Il sistema di storage non funziona come server di posta, ma richiede un server di posta esterno per l'invio della posta. Il server di posta deve essere un host in attesa sulla porta SMTP (25) o su un'altra porta e deve essere configurato per inviare e ricevere la codifica MIME (Multipurpose Internet Mail Extensions) a 8 bit. Gli host di posta di esempio includono un host UNIX che esegue un server SMTP come il programma sendmail e un server Windows che esegue il server Microsoft Exchange. È possibile disporre di uno o più host di posta.
+--
+====

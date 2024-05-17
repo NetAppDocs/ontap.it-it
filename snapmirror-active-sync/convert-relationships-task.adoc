@@ -1,0 +1,198 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/convert-relationships-task.html 
+keywords: SM-BC, SMBC, convert, SnapMirror synchronous, zero RPO, zero recovery time objective, zero RTO, existing, snapmirror active sync 
+summary: Converti tra protezione simmetrica e asimmetrica nella configurazione Active Sync di SnapMirror. 
+---
+= Converti il tipo di relazione di sincronizzazione attiva di SnapMirror
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.15.1, puoi convertire tra i tipi di SnapMirror Active Sync Protection: Da asimmetrico a simmetrico Active/Active e viceversa.
+
+
+
+== Conversione in una relazione Active/Active simmetrica
+
+È possibile convertire una relazione di sincronizzazione attiva SnapMirror con la protezione aysnronal in modo da utilizzare Active/Active simmetrico.
+
+.Prima di iniziare
+* Entrambi i cluster devono eseguire ONTAP 9.15.1 o versione successiva.
+* Le configurazioni Active/Active simmetriche richiedono `AutomatedFailoverDuplex` policy di protezione. In alternativa, è possibile xref:../data-protection/create-custom-replication-policy-concept.html[Creazione di una policy SnapMirror personalizzata] fornito il `-type` è `automated-failover-duplex`.
+
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Procedura per una configurazione uniforme
+. Rimuovere l'igroup di destinazione:
++
+.. Sul cluster di destinazione, passare a **host** > **gruppi iniziatori SAN**.
+.. Selezionare l'igroup con la relazione SnapMirror, quindi **Elimina**.
+.. Nella finestra di dialogo, selezionare la casella **Unmap the associated LUN** (Rimuovi LUN associati), quindi **Delete** (Elimina**).
+
+
+. Modifica la relazione di sincronizzazione attiva di SnapMirror.
++
+.. Andare a **protezione** > **Relazioni**.
+.. Selezionare il menu kabob accanto alla relazione che si desidera modificare, quindi **Modifica**.
+.. Modificare **Criteri di protezione** in AutomatedFailoverDuplex.
+.. Selezione `AutoMatedFailoverDuplex` richiede una finestra di dialogo per modificare le impostazioni di prossimità dell'host. Per gli iniziatori, selezionare l'opzione appropriata per **iniziatore prossimale a** quindi **Salva**.
+.. Selezionare **Salva**.
+
+
+. Nel menu **protezione**, confermare l'operazione riuscita quando la relazione viene visualizzata come `InSync`.
+
+
+.Procedura per una configurazione non uniforme
+. Rimuovere l'igroup di destinazione:
++
+.. Sul sito secondario, accedere a **host** > **gruppi iniziatori SAN**.
+.. Selezionare l'igroup con la relazione SnapMirror, quindi **Elimina**.
+.. Nella finestra di dialogo, selezionare la casella **Unmap the associated LUN** (Rimuovi LUN associati), quindi **Delete** (Elimina**).
+
+
+. Creare un nuovo igroup:
++
+.. Nel menu **gruppi iniziatori SAN** del sito di destinazione, selezionare **Aggiungi**.
+.. Fornire un **Nome**, selezionare **sistema operativo host**, quindi scegliere **membri del gruppo iniziatori**.
+.. Selezionare **Salva**.
+
+
+. Mappare il nuovo igroup ai LUN di destinazione.
++
+.. Passare a **archiviazione** > **LUN**.
+.. Selezionare tutte le LUN da mappare all'igroup.
+.. Selezionare **Altro** quindi **Mappa a gruppi iniziatori**.
+
+
+. Modifica la relazione di sincronizzazione attiva di SnapMirror.
++
+.. Andare a **protezione** > **Relazioni**.
+.. Selezionare il menu kabob accanto alla relazione che si desidera modificare, quindi **Modifica**.
+.. Modificare **Criteri di protezione** in AutomatedFailoverDuplex.
+.. Selezionando AutoMatedFailoverDuplex viene avviata l'opzione di modifica delle impostazioni di prossimità dell'host. Per gli iniziatori, selezionare l'opzione appropriata per **iniziatore prossimale a** quindi **Salva**.
+.. Selezionare **Salva**.
+
+
+. Nel menu **protezione**, confermare l'operazione riuscita quando la relazione viene visualizzata come `InSync`.
+
+
+--
+.CLI
+--
+.Procedura per una configurazione uniforme
+. Modificare la policy SnapMirror da `AutomatedFailover` a. `AutomatedFailoverDuplex`:
++
+`snapmirror modify -destination-path _destination_path_ -policy AutomatedFailoverDuplex`
+
+. La modifica del criterio attiva una risincronizzazione. Attendere il completamento della risincronizzazione e confermare che la relazione sia `Insync`:
++
+`snapmirror show -destination-path _destination_path_`
+
+. Se gli host esistenti sono locali al cluster primario, aggiungere l'host al secondo cluster e stabilire la connettività con il rispettivo accesso a ciascun cluster.
+. Sul sito secondario, eliminare le mappe LUN sugli igroup associati agli host remoti.
++
+
+NOTE: Verificare che igroup non contenga mappe per LUN non replicati.
+
++
+`SiteB::> lun mapping delete -vserver _svm_name_ -igroup _igroup_ -path <>`
+
+. Sul sito primario, modificare la configurazione dell'iniziatore per gli host esistenti per impostare il percorso prossimale per gli iniziatori sul cluster locale.
++
+`SiteA::> igroup initiator add-proximal-vserver -vserver _svm_name_ -initiator _host_ -proximal-vserver _server_`
+
+. Aggiungere un nuovo igroup e iniziatore per i nuovi host e impostare la prossimità dell'host per l'affinità dell'host al sito locale. Replica ennable igroup per replicare la configurazione e invertire la posizione dell'host sul cluster remoto.
++
+``
+SiteA::> igroup modify -vserver vsA -igroup ig1 -replication-peer vsB
+SiteA::> igroup initiator add-proximal-vserver -vserver vsA -initiator host2 -proximal-vserver vsB
+``
+
+. Rilevare i percorsi sugli host e verificare che gli host dispongano di un percorso Active/Optimized verso la LUN dello storage dal cluster preferito
+. Implementa l'applicazione e distribuisci i workload VM tra i cluster.
+
+
+.Procedura per una configurazione non uniforme
+. Modificare la policy SnapMirror da `AutomatedFailover` a. `AutomatedFailoverDuplex`:
++
+`snapmirror modify -destination-path _destination_path_ -policy AutomatedFailoverDuplex`
+
+. La modifica del criterio attiva una risincronizzazione. Attendere il completamento della risincronizzazione e confermare che la relazione sia `Insync`:
++
+`snapmirror show -destination-path _destination_path_`
+
+. Se gli host esistenti sono locali al cluster primario, aggiungere l'host al secondo cluster e stabilire la connettività con il rispettivo accesso a ciascun cluster.
+. Sul sito secondario, eliminare le mappe LUN sugli igroup associati agli host remoti.
++
+
+NOTE: Verificare che igroup non contenga mappe per LUN non replicati.
+
++
+`SiteB::> lun mapping delete -vserver _svm_name_ -igroup _igroup_ -path <>`
+
+. Sul sito primario, modificare la configurazione dell'iniziatore per gli host esistenti per impostare il percorso prossimale per gli iniziatori sul cluster locale.
++
+`SiteA::> igroup initiator add-proximal-vserver -vserver _Svm_name_ -initiator _host_ -proximal-vserver _server_`
+
+. Sul sito secondario, aggiungere un nuovo igroup e iniziatore per i nuovi host e impostare la prossimità dell'host per l'affinità dell'host al sito locale. Mappare i LUN all'igroup.
++
+``
+SiteB::> igroup create -vserver _svm_name_ -igroup _igroup_name_
+SiteB::> igroup add -vserver _svm_name_ -igroup  _igroup_name_ -initiator _host_name_
+SiteB::> lun mapping create -igroup  _igroup_name_ -path _path_name_
+``
+
+. Rilevare i percorsi sugli host e verificare che gli host dispongano di un percorso Active/Optimized verso la LUN dello storage dal cluster preferito
+. Implementa l'applicazione e distribuisci i workload VM tra i cluster.
+
+
+--
+====
+
+
+== Convertire da Active/Active simmetrico a una relazione asimmetrica
+
+Se hai configurato la protezione Active/Active simmetrica, puoi convertire la relazione in protezione asimmetrica utilizzando l'interfaccia a riga di comando di ONTAP.
+
+.Fasi
+. Sposta tutti i workload della VM nell'host locale nel cluster di origine.
+. Rimuovere la configurazione di igroup per gli host che non gestiscono le istanze VM e modificare la configurazione di igroup per terminare la replica di igroup.
++
+`code`
+
+. Sul sito secondario, rimuovere la mappatura dei LUN.
++
+`SiteB::> lun mapping delete -vserver _svm_name_ -igroup _igroup_name_ -path <>`
+
+. Sul sito secondario, eliminare la relazione Active/Active simmetrica.
++
+`SiteB::> snapmirror delete -destination-path _destination_path_`
+
+. Sul sito primario, rilasciare la relazione Active/Active simmetrica.
+`SiteA::> snapmirror release -destination-path _destination_path_ -relationship-info-only true`
+. Dal sito secondario, creare una relazione con lo stesso set di volumi con l' `AutomatedFailover` criterio la risincronizzazione della relazione.
++
+``
+SiteB::> snapmirror create -source-path _source_path_ -destination-path _destination_path_ -cg-item-mappings _source:@destination_ -policy AutomatedFailover
+SiteB::> snapmirror resync -destination-path vs1:/cg/cg1_dst
+``
+
++
+
+NOTE: Il gruppo di coerenza sul sito secondario ha bisogno link:../consistency-groups/delete-task.html["da eliminare"] prima di ricreare la relazione. I volumi di destinazione link:https://kb.netapp.com/onprem/ontap/dp/SnapMirror/How_to_change_a_volume_type_from_RW_to_DP["Deve essere convertito in tipo DP"^].
+
+. Verificare che lo stato mirror della relazione sia `Snapmirrored` Lo stato della relazione è `Insync`.
++
+`snapmirror show -destination-path _destination_path_`
+
+. Riscoprire i percorsi dall'host.
+

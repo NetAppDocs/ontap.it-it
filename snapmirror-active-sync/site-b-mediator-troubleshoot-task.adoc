@@ -1,0 +1,61 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/site-b-mediator-troubleshoot-task.html 
+keywords: SM-BC, SMBC, troubleshooting, link down, Mediator, snapmirror active sync 
+summary: La connettività del mediatore dal sito B risulta irraggiungibile. 
+---
+= Collegamento tra il sito B e il mediatore inattivo e il sito A inattivo
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per verificare la connessione del mediatore ONTAP, utilizzare `snapmirror mediator show` comando. Se lo stato della connessione non è raggiungibile e il sito B non è in grado di raggiungere il sito A, si avrà un'uscita simile a quella riportata di seguito. Per ripristinare la connessione, attenersi alla procedura descritta nella soluzione
+
+....
+cluster::*> snapmirror mediator show
+Mediator Address Peer Cluster     Connection Status Quorum Status
+---------------- ---------------- ----------------- -------------
+10.237.86.17     C1_cluster       unreachable       true
+SnapMirror consistency group relationship status is out of sync.
+
+C2_cluster::*> snapmirror show -expand
+Source            Destination Mirror  Relationship   Total             Last
+Path        Type  Path        State   Status         Progress  Healthy Updated
+----------- ---- ------------ ------- -------------- --------- ------- --------
+vs0:/cg/src_cg_1 XDP vs1:/cg/dst_cg_1 Snapmirrored OutOfSync - false   -
+vs0:zrto_cg_655724_188a_RW1 XDP vs1:zrto_cg_655755_188c_DP1 Snapmirrored OutOfSync - false -
+vs0:zrto_cg_655733_188a_RW2 XDP vs1:zrto_cg_655762_188c_DP2 Snapmirrored OutOfSync - false -
+vs0:zrto_cg_655739_188b_RW1 XDP vs1:zrto_cg_655768_188d_DP1 Snapmirrored OutOfSync - false -
+vs0:zrto_cg_655748_188b_RW2 XDP vs1:zrto_cg_655776_188d_DP2 Snapmirrored OutOfSync - false -
+5 entries were displayed.
+
+Site B cluster is unable to reach Site A.
+C2_cluster::*> cluster peer show
+Peer Cluster Name         Cluster Serial Number Availability   Authentication
+------------------------- --------------------- -------------- --------------
+C1_cluster 			  1-80-000011           Unavailable    ok
+....
+.Soluzione
+Forzare un failover per abilitare l'i/o dal sito B e quindi stabilire una relazione RTO zero dal sito B al sito A. Completare i seguenti passaggi per eseguire un failover forzato sul sito B.
+
+. Annullare la mappatura di tutte le LUN appartenenti al gruppo di coerenza dal sito B.
+. Eliminare la relazione del gruppo di coerenza di SnapMirror utilizzando l'opzione force (forza).
+. Inserisci il comando SnapMirror breaker (`snapmirror break -destination_path _svm_:_volume_`) Sui volumi costituenti del gruppo di coerenza per convertire volumi da DP a RW, per abilitare i/o dal sito B.
++
+Devi inviare il comando SnapMirror BREAK per ogni relazione nel gruppo di coerenza. Ad esempio, se nel gruppo di coerenza sono presenti tre volumi, verrà inviato il comando per ogni volume.
+
+. Avviare i nodi del sito A per creare una relazione RTO zero dal sito B al sito A.
+. Rilasciare il gruppo di coerenza con informazioni sulla relazione solo sul sito A per conservare una copia Snapshot comune e annullare la mappatura delle LUN appartenenti al gruppo di coerenza.
+. Convertire i volumi sul sito A da RW a DP impostando una relazione a livello di volume utilizzando il criterio Sync o il criterio Async.
+. Eseguire il `snapmirror resync` per sincronizzare le relazioni.
+. Eliminare le relazioni di SnapMirror con il criterio di sincronizzazione sul sito A.
+. Rilasciare il criterio delle relazioni di SnapMirror con Sync utilizzando solo le informazioni sulla relazione, vero sul sito B.
+. Creare una relazione di gruppo di coerenza tra il sito B e il sito A.
+. Dal cluster di origine, sincronizzare nuovamente il gruppo di coerenza. Verificare che lo stato del gruppo di coerenza sia sincronizzato.
+. Eseguire nuovamente la scansione dei percorsi di i/o delle LUN dell'host per ripristinare tutti i percorsi alle LUN.
+

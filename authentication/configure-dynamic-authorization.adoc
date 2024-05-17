@@ -1,0 +1,326 @@
+---
+permalink: authentication/configure-dynamic-authorization.html 
+sidebar: sidebar 
+keywords: dynamic, authorization, framework, security, login, ssh 
+summary: 'Configurare il framework di autorizzazione dinamica per aumentare la sicurezza degli accessi SSH e limitare l"esecuzione di determinati comandi in circostanze sospette.' 
+---
+= Personalizzare l'autorizzazione dinamica
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+In qualità di amministratore, è possibile personalizzare diversi aspetti della configurazione dinamica delle autorizzazioni per aumentare la sicurezza delle connessioni SSH dell'amministratore remoto al cluster ONTAP.
+
+È possibile personalizzare le seguenti impostazioni di autorizzazione dinamica in base alle proprie esigenze di sicurezza:
+
+* <<Configurare le impostazioni globali dell'autorizzazione dinamica>>
+* <<Configurare i componenti del punteggio di attendibilità dell'autorizzazione dinamica>>
+* <<Configurare un provider di punteggio di attendibilità personalizzato>>
+* <<Configurare i comandi con restrizioni>>
+* <<Configurare i gruppi di autorizzazione dinamici>>
+
+
+
+
+== Configurare le impostazioni globali dell'autorizzazione dinamica
+
+È possibile configurare impostazioni globali per l'autorizzazione dinamica, inclusa la VM di storage da proteggere, l'intervallo di soppressione per le sfide di autenticazione e le impostazioni del punteggio di attendibilità.
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization modify` Fare riferimento alle pagine del manuale di ONTAP.
+
+.Fasi
+. Configurare le impostazioni globali per l'autorizzazione dinamica. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization modify \
+-lower-challenge-boundary <percent> \
+-upper-challenge-boundary <percent> \
+-suppression-interval <interval> \
+-vserver <storage_VM_name>
+----
+. Visualizzare la configurazione risultante:
++
+[source, console]
+----
+security dynamic-authorization show
+----
+
+
+
+
+== Configurare i comandi con restrizioni
+
+Quando si attiva l'autorizzazione dinamica, la funzione include una serie predefinita di comandi con restrizioni. È possibile modificare questo elenco in base alle proprie esigenze. Fare riferimento a. link:../multi-admin-verify/index.html["Documentazione di verifica multi-admin (MAV)"] per informazioni sull'elenco predefinito di comandi con restrizioni.
+
+
+
+=== Aggiungere un comando con restrizioni
+
+È possibile aggiungere un comando all'elenco di comandi limitati con autorizzazione dinamica.
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization rule create` Fare riferimento alle pagine del manuale di ONTAP.
+
+.Fasi
+. Aggiungere il comando. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization rule create \
+-query <query> \
+*-operation <text>* \
+-index <integer> \
+-vserver <storage_VM_name>
+----
+. Visualizzare l'elenco risultante di comandi con restrizioni:
++
+[source, console]
+----
+security dynamic-authorization rule show
+----
+
+
+
+
+=== Rimuovere un comando limitato
+
+È possibile rimuovere un comando dall'elenco di comandi limitati con autorizzazione dinamica.
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization rule delete` Fare riferimento alle pagine del manuale di ONTAP.
+
+.Fasi
+. Rimuovere il comando. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization rule delete \
+*-operation <text>* \
+-vserver <storage_VM_name>
+----
+. Visualizzare l'elenco risultante di comandi con restrizioni:
++
+[source, console]
+----
+security dynamic-authorization rule show
+----
+
+
+
+
+== Configurare i gruppi di autorizzazione dinamici
+
+Per impostazione predefinita, l'autorizzazione dinamica viene applicata a tutti gli utenti e gruppi non appena viene attivata. Tuttavia, è possibile creare gruppi utilizzando `security dynamic-authorization group create` in modo che l'autorizzazione dinamica si applichi solo a quegli utenti specifici.
+
+
+
+=== Aggiungere un gruppo di autorizzazione dinamico
+
+È possibile aggiungere un gruppo di autorizzazione dinamico.
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization group create` Fare riferimento alle pagine del manuale di ONTAP.
+
+.Fasi
+. Creare il gruppo. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization group create \
+*-group-name <group-name>* \
+-vserver <storage_VM_name> \
+-exclude-users <user1,user2,user3...>
+
+----
+. Visualizzare i gruppi di autorizzazione dinamici risultanti:
++
+[source, console]
+----
+security dynamic-authorization group show
+----
+
+
+
+
+=== Rimuovere un gruppo di autorizzazione dinamico
+
+È possibile rimuovere un gruppo di autorizzazione dinamico.
+
+.Fasi
+. Eliminare il gruppo. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization group delete \
+*-group-name <group-name>* \
+-vserver <storage_VM_name>
+----
+. Visualizzare i gruppi di autorizzazione dinamici risultanti:
++
+[source, console]
+----
+security dynamic-authorization group show
+----
+
+
+
+
+== Configurare i componenti del punteggio di attendibilità dell'autorizzazione dinamica
+
+È possibile configurare il peso massimo del punteggio per modificare la priorità dei criteri di valutazione o per rimuovere determinati criteri dal punteggio di rischio.
+
+
+NOTE: Come prassi migliore, è necessario lasciare i valori di peso del punteggio predefiniti e regolarli solo se necessario.
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization trust-score-component modify` Fare riferimento alle pagine del manuale di ONTAP.
+
+Di seguito sono riportati i componenti che è possibile modificare, insieme al punteggio predefinito e ai pesi percentuali:
+
+[cols="4*"]
+|===
+| Criteri | Nome del componente | Peso del punteggio grezzo predefinito | Peso percentuale predefinito 
+
+
+| Dispositivo di fiducia | `trusted-device` | 20 | 50 
+
+
+| Cronologia autenticazione accesso utente | `authentication-history` | 20 | 50 
+|===
+.Fasi
+. Modificare i componenti del punteggio di attendibilità. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization trust-score-component modify \
+*-component <component-name>* \
+*-weight <integer>* \
+-vserver <storage_VM_name>
+----
+. Visualizzare le impostazioni del componente del punteggio di attendibilità risultante:
++
+[source, console]
+----
+security dynamic-authorization trust-score-component show
+----
+
+
+
+
+=== Reimpostare il punteggio di attendibilità per un utente
+
+Se a un utente viene negato l'accesso a causa dei criteri di sistema ed è in grado di dimostrare la propria identità, l'amministratore può reimpostare il punteggio di attendibilità dell'utente.
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization user-trust-score reset` Fare riferimento alle pagine del manuale di ONTAP.
+
+.Fasi
+. Aggiungere il comando. Fare riferimento a. <<Configurare i componenti del punteggio di attendibilità dell'autorizzazione dinamica>> per un elenco dei componenti del punteggio di attendibilità che è possibile reimpostare. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization user-trust-score reset \
+*-username <username>* \
+*-component <component-name>* \
+-vserver <storage_VM_name>
+----
+
+
+
+
+=== Visualizzare il punteggio di attendibilità
+
+Un utente può visualizzare il proprio punteggio di attendibilità per una sessione di accesso.
+
+.Fasi
+. Visualizza il tuo punteggio di fiducia:
++
+[source, console]
+----
+security login whoami
+----
++
+L'output dovrebbe essere simile a quanto segue:
+
++
+[listing]
+----
+User: admin
+Role: admin
+Trust Score: 50
+----
+
+
+
+
+== Configurare un provider di punteggio di attendibilità personalizzato
+
+Se si ricevono già metodi di punteggio da un provider di punteggio di attendibilità esterno, è possibile aggiungere il provider personalizzato alla configurazione di autorizzazione dinamica.
+
+.Prima di iniziare
+* Il provider del punteggio di attendibilità personalizzato deve restituire una risposta JSON. Devono essere soddisfatti i seguenti requisiti di sintassi:
++
+** Il campo che restituisce il punteggio di attendibilità deve essere un campo scalare e non un elemento di una matrice.
+** Il campo che restituisce il punteggio di attendibilità può essere un campo nidificato, ad esempio `trust_score.value`.
+** Deve essere presente un campo all'interno della risposta JSON che restituisce un punteggio di attendibilità numerico. Se non è disponibile in modalità nativa, è possibile scrivere uno script wrapper per restituire questo valore.
+
+
+* Il valore fornito può essere un punteggio di attendibilità o un punteggio di rischio. La differenza è che il punteggio di attendibilità è in ordine crescente con un punteggio più alto che indica un livello di attendibilità più elevato, mentre il punteggio di rischio è in ordine decrescente. Ad esempio, un punteggio di attendibilità di 90 per un intervallo di punteggio compreso tra 0 e 100 indica che il punteggio è molto affidabile e che potrebbe risultare in un "consenso" senza ulteriori sfide, mentre un punteggio di rischio pari a 90 per un intervallo di punteggio compreso tra 0 e 100 indica un rischio elevato e che potrebbe causare un "rifiuto" senza una sfida aggiuntiva.
+* Il provider del punteggio di attendibilità personalizzato deve essere accessibile tramite l'API REST ONTAP.
+* Il provider del punteggio di attendibilità personalizzato deve essere configurabile utilizzando uno dei parametri supportati. I provider di punteggi di attendibilità personalizzati che richiedono una configurazione non inclusa nell'elenco dei parametri supportati non sono supportati.
+
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization trust-score-component create` Fare riferimento alle pagine del manuale di ONTAP.
+
+.Fasi
+. Aggiungere un provider di punteggio di attendibilità personalizzato. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization trust-score-component create \
+-component <text> \
+*-provider-uri <text>* \
+-score-field <text> \
+-min-score <integer> \
+*-max-score <integer>* \
+*-weight <integer>* \
+-secret-access-key "<key_text>" \
+-provider-http-headers <list<header,header,header>> \
+-vserver <storage_VM_name>
+----
+. Visualizzare le impostazioni del provider del punteggio di attendibilità risultante:
++
+[source, console]
+----
+security dynamic-authorization trust-score-component show
+----
+
+
+
+
+=== Configurare i tag del provider del punteggio di attendibilità personalizzato
+
+È possibile comunicare con i provider di punteggi di attendibilità esterni utilizzando i tag. Ciò consente di inviare informazioni nell'URL al provider del punteggio di attendibilità senza esporre informazioni riservate.
+
+Per ulteriori informazioni sui parametri e sui valori predefiniti per `security dynamic-authorization trust-score-component create` Fare riferimento alle pagine del manuale di ONTAP.
+
+.Fasi
+. Attiva tag provider punteggio di attendibilità. Aggiornare i valori tra parentesi <> in modo che corrispondano all'ambiente in uso. Se non si utilizza `-vserver` il comando viene eseguito a livello di cluster. I parametri in grassetto sono obbligatori:
++
+[source, subs="specialcharacters,quotes"]
+----
+security dynamic-authorization trust-score-component create \
+*-component <component_name>* \
+-weight <initial_score_weight> \
+-max-score <max_score_for_provider> \
+*-provider-uri <provider_URI>* \
+-score-field <REST_API_score_field> \
+*-secret-access-key "<key_text>"*
+----
++
+Ad esempio:
+
++
+[source, console]
+----
+security dynamic-authorization trust-score-component create -component comp1 -weight 20 -max-score 100 -provider-uri https://<url>/trust-scores/users/<user>/<ip>/component1.html?api-key=<access-key> -score-field score -access-key "MIIBBjCBrAIBArqyTHFvYdWiOpLkLKHGjUYUNSwfzX"
+----
+
