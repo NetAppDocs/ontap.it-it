@@ -1,7 +1,7 @@
 ---
 sidebar: sidebar 
 permalink: snapmirror-active-sync/index.html 
-keywords: SM-BC, SMBC, failover, terms, benefits, snapmirror active sync 
+keywords: SM-BC, SMBC, failover, terms, benefits, snapmirror active sync, TR-4878 
 summary: Utilizza SnapMirror Active Sync per proteggere le applicazioni con le LUN, consentendo il failover delle applicazioni in modo trasparente, garantendo la business continuity in caso di disastro. 
 ---
 = Panoramica su SnapMirror Active Sync
@@ -14,11 +14,11 @@ summary: Utilizza SnapMirror Active Sync per proteggere le applicazioni con le L
 
 
 [role="lead"]
-La sincronizzazione attiva di SnapMirror (inizialmente rilasciata come SnapMirror Business Continuity [SM-BC]) permette ai servizi di business di continuare a funzionare anche attraverso un guasto completo del sito, supportando le applicazioni per il failover in modo trasparente utilizzando una copia secondaria. Per attivare un failover con la sincronizzazione attiva di SnapMirror sono necessari un intervento manuale e script personalizzato.
+La sincronizzazione attiva di SnapMirror (anche nota come SnapMirror Business Continuity [SM-BC]) permette ai servizi di business di continuare a funzionare anche attraverso un guasto completo del sito, supportando il failover delle applicazioni in modo trasparente con una copia secondaria. Per attivare un failover con la sincronizzazione attiva di SnapMirror sono necessari un intervento manuale e script personalizzato.
 
-SnapMirror Active Sync è disponibile a partire da ONTAP 9,9.1. La sincronizzazione attiva di SnapMirror è supportata su cluster AFF, cluster ASA (All-Flash SAN Array), C-Series (AFF o ASA). I cluster primari e secondari devono essere dello stesso tipo: ASA o AFF. La sincronizzazione attiva di SnapMirror protegge le applicazioni con LUN iSCSI o FCP.
+Disponibile a partire da ONTAP 9,9.1, la sincronizzazione attiva di SnapMirror è supportata sui cluster AFF, sui cluster ASA (All-Flash SAN Array) e su C-Series (AFF o ASA). I cluster primari e secondari devono essere dello stesso tipo: ASA o AFF. La sincronizzazione attiva di SnapMirror protegge le applicazioni con LUN iSCSI o FCP.
 
-A partire da ONTAP 9.15.1, SnapMirror Active Sync supporta una xref:architecture-concept.html[funzionalità active/active simmetrica], Abilitando le operazioni di i/o in lettura e scrittura da entrambe le copie di un LUN protetto con replica sincrona bidirezionale, consentendo a entrambe le copie LUN di supportare le operazioni di i/o in locale.
+A partire da ONTAP 9.15.1, SnapMirror Active Sync supporta una xref:architecture-concept.html[funzionalità active/active simmetrica], Abilitando le operazioni di i/o in lettura e scrittura da entrambe le copie di un LUN protetto con replica sincrona bidirezionale, consentendo a entrambe le copie LUN di supportare le operazioni di i/o in locale. Prima di ONTAP 9.15.1, la sincronizzazione attiva di SnapMirror supporta solo configurazioni Active/Active asimmetriche, in cui i dati sul sito secondario sono sottoposti a un proxy in un LUN.
 
 
 NOTE: A partire da luglio 2024, il contenuto dei report tecnici precedentemente pubblicati come PDF è stato integrato nella documentazione del prodotto ONTAP. La documentazione relativa alla sincronizzazione attiva di ONTAP SnapMirror ora include il contenuto di TR-4878: Sincronizzazione attiva di SnapMirror.
@@ -30,7 +30,7 @@ NOTE: A partire da luglio 2024, il contenuto dei report tecnici precedentemente 
 SnapMirror Active Sync offre i seguenti benefici:
 
 * Disponibilità continua per le applicazioni business-critical.
-* Capacità di ospitare applicazioni critiche in maniera alternativa dal sito primario e secondario.
+* Capacità di ospitare applicazioni critiche in maniera alternativa dai siti primario e secondario.
 * Gestione semplificata delle applicazioni tramite gruppi di coerenza dell'ordine di scrittura dipendente.
 * Possibilità di testare il failover per ogni applicazione.
 * Creazione istantanea di cloni in mirroring senza influire negativamente sulla disponibilità applicativa.
@@ -67,7 +67,7 @@ Il link:../mediator/index.html["Mediatore ONTAP"] Riceve informazioni sulla salu
 
 * Cluster peer ONTAP
 * Nodi del cluster peer ONTAP
-* Gruppi di coerenza (che è l'unità di failover); per ogni gruppo di coerenza vengono fornite le seguenti informazioni:
+* Gruppi di coerenza (che definiscono le unità di failover in una relazione di sincronizzazione attiva di SnapMirror); per ogni gruppo di coerenza vengono fornite le seguenti informazioni:
 +
 ** Stato di replica: Non inizializzato, in sincronizzazione o non sincronizzato
 ** Il cluster che ospita la copia primaria
@@ -85,7 +85,7 @@ NOTE: A partire da ONTAP 9.15.1, System Manager visualizza lo stato della relazi
 Operazione manuale per la modifica del ruolo delle copie in una relazione di sincronizzazione attiva di SnapMirror. I siti primari diventano i secondari, mentre i siti secondari diventano quelli primari.
 
 .Polarizzazione primaria-prima e primaria
-La sincronizzazione attiva di SnapMirror utilizza un principio primario che privilegia la copia primaria per l'i/o nel caso di una partizione di rete.
+La sincronizzazione attiva di SnapMirror utilizza un principio primario che dà la preferenza alla copia primaria per servire l'i/o nel caso di una partizione di rete.
 
 La polarizzazione primaria è un'implementazione speciale del quorum che migliora la disponibilità di un set di dati protetto e sincronizzati attivo di SnapMirror. Se la copia primaria è disponibile, la polarizzazione primaria entra in vigore quando il ONTAP Mediator non è raggiungibile da entrambi i cluster.
 
@@ -104,8 +104,6 @@ SnapMirror Active Sync supporta la risincronizzazione automatica, consentendo al
 A partire da ONTAP 9.15.1, supporta la sincronizzazione attiva di SnapMirror link:interoperability-reference.html#fan-out-configurations["riconfigurazione automatica nelle configurazioni fan-out"].
 
 .Configurazione uniforme e non uniforme
-Quando si crea una protezione con _symmetric Active/Active_, il processo dipende dalla configurazione:
-
 * **Uniform host access** significa che gli host da entrambi i siti sono connessi a tutti i percorsi ai cluster di storage su entrambi i siti. I percorsi tra siti trasversali sono estesi a ogni distanza.
 * **Accesso host non uniforme** significa che gli host in ogni sito sono collegati solo al cluster nello stesso sito. I percorsi tra siti e quelli estesi non sono connessi.
 
