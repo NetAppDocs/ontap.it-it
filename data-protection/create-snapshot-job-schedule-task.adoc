@@ -2,7 +2,7 @@
 permalink: data-protection/create-snapshot-job-schedule-task.html 
 sidebar: sidebar 
 keywords: create, snapshot, job, schedule 
-summary: Una policy Snapshot richiede almeno una pianificazione del lavoro di copia Snapshot. È possibile utilizzare il comando cron create della pianificazione del lavoro per creare una pianificazione del lavoro. 
+summary: Una policy Snapshot richiede almeno una pianificazione del lavoro di copia Snapshot. Utilizzare System Manager o il comando cron create di pianificazione dei processi per creare una pianificazione dei processi. 
 ---
 = Creare una pianificazione del lavoro Snapshot
 :allow-uri-read: 
@@ -11,18 +11,40 @@ summary: Una policy Snapshot richiede almeno una pianificazione del lavoro di co
 
 
 [role="lead"]
-Una policy Snapshot richiede almeno una pianificazione del lavoro di copia Snapshot. È possibile utilizzare `job schedule cron create` per creare una pianificazione del processo.
+Una policy Snapshot richiede almeno una pianificazione del lavoro di copia Snapshot. È possibile utilizzare System Manager o `job schedule cron create` per creare una pianificazione del processo.
 
 .A proposito di questa attività
 Per impostazione predefinita, ONTAP crea i nomi delle copie Snapshot aggiungendo un indicatore data e ora al nome della pianificazione del processo.
 
 Se si specificano valori per il giorno del mese e il giorno della settimana, i valori vengono considerati indipendentemente. Ad esempio, un programma cron con la specifica del giorno `Friday` e il giorno del mese specificato `13` Viene eseguito ogni venerdì e il 13° giorno di ogni mese, non solo ogni venerdì 13.
 
-.Fase
+
+
+== Creare una pianificazione dei lavori di copia istantanea
+
+.Fasi
+È possibile creare una pianificazione dei processi di copia Snapshot utilizzando System Manager o l'interfaccia CLI di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Accedere a *protezione > Panoramica* ed espandere *Impostazioni dei criteri locali*.
+. Nel riquadro *piani di lavoro*, fare clic su image:icon_arrow.gif["freccia"].
+. Nella finestra *piani di lavoro*, fare clic su image:icon_add.gif["inoltre"].
+. Nella finestra *Aggiungi piano di lavoro*, immettere il nome del piano di lavoro, quindi scegliere il contesto e il tipo di piano di lavoro.
+. Fare clic su *Save* (Salva).
+
+
+--
+.CLI
+--
 . Creare una pianificazione del processo:
 +
-`job schedule cron create -name _job_name_ -month month -dayofweek _day_of_week_ -day _day_of_month_ -hour _hour_ -minute _minute_`
-
+[source, cli]
+----
+job schedule cron create -name <job_name> -month <month> -dayofweek <day_of_week> -day <day_of_month> -hour <hour> -minute <minute>
+----
 +
 Per `-month`, `-dayofweek`, e. `-hour`, è possibile specificare `all` per eseguire il processo ogni mese, giorno della settimana e ora, rispettivamente.
 
@@ -30,8 +52,10 @@ Per `-month`, `-dayofweek`, e. `-hour`, è possibile specificare `all` per esegu
 A partire da ONTAP 9.10.1, è possibile includere il server virtuale per la pianificazione del processo:
 
 +
-`job schedule cron create -name _job_name_ -vserver _Vserver_name_ -month _month_ -dayofweek _day_of_week_ -day _day_of_month_ -hour _hour_ -minute _minute_`
-
+[listing, subs="+quotes"]
+----
+job schedule cron create -name <job_name> *-vserver <Vserver_name>* -month <month> -dayofweek <day_of_week> -day <day_of_month> -hour <hour> -minute <minute>
+----
 +
 Nell'esempio seguente viene creata una pianificazione del processo denominata `myweekly` Il sabato alle 3:00:
 
@@ -49,3 +73,6 @@ Nell'esempio seguente viene creata una pianificazione denominata `myweeklymulti`
 job schedule cron create -name myweeklymulti -dayofweek "Monday,Wednesday,Sunday" -hour 3,9,12 -minute 0,20,50
 ----
 
+
+--
+====
