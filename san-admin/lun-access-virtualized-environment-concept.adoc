@@ -18,19 +18,19 @@ Una LIF è un'interfaccia logica che collega la SVM a una porta fisica. Sebbene 
 .Esempio di accesso LUN con una singola SVM in un cluster
 Nell'esempio seguente, l'host 1 si connette a LIF1.1 e LIF1.2 in SVM-1 per accedere a LUN1. LIF 1.1 utilizza la porta fisica node1:0c e LIF 1.2 utilizza il node2:0c. LIF1.1 e LIF1.2 appartengono solo a SVM-1. Se viene creata una nuova LUN sul nodo 1 o sul nodo 2, per SVM-1, è possibile utilizzare le stesse LIF. Se viene creata una nuova SVM, è possibile creare nuove LIF utilizzando le porte fisiche 0c o 0d su entrambi i nodi.
 
-image::../media/bsag-c-mode-1-lif-belongs-1-vs.gif[Accesso SVM a LUN1]
+image:bsag-c-mode-1-lif-belongs-1-vs.gif["Accesso SVM a LUN1"]
 
 .Esempio di accesso LUN con più SVM in un cluster
 Una porta fisica può supportare più LIF che servono diverse SVM. Poiché le LIF sono associate a una specifica SVM, i nodi del cluster possono inviare il traffico dati in entrata alla SVM corretta. Nell'esempio seguente, ciascun nodo da 1 a 4 ha una LIF per SVM-2 che utilizza la porta fisica 0c su ciascun nodo. L'host 1 si connette a LIF1.1 e LIF1.2 in SVM-1 per accedere a LUN1. L'host 2 si connette a LF2-1 e LF2-2 in SVM-2 per accedere a LUN2. Entrambi gli SVM condividono la porta fisica 0c sui nodi 1 e 2. SVM-2 dispone di LIF aggiuntive utilizzate dall'host 2 per accedere alle LUN 3 e 4. Queste LIF utilizzano la porta fisica 0c sui nodi 3 e 4. Più SVM possono condividere le porte fisiche sui nodi.
 
-image::../media/bsag-c-mode-multiple-lifs-vservers.gif[2 LIF al nodo 2 per 2 Vserver]
+image:bsag-c-mode-multiple-lifs-vservers.gif["2 LIF al nodo 2 per 2 Vserver"]
 
 .Esempio di percorso attivo o ottimizzato a una LUN da un sistema host
 In un percorso attivo o ottimizzato, il traffico di dati non passa sulla rete del cluster, ma percorre il percorso più diretto verso il LUN. Il percorso attivo o ottimizzato per LUN1 è attraverso LIF 1.1 in node1, utilizzando la porta fisica 0c. L'host 2 dispone di due percorsi attivi o ottimizzati, un percorso verso il nodo 1, LIF2.1, che condivide la porta fisica 0c e l'altro percorso verso il nodo 4, LIF2.4, che utilizza la porta fisica 0c.
 
-image::../media/bsag-c-mode-unoptimized-path.gif[esempio di percorso ottimizzato]
+image:bsag-c-mode-unoptimized-path.gif["esempio di percorso ottimizzato"]
 
 .Esempio di percorso (indiretto) attivo o non ottimizzato verso un LUN da un sistema host
 In un percorso (indiretto) attivo o non ottimizzato, il traffico dati viaggia sulla rete del cluster. Questo problema si verifica solo se tutti i percorsi attivi o ottimizzati da un host non sono disponibili per gestire il traffico. Se il percorso dall'host 2 a SVM-2 LIF2.4 viene perso, l'accesso a LUN3 e LUN4 attraversa la rete del cluster. L'accesso dall'host 2 utilizza LIF 2.3 al nodo 3. Quindi, il traffico entra nello switch di rete del cluster ed esegue il backup fino al node4 per l'accesso a LUN3 e LUN4. Quindi, passa nuovamente sullo switch di rete del cluster e torna all'host 2 attraverso LIF 2.3. Questo percorso attivo o non ottimizzato viene utilizzato fino al ripristino del percorso a LIF 2.4 o fino a quando non viene stabilito un nuovo LIF per SVM-2 su un'altra porta fisica sul nodo 4.
 
-image::../media/bsag-c-mode-optimized-path.gif[esempio di percorsi non ottimizzati]
+image:bsag-c-mode-optimized-path.gif["esempio di percorsi non ottimizzati"]
