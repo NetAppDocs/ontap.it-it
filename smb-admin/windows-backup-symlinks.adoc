@@ -1,0 +1,89 @@
+---
+sidebar: sidebar 
+permalink: smb-admin/windows-backup-symlinks.html 
+keywords: windows, windows server, backup, backup application, symbolic link, symlink, unix, unix-style 
+summary: 'Quando un"applicazione di backup in esecuzione su Windows incontra un collegamento simbolico in stile Unix (link simbolico), il collegamento viene seguito e i dati vengono sottoposti a backup. A partire da ONTAP 9.15.1, è possibile eseguire il backup dei collegamenti simbolici anziché dei dati. Questa funzione è completamente supportata con ONTAP FlexGroups e FlexVol.' 
+---
+= Applicazioni di backup di Windows e collegamenti simbolici in stile Unix
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando un'applicazione di backup in esecuzione su Windows incontra un collegamento simbolico in stile Unix (link simbolico), il collegamento viene seguito e i dati vengono sottoposti a backup. A partire da ONTAP 9.15.1, è possibile eseguire il backup dei collegamenti simbolici anziché dei dati. Questa funzione è completamente supportata con ONTAP FlexGroups e FlexVol.
+
+
+
+== Panoramica
+
+Prima di modificare il modo in cui ONTAP gestisce i collegamenti simbolici durante un'operazione di backup di Windows, è necessario acquisire familiarità con i vantaggi, i concetti chiave e le opzioni di configurazione.
+
+
+
+=== Benefici
+
+Quando questa funzione è disattivata o non disponibile, ogni collegamento simbolico viene attraversato e i dati a cui si collega vengono sottoposti a backup. Per questo motivo, a volte è possibile eseguire il backup di dati non necessari e, in determinate situazioni, l'applicazione potrebbe finire in un ciclo. Il backup dei collegamenti simbolici evita invece questi problemi. E poiché i file simbolici sono molto piccoli rispetto ai dati nella maggior parte dei casi, il completamento dei backup richiede meno tempo. Anche le performance complessive del cluster possono migliorare grazie alla riduzione delle operazioni io.
+
+
+
+=== Ambiente server Windows
+
+Questa funzione è supportata per le applicazioni di backup in esecuzione su Windows. Prima di utilizzarlo, è necessario comprendere gli aspetti tecnici rilevanti dell'ambiente.
+
+.Attributi estesi
+Windows supporta attributi estesi (EA) che formano collettivamente metadati aggiuntivi eventualmente associati ai file. Questi attributi vengono utilizzati da varie applicazioni, come il sottosistema Windows per Linux, come descritto in https://learn.microsoft.com/en-us/windows/wsl/file-permissions["Autorizzazioni file per WSL"^]. Le applicazioni possono richiedere attributi estesi per ciascun file durante la lettura dei dati da ONTAP.
+
+I collegamenti simbolici vengono restituiti negli attributi estesi quando la funzione è attivata. Pertanto, un'applicazione di backup deve fornire il supporto EA standard utilizzato per memorizzare i metadati. Alcune utilità di Windows supportano e conservano gli attributi estesi. Tuttavia, se il software di backup non supporta il backup e il ripristino degli attributi estesi, non conserverà i metadati associati a ciascun file e non riuscirà ad elaborare correttamente i collegamenti simbolici.
+
+.Configurazione Windows
+Le applicazioni di backup in esecuzione su un server Microsoft Windows possono avere un privilegio speciale che consente loro di ignorare la normale protezione dei file. Questa operazione viene eseguita in genere aggiungendo le applicazioni al gruppo Backup Operators. Le app possono quindi eseguire il backup e il ripristino dei file in base alle necessità, nonché altre operazioni di sistema correlate. Sono state apportate sottili modifiche al protocollo SMB utilizzato dalle applicazioni di backup che possono essere rilevate da ONTAP durante la lettura e la scrittura dei dati.
+
+
+
+=== Requisiti
+
+La funzione di backup simbolico ha diversi requisiti, tra cui:
+
+* Nel cluster è in esecuzione ONTAP 9.15.1 o versione successiva.
+* Un'applicazione di backup di Windows a cui sono stati concessi privilegi di backup speciali.
+* L'applicazione di backup deve anche supportare gli attributi estesi e richiederli durante le operazioni di backup.
+* La funzionalità di backup symlink ONTAP è abilitata per la SVM dati applicabile.
+
+
+
+
+=== Opzioni di configurazione
+
+Oltre all'interfaccia CLI di ONTAP, puoi gestire questa funzionalità anche utilizzando l'API REST. Per ulteriori informazioni, vedere https://docs.netapp.com/us-en/ontap-automation/whats-new.html["Novità dell'API REST e dell'automazione di ONTAP"^] . La configurazione che determina il modo in cui ONTAP elabora i collegamenti simbolici in stile Unix deve essere eseguita separatamente per ciascuna SVM.
+
+
+
+== Attivare la funzione di backup simbolico in ONTAP
+
+È stata introdotta un'opzione di configurazione in un comando CLI esistente con ONTAP 9.15.1. È possibile utilizzare questa opzione per attivare o disattivare l'elaborazione simbolica in stile Unix.
+
+.Prima di iniziare
+Rivedere la sezione di base <<Requisiti>>. Inoltre:
+
+* Essere in grado di elevare il proprio privilegio CLI al livello avanzato.
+* Individua la SVM dati che desideri modificare. La SVM `vs1` viene utilizzata nel comando di esempio.
+
+
+.Fasi
+. Impostare il livello dei privilegi avanzati.
++
+[source, cli]
+----
+set privilege advanced
+----
+. Attivare il backup del file symlink.
++
+[source, cli]
+----
+vserver cifs options modify -vserver vs1 -is-backup-symlink-enabled true
+----
+
