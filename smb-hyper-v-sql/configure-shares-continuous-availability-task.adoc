@@ -2,7 +2,7 @@
 permalink: smb-hyper-v-sql/configure-shares-continuous-availability-task.html 
 sidebar: sidebar 
 keywords: configure, shares, continuous, availability, hyper, v, sql, server, virutal, machine, database, file 
-summary: È possibile modificare le condivisioni esistenti per diventare condivisioni continuamente disponibili utilizzate dai server applicativi Hyper-V e SQL Server per accedere senza interruzioni ai file di configurazione e alla macchina virtuale Hyper-V e ai file di database SQL Server. 
+summary: Modificare le condivisioni per essere condivisioni continuamente disponibili utilizzate dai server applicativi Hyper-V e SQL Server per un accesso senza interruzioni 
 ---
 = Configurare le condivisioni esistenti per la disponibilità continua
 :allow-uri-read: 
@@ -42,45 +42,52 @@ Le seguenti proprietà di condivisione non devono essere impostate. Se sono pres
 .Fasi
 . Visualizza le impostazioni correnti dei parametri di condivisione e l'elenco corrente delle proprietà di condivisione configurate:
 +
-`*vserver cifs share show -vserver _vserver_name_ -share-name _share_name_*`
-
-. Se necessario, modificare i parametri di condivisione per disattivare i collegamenti simbolici e impostare i file offline su manuale utilizzando `vserver cifs share properties modify` comando.
-+
-È possibile disattivare i collegamenti simbolici impostando il valore di `-symlink` parametro a. `""`.
-
+[source, cli]
+----
+vserver cifs share show -vserver <vserver_name> -share-name <share_name>
+----
+. Se necessario, modificare i parametri di condivisione per disabilitare i collegamenti simbolici e impostare i file offline su manuale utilizzando il `vserver cifs share modify` comando.
 +
 ** È possibile disattivare i collegamenti simbolici impostando il valore di `-symlink` parametro a. `""`.
 ** È possibile impostare `-offline-files` impostare correttamente il parametro specificando `manual`.
 
 
-. Aggiungere il `continuously-available` condividere la proprietà e, se necessario, il `oplocks` proprietà di condivisione:
+. Aggiungere la `continuously-available` proprietà di condivisione e, se necessario, la `oplocks` proprietà di condivisione:
 +
-`*vserver cifs share properties add -vserver _vserver_name_ -share-name _share_name_ -share-properties continuously-available[,oplock]*`
-
+[source, cli]
+----
+vserver cifs share properties add -vserver <vserver_name> -share-name <share_name> -share-properties continuously-available[,oplock]
+----
 +
 Se il `oplocks` la proprietà di condivisione non è già impostata, è necessario aggiungerla con `continuously-available` condividere la proprietà.
 
 . Rimuovere eventuali proprietà di condivisione non supportate nelle condivisioni a disponibilità continua:
 +
-`*vserver cifs share properties remove -vserver _vserver_name_ -share-name _share_name_ -share-properties properties[,...]*`
-
+[source, cli]
+----
+vserver cifs share properties remove -vserver <vserver_name> -share-name <share_name> -share-properties properties[,...]
+----
 +
 È possibile rimuovere una o più proprietà di condivisione specificando le proprietà di condivisione con un elenco delimitato da virgole.
 
 . Verificare che il `-symlink` e. `-offline-files` i parametri sono impostati correttamente:
 +
-`*vserver cifs share show -vserver _vserver_name_ -share-name _share_name_ -fields symlink-properties,offline-files*`
-
+[source, cli]
+----
+vserver cifs share show -vserver <vserver_name> -share-name <share_name> -fields symlink-properties,offline-files
+----
 . Verificare che l'elenco delle proprietà di condivisione configurate sia corretto:
 +
-`*vserver cifs shares properties show -vserver _vserver_name_ -share-name share_name*`
-
+[source, cli]
+----
+vserver cifs share properties show -vserver <vserver_name> -share-name <share_name>
+----
 
 
 .Esempi
-L'esempio seguente mostra come configurare una condivisione esistente denominata "hare1 `s`" su una macchina virtuale di storage (SVM) vs1 per NDOS con un server applicativo su SMB:
+Il seguente esempio mostra come configurare una condivisione esistente, denominata "share1" su una Storage Virtual Machine (SVM) "VS1" per NDOS con un application server su SMB:
 
-* I collegamenti simbolici vengono disattivati nella condivisione impostando `-symlink` parametro su "".
+* I collegamenti simbolici vengono disattivati nella condivisione impostando il `-symlink` parametro su `""`.
 * Il `-offline-file` il parametro viene modificato e impostato su `manual`.
 * Il `continuously-available` la proprietà share viene aggiunta alla condivisione.
 * Il `oplocks` la proprietà di condivisione è già presente nell'elenco delle proprietà di condivisione, pertanto non è necessario aggiungerla.
