@@ -1,0 +1,75 @@
+---
+sidebar: sidebar 
+permalink: ontap-security-hardening/create-fpolicy.html 
+keywords: tr-4569, ontap hardening guide, security, native, external server, file policy, take actions, synchronous, asynchronous, storage workload security 
+summary: Per fornire visibilità e controllo degli accessi ai file, la soluzione ONTAP utilizza la funzionalità NetApp FPolicy. 
+---
+= Creare e utilizzare un NetApp FPolicy
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media
+
+
+[role="lead"]
+È possibile creare e utilizzare un FPolicy, un componente dell'infrastruttura della soluzione ONTAP, che consente alle applicazioni partner di monitorare e impostare le autorizzazioni di accesso ai file. Una delle applicazioni più potenti è Storage workload Security, un'applicazione SaaS NetApp che fornisce visibilità e controllo centralizzati di tutti gli accessi ai dati aziendali negli ambienti di cloud ibrido per garantire che gli obiettivi di sicurezza e conformità siano soddisfatti.
+
+Il controllo degli accessi è un concetto chiave di sicurezza. La visibilità e la capacità di rispondere alle operazioni di accesso e modifica dei file sono critiche per mantenere la posizione di sicurezza. Per fornire visibilità e controllo degli accessi ai file, la soluzione ONTAP utilizza la funzionalità NetApp FPolicy.
+
+Le policy dei file possono essere impostate in base al tipo di file. FPolicy determina il modo in cui il sistema storage gestisce le richieste da singoli sistemi client per operazioni quali la creazione, l'apertura, la ridenominazione e l'eliminazione. A partire da ONTAP 9, il framework di notifica di accesso ai file FPolicy è stato migliorato con controlli di filtraggio e resilienza in caso di brevi interruzioni della rete.
+
+.Fasi
+. Per utilizzare la funzione FPolicy, è necessario creare prima il criterio FPolicy con il `vserver fpolicy policy create` comando.
++
+
+NOTE: Inoltre, utilizzare il `-events` parametro se si utilizza FPolicy per la visibilità e la raccolta di eventi. La granularità aggiuntiva fornita da ONTAP consente il filtraggio e l'accesso fino al livello di controllo del nome utente. Per controllare i privilegi e l'accesso con i nomi utente, specificare il `-privilege-user-name` parametro.
+
++
+Il testo seguente fornisce un esempio di creazione di FPolicy:
+
++
+[listing]
+----
+cluster1::> vserver fpolicy policy create -vserver vs1.example.com -policy-name vs1_pol -events cserver_evt,v1e1 -engine native -is-mandatory true -allow-privileged-access no -is-passthrough-read-enabled false
+----
+. Dopo aver creato il criterio FPolicy, è necessario attivarlo con il `vserver fpolicy enable` comando . Questo comando imposta inoltre la priorità o la sequenza della voce FPolicy.
++
+
+NOTE: La sequenza FPolicy è importante perché, se più policy hanno sottoscritto lo stesso evento di accesso ai file, la sequenza determina l'ordine in cui l'accesso viene concesso o negato.
+
++
+Nel testo seguente viene fornita una configurazione di esempio per abilitare il criterio FPolicy e convalidare la configurazione con il `vserver fpolicy show` comando:
+
++
+[listing]
+----
+cluster1::> vserver fpolicy enable -vserver vs2.example.com -policy-name vs2_pol -sequence-number 5
+
+cluster1::> vserver fpolicy show
+Vserver                 Policy Name                    Sequence  Status   Engine
+----------------------- ------------------------------ --------  -------  -------
+vs1.example.com         vs1_pol
+vs2.example.com         vs2_pol
+ external
+2 entries were displayed.
+----
+
+
+
+
+== Miglioramenti di FPolicy
+
+ONTAP 9 include i miglioramenti FPolicy descritti nelle sezioni seguenti.
+
+
+
+=== Controlli di filtraggio
+
+Sono disponibili nuovi filtri per `SetAttr` e per la rimozione delle notifiche sulle attività della directory.
+
+
+
+=== Resilienza asincrona
+
+Se un server FPolicy che opera in modalità asincrona subisce un'interruzione di rete, le notifiche FPolicy generate durante l'interruzione vengono memorizzate nel nodo di storage. Quando il server FPolicy torna in linea, viene avvisato delle notifiche memorizzate e può recuperarle dal nodo di storage. Il periodo di tempo in cui le notifiche possono essere memorizzate durante un'interruzione è configurabile fino a 10 minuti.

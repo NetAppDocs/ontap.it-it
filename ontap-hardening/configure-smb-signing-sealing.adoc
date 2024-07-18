@@ -1,0 +1,43 @@
+---
+sidebar: sidebar 
+permalink: ontap-security-hardening/configure-smb-signing-sealing.html 
+keywords: tr-4569, ontap hardening guide, security, SMB signing, SMB sealing 
+summary: 'Per configurare e abilitare la firma SMB, utilizzare il comando "vserver cifs Security modify" e verificare che il parametro "-is-signing-required" sia impostato su "true".' 
+---
+= Configurazione e attivazione della firma e della sigillatura SMB CIFS
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media
+
+
+[role="lead"]
+Puoi configurare e abilitare la SMB signing che protegge la sicurezza del data fabric assicurandoti che il traffico tra sistemi storage e client non venga compromesso da attacchi replay o man-in-the-middle. La SMB signing protegge i messaggi SMB verificando che dispongano di firme valide.
+
+.A proposito di questa attività
+Un comune vettore di minaccia per i file system e le architetture si trova nel protocollo SMB. Per risolvere questo problema, la soluzione ONTAP 9 utilizza la firma e la sigillatura SMB standard del settore. La SMB signing protegge la sicurezza del data fabric garantendo che il traffico tra i sistemi storage e i client non venga compromesso da attacchi replay o man-in-the-middle. Lo fa verificando che i messaggi SMB dispongano di firme valide.
+
+Sebbene la firma SMB sia disattivata per impostazione predefinita nell'interesse delle prestazioni, NetApp consiglia vivamente di attivarla. Inoltre, la soluzione ONTAP supporta la SMB Encryption, nota anche come sealing. Questo approccio consente il trasporto sicuro dei dati su base condivisa. Per impostazione predefinita, la crittografia SMB è disattivata. Tuttavia, NetApp consiglia di attivare la crittografia SMB.
+
+La firma e la sigillatura LDAP sono ora supportate in SMB 2,0 e versioni successive. La firma (protezione contro la manomissione) e la crittografia (crittografia) consentono comunicazioni sicure tra SVM e server Active Directory. La crittografia Accelerated AES New Instructions (Intel AES NI) è ora supportata in SMB 3,0 e versioni successive. Intel AES NI migliora l'algoritmo AES e accelera la crittografia dei dati con famiglie di processori supportati.
+
+.Fasi
+. Per configurare e abilitare la firma SMB, utilizzare il `vserver cifs security modify` comando e verificare che il `-is-signing-required` parametro sia impostato su `true`. Fare riferimento alla seguente configurazione di esempio:
++
+[listing]
+----
+cluster1::> vserver cifs security modify -vserver vs1 -kerberos-clock-skew 3 -kerberos-ticket-age 8 -is-signing-required true
+----
+. Per configurare e attivare la crittografia e la sigillatura SMB, utilizzare il `vserver cifs security modify` comando e verificare che il `-is-smb-encryption-required` parametro sia impostato su `true`. Fare riferimento alla seguente configurazione di esempio:
++
+[listing]
+----
+cluster1::> vserver cifs security modify -vserver vs1 -is-smb-encryption-required true
+
+cluster1::> vserver cifs security show -vserver vs1 -fields is-smb-encryption-required
+vserver  is-smb-encryption-required
+-------- -------------------------
+vs1      true
+----
+
