@@ -1,7 +1,7 @@
 ---
 permalink: san-admin/enable-space-allocation.html 
 sidebar: sidebar 
-keywords: enable, space allocation, space reclamation, unmap 
+keywords: enable, space allocation, space reclamation, unmap, lun 
 summary: 'Abilitare l"allocazione dello spazio per consentire all"host e al sistema di storage di cooperare nella gestione dello spazio.' 
 ---
 = Attivare l'allocazione dello spazio per SAN
@@ -11,7 +11,11 @@ summary: 'Abilitare l"allocazione dello spazio per consentire all"host e al sist
 
 
 [role="lead"]
-Attivare l'allocazione dello spazio per consentire agli host e ai sistemi di storage di cooperare nella gestione dello spazio LUN. Attivazione di `space-allocation` l'impostazione consente di ottenere i seguenti vantaggi:
+Attivare l'allocazione dello spazio per consentire agli host e ai sistemi di storage di cooperare nella gestione dello spazio LUN.
+
+A partire da ONTAP 9.15.1, l'allocazione dello spazio è attivata per impostazione predefinita per i LUN appena creati. L'allocazione dello spazio è stata disattivata per impostazione predefinita nelle versioni precedenti di ONTAP (9.14.1 e precedenti).
+
+L'attivazione dell' `space-allocation` impostazione consente di ottenere i seguenti vantaggi:
 
 * *ONTAP può comunicare ad un host che non è disponibile spazio libero per servire una scrittura*: Questa comunicazione è un modo più grazioso per gli host di gestire situazioni fuori dallo spazio. Il LUN rimane in linea ma non è in grado di eseguire la manutenzione di un io in scrittura fino a quando lo spazio non diventa disponibile. È comunque possibile eseguire i/o in lettura. L'effetto esatto su un sistema operativo host dipende dalla configurazione dell'host. In alcuni casi, il sistema operativo tenta di scrivere di nuovo io fino a quando non riesce. In altri casi, il filesystem potrebbe essere messo offline.
 +
@@ -38,20 +42,21 @@ I seguenti host attualmente supportano il thin provisioning SCSI quando si attiv
 L'allocazione dello spazio non è supportata sugli host NVMe.
 
 .A proposito di questa attività
-A partire da ONTAP 9.15.1, l'allocazione dello spazio è abilitata per impostazione predefinita per le LUN VMware e Hyper-V appena create ed è disabilitata per tutte le LUN appena create non utilizzate da VMware e Hyper-V.
-
-
-NOTE: Quando aggiorni il cluster a ONTAP 9.15.1, l'impostazione di allocazione dello spazio per tutte le LUN create prima dell'upgrade del software rimane invariata dopo l'upgrade, indipendentemente dal tipo di host.  Ad esempio, se in ONTAP 9.13.1 è stato creato un LUN per un host VMware con allocazione dello spazio disattivata, l'allocazione dello spazio su tale LUN rimane disattivata dopo l'aggiornamento a ONTAP 9.15.1.
+Quando aggiorni il cluster a ONTAP 9.15.1, l'impostazione di allocazione dello spazio per tutte le LUN create prima dell'upgrade del software rimane invariata dopo l'upgrade, indipendentemente dal tipo di host. Ad esempio, se in ONTAP 9.13.1 è stato creato un LUN per un host VMware con allocazione dello spazio disattivata, l'allocazione dello spazio su tale LUN rimane disattivata dopo l'aggiornamento a ONTAP 9.15.1.
 
 .Fasi
 . Attiva allocazione spazio:
 +
-`lun modify -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -space-allocation enabled`
-
+[source, cli]
+----
+`lun modify -vserver <vserver_name> -volume <volume_name> -lun <lun_name> -space-allocation enabled
+----
 . Verificare che l'allocazione dello spazio sia attivata:
 +
-`lun show -vserver _vserver_name_ -volume _volume_name_ -lun _lun_name_ -fields space-allocation`
-
+[source, cli]
+----
+lun show -vserver <vserver_name> -volume <volume_name> -lun <lun_name> -fields space-allocation
+----
 . Verificare che l'allocazione dello spazio sia attivata sul sistema operativo host.
 +
 
