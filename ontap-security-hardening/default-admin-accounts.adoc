@@ -1,0 +1,164 @@
+---
+sidebar: sidebar 
+permalink: ontap-security-hardening/default-admin-accounts.html 
+keywords: tr-4569, ontap hardening guide, security, RBAC, roles, Restricting access, admin, diag 
+summary: 'Limitazione dell"accesso agli account admin e diag' 
+---
+= Account amministrativi predefiniti
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media
+
+
+[role="lead"]
+L'account admin deve essere limitato perché al ruolo di amministratore è consentito l'accesso utilizzando tutte le applicazioni. L'account diag consente l'accesso alla shell del sistema e deve essere riservato solo al supporto tecnico per eseguire le attività di risoluzione dei problemi.
+
+Esistono due account amministrativi predefiniti: `admin` E `diag`.
+
+Gli account orfani sono un importante vettore di sicurezza che spesso porta a vulnerabilità, inclusa l'escalation dei privilegi. Si tratta di account non necessari e inutilizzati che rimangono nell'archivio degli account utente. Si tratta principalmente di account predefiniti che non sono mai stati utilizzati o per i quali le password non sono mai state aggiornate o modificate. Per risolvere questo problema, ONTAP supporta la rimozione e la ridenominazione degli account.
+
+
+NOTE: ONTAP non può rimuovere o rinominare gli account incorporati. Tuttavia, NetApp consiglia di bloccare gli account incorporati non necessari con il comando LOCK.
+
+Sebbene gli account orfani siano un problema di protezione significativo, NetApp consiglia vivamente di verificare l'effetto della rimozione degli account dall'archivio degli account locali.
+
+
+
+== Elenca account locali
+
+Per elencare gli account locali, eseguire il `security login show` comando.
+
+[listing]
+----
+cluster1::*> security login show -vserver cluster1
+
+Vserver: cluster1
+                             Authentication             Acct   Is-Nsswitch
+User/Group Name  Application Method    Role Name        Locked Group
+---------------- ----------- --------- ---------------- ------ -----------
+admin            console     password  admin            no     no
+admin            http        password  admin            no     no
+admin            ontapi      password  admin            no     no
+admin            service-processor password admin       no     no
+admin            ssh         password  admin            no     no
+autosupport      console     password  autosupport      no     no
+6 entries were displayed.
+
+----
+
+
+== Rimuovere l'account admin predefinito
+
+L' `admin` account ha il ruolo di amministratore e può accedere utilizzando tutte le applicazioni.
+
+.Fasi
+. Creare un altro account a livello di amministratore.
++
+Per rimuovere completamente l'account predefinito `admin` , è necessario prima creare un altro account a livello di amministratore che utilizzi l' `console` applicazione di accesso.
+
++
+
+NOTE: Queste modifiche possono causare alcuni effetti indesiderati. Verificare sempre prima le nuove impostazioni che potrebbero influire sullo stato di sicurezza della soluzione in un cluster non di produzione.
+
++
+Esempio:
+
++
+[listing]
+----
+cluster1::*> security login create -user-or-group-name NewAdmin -application console -authentication-method password -vserver cluster1
+----
++
+[listing]
+----
+cluster1::*> security login show -vserver cluster1
+
+Vserver: cluster1
+                             Authentication             Acct   Is-Nsswitch
+User/Group Name  Application Method    Role Name        Locked Group
+---------------- ----------- --------- ---------------- ------ -----------
+NewAdmin         console     password  admin            no     no
+admin            console     password  admin            no     no
+admin            http        password  admin            no     no
+admin            ontapi      password  admin            no     no
+admin            service-processor password admin       no     no
+admin            ssh         password  admin            no     no
+autosupport      console     password  autosupport      no     no
+7 entries were displayed.
+----
+. Dopo aver creato il nuovo account admin, verificare l'accesso con l'account `NewAdmin` . Con l' `NewAdmin` accesso, configurare l'account in modo che disponga delle stesse applicazioni di accesso dell'account admin predefinito o precedente (ad esempio, `http`, , `ontapi` `service-processor`o `ssh`). Questa operazione garantisce il mantenimento del controllo dell'accesso.
++
+Esempio:
+
++
+[listing]
+----
+cluster1::*> security login create -vserver cluster1 -user-or-group-name NewAdmin -application ssh -authentication-method password
+cluster1::*> security login create -vserver cluster1 -user-or-group-name NewAdmin -application http -authentication-method password
+cluster1::*> security login create -vserver cluster1 -user-or-group-name NewAdmin -application ontapi -authentication-method password
+cluster1::*> security login create -vserver cluster1 -user-or-group-name NewAdmin -application service-processor -authentication-method password
+----
+. Dopo aver verificato tutte le funzioni, è possibile disattivare l'account admin per tutte le applicazioni prima di rimuoverlo da ONTAP. Questo passaggio serve come test finale per confermare che non vi siano funzioni persistenti che si basano sull'account admin precedente.
++
+[listing]
+----
+cluster1::*> security login lock -vserver cluster1 -user-or-group-name admin -application *
+----
+. Per rimuovere l'account admin predefinito e tutte le voci, eseguire il seguente comando:
++
+[listing]
+----
+cluster1::*> security login delete -vserver cluster1 -user-or-group-name admin -application *
+cluster1::*> security login show -vserver cluster1
+
+Vserver: cluster1
+                             Authentication             Acct   Is-Nsswitch
+User/Group Name  Application Method    Role Name        Locked Group
+---------------- ----------- --------- ---------------- ------ -----------
+NewAdmin         console     password  admin            no     no
+NewAdmin         http        password  admin            no     no
+NewAdmin         ontapi      password  admin            no     no
+NewAdmin         service-processor password admin       no     no
+NewAdmin         ssh         password  admin            no     no
+autosupport      console     password  autosupport      no     no
+7 entries were displayed.
+
+----
+
+
+
+
+== Impostare la password dell'account diagnostico (diag)
+
+Con il sistema di archiviazione viene fornito un account diagnostico denominato `diag` . È possibile utilizzare l' `diag` account per eseguire operazioni di risoluzione dei problemi in `systemshell`. L' `diag` account è l'unico account che può essere utilizzato per accedere alla shell di sistema tramite il `diag` comando privilegiato `systemshell`.
+
+
+CAUTION: La shell di sistema e l'account associato `diag` sono destinati a scopi diagnostici di basso livello. Il loro accesso richiede il livello di privilegio diagnostico ed è riservato solo per essere utilizzato con la guida del supporto tecnico per eseguire le attività di risoluzione dei problemi. Né il `diag` conto né il `systemshell` sono destinati a fini amministrativi generali.
+
+.Prima di iniziare
+Prima di accedere a `systemshell`, è necessario impostare la `diag` password dell'account utilizzando il `security login password` comando . È necessario utilizzare i principi della password complessa e modificarla `diag` a intervalli regolari.
+
+.Fasi
+. Per impostare la `diag` password dell'utente dell'account:
++
+[listing]
+----
+cluster1::> set -privilege diag
+
+Warning: These diagnostic commands are for use by NetApp personnel only.
+Do you want to continue? \{y|n}: y
+
+cluster1::*> systemshell -node node-01
+    (system node systemshell)
+diag@node-01's password:
+
+Warning: The system shell provides access to low-level
+diagnostic tools that can cause irreparable damage to
+the system if not used properly. Use this environment
+only when directed to do so by support personnel.
+
+node-01%
+----
+
