@@ -20,14 +20,6 @@ Prima di poter utilizzare RSH per accedere al cluster, è necessario soddisfare 
 +
 Il `-application` del parametro `security login` commands specifica il metodo di accesso per un account utente. Per ulteriori informazioni, consultare `security login` pagine man.
 
-* RSH deve essere già abilitato nella policy del firewall di gestione utilizzata dalle LIF di gestione del cluster o dei nodi, in modo che le richieste RSH possano passare attraverso il firewall.
-+
-Per impostazione predefinita, RSH è disattivato. Il `system services firewall policy show` con il `-service rsh` Parametro indica se RSH è stato attivato in una policy firewall. Per ulteriori informazioni, consultare `system services firewall policy` pagine man.
-
-* Se si utilizzano connessioni IPv6, IPv6 deve essere già configurato e abilitato sul cluster e i criteri firewall devono essere già configurati con gli indirizzi IPv6.
-+
-Il `network options ipv6 show` Il comando indica se IPv6 è attivato. Il `system services firewall policy show` visualizza i criteri del firewall.
-
 
 
 .A proposito di questa attività
@@ -42,18 +34,33 @@ Se la LIF di gestione del cluster risiede nel nodo, condivide questo limite con 
 +
 Se la velocità delle connessioni in entrata è superiore a 10 al secondo, il servizio viene temporaneamente disattivato per 60 secondi.
 
+* I comandi RSH richiedono privilegi avanzati.
 
 
 .Fasi
-. Da un host di amministrazione, immettere il seguente comando:
+. Verificare che il protocollo di protezione RSH sia attivato:
 +
-`*rsh _hostname_or_IP_ -l _username:passwordcommand_*`
+`security protocol show`
 
 +
-`_hostname_or_IP_` È il nome host o l'indirizzo IP della LIF di gestione del cluster o di una LIF di gestione dei nodi. Si consiglia di utilizzare la LIF di gestione del cluster. È possibile utilizzare un indirizzo IPv4 o IPv6.
+.. Se il protocollo di protezione RSH è attivato, passare alla fase successiva.
+.. Se il protocollo di protezione RSH non è attivato, utilizzare il comando seguente per attivarlo:
++
+`security protocol modify -application rsh -enabled true`
+
+
+
+. Confermare l' `management-rsh-server` esistenza del servizio nelle LIF di gestione:
++
+`network interface show -services management-rsh-server`
 
 +
-`_command_` È il comando che si desidera eseguire su RSH.
+.. Se il `management-rsh-server` servizio è presente, passare alla fase successiva.
+.. Se il `management-rsh-server` servizio non esiste, utilizzare il seguente comando per aggiungerlo:
++
+`network interface service-policy add-service -vserver cluster1 -policy default-management -service management-rsh-server`
+
+
 
 
 
