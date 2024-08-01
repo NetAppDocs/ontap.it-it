@@ -13,7 +13,7 @@ summary: È possibile creare un criterio di replica personalizzato se il criteri
 [role="lead"]
 È possibile creare un criterio di replica personalizzato se il criterio predefinito per una relazione non è adatto. È possibile, ad esempio, comprimere i dati in un trasferimento di rete o modificare il numero di tentativi eseguiti da SnapMirror per trasferire le copie Snapshot.
 
-È possibile utilizzare un criterio predefinito o personalizzato quando si crea una relazione di replica. Per un archivio personalizzato (in precedenza SnapVault) o una policy di replica unificata, è necessario definire una o più _regole_ che determinano quali copie Snapshot vengono trasferite durante l'inizializzazione e l'aggiornamento. È inoltre possibile definire una pianificazione per la creazione di copie Snapshot locali sulla destinazione.
+È possibile utilizzare un criterio predefinito o personalizzato quando si crea una relazione di replica. Per un archivio personalizzato (in precedenza SnapVault) o un criterio di replica unificato, è necessario definire una o più _regole_ che determinano quali copie Snapshot vengono trasferite durante l'inizializzazione e l'aggiornamento. È inoltre possibile definire un programma per la creazione di copie Snapshot locali sulla destinazione.
 
 Il _tipo di policy_ del criterio di replica determina il tipo di relazione che supporta. La tabella seguente mostra i tipi di policy disponibili.
 
@@ -63,11 +63,34 @@ SnapMirror Synchronous in modalità Sync (supportato a partire da ONTAP 9.5)
 Quando si crea un criterio di replica personalizzato, è consigliabile modellare il criterio dopo un criterio predefinito.
 
 ====
-.Fase
+.Fasi
+Puoi creare policy di protezione dei dati personalizzate con System Manager o l'interfaccia a riga di comando di ONTAP. A partire da ONTAP 9.11.1, è possibile utilizzare Gestione sistema per creare criteri di mirroring e vault personalizzati e per visualizzare e selezionare i criteri legacy. Questa funzionalità è disponibile anche in ONTAP 9.8P12 e nelle patch successive di ONTAP 9.8.
+
+Creare policy di protezione personalizzate sul cluster di origine e di destinazione.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Fare clic su *Protection > Local Policy Settings* (protezione > Impostazioni policy locali).
+. In *Criteri di protezione*, fare clic su image:icon_arrow.gif["Icona a forma di freccia"].
+. Nel riquadro *Criteri di protezione*, fare clic su image:icon_add.gif["Icona Add (Aggiungi)"].
+. Inserire il nuovo nome del criterio e selezionare l'ambito del criterio.
+. Scegliere un tipo di policy. Per aggiungere una policy di solo vault o solo mirror, scegliere *Asynchronous* e fare clic su *Usa un tipo di policy legacy*.
+. Compilare i campi obbligatori.
+. Fare clic su *Save* (Salva).
+. Ripetere questi passaggi sull'altro cluster.
+
+
+--
+.CLI
+--
 . Creare un criterio di replica personalizzato:
 +
-`snapmirror policy create -vserver _SVM_ -policy _policy_ -type async-mirror|vault|mirror-vault|strict-sync-mirror|sync-mirror -comment _comment_ -tries _transfer_tries_ -transfer-priority low|normal -is-network-compression-enabled true|false`
-
+[source, cli]
+----
+snapmirror policy create -vserver <SVM> -policy _policy_ -type <async-mirror|vault|mirror-vault|strict-sync-mirror|sync-mirror> -comment <comment> -tries <transfer_tries> -transfer-priority <low|normal> -is-network-compression-enabled <true|false>
+----
 +
 Per la sintassi completa dei comandi, vedere la pagina man.
 
@@ -112,3 +135,6 @@ cluster_dst::> snapmirror policy create -vserver svm1 -policy my_strictsync -typ
 Per i tipi di policy "`vault`" e "`mirror-vault`", è necessario definire le regole che determinano quali copie Snapshot vengono trasferite durante l'inizializzazione e l'aggiornamento.
 
 Utilizzare `snapmirror policy show` Per verificare che il criterio SnapMirror sia stato creato. Per la sintassi completa dei comandi, vedere la pagina man.
+
+--
+====

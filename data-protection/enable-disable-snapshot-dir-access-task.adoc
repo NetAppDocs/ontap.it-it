@@ -2,7 +2,7 @@
 permalink: data-protection/enable-disable-snapshot-dir-access-task.html 
 sidebar: sidebar 
 keywords: enable, disable, access, snapshot copy 
-summary: 'Per determinare se la directory di copia Snapshot è visibile ai client NFS e SMB per ripristinare un file o un LUN da una copia Snapshot, è possibile attivare e disattivare l"accesso alla directory di copia Snapshot utilizzando `-snapdir-access` opzione di `volume modify` comando.' 
+summary: 'È possibile abilitare e disabilitare l"accesso alla directory di copia Snapshot per renderla visibile ai sistemi client e per fornire loro l"accesso a una directory di copia Snapshot su un volume.' 
 ---
 = Abilitare e disabilitare l'accesso dei client NFS e SMB alla directory di copia Snapshot
 :allow-uri-read: 
@@ -11,13 +11,37 @@ summary: 'Per determinare se la directory di copia Snapshot è visibile ai clien
 
 
 [role="lead"]
-Per determinare se la directory di copia Snapshot è visibile ai client NFS e SMB per ripristinare un file o un LUN da una copia Snapshot, è possibile attivare e disattivare l'accesso alla directory di copia Snapshot utilizzando `-snapdir-access` opzione di `volume modify` comando.
+Puoi abilitare e disabilitare l'accesso alla directory di copia Snapshot usando l'opzione CLI ONTAP `-snapdir-access` del `volume modify` comando e, a partire da ONTAP 9.10.1, puoi utilizzare System Manager per abilitare o disabilitare i sistemi client per accedere a una directory di copia Snapshot su un volume. L'attivazione dell'accesso rende la directory di copia Snapshot visibile ai client e consente ai client Windows di mappare un'unità alla directory di copia Snapshot per visualizzarne il contenuto e accedervi. I client NFS e SMB possono quindi ripristinare un file o LUN da una snapshot.
+
+È possibile attivare o disattivare l'accesso alla directory di copia Snapshot di un volume modificando le impostazioni del volume o le impostazioni di condivisione del volume.
+
+
+
+== Abilitare o disabilitare l'accesso del client alla directory di copia Snapshot modificando un volume
 
 .Fasi
+Puoi abilitare e disabilitare l'accesso alla directory di copia Snapshot dei client utilizzando ONTAP System Manager o l'interfaccia a riga di comando di ONTAP. Per impostazione predefinita, la directory di copia Snapshot di un volume è accessibile ai client.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Fare clic su *Storage > Volumes* (Storage > volumi)
+. Selezionare il volume contenente la directory Snapshot Copies che si desidera visualizzare o nascondere.
+. Fare clic su image:icon_kabob.gif["Icona delle opzioni di menu"] e selezionare *Modifica*.
+. Nella sezione *Snapshot Copies (Local) Settings*, selezionare o deselezionare *Show the Snapshot Copies directory to clients* (Mostra la directory Snapshot Copies ai client).
+. Fare clic su *Save* (Salva).
+
+
+--
+.CLI
+--
 . Controllare lo stato di accesso alla directory Snapshot:
 +
-`volume show -vserver _SVM_name_ -volume _vol_name_ -fields snapdir-access`
-
+[source, cli]
+----
+volume show -vserver <SVM_name> -volume <vol_name> -fields snapdir-access
+----
 +
 Esempio:
 
@@ -32,8 +56,10 @@ vs0     vol1   false
 ----
 . Attivare o disattivare l'accesso alla directory di copia Snapshot:
 +
-`volume modify -vserver _SVM_name_ -volume _vol_name_ -snapdir-access true|false`
-
+[source, cli]
+----
+volume modify -vserver <SVM_name> -volume <vol_name> -snapdir-access <true|false>
+----
 +
 Il seguente esempio consente l'accesso alla directory di copia Snapshot su vol1:
 
@@ -44,4 +70,20 @@ Il seguente esempio consente l'accesso alla directory di copia Snapshot su vol1:
 clus1::> volume modify -vserver vs0 -volume vol1 -snapdir-access true
 Volume modify successful on volume vol1 of Vserver vs0.
 ----
+
+
+--
+====
+
+
+== Abilitare o disabilitare l'accesso del client alla directory di copia Snapshot modificando una condivisione
+
+Per impostazione predefinita, la directory di copia Snapshot di un volume è accessibile ai client.
+
+.Fasi
+. Fare clic su *Storage > Shares*.
+. Selezionare il volume contenente la directory Snapshot Copies che si desidera visualizzare o nascondere.
+. Fare clic su image:icon_kabob.gif["Icona delle opzioni di menu"] e selezionare *Modifica*.
+. Nella sezione *Proprietà condivisione*, selezionare o deselezionare *Consenti ai client di accedere alla directory Snapshot Copies*.
+. Fare clic su *Save* (Salva).
 

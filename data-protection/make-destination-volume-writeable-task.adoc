@@ -2,7 +2,7 @@
 permalink: data-protection/make-destination-volume-writeable-task.html 
 sidebar: sidebar 
 keywords: destination, volume, writeable, write, serve data, snapmirror, quiesce, pause, abort, transfers 
-summary: È necessario rendere il volume di destinazione scrivibile prima di poter inviare i dati dal volume ai client. È possibile utilizzare il comando quiesce di snapmirror per interrompere i trasferimenti pianificati verso la destinazione, il comando di interruzione di snapmirror per interrompere i trasferimenti in corso e il comando di interruzione di snapmirror per rendere la destinazione scrivibile. 
+summary: È necessario rendere il volume di destinazione scrivibile prima di poter inviare i dati dal volume ai client. 
 ---
 = Rendere il volume di destinazione scrivibile
 :allow-uri-read: 
@@ -11,16 +11,39 @@ summary: È necessario rendere il volume di destinazione scrivibile prima di pot
 
 
 [role="lead"]
-È necessario rendere il volume di destinazione scrivibile prima di poter inviare i dati dal volume ai client. È possibile utilizzare `snapmirror quiesce` per arrestare i trasferimenti pianificati verso la destinazione, il `snapmirror abort` per interrompere i trasferimenti in corso e il `snapmirror break` per rendere la destinazione scrivibile.
+È necessario rendere il volume di destinazione scrivibile prima di poter inviare i dati dal volume ai client. Per fornire dati da una destinazione mirror quando un'origine non è disponibile, interrompere i trasferimenti pianificati verso la destinazione, quindi interrompere la relazione SnapMirror per rendere la destinazione scrivibile.
 
 .A proposito di questa attività
 È necessario eseguire questa attività dalla SVM di destinazione o dal cluster di destinazione.
 
 .Fasi
+Puoi utilizzare System Manager o l'interfaccia a riga di comando di ONTAP per rendere scrivibile un volume di destinazione.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare la relazione di protezione: Fare clic su *protezione > Relazioni*, quindi fare clic sul nome del volume desiderato.
+. Fare clic su image:icon_kabob.gif["Icona delle opzioni di menu"].
+. Stop scheduled transfer (Interrompi trasferimenti pianificati): Fare clic su *Pause*
+. Rendere scrivibile la destinazione: Fare clic su *Interrompi*.
+. Andare alla pagina principale *Relazioni* per verificare che lo stato della relazione sia visualizzato come "interrotto".
+
+
+.Fasi successive:
+È necessario link:resynchronize-relationship-task.html["eseguire la risincronizzazione inversa della relazione di replica"] dopo aver reso scrivibile un volume di destinazione.
+
+Quando il volume di origine disattivato è nuovamente disponibile, è necessario risincronizzare nuovamente la relazione per copiare i dati correnti nel volume di origine originale. Questo processo sostituisce i dati sul volume di origine originale.
+
+--
+.CLI
+--
 . Interrompere i trasferimenti pianificati verso la destinazione:
 +
-`snapmirror quiesce -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ...`
-
+[source, cli]
+----
+snapmirror quiesce -source-path <SVM:volume|cluster://SVM/volume> -destination-path <SVM:volume|cluster://SVM/volume>
+----
 +
 Per la sintassi completa dei comandi, vedere la pagina man.
 
@@ -34,17 +57,17 @@ cluster_dst::> snapmirror quiesce -source-path svm1:volA -destination-path svm_b
 ----
 . Interrompere i trasferimenti in corso verso la destinazione:
 +
-`snapmirror abort -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ...`
-
+[source, cli]
+----
+snapmirror abort -source-path <SVM:volume|cluster://SVM/volume> -destination-path <SVM:volume|cluster://SVM/volume>
+----
 +
 Per la sintassi completa dei comandi, vedere la pagina man.
 
 +
-[NOTE]
-====
-Questo passaggio non è necessario per le relazioni sincroni di SnapMirror (supportate a partire da ONTAP 9.5).
 
-====
+NOTE: Questo passaggio non è necessario per le relazioni sincroni di SnapMirror (supportate a partire da ONTAP 9.5).
+
 +
 Nell'esempio seguente vengono interrompiti i trasferimenti in corso tra il volume di origine `volA` acceso `svm1` e il volume di destinazione `volA_dst` acceso `svm_backup`:
 
@@ -55,8 +78,10 @@ cluster_dst::> snapmirror abort -source-path svm1:volA -destination-path svm_bac
 ----
 . Interrompere la relazione di disaster recovery di SnapMirror:
 +
-`snapmirror break -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ...`
-
+[source, cli]
+----
+snapmirror break -source-path <SVM:volume|cluster://SVM/volume> -destination-path <SVM:volume|cluster://SVM/volume>
+----
 +
 Per la sintassi completa dei comandi, vedere la pagina man.
 
@@ -68,8 +93,14 @@ Nell'esempio seguente viene spezzata la relazione tra il volume di origine `volA
 ----
 cluster_dst::> snapmirror break -source-path svm1:volA -destination-path svm_backup:volA_dst
 ----
++
+.Fasi successive:
+È necessario link:resynchronize-relationship-task.html["risincronizzazione della relazione di replica"] dopo aver reso scrivibile un volume di destinazione.
 
 
+
+--
+====
 
 
 == Altri modi per farlo in ONTAP
@@ -77,9 +108,6 @@ cluster_dst::> snapmirror break -source-path svm1:volA -destination-path svm_bac
 [cols="2"]
 |===
 | Per eseguire queste attività con... | Guarda questo contenuto... 
-
-
-| System Manager riprogettato (disponibile con ONTAP 9.7 e versioni successive) | link:https://docs.netapp.com/us-en/ontap/task_dp_serve_data_from_destination.html["Fornire i dati da una destinazione SnapMirror"^] 
 
 
 | System Manager Classic (disponibile con ONTAP 9.7 e versioni precedenti) | link:https://docs.netapp.com/us-en/ontap-system-manager-classic/volume-disaster-recovery/index.html["Panoramica sul disaster recovery dei volumi"^] 

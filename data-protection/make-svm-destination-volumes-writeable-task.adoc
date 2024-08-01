@@ -1,8 +1,8 @@
 ---
 permalink: data-protection/make-svm-destination-volumes-writeable-task.html 
 sidebar: sidebar 
-keywords: make, svm, destination, volume, writable 
-summary: 'È necessario rendere scrivibili i volumi di destinazione SVM prima di poter fornire i dati ai client. La procedura è in gran parte identica alla procedura per la replica del volume, con un"eccezione. Se si imposta -Identity-preserve true quando si crea la relazione di replica SVM, è necessario arrestare la SVM di origine prima di attivare la SVM di destinazione.' 
+keywords: make, svm, storage vm, destination, volume, writable 
+summary: È necessario rendere scrivibili i volumi di destinazione SVM prima di poter fornire i dati ai client. 
 ---
 = Rendere scrivibili i volumi di destinazione SVM
 :allow-uri-read: 
@@ -11,7 +11,9 @@ summary: 'È necessario rendere scrivibili i volumi di destinazione SVM prima di
 
 
 [role="lead"]
-È necessario rendere scrivibili i volumi di destinazione SVM prima di poter fornire i dati ai client. La procedura è in gran parte identica alla procedura per la replica del volume, con un'eccezione. Se si imposta `-identity-preserve true` Una volta creata la relazione di replica SVM, è necessario arrestare la SVM di origine prima di attivare la SVM di destinazione.
+È necessario rendere scrivibili i volumi di destinazione SVM prima di poter fornire i dati ai client.
+
+La procedura è in gran parte identica alla procedura per la replica del volume, con un'eccezione. Se si imposta `-identity-preserve true` il momento della creazione di una relazione di replica della SVM, occorre arrestare la SVM di origine prima di attivare la SVM di destinazione.
 
 .A proposito di questa attività
 Per la sintassi completa dei comandi, vedere la pagina man.
@@ -21,17 +23,36 @@ Per la sintassi completa dei comandi, vedere la pagina man.
 In uno scenario di disaster recovery, non è possibile eseguire un aggiornamento di SnapMirror dalla SVM di origine alla SVM di destinazione del disaster recovery perché la SVM di origine e i relativi dati non saranno accessibili e poiché gli aggiornamenti dall'ultima risincronizzazione potrebbero essere danneggiati o danneggiati.
 
 ====
+A partire da ONTAP 9.8, è possibile utilizzare Gestione sistema per attivare una VM di storage di destinazione dopo un disastro. L'attivazione della VM di storage di destinazione rende i volumi di destinazione SVM scrivibili e consente di inviare i dati ai client.
+
 .Fasi
+Questa attività può essere eseguita da System Manager o dalla CLI di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Se il cluster di origine è accessibile, verificare che SVM sia stato arrestato: Selezionare *Storage > Storage VM* e selezionare la colonna *state* per SVM.
+. Se lo stato della SVM di origine è "in esecuzione", interromperlo: Selezionare image:icon_kabob.gif["Icona delle opzioni di menu"] e scegliere *Stop*.
+. Sul cluster di destinazione, individuare la relazione di protezione desiderata: Accedere a *protezione > Relazioni*.
+. Passare il mouse sul nome della VM di archiviazione di origine desiderata, fare clic su image:icon_kabob.gif["Icona delle opzioni di menu"], quindi scegliere *attiva VM di archiviazione di destinazione*.
+. Nella finestra *attiva VM di archiviazione di destinazione*, selezionare *attivare la VM di archiviazione di destinazione e interrompere la relazione*.
+. Fare clic su *Activate* (attiva).
+
+
+--
+.CLI
+--
 . Dalla SVM di destinazione o dal cluster di destinazione, interrompere i trasferimenti pianificati verso la destinazione:
 +
-`snapmirror quiesce -source-path _SVM_: -destination-path _SVM_:`
-
+[source, cli]
+----
+snapmirror quiesce -source-path <SVM>: -destination-path <SVM>:
+----
 +
-[NOTE]
-====
-Inserire i due punti (:) dopo il nome SVM in `-source-path` e. `-destination-path` opzioni. Vedere l'esempio riportato di seguito.
 
-====
+NOTE: Inserire i due punti (:) dopo il nome SVM in `-source-path` e. `-destination-path` opzioni. Vedere l'esempio riportato di seguito.
+
 +
 Nell'esempio seguente vengono interrompiti i trasferimenti pianificati tra la SVM di origine `svm1` E la SVM di destinazione `svm_backup`:
 
@@ -42,14 +63,14 @@ cluster_dst::> snapmirror quiesce -source-path svm1: -destination-path svm_backu
 ----
 . Dalla SVM di destinazione o dal cluster di destinazione, interrompere i trasferimenti in corso alla destinazione:
 +
-`snapmirror abort -source-path _SVM_: -destination-path _SVM_:`
-
+[source, cli]
+----
+snapmirror abort -source-path <SVM>: -destination-path <SVM>:
+----
 +
-[NOTE]
-====
-Inserire i due punti (:) dopo il nome SVM in `-source-path` e. `-destination-path` opzioni. Vedere l'esempio riportato di seguito.
 
-====
+NOTE: Inserire i due punti (:) dopo il nome SVM in `-source-path` e. `-destination-path` opzioni. Vedere l'esempio riportato di seguito.
+
 +
 L'esempio seguente interrompe i trasferimenti in corso tra la SVM di origine `svm1` E la SVM di destinazione `svm_backup`:
 
@@ -60,14 +81,14 @@ cluster_dst::> snapmirror abort -source-path svm1: -destination-path svm_backup:
 ----
 . Dalla SVM di destinazione o dal cluster di destinazione, interrompere la relazione di replica:
 +
-`snapmirror break -source-path _SVM_: -destination-path _SVM_:`
-
+[source, cli]
+----
+snapmirror break -source-path <SVM>: -destination-path <SVM>:
+----
 +
-[NOTE]
-====
-Inserire i due punti (:) dopo il nome SVM in `-source-path` e. `-destination-path` opzioni. Vedere l'esempio riportato di seguito.
 
-====
+NOTE: Inserire i due punti (:) dopo il nome SVM in `-source-path` e. `-destination-path` opzioni. Vedere l'esempio riportato di seguito.
+
 +
 Nell'esempio seguente viene spezzata la relazione tra la SVM di origine `svm1` E la SVM di destinazione `svm_backup`:
 
@@ -78,8 +99,10 @@ cluster_dst::> snapmirror break -source-path svm1: -destination-path svm_backup:
 ----
 . Se si imposta `-identity-preserve true` Una volta creata la relazione di replica SVM, interrompere la SVM di origine:
 +
-`vserver stop -vserver _SVM_`
-
+[source, cli]
+----
+vserver stop -vserver <SVM>
+----
 +
 Nell'esempio seguente viene interrotta la SVM di origine `svm1`:
 
@@ -90,8 +113,10 @@ cluster_src::> vserver stop svm1
 ----
 . Avviare la SVM di destinazione:
 +
-`vserver start -vserver _SVM_`
-
+[source, cli]
+----
+vserver start -vserver <SVM>
+----
 +
 Nell'esempio seguente viene avviata la SVM di destinazione `svm_backup`:
 
@@ -104,3 +129,6 @@ cluster_dst::> vserver start svm_backup
 
 .Al termine
 Configurare i volumi di destinazione SVM per l'accesso ai dati, come descritto in link:configure-destination-volume-data-access-concept.html["Configurazione del volume di destinazione per l'accesso ai dati"].
+
+--
+====

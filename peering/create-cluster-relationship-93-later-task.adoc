@@ -2,7 +2,7 @@
 permalink: peering/create-cluster-relationship-93-later-task.html 
 sidebar: sidebar 
 keywords: create, cluster, peer, relationship 
-summary: 'È possibile utilizzare il comando cluster peer create o System Manager per creare una relazione peer tra un cluster locale e uno remoto. Una volta creata la relazione peer, è possibile ripetere l"attività sul cluster remoto per autenticarla nel cluster locale.' 
+summary: Creare una relazione di peer tra un cluster locale e remoto prima di proteggere i dati replicandoli in un cluster remoto per il backup dei dati e il disaster recovery. 
 ---
 = Creare una relazione peer del cluster
 :allow-uri-read: 
@@ -11,10 +11,18 @@ summary: 'È possibile utilizzare il comando cluster peer create o System Manage
 
 
 [role="lead"]
-È possibile utilizzare `cluster peer create` per creare una relazione peer tra un cluster locale e remoto. Una volta creata la relazione peer, è possibile eseguire `cluster peer create` sul cluster remoto per autenticarlo nel cluster locale.
+Prima di poter proteggere i dati replicandoli in un cluster remoto per il backup dei dati e il ripristino di emergenza, è necessario creare una relazione di peer cluster tra il cluster locale e quello remoto.
+
+Sono disponibili diversi criteri di protezione predefiniti. Se si desidera utilizzare policy personalizzate, è necessario aver creato le policy di protezione.
 
 .Prima di iniziare
-* È necessario aver creato le LIF di intercluster su ogni nodo dei cluster che vengono sottoposti a peering.
+* Se stai utilizzando l'interfaccia CLI di ONTAP, devi creare una intercluster LIF in ogni nodo dei cluster a cui stai effettuando il peering usando uno dei seguenti metodi:
++
+** link:configure-intercluster-lifs-share-data-ports-task.html["Configurare le LIF tra cluster su porte dati condivise"]
+** link:configure-intercluster-lifs-use-dedicated-ports-task.html["Configurare intercluster LIF su porte per dati dedicate"]
+** link:configure-intercluster-lifs-use-ports-own-networks-task.html["Configurare le LIF di intercluster in spazi IPpersonalizzati"]
+
+
 * I cluster devono eseguire ONTAP 9.3 o versione successiva. Se i cluster eseguono ONTAP 9.2 o versioni precedenti, fare riferimento alle procedure descritte in link:https://library.netapp.com/ecm/ecm_download_file/ECMLP2494079["documento archiviato"^].)
 
 
@@ -26,7 +34,7 @@ Eseguire questa attività utilizzando Gestione di sistema di ONTAP o l'interfacc
 .System Manager
 --
 . Nel cluster locale, fare clic su *Cluster > Impostazioni*.
-. Nella sezione *Impostazioni intercluster*, fare clic su *Aggiungi interfacce di rete* e aggiungere interfacce di rete intercluster per il cluster.
+. Nella sezione *Impostazioni di intercluster*, fare clic su *Aggiungi interfacce di rete* e immettere l'indirizzo IP e la subnet mask per aggiungere interfacce di rete intercluster per il cluster.
 +
 Ripetere questo passaggio sul cluster remoto.
 
@@ -45,7 +53,7 @@ Ripetere questo passaggio sul cluster remoto.
 +
 [source, cli]
 ----
-cluster peer create -generate-passphrase -offer-expiration <MM/DD/YYYY HH:MM:SS>|1...7days|1...168hours -peer-addrs <peer_LIF_IPs > -initial-allowed-vserver-peers <svm_name>|* -ipspace <ipspace>
+cluster peer create -generate-passphrase -offer-expiration <MM/DD/YYYY HH:MM:SS|1...7days|1...168hours> -peer-addrs <peer_LIF_IPs> -initial-allowed-vserver-peers <svm_name|*> -ipspace <ipspace>
 ----
 +
 Se si specificano entrambi `-generate-passphrase` e. `-peer-addrs`, Solo il cluster i cui LIF intercluster sono specificati in `-peer-addrs` può utilizzare la password generata.
@@ -194,9 +202,6 @@ cluster01-02
 [cols="2"]
 |===
 | Per eseguire queste attività con... | Guarda questo contenuto... 
-
-
-| System Manager riprogettato (disponibile con ONTAP 9.7 e versioni successive) | link:https://docs.netapp.com/us-en/ontap/task_dp_prepare_mirror.html["Preparazione per il mirroring e il vaulting"^] 
 
 
 | System Manager Classic (disponibile con ONTAP 9.7 e versioni precedenti) | link:https://docs.netapp.com/us-en/ontap-system-manager-classic/volume-disaster-prep/index.html["Panoramica sulla preparazione del disaster recovery dei volumi"^] 
