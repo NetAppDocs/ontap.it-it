@@ -1,0 +1,229 @@
+---
+permalink: flexcache-writeback/flexcache-writeback-enable-task.html 
+sidebar: sidebar 
+keywords: creating, manage, disable, view, flexcache, flex cache, writeback, write-back, write back 
+summary: Attiva la modalità write-back FlexCache sui volumi FlexCache per offrire performance migliori per gli ambienti di edge computing e per la cache con carichi di lavoro caratterizzati da un elevato numero di scritture. 
+---
+= Abilitare e gestire la riscrittura di FlexCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.15.1, è possibile abilitare la modalità write-back FlexCache su volumi FlexCache per fornire performance migliori per ambienti di edge computing e cache con carichi di lavoro caratterizzati da elevati requisiti di scrittura. Puoi anche determinare se la riscrittura è attivata su un volume FlexCache o disattivare la riscrittura sul volume quando necessario.
+
+Quando la funzione di write-back è attivata sul volume della cache, le richieste di scrittura vengono inviate alla cache locale anziché al volume di origine.
+
+.Prima di iniziare
+È necessario essere in modalità privilegi avanzati.
+
+
+
+== Creare un nuovo volume FlexCache con la funzione di write-back attivata
+
+.Fasi
+Puoi creare un nuovo volume FlexCache con la riscrittura abilitata utilizzando Gestione sistema di ONTAP o l'interfaccia a riga di comando di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Se il volume FlexCache si trova su un cluster diverso da quello del volume di origine, creare una relazione di peer del cluster:
++
+.. Nel cluster locale, fare clic su *protezione > Panoramica*.
+.. Espandere *Impostazioni intercluster*, fare clic su *Aggiungi interfacce di rete* e aggiungere interfacce intercluster al cluster.
++
+Ripetere questa operazione sul quadro strumenti remoto.
+
+.. Nel cluster remoto, fare clic su *protezione > Panoramica*. Fare clic su image:icon_kabob.gif["Icona delle opzioni di menu"] nella sezione Cluster Peers e fare clic su *generate Passphrase*.
+.. Copiare la passphrase generata e incollarla nel cluster locale.
+.. Nel cluster locale, in Cluster Peers, fare clic su *Peer Clusters* e collegare i cluster locali e remoti.
+
+
+. Se il volume FlexCache si trova su un cluster diverso rispetto al volume di origine, creare una relazione di peer SVM:
++
+In *Storage VM Peers*, fare clic su, quindi su image:icon_kabob.gif["Icona delle opzioni di menu"] *Peer Storage VM* per eseguire il peer delle Storage VM.
+
++
+Se il volume FlexCache si trova nello stesso cluster, non è possibile creare una relazione di peer SVM utilizzando System Manager.
+
+. Selezionare *Storage > Volumes* (Storage > volumi).
+. Selezionare *Aggiungi*.
+. Selezionare *altre opzioni*, quindi selezionare *Aggiungi come cache per un volume remoto*.
+. Selezionare *attiva riscrittura FlexCache*.
+
+
+--
+.CLI
+--
+. Se il volume FlexCache da creare si trova in un cluster diverso, creare una relazione peer del cluster:
++
+.. Nel cluster di destinazione, creare una relazione di peer con il cluster di origine per la protezione dei dati:
++
+[source, cli]
+----
+cluster peer create -generate-passphrase -offer-expiration MM/DD/YYYY HH:MM:SS|1...7days|1...168hours -peer-addrs <peer_LIF_IPs> -initial-allowed-vserver-peers <svm_name>,..|* -ipspace <ipspace_name>
+----
++
+A partire da ONTAP 9.6, la crittografia TLS viene attivata per impostazione predefinita quando si crea una relazione peer del cluster. La crittografia TLS è supportata per la comunicazione tra i cluster tra i volumi di origine e FlexCache. Se necessario, è anche possibile disattivare la crittografia TLS per la relazione peer del cluster.
+
++
+[listing]
+----
+cluster02::> cluster peer create -generate-passphrase -offer-expiration 2days -initial-allowed-vserver-peers *
+
+                     Passphrase: UCa+6lRVICXeL/gq1WrK7ShR
+                Expiration Time: 6/7/2017 08:16:10 EST
+  Initial Allowed Vserver Peers: *
+            Intercluster LIF IP: 192.140.112.101
+              Peer Cluster Name: Clus_7ShR (temporary generated)
+
+Warning: make a note of the passphrase - it cannot be displayed again.
+----
+.. Nel cluster di origine, autenticare il cluster di origine nel cluster di destinazione:
++
+[source, cli]
+----
+cluster peer create -peer-addrs <peer_LIF_IPs> -ipspace <ipspace>
+----
++
+[listing]
+----
+cluster01::> cluster peer create -peer-addrs 192.140.112.101,192.140.112.102
+
+Notice: Use a generated passphrase or choose a passphrase of 8 or more characters.
+        To ensure the authenticity of the peering relationship, use a phrase or sequence of characters that would be hard to guess.
+
+Enter the passphrase:
+Confirm the passphrase:
+
+Clusters cluster02 and cluster01 are peered.
+----
+
+
+. Se il volume FlexCache si trova in una SVM diversa da quella del volume di origine, creare una relazione peer SVM con `flexcache` come applicazione:
++
+.. Se la SVM si trova in un cluster diverso, creare un permesso SVM per il peering delle SVM:
++
+[source, cli]
+----
+vserver peer permission create -peer-cluster <cluster_name> -vserver <svm-name> -applications flexcache
+----
++
+Nell'esempio seguente viene illustrato come creare un'autorizzazione peer SVM applicabile a tutte le SVM locali:
+
++
+[listing]
+----
+cluster1::> vserver peer permission create -peer-cluster cluster2 -vserver "*" -applications flexcache
+
+Warning: This Vserver peer permission applies to all local Vservers. After that no explict
+"vserver peer accept" command required for Vserver peer relationship creation request
+from peer cluster "cluster2" with any of the local Vservers. Do you want to continue? {y|n}: y
+----
+.. Creare la relazione di peer dell'SVM:
++
+[source, cli]
+----
+vserver peer create -vserver <local_SVM> -peer-vserver <remote_SVM> -peer-cluster <cluster_name> -applications flexcache
+----
+
+
+. Creazione di un volume FlexCache con la funzione di write-back attivata:
++
+[source, cli]
+----
+volume flexcache create -vserver <cache_vserver_name> -volume <cache_flexgroup_name> -aggr-list <list_of_aggregates> -origin-volume <origin flexgroup> -origin-vserver <origin_vserver name> -junction-path <junction_path> -is-writeback-enabled true
+----
+
+
+--
+====
+
+
+== Attiva la riscrittura FlexCache su un volume FlexCache esistente
+
+È possibile attivare la riscrittura di FlexCache su un volume FlexCache esistente utilizzando ONTAP System Manager o l'interfaccia a riga di comando di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *archiviazione > volumi* e selezionare un volume FlexCache esistente.
+. Nella pagina Panoramica del volume, fare clic su *Modifica* nell'angolo superiore destro.
+. Nella finestra *Modifica volume*, selezionare *attiva riscrittura FlexCache*.
+
+
+--
+.CLI
+--
+. Attivare la riscrittura su un volume FlexCache esistente:
++
+[source, cli]
+----
+volume flexcache config modify -volume <cache_flexgroup_name> -is-writeback-enabled true
+----
+
+
+--
+====
+
+
+== Controllare se la funzione di writeback FlexCache è attivata
+
+.Fasi
+Puoi utilizzare System Manager o l'interfaccia a riga di comando di ONTAP per determinare se la funzione di write-back di FlexCache è attivata.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *archiviazione > volumi* e selezionare un volume.
+. Nel volume *Panoramica*, individuare *FlexCache details* e verificare se la funzione FlexCache write-back è impostata su *Enabled* nel volume FlexCache.
+
+
+--
+.CLI
+--
+. Controllare se la funzione di write-back FlexCache è attivata:
++
+[source, cli]
+----
+volume flexcache config show -volume cache -fields is-writeback-enabled
+----
+
+
+--
+====
+
+
+== Disattivare la riscrittura su un volume FlexCache
+
+Prima di poter eliminare un volume FlexCache, è necessario disattivare la funzione di write-back di FlexCache.
+
+.Fasi
+Per disattivare la funzione di write-back di FlexCache, è possibile utilizzare Gestione di sistema o l'interfaccia CLI di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *archiviazione > volumi* e selezionare un volume FlexCache esistente per il quale è abilitata la funzione di write-back FlexCache.
+. Nella pagina Panoramica del volume, fare clic su *Modifica* nell'angolo superiore destro.
+. Nella finestra *Modifica volume*, deseleziona *attiva riscrittura FlexCache*.
+
+
+--
+.CLI
+--
+. Disattiva riscrittura:
++
+[source, cli]
+----
+volume flexcache config modify -volume <cache_vol_name> -is-writeback-enabled false
+----
+
+
+--
+====
