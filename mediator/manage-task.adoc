@@ -429,11 +429,22 @@ Getting CA Private Key
 
 == Sostituire i certificati autofirmati con certificati di terze parti attendibili
 
-È possibile sostituire i certificati autofirmati con certificati di terze parti attendibili.
+
+CAUTION: I certificati di terze parti sono supportati solo con ONTAP Mediator su alcune versioni di ONTAP. Vedere, link:https://mysupport.netapp.com/site/bugs-online/product/ONTAP/JiraNgage/CONTAP-243278["ID bug online di NetApp CONTAP-243278"^]
+
+Se supportati, è possibile sostituire i certificati autofirmati con certificati di terze parti attendibili.
 
 .A proposito di questa attività
 * Questa attività viene eseguita sull'host Linux su cui è installato il servizio ONTAP Mediator.
 * È possibile eseguire questa attività se i certificati autofirmati generati devono essere sostituiti da certificati ottenuti da un'autorità di certificazione subordinata attendibile (CA). A tale scopo, è necessario disporre dell'accesso a un'autorità PKI (Public-Key Infrastructure) attendibile.
+* L'immagine seguente mostra le finalità di ciascun certificato ONTAP Mediator.
++
+image:mediator-cert-purposes.png["Finalità del certificato ONTAP Mediator"]
+
+* L'immagine seguente mostra la configurazione per l'installazione del server Web e del server ONTAP Mediator.
++
+image:mediator-certs-index.png["Configurazione del server Web e configurazione del server ONTAP Mediator"]
+
 
 
 
@@ -460,7 +471,7 @@ NOTE: Nell'esempio vengono illustrati i criteri necessari per i certificati rich
 .. Il file di configurazione `openssl_ca.cnf` (situato in `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/openssl_ca.cnf`) definisce le proprietà che il certificato generato deve avere.
 
 
-. Utilizzare la chiave privata e il file di configurazione per creare una richiesta di firma del certificato `ca.csr``:
+. Utilizzare la chiave privata e il file di configurazione per creare una richiesta di firma del certificato `ca.csr`:
 +
 *Esempio:*
 
@@ -481,11 +492,11 @@ erARKhY9z0e8BHPl3g==
 ----
 . Inviare la richiesta di firma del certificato `ca.csr` A un'autorità PKI per la firma.
 +
-L'autorità PKI verifica la richiesta e firma l' `.csr`, generazione del certificato `ca.crt`.
+L'autorità PKI verifica la richiesta e firma il , generando il `.csr`certificato `ca.crt`. Inoltre, è necessario ottenere il `root_ca.crt` certificato che ha firmato il `ca.crt` certificato dall'autorità PKI.
 
 +
 
-NOTE: Per i cluster SnapMirror Business Continuity (SM-BC), è necessario aggiungere il certificato `ca.crt` A un cluster ONTAP. Vedere link:https://docs.netapp.com/us-en/ontap/smbc/smbc_install_confirm_ontap_cluster.html#ontap-mediator["Configurare ONTAP Mediator e i cluster per SM-BC"].
+NOTE: Per i cluster SnapMirror Business Continuity (SM-BC), è necessario aggiungere i `ca.crt` certificati e `root_ca.crt` a un cluster ONTAP. Vedere link:https://docs.netapp.com/us-en/ontap/smbc/smbc_install_confirm_ontap_cluster.html#ontap-mediator["Configurare ONTAP Mediator e i cluster per SM-BC"].
 
 
 
@@ -497,14 +508,24 @@ Un certificato server deve essere firmato dalla chiave privata `ca.key` e il cer
 
 I seguenti comandi possono generare un certificato server.
 
-.Fase
-Per generare un certificato del server, eseguire i seguenti comandi dalla cartella `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config`:
-
+.Fasi
+. Per generare una richiesta di firma del certificato del server (CSR), eseguire il comando seguente dalla `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config` cartella:
++
 `openssl req -config openssl_server.cnf -extensions v3_req -nodes -newkey rsa:4096 -sha512 -keyout ontap_mediator_server.key -out ontap_mediator_server.csr`
 
+. [[step_2_Intermediate_info]]per generare un certificato server dalla CSR, eseguire il seguente comando dalla `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config` cartella:
++
+
+NOTE: I `ca.crt` file e `ca.key` sono stati ottenuti da un'autorità PKI. Se si utilizza un nome di certificato diverso, ad esempio, `intermediate.crt` e , sostituire e `intermediate.key` `ca.crt` `ca.key` rispettivamente con `intermediate.crt` e `intermediate.key` .
+
++
 `openssl x509 -extfile openssl_server.cnf -extensions v3_req -CA ca.crt -CAkey ca.key -CAcreateserial -sha512 -days 1095 -req -in ontap_mediator_server.csr -out ontap_mediator_server.crt`
 
-`-CAcreateserial` viene utilizzata per generare il file `ca.srl`.
++
+** L' `-CAcreateserial` opzione viene utilizzata per generare `ca.srl` i file o `intermediate.srl` , a seconda del nome del certificato utilizzato.
+
+
+
 
 
 
@@ -525,7 +546,36 @@ ca_serial_path: '/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ca.
 
 
 .Fasi
-. Sostituire `ca.*` file con i certificati di terze parti.
+. Sostituire tutti i `ca.*` file con i certificati di terze parti.
+. Creare una catena di certificati da `ca.crt` e `ontap_mediator_server.crt` certificati:
++
+`cat ontap_mediator_server.crt ca.crt > ontap_mediator_server_chain.crt`
+
+. Aggiornare il `/opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini` file.
++
+Aggiornare i valori di `mediator_cert`, , `mediator_key`e `ca_certificate`:
+
++
+`set-placeholder = mediator_cert = /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ontap_mediator_server_chain.crt`
+
++
+`set-placeholder = mediator_key = /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ontap_mediator_server.key`
+
++
+`set-placeholder = ca_certificate = /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/root_ca.crt`
+
++
+** Il `mediator_cert` valore è il percorso del `ontap_mediator_server_chain.crt` file.
+** Il `mediator_key value` è il percorso chiave nel `ontap_mediator_server.crt` file, che è `ontap_mediator_server.key`.
+** Il `ca_certificate` valore è il percorso del `root_ca.crt` file.
+
+
+. Verificare che i seguenti attributi dei certificati appena generati siano impostati correttamente:
++
+** Proprietario del gruppo Linux: `netapp:netapp`
+** Autorizzazioni Linux: `600`
+
+
 . Riavviare ONTAP Mediator:
 +
 `systemctl restart ontap_mediator`
@@ -539,9 +589,13 @@ ca_serial_path: '/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ca.
 È possibile utilizzare certificati di terze parti con un nome diverso da `ca.*` oppure memorizzare i certificati di terze parti in un'altra posizione.
 
 .Fasi
-. Configurare il file `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ontap_mediator.user_config.yaml` per ignorare i valori della variabile predefinita in `ontap_mediator.config.yaml` file.
+. Configurare il `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ontap_mediator.user_config.yaml` file in modo che sovrascriva i valori della variabile di default nel `ontap_mediator.config.yaml` file.
 +
-Ad esempio, se si ottiene `intermediate.crt` Dall'autorità PKI e memorizzare la propria chiave privata `intermediate.key` e la richiesta di firma del certificato `intermediate.csr` in un luogo `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config`, il file user_config dovrebbe essere simile al seguente:
+Se si è ottenuto `intermediate.crt` da un'autorità PKI e si memorizza la propria chiave privata `intermediate.key` nella posizione `/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config`, il `ontap_mediator.user_config.yaml` file dovrebbe essere simile al seguente esempio:
+
++
+
+NOTE: Se si è utilizzato `intermediate.crt` per firmare il `ontap_mediator_server.crt` certificato, il  `intermediate.srl` file viene generato. Per ulteriori informazioni, vedere <<step_2_intermediate_info,Passaggio 2: Generare un certificato server firmando con una certificazione CA di terze parti>> .
 
 +
 [listing]
@@ -564,7 +618,48 @@ key_path: '/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ontap_med
 ca_cert_path: '/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/intermediate.crt'
 ca_key_path: '/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/intermediate.key'
 ca_serial_path: '/opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/intermediate.srl'
+
 ----
++
+.. Se si utilizza una struttura di certificato in cui il `root_ca.crt` certificato fornisce un `intermediate.crt` certificato che firma il `ontap_mediator_server.crt` certificato, creare una catena di certificati da `intermediate.crt` e `ontap_mediator_server.crt` certificati:
++
+
+NOTE: I certificati e dovrebbero essere stati ottenuti `intermediate.crt` `ontap_mediator_server.crt` da un'autorità PKI precedentemente nella procedura.
+
++
+`cat ontap_mediator_server.crt intermediate.crt > ontap_mediator_server_chain.crt`
+
+.. Aggiornare il `/opt/netapp/lib/ontap_mediator/uwsgi/ontap_mediator.ini` file.
++
+Aggiornare i valori di `mediator_cert`, , `mediator_key`e `ca_certificate`:
+
++
+`set-placeholder = mediator_cert = /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ontap_mediator_server_chain.crt`
+
++
+`set-placeholder = mediator_key = /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/ontap_mediator_server.key`
+
++
+`set-placeholder = ca_certificate = /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config/root_ca.crt`
+
++
+*** Il `mediator_cert` valore è il percorso del `ontap_mediator_server_chain.crt` file.
+*** Il `mediator_key` valore è il percorso chiave nel `ontap_mediator_server.crt` file, che è `ontap_mediator_server.key`.
+*** Il `ca_certificate` valore è il percorso del `root_ca.crt` file.
++
+
+NOTE: Per i cluster SnapMirror Business Continuity (SM-BC), è necessario aggiungere i `intermediate.crt` certificati e `root_ca.crt` a un cluster ONTAP. Vedere link:https://docs.netapp.com/us-en/ontap/smbc/smbc_install_confirm_ontap_cluster.html#ontap-mediator["Configurare ONTAP Mediator e i cluster per SM-BC"].
+
+
+
+.. Verificare che i seguenti attributi dei certificati appena generati siano impostati correttamente:
++
+*** Proprietario del gruppo Linux: `netapp:netapp`
+*** Autorizzazioni Linux: `600`
+
+
+
+
 . Riavviare ONTAP Mediator quando i certificati vengono aggiornati nel file di configurazione:
 +
 `systemctl restart ontap_mediator`
