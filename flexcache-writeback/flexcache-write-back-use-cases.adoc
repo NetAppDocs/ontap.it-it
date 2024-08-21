@@ -33,7 +33,7 @@ Quando si scrive da un client, vengono coinvolte altre chiamate NAS diverse da q
 
 Queste chiamate devono essere elaborate all'origine e attivano una riscrittura di tutti i dati anomali accumulati nella cache abilitata per la riscrittura per il file su cui viene eseguito. Io al file verrà interrotto fino al completamento della riscrittura.
 
-Sapendo che queste chiamate devono attraversare la WAN, è possibile identificare i carichi di lavoro adatti per la riscrittura. In genere, maggiore è il numero di operazioni di scrittura che è possibile eseguire tra `OPEN` e `CLOSE` chiamate senza che venga emessa una delle altre chiamate <write-size,above>, migliore sarà il guadagno in termini di prestazioni di write-back.
+Sapendo che queste chiamate devono attraversare la WAN, è possibile identificare i carichi di lavoro adatti per la riscrittura. In genere, maggiore è il numero di operazioni `OPEN` di scrittura che `CLOSE` è possibile effettuare tra e chiamate senza che venga emessa una delle altre chiamate elencate sopra, migliore è il guadagno di prestazioni di write-back.
 
 .Lettura dopo scrittura
 I workload in lettura dopo scrittura hanno storicamente ottenuto performance scarse in FlexCache. Ciò è dovuto alla modalità operativa write-around precedente alla 9.15.1. La `WRITE` chiamata al file deve essere confermata all'origine e la chiamata successiva `READ` dovrebbe riportare i dati nella cache. In questo modo, entrambe le operazioni impongono penalizzazioni alla rete WAN. Pertanto, i carichi di lavoro in lettura dopo scrittura sono scoraggiati per FlexCache in modalità write-around. Con l'introduzione del write-back in 9.15.1, i dati vengono ora salvati nella cache e possono essere letti immediatamente dalla cache, eliminando la penalizzazione della WAN. Se il carico di lavoro include la lettura dopo la scrittura nei volumi FlexCache, è necessario configurare la cache in modo che funzioni in modalità write-back.
@@ -48,7 +48,7 @@ Quando un file accumula dati sporchi in una cache, la cache li scrive in modo as
 
 == Considerazioni sulla latenza
 
-Quando FlexCache opera in modalità write-back, è più vantaggioso per i client NAS perché la latenza aumenta tra la cache e l'origine. Esiste un punto, tuttavia, in cui l'overhead del write-back supera i vantaggi ottenuti negli ambienti a bassa latenza. In alcuni test di NetApp, i benefici del writeback sono partiti attorno a una latenza minima tra cache e origine di 8ms ms. Questa latenza varia in base al carico di lavoro, quindi assicurati di verificare la tua opinione sui vantaggi in termini di point-of-return.
+Quando FlexCache opera in modalità write-back, i client NAS ottengono maggiori benefici all'aumentare della latenza. Esiste un punto, tuttavia, in cui l'overhead del write-back supera i vantaggi ottenuti negli ambienti a bassa latenza. In alcuni test di NetApp, i benefici del writeback sono partiti attorno a una latenza minima tra cache e origine di 8ms ms. Questa latenza varia in base al carico di lavoro, quindi assicurati di verificare la tua opinione sui vantaggi in termini di point-of-return.
 
 Il grafico seguente mostra il punto di ritorno per la riscrittura nei test di laboratorio NetApp. L' `x` asse è la dimensione del file e l' `y` asse è il tempo trascorso. Il test ha utilizzato NFSv3, montando con un `rsize` e `wsize` di 256KB, e 64ms di latenza WAN. Questo test è stato eseguito utilizzando una piccola istanza di ONTAP Select sia per la cache che per l'origine, e una singola operazione di scrittura con thread. I risultati possono variare.
 
