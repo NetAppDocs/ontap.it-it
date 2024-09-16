@@ -13,33 +13,8 @@ summary: È possibile inviare richieste RSH al cluster per eseguire attività am
 [role="lead"]
 È possibile inviare richieste RSH al cluster per eseguire attività amministrative. RSH non è un protocollo sicuro ed è disattivato per impostazione predefinita.
 
-Con il passare del tempo, il modo in cui ONTAP gestisce il tipo di traffico supportato dalle LIF è cambiato.
+Telnet e RSH non sono protocolli sicuri; è consigliabile utilizzare SSH per accedere al cluster. SSH offre una shell remota sicura e una sessione di rete interattiva. Per ulteriori informazioni, fare riferimento a link:./access-cluster-ssh-task.html["Accedere al cluster utilizzando SSH"].
 
-* Le versioni ONTAP 9.5 e precedenti utilizzano i ruoli LIF e i servizi firewall
-* Le versioni ONTAP 9.6 e successive utilizzano i criteri di servizio LIF
-+
-** La versione ONTAP 9.5 ha introdotto le politiche di servizio LIF
-** ONTAP 9.6 ha sostituito i ruoli LIF con le politiche di servizio LIF
-** ONTAP 9.10,1 ha sostituito i servizi firewall con le policy di servizio LIF
-
-
-
-
-Il metodo configurato dipende dal rilascio di ONTAP in uso.
-
-Ulteriori informazioni su:
-
-* Criteri firewall, fare riferimento a. link:https://docs.netapp.com/us-en/ontap-cli//system-services-firewall-policy-show.html["Comando: Firewall-policy-show"^]
-* Ruoli LIF, fare riferimento a. link:../networking/lif_roles95.html["Ruoli LIF (ONTAP 9,5 e versioni precedenti)"]
-* Policy di servizio LIF, fare riferimento a. link:../networking/lifs_and_service_policies96.html["LIF e policy di servizio (ONTAP 9,6 e versioni successive)"]
-
-
-Telnet e RSH non sono protocolli sicuri, è consigliabile utilizzare SSH per accedere al cluster. SSH offre una shell remota sicura e una sessione di rete interattiva. Per ulteriori informazioni, fare riferimento a. link:./access-cluster-ssh-task.html["Accedere al cluster utilizzando SSH"]
-
-[role="tabbed-block"]
-====
-.ONTAP 9,6 o versione successiva
---
 .Prima di iniziare
 Prima di poter utilizzare RSH per accedere al cluster, è necessario soddisfare le seguenti condizioni:
 
@@ -50,10 +25,6 @@ Il `-application` del parametro `security login` commands specifica il metodo di
 
 
 .A proposito di questa attività
-* RSH non è un protocollo sicuro.
-+
-Si consiglia di utilizzare SSH per accedere al cluster. SSH offre una shell remota sicura e una sessione di rete interattiva.
-
 * ONTAP supporta un massimo di 50 sessioni RSH simultanee per nodo.
 +
 Se la LIF di gestione del cluster risiede nel nodo, condivide questo limite con la LIF di gestione del nodo.
@@ -64,6 +35,10 @@ Se la velocità delle connessioni in entrata è superiore a 10 al secondo, il se
 * I comandi RSH richiedono privilegi avanzati.
 
 
+[role="tabbed-block"]
+====
+.ONTAP 9,6 o versione successiva
+--
 .Fasi
 . Verificare che il protocollo di protezione RSH sia attivato:
 +
@@ -91,31 +66,11 @@ Se la velocità delle connessioni in entrata è superiore a 10 al secondo, il se
 
 
 
-.Esempio di richiesta RSH
-L'esempio seguente mostra come l'utente "`joe`", che è stato configurato con accesso RSH, può emettere una richiesta RSH per eseguire `cluster show` comando:
-
-[listing]
-----
-
-admin_host$ rsh 10.72.137.28 -l joe:password cluster show
-
-Node                  Health  Eligibility
---------------------- ------- ------------
-node1                 true    true
-node2                 true    true
-2 entries were displayed.
-
-admin_host$
-----
 --
 .ONTAP 9.5 o versioni precedenti
 --
 .Prima di iniziare
 Prima di poter utilizzare RSH per accedere al cluster, è necessario soddisfare le seguenti condizioni:
-
-* È necessario disporre di un account utente locale del cluster configurato per utilizzare RSH come metodo di accesso.
-+
-Il parametro -application dei comandi di accesso di protezione specifica il metodo di accesso per un account utente. Per ulteriori informazioni, vedere le pagine man per l'accesso di sicurezza.
 
 * RSH deve essere già abilitato nella policy del firewall di gestione utilizzata dalle LIF di gestione del cluster o dei nodi, in modo che le richieste RSH possano passare attraverso il firewall.
 +
@@ -124,20 +79,6 @@ Per impostazione predefinita, RSH è disattivato. Il criterio firewall dei servi
 * Se si utilizzano connessioni IPv6, IPv6 deve essere già configurato e abilitato sul cluster e i criteri firewall devono essere già configurati con gli indirizzi IPv6.
 +
 Il `network options ipv6 show` comando visualizza se IPv6 è abilitato. Il `system services firewall policy show` comando visualizza i criteri del firewall.
-
-
-
-.A proposito di questa attività
-* RSH non è un protocollo sicuro.
-+
-Si consiglia di utilizzare SSH per accedere al cluster. SSH offre una shell remota sicura e una sessione di rete interattiva.
-
-* ONTAP supporta un massimo di 50 sessioni RSH simultanee per nodo.
-+
-Se la LIF di gestione del cluster risiede nel nodo, condivide questo limite con la LIF di gestione del nodo.
-
-+
-Se la velocità delle connessioni in entrata è superiore a 10 al secondo, il servizio viene temporaneamente disattivato per 60 secondi.
 
 
 
@@ -154,22 +95,21 @@ Se la velocità delle connessioni in entrata è superiore a 10 al secondo, il se
 
 
 
+--
+====
 .Esempio di richiesta RSH
-Nell'esempio seguente viene illustrato come l'utente "joe", che è stato configurato con l'accesso RSH, può emettere una richiesta RSH per eseguire il comando cluster show:
+L'esempio seguente mostra come l'utente "`joe`", che è stato configurato con accesso RSH, può emettere una richiesta RSH per eseguire `cluster show` comando:
 
 [listing]
 ----
+
 admin_host$ rsh 10.72.137.28 -l joe:password cluster show
 
-Node  Health Eligibility
-----  ------ -----------
-node1 true   true
-node2 true   true
-
+Node                  Health  Eligibility
+--------------------- ------- ------------
+node1                 true    true
+node2                 true    true
 2 entries were displayed.
 
-admin_host
-
+admin_host$
 ----
---
-====
