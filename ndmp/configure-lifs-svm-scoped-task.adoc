@@ -2,19 +2,99 @@
 permalink: ndmp/configure-lifs-svm-scoped-task.html 
 sidebar: sidebar 
 keywords: configure, lifs 
-summary: 'È necessario identificare le LIF che verranno utilizzate per stabilire una connessione dati tra le risorse di dati e nastro e per controllare la connessione tra la SVM amministrativa e l"applicazione di backup. Dopo aver identificato i LIF, è necessario verificare che i criteri di firewall e failover siano impostati per i LIF e specificare il ruolo di interfaccia preferito.' 
+summary: 'È necessario identificare le LIF che verranno utilizzate per stabilire una connessione dati tra le risorse di dati e nastro e per controllare la connessione tra la SVM amministrativa e l"applicazione di backup. Dopo aver identificato le LIF, devi verificare che siano impostati i criteri di servizio e failover.' 
 ---
 = Configurare le LIF
 :allow-uri-read: 
-:icons: font
-:imagesdir: ../media/
 
 
 [role="lead"]
-È necessario identificare le LIF che verranno utilizzate per stabilire una connessione dati tra le risorse di dati e nastro e per controllare la connessione tra la SVM amministrativa e l'applicazione di backup. Dopo aver identificato i LIF, è necessario verificare che i criteri di firewall e failover siano impostati per i LIF e specificare il ruolo di interfaccia preferito.
+È necessario identificare le LIF che verranno utilizzate per stabilire una connessione dati tra le risorse di dati e nastro e per controllare la connessione tra la SVM amministrativa e l'applicazione di backup. Dopo aver identificato le LIF, devi verificare che siano impostati i criteri di servizio e failover.
 
-A partire da ONTAP 9.10.1, le policy firewall sono obsolete e completamente sostituite con le policy di servizio LIF. Per ulteriori informazioni, vedere link:../networking/lifs_and_service_policies96.html["LIF e policy di servizio in ONTAP 9.6 e versioni successive"].
 
+NOTE: A partire da ONTAP 9.10.1, le policy firewall sono obsolete e completamente sostituite con le policy di servizio LIF. Per ulteriori informazioni, vedere link:../networking/manage_supported_traffic.html["Gestione del traffico supportato"].
+
+[role="tabbed-block"]
+====
+.ONTAP 9.10.1 o versione successiva
+--
+.Fasi
+. Identificare la LIF intercluster nei nodi usando il comando con `network interface show` il `-service-policy` parametro.
++
+`network interface show -service-policy default-intercluster`
+
+. Identifica la LIF di gestione ospitata sui nodi usando il `network interface show` comando insieme al `-service-policy` parametro.
++
+`network interface show -service-policy default-management`
+
+. Assicurarsi che la intercluster LIF includa il `backup-ndmp-control` servizio:
++
+`network interface service-policy show`
+
+. Assicurarsi che la policy di failover sia impostata correttamente per tutte le LIF:
++
+.. Verificare che il criterio di failover per la LIF di gestione del cluster sia impostato su `broadcast-domain-wide`E il criterio per le LIF di gestione di intercluster e nodi è impostato su `local-only` utilizzando `network interface show -failover` comando.
++
+Il seguente comando visualizza il criterio di failover per le LIF di gestione del cluster, dell'intercluster e dei nodi:
+
++
+[listing]
+----
+cluster1::> network interface show -failover
+
+           Logical          Home            Failover    Failover
+Vserver    Interface        Node:Port       Policy      Group
+-------    --------------   --------------  ----------  --------
+cluster    cluster1_clus1   cluster1-1:e0a  local-only  cluster
+                                                     Failover Targets:
+                   	                                 .......
+cluster1   cluster_mgmt     cluster1-1:e0m  broadcast-  Default
+                                          domain-wide
+                                                     Failover Targets:
+                                                     .......
+           IC1              cluster1-1:e0a  local-only  Default
+                                                     Failover Targets:
+           IC2              cluster1-1:e0b  local-only  Default
+                                                     Failover Targets:
+                                                     .......
+cluster1-1 c1-1_mgmt1       cluster1-1:e0m  local-only  Default
+                                                     Failover Targets:
+                                                     ......
+cluster1-2 c1-2_mgmt1       cluster1-2:e0m  local-only  Default
+                                                     Failover Targets:
+                                                     ......
+----
+.. Se i criteri di failover non sono impostati correttamente, modificare il criterio di failover utilizzando `network interface modify` con il `-failover-policy` parametro.
++
+[listing]
+----
+cluster1::> network interface modify -vserver cluster1 -lif IC1 -failover-policy local-only
+----
+
+
+. Specificare le LIF richieste per la connessione dati utilizzando `vserver services ndmp modify` con il `preferred-interface-role` parametro.
++
+[listing]
+----
+cluster1::> vserver services ndmp modify -vserver cluster1 -preferred-interface-role intercluster,cluster-mgmt,node-mgmt
+----
+. Verificare che il ruolo di interfaccia preferito sia impostato per il cluster utilizzando `vserver services ndmp show` comando.
++
+[listing]
+----
+cluster1::> vserver services ndmp show -vserver cluster1
+
+                Vserver: cluster1
+                NDMP Version: 4
+                .......
+                .......
+Preferred Interface Role: intercluster, cluster-mgmt, node-mgmt
+----
+
+
+--
+.ONTAP 9.9 o versioni precedenti
+--
 .Fasi
 . Identificare le LIF di gestione di intercluster, cluster e nodi utilizzando `network interface show` con il `-role` parametro.
 +
@@ -25,11 +105,11 @@ Il seguente comando visualizza le LIF dell'intercluster:
 ----
 cluster1::> network interface show -role intercluster
 
-            Logical           Status     Network            Current       Current Is
-Vserver     Interface         Admin/Oper Address/Mask       Node          Port    Home
------------ ----------        ---------- ------------------ ------------- ------- ----
-cluster1    IC1               up/up      192.0.2.65/24      cluster1-1    e0a     true
-cluster1    IC2               up/up      192.0.2.68/24      cluster1-2    e0b     true
+            Logical      Status     Network            Current       Current Is
+Vserver     Interface    Admin/Oper Address/Mask       Node          Port    Home
+----------- ----------   ---------- ------------------ ------------- ------- ----
+cluster1    IC1          up/up      192.0.2.65/24      cluster1-1    e0a     true
+cluster1    IC2          up/up      192.0.2.68/24      cluster1-2    e0b     true
 ----
 +
 Il seguente comando visualizza la LIF di gestione del cluster:
@@ -39,10 +119,10 @@ Il seguente comando visualizza la LIF di gestione del cluster:
 ----
 cluster1::> network interface show -role cluster-mgmt
 
-            Logical           Status     Network            Current       Current Is
-Vserver     Interface         Admin/Oper Address/Mask       Node          Port    Home
------------ ----------        ---------- ------------------ ------------- ------- ----
-cluster1    cluster_mgmt      up/up      192.0.2.60/24      cluster1-2    e0M     true
+            Logical       Status     Network            Current     Current Is
+Vserver     Interface     Admin/Oper Address/Mask       Node        Port    Home
+----------- ----------    ---------- ------------------ ----------- ------- ----
+cluster1    cluster_mgmt  up/up      192.0.2.60/24      cluster1-2  e0M     true
 ----
 +
 Il seguente comando visualizza le LIF di gestione dei nodi:
@@ -52,13 +132,13 @@ Il seguente comando visualizza le LIF di gestione dei nodi:
 ----
 cluster1::> network interface show -role node-mgmt
 
-            Logical           Status     Network            Current       Current Is
-Vserver     Interface         Admin/Oper Address/Mask       Node          Port    Home
------------ ----------        ---------- ------------------ ------------  ------  ------
-cluster1    cluster1-1_mgmt1  up/up      192.0.2.69/24      cluster1-1    e0M     true
-            cluster1-2_mgmt1  up/up      192.0.2.70/24      cluster1-2    e0M     true
+            Logical           Status     Network         Current       Current Is
+Vserver     Interface         Admin/Oper Address/Mask    Node          Port    Home
+----------- ----------        ---------- --------------- ------------  ------  ------
+cluster1    cluster1-1_mgmt1  up/up      192.0.2.69/24   cluster1-1    e0M     true
+            cluster1-2_mgmt1  up/up      192.0.2.70/24   cluster1-2    e0M     true
 ----
-. Assicurarsi che il criterio firewall sia abilitato per NDMP sulle LIF di intercluster, gestione cluster (gestione cluster) e gestione nodi (gestione nodi):
+. Assicurarsi che il criterio firewall sia abilitato per NDMP sulle (`node-mgmt`interfacce LIF intercluster, cluster-(`cluster-mgmt`management ) e Node-management ):
 +
 .. Verificare che il criterio firewall sia abilitato per NDMP utilizzando `system services firewall policy show` comando.
 +
@@ -74,7 +154,7 @@ Vserver     Policy       Service    Allowed
 cluster     cluster      dns        0.0.0.0/0
                          http       0.0.0.0/0
                          https      0.0.0.0/0
-                        ** ndmp       0.0.0.0/0**
+                         ndmp       0.0.0.0/0
                          ndmps      0.0.0.0/0
                          ntp        0.0.0.0/0
                          rsh        0.0.0.0/0
@@ -96,7 +176,7 @@ Vserver     Policy       Service    Allowed
 cluster1    intercluster dns        -
                          http       -
                          https      -
-                         **ndmp       0.0.0.0/0, ::/0**
+                         ndmp       0.0.0.0/0, ::/0
                          ndmps      -
                          ntp        -
                          rsh        -
@@ -117,7 +197,7 @@ Vserver     Policy       Service    Allowed
 cluster1-1  mgmt         dns        0.0.0.0/0, ::/0
                          http       0.0.0.0/0, ::/0
                          https      0.0.0.0/0, ::/0
-                         **ndmp       0.0.0.0/0, ::/0**
+                         ndmp       0.0.0.0/0, ::/0
                          ndmps      0.0.0.0/0, ::/0
                          ntp        0.0.0.0/0, ::/0
                          rsh        -
@@ -155,18 +235,18 @@ cluster    cluster1_clus1     cluster1-1:e0a    local-only            cluster
                                                      Failover Targets:
                    	                                 .......
 
-**cluster1   cluster_mgmt       cluster1-1:e0m    broadcast-domain-wide Default**
+cluster1   cluster_mgmt       cluster1-1:e0m    broadcast-domain-wide Default
                                                      Failover Targets:
                                                      .......
-           **IC1                 cluster1-1:e0a    local-only           Default**
+           IC1                 cluster1-1:e0a    local-only           Default
                                                      Failover Targets:
-           **IC2                 cluster1-1:e0b    local-only           Default**
+           IC2                 cluster1-1:e0b    local-only           Default
                                                      Failover Targets:
                                                      .......
-**cluster1-1 cluster1-1_mgmt1   cluster1-1:e0m    local-only            Default**
+cluster1-1 cluster1-1_mgmt1   cluster1-1:e0m    local-only            Default
                                                      Failover Targets:
                                                      ......
-**cluster1-2 cluster1-2_mgmt1   cluster1-2:e0m    local-only            Default**
+cluster1-2 cluster1-2_mgmt1   cluster1-2:e0m    local-only            Default
                                                      Failover Targets:
                                                      ......
 ----
@@ -197,3 +277,6 @@ cluster1::> vserver services ndmp show -vserver cluster1
             Preferred Interface Role: intercluster, cluster-mgmt, node-mgmt
 ----
 
+
+--
+====
