@@ -1,10 +1,10 @@
 ---
 permalink: s3-multiprotocol/index.html 
 sidebar: sidebar 
-keywords: multiprotocol, s3, configuration, overview, nfs, smb 
+keywords: multiprotocol, s3, configuration, overview, nfs, smb, multipart 
 summary: A partire da ONTAP 9.12.1, è possibile consentire ai client che eseguono il protocollo S3 di accedere agli stessi dati forniti ai client che utilizzano i protocolli NFS e SMB senza riformattare. 
 ---
-= Panoramica sul multiprotocollo S3
+= Supporto multiprotocollo S3 in ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -27,13 +27,13 @@ Se i dati esistenti sono stati creati utilizzando client NAS tradizionali (NFS o
 
 
 
-== Funzionamento del multiprotocollo S3
+== Come funziona il supporto multiprotocollo S3
 
-Il multiprotocollo ONTAP consente di presentare lo stesso set di dati come una gerarchia di file o come oggetti in un bucket. A tale scopo, ONTAP crea "bucket S3 NAS" che consentono ai client S3 di creare, leggere, eliminare ed enumerare i file nello storage NAS utilizzando le richieste a oggetti S3. Questa mappatura è conforme alla configurazione di sicurezza NAS, osservando le autorizzazioni di accesso a file e directory e scrivendo nel registro di controllo della sicurezza secondo necessità.
+Il supporto multiprotocollo di ONTAP consente di presentare lo stesso set di dati come gerarchia di file o oggetti in un bucket. A tale scopo, ONTAP crea "bucket S3 NAS" che consentono ai client S3 di creare, leggere, eliminare ed enumerare i file nello storage NAS utilizzando le richieste a oggetti S3. Questa mappatura è conforme alla configurazione di sicurezza NAS, osservando le autorizzazioni di accesso a file e directory e scrivendo nel registro di controllo della sicurezza secondo necessità.
 
 Questa mappatura viene eseguita presentando una gerarchia di directory NAS specificata come bucket S3. Ogni file nella gerarchia di directory è rappresentato come un oggetto S3 il cui nome è relativo dalla directory mappata verso il basso, con i limiti di directory rappresentati dal carattere barra ('/').
 
-Gli utenti S3 definiti da ONTAP normali possono accedere a questo storage, in base alle policy bucket definite per il bucket che esegue la mappatura alla directory NAS. Affinché ciò sia possibile, è necessario definire le mappature tra gli utenti S3 e gli utenti SMB/NFS. Le credenziali dell'utente SMB/NFS verranno utilizzate per il controllo delle autorizzazioni NAS e incluse nei record di audit risultanti da tali accessi.
+Gli utenti S3 definiti da ONTAP possono accedere a questo storage in base alle policy bucket definite per il bucket mappato alla directory NAS. Affinché ciò sia possibile, è necessario definire le mappature tra gli utenti S3 e gli utenti SMB/NFS. Le credenziali dell'utente SMB/NFS verranno utilizzate per il controllo delle autorizzazioni NAS e incluse nei record di audit risultanti da tali accessi.
 
 Quando viene creato da client SMB o NFS, un file viene immediatamente inserito in una directory e quindi visibile ai client, prima che i dati vengano scritti in essa. I client S3 si aspettano semantica diversa, in cui il nuovo oggetto non è visibile nello spazio dei nomi fino a quando non sono stati scritti tutti i dati. Questa mappatura di S3 allo storage NAS crea file utilizzando la semantica S3, mantenendo i file invisibili esternamente fino al completamento del comando di creazione S3.
 
@@ -61,6 +61,27 @@ Tuttavia, i file e le directory NAS mappati nei bucket S3 NAS possono essere con
 
 
 Scopri di più link:../nas-audit/index.html["Controllo degli eventi NAS su SVM"].
+
+
+
+== Caricamento oggetti multiparte
+
+A partire da ONTAP 9.16,1, il caricamento multiparte di oggetti è supportato quando link:../flexgroup/enable-adv-capacity-flexgroup-task.html["bilanciamento avanzato della capacità"] su FlexGroup Volumes è abilitato.
+
+Il caricamento multiparte di oggetti sul file storage NAS consente a un client con protocollo S3 di caricare un oggetto di grandi dimensioni come parti più piccole. Il caricamento multiparte di oggetti presenta i seguenti vantaggi:
+
+* Consente di caricare gli oggetti in parallelo.
+* In caso di errore di caricamento o di pausa, sarà necessario caricare solo le parti che non sono ancora state caricate. Non è necessario riavviare il caricamento dell'intero oggetto.
+* Se la dimensione dell'oggetto non è nota in anticipo (ad esempio, quando un oggetto di grandi dimensioni è ancora in fase di scrittura), i client possono iniziare a caricare parti dell'oggetto immediatamente e completare il caricamento dopo che l'intero oggetto è stato creato.
+
+
+Il caricamento multiparte supporta le seguenti S3 azioni:
+
+* AbortMultipartUpload
+* CompleteMultipartUpload
+* CreateMultipartUpload
+* ListMultipartUpload
+
 
 
 
@@ -100,16 +121,6 @@ Versione:: Non è possibile specificare la versione nella configurazione di mapp
 --
 * Le richieste che includono specifiche di versione non null (versionID=stringa di query xyz) ricevono risposte di errore.
 * Le richieste che influiscono sullo stato di versione di un bucket vengono rifiutate con errori.
-
-
---
-Operazioni multiparte:: Le seguenti operazioni non sono supportate:
-+
---
-* AbortMultipartUpload
-* CompleteMultipartUpload
-* CreateMultipartUpload
-* ListMultipartUpload
 
 
 --

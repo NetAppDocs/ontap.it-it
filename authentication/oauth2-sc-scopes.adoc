@@ -1,0 +1,132 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-sc-scopes.html 
+keywords: self-contained scopes, scopes 
+summary: 'Gli scope autonomi sono stringhe trasportate nel token di accesso. Ognuno di essi costituisce una definizione completa e personalizzata del ruolo e include tutto ciò che ONTAP ha bisogno per prendere una decisione di accesso. L"ambito è separato e distinto dai ruoli REST definiti all"interno di ONTAP stesso.' 
+---
+= Oscilloscopi OAuth 2,0 autonomi
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Gli scope autonomi sono stringhe trasportate nel token di accesso. Ognuno di essi costituisce una definizione completa e personalizzata del ruolo e include tutto ciò che ONTAP ha bisogno per prendere una decisione di accesso. L'ambito è separato e distinto dai ruoli REST definiti all'interno di ONTAP stesso.
+
+
+
+== Formato della stringa Scope
+
+A livello base, l'ambito è rappresentato come una stringa contigua e composta da sei valori separati da due punti. I parametri utilizzati nella stringa Scope sono descritti di seguito.
+
+
+
+=== Letterale di ONTAP
+
+L'ambito deve iniziare con il valore letterale `ontap` in minuscolo. Questo identifica l'ambito come specifico di ONTAP.
+
+
+
+=== Cluster
+
+Definisce il cluster ONTAP a cui si applica l'ambito. I valori possono includere:
+
+* UUID cluster
++
+Identificazione di un singolo cluster.
+
+* Asterisco (***)
++
+Indica che l'ambito si applica a tutti i cluster.
+
+
+
+È possibile utilizzare il comando CLI di ONTAP `cluster identity show` Per visualizzare l'UUID del cluster. Se non specificato, l'ambito si applica a tutti i cluster.
+
+
+
+=== Ruolo
+
+Il nome del ruolo di RIPOSO contenuto nell'ambito autonomo. Questo valore non viene esaminato da ONTAP o abbinato a ruoli REST esistenti definiti in ONTAP. Il nome viene utilizzato per la registrazione.
+
+
+
+=== Livello di accesso
+
+Questo valore indica il livello di accesso applicato all'applicazione client quando si utilizza l'endpoint API nell'ambito. Sono disponibili sei valori, come descritto nella tabella seguente.
+
+[cols="25,75"]
+|===
+| Livello di accesso | Descrizione 
+
+
+| nessuno | Nega tutti gli accessi all'endpoint specificato. 
+
+
+| readonly | Consente solo l'accesso in lettura utilizzando GET. 
+
+
+| read_create | Consente l'accesso in lettura e la creazione di nuove istanze di risorse utilizzando POST. 
+
+
+| read_modify | Consente l'accesso in lettura e la possibilità di aggiornare le risorse esistenti utilizzando PATCH. 
+
+
+| read_create_modify | Consente tutti gli accessi ad eccezione dell'eliminazione. Le operazioni consentite includono GET (lettura), POST (creazione) e PATCH (aggiornamento). 
+
+
+| tutto | Consente l'accesso completo. 
+|===
+
+
+=== SVM
+
+Nome della SVM all'interno del cluster a cui si applica l'ambito. Utilizzare il valore *** (asterisco) per indicare tutte le SVM.
+
+
+CAUTION: Questa funzione non è completamente supportata con ONTAP 9.14.1. È possibile ignorare il parametro SVM e utilizzare un asterisco come segnaposto. Esaminare https://library.netapp.com/ecm/ecm_download_file/ECMLP2492508["Note di rilascio di ONTAP"^] Per verificare il supporto SVM futuro.
+
+
+
+=== URI API REST
+
+Percorso completo o parziale di una risorsa o di una serie di risorse correlate. La stringa deve iniziare con `/api`. Se non si specifica un valore, l'ambito si applica a tutti gli endpoint API nel cluster ONTAP.
+
+
+
+== Esempi di ambito
+
+Di seguito sono riportati alcuni esempi di ambiti auto-contenuti.
+
+ontap:*:joes-role:read_create_modify:*:/api/cluster:: Fornisce all'utente assegnato a questo ruolo l'accesso di lettura, creazione e modifica al `/cluster` endpoint.
+
+
+
+
+== Strumento di amministrazione CLI
+
+Per rendere più semplice e meno incline agli errori l'amministrazione degli ambiti autonomi, ONTAP fornisce il comando CLI `security oauth2 scope` per generare stringhe di ambito in base ai parametri di input.
+
+Il comando `security oauth2 scope` ha due casi d'utilizzo sulla base delle tue indicazioni:
+
+* Parametri CLI per la stringa di ambito
++
+È possibile utilizzare questa versione del comando per generare una stringa di ambito in base ai parametri di input.
+
+* Stringa di ambito per i parametri CLI
++
+È possibile utilizzare questa versione del comando per generare i parametri del comando in base alla stringa dell'ambito di input.
+
+
+
+.Esempio
+Nell'esempio seguente viene generata una stringa di scope con l'output incluso dopo l'esempio di comando riportato di seguito. La definizione si applica a tutti i cluster.
+
+[listing]
+----
+security oauth2 scope cli-to-scope -role joes-role -access readonly -api /api/cluster
+----
+`ontap:*:joes-role:readonly:*:/api/cluster`

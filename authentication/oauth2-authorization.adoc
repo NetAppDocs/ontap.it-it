@@ -2,9 +2,9 @@
 sidebar: sidebar 
 permalink: authentication/oauth2-authorization.html 
 keywords: scopes, self-contained scopes, active directory, ldap, rest role, local users, groups 
-summary: 'Sono disponibili diverse opzioni per personalizzare l"autorizzazione del client ONTAP. Le decisioni di autorizzazione si basano, in ultima analisi, sui ruoli REST ONTAP contenuti o derivati dai token di accesso.' 
+summary: 'L"implementazione di ONTAP OAuth 2,0 è progettata per essere flessibile e robusta, fornendo le funzionalità necessarie per proteggere l"ambiente ONTAP. Sono disponibili diverse opzioni di configurazione che si escludono a vicenda. Le decisioni di autorizzazione si basano in ultima analisi sui ruoli REST ONTAP contenuti o derivati dai token di accesso OAuth 2,0.' 
 ---
-= Opzioni per l'autorizzazione client ONTAP
+= Panoramica e opzioni per l'autorizzazione del client ONTAP
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -14,33 +14,24 @@ summary: 'Sono disponibili diverse opzioni per personalizzare l"autorizzazione d
 
 
 [role="lead"]
-Sono disponibili diverse opzioni per personalizzare l'autorizzazione del client ONTAP. Le decisioni di autorizzazione si basano, in ultima analisi, sui ruoli REST ONTAP contenuti o derivati dai token di accesso.
+L'implementazione di ONTAP OAuth 2,0 è progettata per essere flessibile e robusta, fornendo le funzionalità necessarie per proteggere l'ambiente ONTAP. Sono disponibili diverse opzioni di configurazione che si escludono a vicenda. Le decisioni di autorizzazione si basano in ultima analisi sui ruoli REST ONTAP contenuti o derivati dai token di accesso OAuth 2,0.
 
 
 CAUTION: È possibile utilizzare solo link:../authentication/overview-oauth2.html#selected-terminology["Ruoli REST di ONTAP"] Quando si configura l'autorizzazione per OAuth 2,0. I ruoli tradizionali ONTAP precedenti non sono supportati.
 
-
-
-== Introduzione
-
-L'implementazione di OAuth 2,0 all'interno di ONTAP è progettata per essere flessibile e robusta, fornendo le opzioni necessarie per proteggere l'ambiente ONTAP. A un livello elevato, esistono tre categorie di configurazione principali per la definizione dell'autorizzazione del client ONTAP. Queste opzioni di configurazione si escludono a vicenda.
-
-ONTAP applica la singola opzione più appropriata in base alla configurazione scelta. Vedere link:../authentication/oauth2-authorization.html#how-ontap-determines-access["Modalità con cui ONTAP determina l'accesso"] Per ulteriori informazioni su come ONTAP elabora le definizioni di configurazione per prendere decisioni sugli accessi.
+ONTAP applica l'opzione di autorizzazione singola più appropriata in base alla configurazione. Per ulteriori informazioni su come ONTAP prende le decisioni relative all'accesso dei client, vedere link:../authentication/oauth2-determine-access.html["Modalità con cui ONTAP determina l'accesso"].
 
 .Oscilloscopi indipendenti OAuth 2,0
-Questi ambiti contengono uno o più ruoli REST personalizzati, ciascuno incapsulato in una singola stringa. Sono indipendenti dalle definizioni dei ruoli ONTAP. È necessario definire queste stringhe di ambito nel server di autorizzazione.
+Questi ambiti contengono uno o più ruoli REST personalizzati, ciascuno incapsulato in una singola stringa nel token di accesso. Sono indipendenti dalle definizioni dei ruoli ONTAP. È necessario configurare le stringhe di ambito nel server di autorizzazione. Per ulteriori informazioni, vedere link:../authentication/oauth2-sc-scopes.html["Oscilloscopi OAuth 2,0 autonomi"] .
 
-.Ruoli e utenti REST locali specifici di ONTAP
-In base alla configurazione, è possibile utilizzare le definizioni di identità ONTAP locali per prendere decisioni di accesso. Le opzioni includono:
+.Ruoli REST ONTAP locali
+È possibile utilizzare un singolo ruolo REST denominato, incorporato o personalizzato. La sintassi dell'ambito per un ruolo denominato è *ontap-role-*<URL-encoded-ONTAP-role-name>. Ad esempio, se il ruolo ONTAP è `admin` la stringa Scope sarà `ontap-role-admin`.
 
-* Singolo ruolo REST denominato
-* Corrispondenza del nome utente con un utente ONTAP locale
+.Utenti
+È possibile utilizzare il nome utente nel token di accesso definito con accesso all'applicazione "http". Un utente viene testato nel seguente ordine in base al metodo di autenticazione definito: Password, dominio (Active Directory), nsswitch (LDAP).
 
-
-La sintassi dell'ambito per un ruolo denominato è *ontap-role-*<URL-encoded-ONTAP-role-name>. Ad esempio, se il ruolo è "admin" la stringa dell'ambito sarà "ontap-role-admin".
-
-.Active Directory o gruppi LDAP
-Se vengono esaminate le definizioni ONTAP locali ma non è possibile prendere alcuna decisione di accesso, vengono utilizzati i gruppi Active Directory ("dominio") o LDAP ("nsswitch"). Le informazioni sul gruppo possono essere specificate in due modi:
+.Gruppi
+I server di autorizzazione possono essere configurati in modo da utilizzare i gruppi ONTAP per l'autorizzazione. Se vengono esaminate le definizioni ONTAP locali ma non è possibile prendere alcuna decisione di accesso, vengono utilizzati i gruppi Active Directory ("dominio") o LDAP ("nsswitch"). Le informazioni sul gruppo possono essere specificate in due modi:
 
 * Stringa OAuth 2,0 Scope
 +
@@ -52,162 +43,4 @@ Questa funzione è destinata ai token di accesso emessi da ADFS utilizzando il f
 
 
 
-
-
-== Oscilloscopi OAuth 2,0 autonomi
-
-Gli scope autonomi sono stringhe trasportate nel token di accesso. Ognuno di essi costituisce una definizione completa e personalizzata del ruolo e include tutto ciò che ONTAP ha bisogno per prendere una decisione di accesso. L'ambito è separato e distinto dai ruoli REST definiti all'interno di ONTAP stesso.
-
-
-
-=== Formato della stringa Scope
-
-A livello base, l'ambito è rappresentato come una stringa contigua e composta da sei valori separati da due punti. I parametri utilizzati nella stringa Scope sono descritti di seguito.
-
-
-
-==== Letterale di ONTAP
-
-L'ambito deve iniziare con il valore letterale `ontap` in minuscolo. Questo identifica l'ambito come specifico di ONTAP.
-
-
-
-==== Cluster
-
-Definisce il cluster ONTAP a cui si applica l'ambito. I valori possono includere:
-
-* UUID cluster
-+
-Identificazione di un singolo cluster.
-
-* Asterisco (***)
-+
-Indica che l'ambito si applica a tutti i cluster.
-
-
-
-È possibile utilizzare il comando CLI di ONTAP `cluster identity show` Per visualizzare l'UUID del cluster. Se non specificato, l'ambito si applica a tutti i cluster.
-
-
-
-==== Ruolo
-
-Il nome del ruolo di RIPOSO contenuto nell'ambito autonomo. Questo valore non viene esaminato da ONTAP o abbinato a ruoli REST esistenti definiti in ONTAP. Il nome viene utilizzato per la registrazione.
-
-
-
-==== Livello di accesso
-
-Questo valore indica il livello di accesso applicato all'applicazione client quando si utilizza l'endpoint API nell'ambito. Sono disponibili sei valori, come descritto nella tabella seguente.
-
-[cols="25,75"]
-|===
-| Livello di accesso | Descrizione 
-
-
-| nessuno | Nega tutti gli accessi all'endpoint specificato. 
-
-
-| readonly | Consente solo l'accesso in lettura utilizzando GET. 
-
-
-| read_create | Consente l'accesso in lettura e la creazione di nuove istanze di risorse utilizzando POST. 
-
-
-| read_modify | Consente l'accesso in lettura e la possibilità di aggiornare le risorse esistenti utilizzando PATCH. 
-
-
-| read_create_modify | Consente tutti gli accessi ad eccezione dell'eliminazione. Le operazioni consentite includono GET (lettura), POST (creazione) e PATCH (aggiornamento). 
-
-
-| tutto | Consente l'accesso completo. 
-|===
-
-
-==== SVM
-
-Nome della SVM all'interno del cluster a cui si applica l'ambito. Utilizzare il valore *** (asterisco) per indicare tutte le SVM.
-
-
-CAUTION: Questa funzione non è completamente supportata con ONTAP 9.14.1. È possibile ignorare il parametro SVM e utilizzare un asterisco come segnaposto. Esaminare https://library.netapp.com/ecm/ecm_download_file/ECMLP2492508["Note di rilascio di ONTAP"^] Per verificare il supporto SVM futuro.
-
-
-
-==== URI API REST
-
-Percorso completo o parziale di una risorsa o di una serie di risorse correlate. La stringa deve iniziare con `/api`. Se non si specifica un valore, l'ambito si applica a tutti gli endpoint API nel cluster ONTAP.
-
-
-
-=== Esempi di ambito
-
-Di seguito sono riportati alcuni esempi di ambiti auto-contenuti.
-
-ontap:*:joes-role:read_create_modify:*:/api/cluster:: Fornisce all'utente assegnato a questo ruolo l'accesso di lettura, creazione e modifica al `/cluster` endpoint.
-
-
-
-
-=== Strumento di amministrazione CLI
-
-Per rendere più semplice e meno incline agli errori l'amministrazione degli ambiti autonomi, ONTAP fornisce il comando CLI `security oauth2 scope` per generare stringhe di ambito in base ai parametri di input.
-
-Il comando `security oauth2 scope` ha due casi d'utilizzo sulla base delle tue indicazioni:
-
-* Parametri CLI per la stringa di ambito
-+
-È possibile utilizzare questa versione del comando per generare una stringa di ambito in base ai parametri di input.
-
-* Stringa di ambito per i parametri CLI
-+
-È possibile utilizzare questa versione del comando per generare i parametri del comando in base alla stringa dell'ambito di input.
-
-
-
-.Esempio
-Nell'esempio seguente viene generata una stringa di scope con l'output incluso dopo l'esempio di comando riportato di seguito. La definizione si applica a tutti i cluster.
-
-[listing]
-----
-security oauth2 scope cli-to-scope -role joes-role -access readonly -api /api/cluster
-----
-`ontap:*:joes-role:readonly:*:/api/cluster`
-
-
-
-== Modalità con cui ONTAP determina l'accesso
-
-Per progettare e implementare correttamente OAuth 2,0, è necessario comprendere in che modo la configurazione delle autorizzazioni viene utilizzata da ONTAP per prendere decisioni di accesso per i client.
-
-.Fase 1: Oscilloscopi autonomi
-Se il token di accesso contiene ambiti indipendenti, ONTAP esamina prima tali ambiti. Se non sono presenti oscilloscopi autonomi, passare al punto 2.
-
-Con uno o più ambiti auto-contenuti presenti, ONTAP applica ogni ambito fino a quando non può essere presa una decisione esplicita *ALLOW* o *DENY*. Se viene presa una decisione esplicita, l'elaborazione termina.
-
-Se ONTAP non è in grado di prendere una decisione di accesso esplicita, continuare con il passaggio 2.
-
-.Passaggio 2: Controllare il flag dei ruoli locali
-ONTAP esamina il valore del flag `use-local-roles-if-present`. Il valore di questo indicatore viene impostato separatamente per ogni server di autorizzazione definito su ONTAP.
-
-* Se il valore è `true` passare alla fase 3.
-* Se il valore è `false` l'elaborazione termina e l'accesso è negato.
-
-
-.Passaggio 3: Ruolo REST di Named ONTAP
-Se il token di accesso contiene un ruolo REST denominato, ONTAP utilizza il ruolo per prendere la decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
-
-Se non è presente alcun ruolo REST denominato o se il ruolo non è stato trovato, passare al punto 4.
-
-.Fase 4: Utenti ONTAP locali
-Estrarre il nome utente dal token di accesso e tentare di associarlo a un utente ONTAP locale.
-
-Se un utente ONTAP locale viene associato, ONTAP utilizza il ruolo definito per l'utente per prendere una decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
-
-Se un utente ONTAP locale non corrisponde o se non è presente alcun nome utente nel token di accesso, passare al punto 5.
-
-.Fase 5: Mappatura da gruppo a ruolo
-Estrarre il gruppo dal token di accesso e tentare di associarlo a un gruppo. I gruppi vengono definiti utilizzando Active Directory o un server LDAP equivalente.
-
-Se esiste una corrispondenza di gruppo, ONTAP utilizza il ruolo definito per il gruppo per prendere una decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
-
-Se non è presente alcuna corrispondenza di gruppo o se non è presente alcun gruppo nel token di accesso, l'accesso viene negato e l'elaborazione termina.
+Per ulteriori informazioni, vedere link:../authentication/oauth2-groups.html["Lavorare con i gruppi"] .

@@ -1,0 +1,83 @@
+---
+sidebar: sidebar 
+permalink: s3-snapshots/index.html 
+keywords: s3 snapshots, S3 Snapshot copy overview, what is S3 snapshot, can you create S3 snapshots 
+summary: Crea un backup point-in-time del bucket S3 utilizzando la tecnologia Snapshot S3. 
+---
+= Panoramica dell'istantanea S3
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.16,1, puoi utilizzare la tecnologia snapshot ONTAP per generare immagini point-in-time di sola lettura dei bucket ONTAP S3.
+
+Utilizzando la funzionalità istantanee S3, è possibile creare manualmente snapshot o generarle automaticamente tramite policy snapshot. Le snapshot S3 vengono presentate come bucket S3 per client S3. È possibile sfogliare e ripristinare il contenuto dagli snapshot tramite S3 client.
+
+In ONTAP 9.16,1, le istantanee S3 catturano solo le versioni correnti degli oggetti nei bucket S3. Le versioni non correnti dei bucket in versione non vengono acquisite nelle istantanee S3. Inoltre, i tag degli oggetti point-in-time non vengono acquisiti negli snapshot se i tag degli oggetti vengono modificati dopo l'acquisizione degli snapshot.
+
+
+TIP: S3 snapshot si basano sul tempo del cluster. È necessario configurare il server NTP nel cluster per sincronizzare l'ora. Per ulteriori informazioni, fare riferimento a link:../system-admin/manage-cluster-time-concept.html["Gestire il tempo del cluster"].
+
+.Utilizzo di spazio e quota
+Le quote tengono traccia del numero di oggetti e delle dimensioni logiche utilizzati in un bucket S3. Quando vengono creati S3 snapshot, gli oggetti acquisiti negli snapshot S3 vengono conteggiati per il numero e le dimensioni degli oggetti bucket utilizzati, fino a quando gli snapshot non vengono eliminati dal file system.
+
+.Oggetti multiparte
+Per gli oggetti multiparte, solo gli oggetti finali vengono acquisiti nelle istantanee. I caricamenti parziali degli oggetti multiparte non vengono acquisiti nelle istantanee.
+
+
+
+== Istantanee su bucket in versione e non in versione
+
+È possibile creare istantanee su bucket con versione e non con versione. L'istantanea contiene solo le versioni correnti dell'oggetto alla volta in cui viene acquisita l'istantanea.
+
+.Bucket e istantanee in versione
+Nei bucket con versione oggetto abilitata, uno snapshot conserva il contenuto della versione oggetto più recente dopo la quale è stata acquisita la snapshot. Esclude le versioni non correnti nella benna.
+
+Consideriamo questo esempio: In un bucket in cui è abilitata la versione oggetto, l'oggetto `obj1` ha le versioni v1, v2, v3, v4, v5. È stata creata un'istantanea `snap1` da `obj1` v3 (la versione più recente nel punto di acquisizione). Durante la navigazione `snap1`, `obj1` viene visualizzato come oggetto con contenuto creato su v3. Il contenuto delle versioni precedenti non verrà restituito.
+
+
+NOTE: Le versioni non correnti vengono mantenute nel filesystem, fino a quando gli snapshot non vengono eliminati.
+
+.Benne e istantanee non in versione
+Nei bucket non in versione, gli snapshot S3 conservano il contenuto degli ultimi commenti prima della creazione dell'istantanea.
+
+Consideriamo questo esempio: In un bucket in cui la versione oggetto non è disponibile, l'oggetto `obj1` è stato sovrascritto diverse volte in (t1, t2, t3, t4 e T5). È stato creato uno snapshot S3 `snap1` tra il t3 e il t4. Durante la navigazione `snap1`, `obj1` viene visualizzato con il contenuto creato su t3.
+
+
+
+== Scadenza degli oggetti e snapshot
+
+La scadenza dell'oggetto ONTAP S3 e le istantanee S3 funzionano indipendentemente l'una dall'altra. La funzione di scadenza degli oggetti ONTAP scade le versioni degli oggetti in base alle regole di gestione del ciclo di vita definite per il bucket S3. Gli snapshot S3 sono copie statiche degli oggetti bucket in un punto temporale al momento della creazione della snapshot.
+
+Se la versione oggetto è abilitata in un bucket, quando una versione specifica di un oggetto viene eliminata a causa di una regola di scadenza definita per quel bucket, il contenuto della versione oggetto scaduta continua a rimanere nel filesystem se la versione è stata acquisita come versione corrente in uno o più snapshot S3. Tale versione dell'oggetto non esisterà più nel file system solo quando lo snapshot viene eliminato.
+
+Analogamente, in un bucket in cui la versione è disattivata, se un oggetto viene eliminato in base a una regola di scadenza, ma l'oggetto viene ancora acquisito in alcuni snapshot S3 esistenti, l'oggetto verrà conservato nel file system. L'oggetto verrà rimosso in modo permanente dal file system quando le snapshot che lo catturano vengono eliminate.
+
+Per informazioni sulla scadenza degli oggetti S3 e sulla gestione del ciclo di vita, fare riferimento a link:../s3-config/create-bucket-lifecycle-rule-task.html["Creare una regola di gestione del ciclo di vita del bucket"].
+
+
+
+== Limitazioni con snapshot S3
+
+Notare le seguenti esclusioni e scenari di funzionalità in ONTAP 9.16,1:
+
+* È possibile generare fino a 1023 snapshot per un bucket S3.
+* È necessario eliminare tutte le snapshot S3 e i metadati da tutti i bucket in un cluster, prima di riportare il cluster a una versione ONTAP precedente a ONTAP 9.16,1.
+* Se è necessario eliminare un bucket S3 contenente oggetti con snapshot, assicurarsi di aver eliminato tutti gli snapshot corrispondenti di tutti gli oggetti in tale bucket.
+* Gli snapshot S3 non sono supportati nelle seguenti configurazioni:
++
+** Sui bucket in una relazione di SnapMirror
+** Nei bucket in cui è abilitato il blocco degli oggetti
+** Su NetApp BlueXP 
+** In System Manager
+** Nelle configurazioni ONTAP MetroCluster
+
+
+

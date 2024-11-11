@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: enable, storage, rebalance, modify, stop, status, flexgroup, volume 
 summary: A partire da ONTAP 9.12.1, è possibile ribilanciare i volumi FlexGroup spostando senza interruzioni i file da un costituente in un FlexGroup a un altro costituente. 
 ---
-= Ribilanciare i volumi FlexGroup
+= Ribilancia i volumi FlexGroup spostando i file
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -23,6 +23,8 @@ Il ribilanciamento di FlexGroup aiuta a ridistribuire la capacità quando si svi
 Il ribilanciamento è disponibile solo quando tutti i nodi del cluster eseguono ONTAP 9.12.1 o release successive. È necessario abilitare la funzionalità dati granulare su qualsiasi volume FlexGroup che esegue l'operazione di ribilanciamento.  Una volta abilitata questa funzionalità, non è possibile ripristinare ONTAP 9.11.1 e versioni precedenti a meno che non si elimini questo volume o si ripristini da una copia Snapshot creata prima dell'attivazione dell'impostazione.
 
 A partire da ONTAP 9.14.1, ONTAP introduce un algoritmo per spostare senza interruzioni e in modo proattivo i file in volumi che hanno abilitato dati granulari senza interazione dell'utente. L'algoritmo funziona in scenari molto specifici e mirati per ridurre i colli di bottiglia delle prestazioni.  Gli scenari in cui questo algoritmo potrebbe agire includono un carico di scrittura molto elevato su un particolare set di file su un nodo nel cluster o un file in continua crescita in una directory principale molto attiva.
+
+A partire da ONTAP 9.16,1, è anche possibile abilitare la link:enable-adv-capacity-flexgroup-task.html["bilanciamento avanzato della capacità"]ridistribuzione dei dati di un file di grandi dimensioni tra i volumi membri di FlexGroup.
 
 
 
@@ -95,6 +97,10 @@ A partire da ONTAP 9.13.1, è possibile pianificare una singola operazione di ri
 * Quando si crea un volume FlexGroup utilizzando `volume create` comando
 * Modificando un volume FlexGroup esistente per attivare l'impostazione utilizzando `volume modify` comando
 * Impostazione automatica quando si avvia il ribilanciamento FlexGroup utilizzando `volume rebalance` comando
++
+
+NOTE: Se si utilizza ONTAP 9.16,1 o versioni successive e link:enable-adv-capacity-flexgroup-task.html["Bilanciamento avanzato della capacità di FlexGroup"] si attiva `granular-data advanced` utilizzando l'opzione nell'interfaccia CLI di ONTAP o System Manager, viene attivato anche il ribilanciamento di FlexGroup.
+
 
 
 .Fasi
@@ -118,7 +124,12 @@ NOTE: L'opzione *Ribilanciamento* è disponibile solo quando lo stato FlexGroup 
 --
 .CLI
 --
-. Avviare il ribilanciamento automatico: `volume rebalance start -vserver _SVM_name_ -volume _volume_name_`
+. Avviare il ribilanciamento automatico:
++
+[source, cli]
+----
+volume rebalance start -vserver <SVM name> -volume <volume name>
+----
 +
 In alternativa, è possibile specificare le seguenti opzioni:
 
@@ -178,7 +189,12 @@ NOTE: L'opzione *Ribilanciamento* è disponibile solo quando lo stato FlexGroup 
 --
 .CLI
 --
-. Modificare il ribilanciamento automatico: `volume rebalance modify -vserver _SVM_name_ -volume _volume_name_`
+. Modificare il ribilanciamento automatico:
++
+[source, cli]
+----
+volume rebalance modify -vserver <SVM name> -volume <volume name>
+----
 +
 È possibile specificare una o più delle seguenti opzioni:
 
@@ -225,7 +241,12 @@ Una volta attivato o pianificato il ribilanciamento FlexGroup, è possibile inte
 --
 .CLI
 --
-. Arrestare il ribilanciamento FlexGroup: `volume rebalance stop -vserver _SVM_name_ -volume _volume_name_`
+. Arrestare il ribilanciamento FlexGroup:
++
+[source, cli]
+----
+volume rebalance stop -vserver <SVM name> -volume <volume name>
+----
 
 
 --
@@ -249,7 +270,12 @@ Una volta attivato o pianificato il ribilanciamento FlexGroup, è possibile inte
 --
 .CLI
 --
-. Visualizzare lo stato di un'operazione di ribilanciamento FlexGroup: `volume rebalance show`
+. Visualizzare lo stato di un'operazione di ribilanciamento FlexGroup:
++
+[source, cli]
+----
+volume rebalance show
+----
 +
 Esempio di stato di ribilanciamento:
 

@@ -1,0 +1,117 @@
+---
+sidebar: sidebar 
+permalink: s3-snapshots/create-s3-snapshot.html 
+keywords: s3 snapshots, snapshot create 
+summary: Puoi generare manualmente snapshot S3 o impostare policy snapshot per creare automaticamente snapshot S3. 
+---
+= Creare S3 snapshot
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Puoi generare manualmente snapshot S3 o impostare policy snapshot per creare automaticamente snapshot S3. Le copie Snapshot fungono da copie statiche degli oggetti da utilizzare per il backup e recovery dei dati. Per determinare la conservazione delle snapshot, è possibile creare policy di snapshot che facilitano la creazione automatica di snapshot a intervalli specificati.
+
+Gli snapshot S3 aiutano a proteggere i dati degli oggetti in bucket S3 con o senza versione oggetto abilitata.
+
+
+TIP: Gli snapshot possono essere particolarmente utili per stabilire la data Protection quando la versione oggetto non è abilitata in un bucket S3, in quanto agiscono come record point-in-time che puoi utilizzare per le operazioni di ripristino quando una versione oggetto precedente non è disponibile.
+
+.A proposito di questa attività
+* Le seguenti regole di denominazione si applicano allo snapshot (per gli snapshot manuali e automatici):
++
+** I nomi delle istantanee S3 possono contenere fino a 30 caratteri
+** I nomi delle istantanee S3 possono essere costituiti solo da lettere minuscole, numeri, punti (.) e trattini (-)
+** S3 i nomi delle istantanee devono terminare con una lettera o un numero
+** I nomi degli snapshot S3 non possono contenere sottostringhe `s3snap`
+
+
+* Nel contesto del protocollo S3, le restrizioni di denominazione dei bucket limitano il nome di un bucket a 63 caratteri. Poiché le snapshot ONTAP S3 vengono presentate come bucket attraverso il protocollo S3, si applicano restrizioni simili ai nomi dei bucket delle snapshot. Per impostazione predefinita, il nome del bucket originale viene utilizzato come nome del bucket di base.
+* Per facilitare l'identificazione dell'istantanea a cui appartiene il bucket, il nome del bucket dell'istantanea consiste nel nome del bucket di base, insieme a una stringa speciale, `-s3snap-`, preceduta dal nome dell'istantanea. I nomi dei bucket di istantanea sono formattati come `<base_bucket_name>-s3snap-<snapshot_name>`.
++
+Ad esempio, l'esecuzione del comando seguente per creare su `bucket-a` crea `snap1` un bucket di snapshot con nome `bucket-a-s3snap-snap1`, accessibile tramite client S3 se si dispone delle autorizzazioni per accedere al bucket di base.
+
++
+[listing]
+----
+vserver object-store-server bucket snapshot create -bucket bucket-a -snapshot snap1
+----
+* Non è possibile creare un'istantanea che produca un nome di bucket snapshot con più di 63 caratteri.
+* Il nome dello snapshot automatico contiene il nome della pianificazione della policy e l'indicatore data e ora, simile alla convenzione di denominazione per gli snapshot di volume tradizionali. Ad esempio, i nomi degli snapshot pianificati possono essere `daily-2024-01-01-0015` e `hourly-2024-05-22-1105`.
+
+
+
+
+== Creare manualmente S3 snapshot
+
+Puoi creare manualmente uno snapshot S3 utilizzando l'interfaccia CLI di ONTAP. La procedura crea uno snapshot solo nel cluster locale.
+
+.Fasi
+. Creare un'istantanea S3:
++
+[listing]
+----
+vserver object-store-server bucket snapshot create -vserver <svm_name> -bucket <bucket_name> -snapshot <snapshot_name>
+----
++
+L'esempio seguente crea una snapshot nominata `pre-update` sulla macchina virtuale e sul `vs0` bucket di storage `website-data`:
+
++
+[listing]
+----
+vserver object-store-server bucket snapshot create -vserver vs0 -bucket website-data -snapshot pre-update
+----
+
+
+
+
+== Assegnare un criterio di snapshot S3 a un bucket
+
+Quando si configurano le policy delle snapshot a livello del bucket S3, ONTAP crea automaticamente istantanee S3 pianificate. Come per le policy snapshot tradizionali, è possibile configurare fino a cinque pianificazioni per S3 snapshot.
+
+In genere, un criterio snapshot specifica le pianificazioni per la creazione degli snapshot, il numero di copie da conservare per ogni pianificazione e il prefisso di pianificazione. Ad esempio, un criterio può creare un'istantanea S3 ogni giorno alle 12:10:00, conservare le due copie più recenti e denominarle `daily-<timestamp>`.
+
+Il criterio snapshot predefinito conserva:
+
+* Sei snapshot ogni ora
+* Due istantanee giornaliere
+* Due istantanee settimanali
+
+
+.Prima di iniziare
+* È necessario creare un criterio snapshot prima di assegnarlo al bucket S3.
+
+
+
+NOTE: I criteri per gli snapshot S3 seguono le stesse regole degli altri criteri per gli snapshot ONTAP. Tuttavia, un criterio snapshot con un periodo di conservazione configurato in una qualsiasi delle pianificazioni snapshot non può essere assegnato a un bucket S3.
+
+Per ulteriori informazioni sulla creazione di criteri snapshot per la generazione automatica di snapshot, fare riferimento alla sezione link:../data-protection/configure-custom-snapshot-policies-concept.html["Configurare la panoramica dei criteri snapshot personalizzati"].
+
+.Fasi
+. Assegnare la policy di snapshot nel bucket:
++
+[listing]
+----
+vserver object-store-server bucket create -vserver <svm_name> -bucket <bucket_name> -snapshot-policy <policy_name>
+----
++
+oppure
+
++
+[listing]
+----
+vserver object-store-server bucket modify -vserver <svm_name> -bucket <bucket_name> -snapshot-policy <policy_name>
+----
+
+
+
+NOTE: Se è necessario ripristinare un cluster a una versione ONTAP precedente a ONTAP 9.16,1, verificare che il valore per `snapshot-policy` tutti i bucket sia impostato su `none` (o `-`).
+
+.Informazioni correlate
+link:../s3-snapshots/index.html["Panoramica dell'istantanea S3"]

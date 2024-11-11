@@ -1,0 +1,144 @@
+---
+permalink: flexgroup/enable-adv-capacity-flexgroup-task.html 
+sidebar: sidebar 
+keywords: flexgroup advanced capacity balancing, flexgroup granular data distribution, gdd, flexgroup, volume, balancing 
+summary: A partire da ONTAP 9.16,1, viene introdotto il bilanciamento avanzato della capacità per fornire la distribuzione di dati tra i volumi dei membri FlexGroup quando file di grandi dimensioni crescono e consumano spazio su un volume membro. 
+---
+= Bilancia i volumi ONTAP FlexGroup ridistribuzione dei dati dei file
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.16,1, è possibile abilitare il bilanciamento della capacità avanzato per abilitare la distribuzione di dati tra i volumi membri FlexGroup quando file di grandi dimensioni aumentano e occupano spazio su un volume membro.
+
+Il bilanciamento avanzato della capacità espande la funzionalità dati granulare introdotta in ONTAP 9.12,1, che consente a ONTAP di link:manage-flexgroup-rebalance-task.html["Ribilanciare i volumi FlexGroup"]spostare i file ad altri membri. A partire da ONTAP 9.16,1, quando viene abilitato il bilanciamento avanzato della capacità con l' `-granular-data advanced`opzione, vengono attivate sia le funzionalità di ribilanciamento dei file "di base" sia le funzionalità avanzate della capacità.
+
+[NOTE]
+====
+Sia il ribilanciamento dei file che il bilanciamento della capacità avanzato sono disattivati per impostazione predefinita. Una volta attivate, queste funzioni non possono essere disattivate. Per disattivare il bilanciamento della capacità, è necessario eseguire il ripristino da uno snapshot creato prima di abilitare il bilanciamento della capacità avanzato.
+
+====
+Il bilanciamento avanzato della capacità viene attivato da nuove scritture che raggiungono il 10GB o il 1% dello spazio libero di un volume.
+
+
+
+== Modalità di distribuzione dei file
+
+Se un file viene creato o cresce abbastanza da attivare il bilanciamento avanzato della capacità, il file viene distribuito in strisce tra 1GB e 10GB tra i volumi FlexGroup dei membri.
+
+Quando è abilitato il bilanciamento avanzato della capacità, ONTAP non suddivide retroattivamente i file di grandi dimensioni esistenti. Se un file di grandi dimensioni esistente continua a crescere dopo l'attivazione del bilanciamento avanzato della capacità, è possibile eseguire lo striping dei nuovi contenuti nei file di grandi dimensioni esistenti tra i volumi FlexGroup dei membri in base alle dimensioni del file e allo spazio disponibile.
+
+Il bilanciamento della capacità avanzato a senso unico determina la larghezza dello stripe utilizzando la quantità di spazio libero disponibile sul volume membro. Il bilanciamento avanzato della capacità crea uno stripe dei file pari al 1% dello spazio libero disponibile. Ciò significa che le strisce possono iniziare più grandi se è disponibile più spazio, e diventano più piccole quando il FlexGroup si riempie.
+
+Oltre allo spazio disponibile sul volume membro, il bilanciamento avanzato della capacità utilizza diversi altri fattori per determinare la larghezza dello stripe:
+
+* Larghezza minima della striscia: La larghezza minima della striscia scelta è 1GB.
+* Larghezza massima dello stripe: La larghezza massima possibile dello stripe è 10GB.
+* Granularità: Le strisce sono sempre create in multipli di 1GB.
+
+
+
+
+== Protocolli supportati
+
+Il bilanciamento della capacità avanzato è supportato dai seguenti protocolli:
+
+* NFSv3, NFSv4, NFSv4.1
+* PNFS
+* PMI
+
+
+
+
+== Consentire il bilanciamento avanzato della capacità
+
+Il bilanciamento avanzato della capacità è disattivato per impostazione predefinita. È necessario abilitare il bilanciamento avanzato della capacità per bilanciare automaticamente la capacità FlexGroup. Non è possibile disattivare questa funzione una volta attivata, ma è possibile eseguire il ripristino da uno snapshot creato prima dell'attivazione del bilanciamento avanzato della capacità.
+
+.Prima di iniziare
+* Tutti i nodi del cluster devono eseguire ONTAP 9.16.1 o versione successiva.
+* Non è possibile ripristinare una release precedente a ONTAP 9.16,1 se è abilitato il bilanciamento avanzato della capacità. Per ripristinare, è necessario eseguire prima il ripristino da uno snapshot creato prima di attivare il bilanciamento avanzato della capacità.
+* Se l'offload delle copie NFS è stato abilitato (`vserver nfs -vstorage enabled`) su una SVM, non è possibile abilitare il bilanciamento della capacità avanzata su un volume FlexGroup. Analogamente, se hai abilitato il bilanciamento della capacità avanzata su qualsiasi volume FlexGroup in una SVM, non potrai attivare l'offload delle copie NFS.
+* Il bilanciamento avanzato della capacità non è supportato con il writeback FlexCache.
+
+
+.A proposito di questa attività
+Durante la creazione di volumi di destinazione DP utilizzando una delle opzioni di dati granulari (di base o avanzata), la destinazione visualizza l'impostazione come "disabilitata" fino al completamento del trasferimento SnapMirror. Al termine del trasferimento, la destinazione DP visualizza i dati granulari come "abilitati".
+
+
+
+=== Abilitazione del bilanciamento della capacità avanzato durante la creazione di FlexGroup
+
+.Fasi
+Puoi utilizzare System Manager o l'interfaccia a riga di comando di ONTAP per abilitare il bilanciamento avanzato della capacità quando crei un nuovo volume FlexGroup.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Accedere a *Storage > Volumes* (archiviazione > volumi*) e fare clic su image:icon_add_blue_bg.gif["Icona Add (Aggiungi)"].
+. Nella finestra *Aggiungi volume*, immettere il nome e le dimensioni del volume. Quindi fare clic su *altre opzioni*.
+. In *archiviazione e ottimizzazione*, selezionare *distribuire i dati del volume attraverso il cluster (FlexGroup)*.
+. Selezionare *bilanciamento capacità avanzato*.
+. Terminare la configurazione del volume e fare clic su *Salva*.
+
+
+--
+.CLI
+--
+. Creazione di un volume con bilanciamento avanzato della capacità abilitato:
++
+[source, cli]
+----
+volume create -vserver <svm name> -volume <volume name> -size <volume size> -auto-provision-as flexgroup -junction-path /<path> -granular-data advanced
+----
++
+Esempio:
+
++
+[listing]
+----
+volume create -vserver vs0 -volume newvol -size 1TB -auto-provision-as flexgroup -junction-path /newvol -granular-data advanced
+----
+
+
+--
+====
+
+
+=== Consentire il bilanciamento della capacità avanzato sui volumi FlexGroup esistenti
+
+.Fasi
+Puoi utilizzare System Manager o l'interfaccia a riga di comando di ONTAP per consentire il bilanciamento avanzato della capacità.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Accedere a *archiviazione > volumi*, fare clic su image:icon_kabob.gif["Icona delle opzioni di menu"]e scegliere *Modifica > Volume*.
+. Nella finestra *Modifica volume*, in *archiviazione e ottimizzazione*, selezionare *bilanciamento capacità avanzato*.
+. Fare clic su *Save* (Salva).
+
+
+--
+.CLI
+--
+. Modifica di un volume FlexGroup esistente per consentire il bilanciamento avanzato della capacità:
++
+[source, cli]
+----
+volume modify -vserver <svm name> -volume <volume name> -granular-data advanced
+----
++
+Esempio:
+
++
+[listing]
+----
+volume modify -vserver vs0 -volume newvol  -granular-data advanced
+----
+
+
+--
+====

@@ -1,0 +1,67 @@
+---
+sidebar: sidebar 
+permalink: s3-snapshots/delete-s3-snapshot.html 
+keywords: s3 snapshots, delete S3 snapshots 
+summary: Puoi eliminare S3 snapshot che non ti servono più e liberare spazio storage nei bucket. 
+---
+= Eliminare S3 snapshot
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Puoi eliminare S3 snapshot che non ti servono più e liberare spazio storage nei bucket. È possibile rimuovere manualmente S3 snapshot o modificare le policy delle snapshot collegate ai bucket S3 per modificare il numero di snapshot da conservare per una pianificazione.
+
+Le policy di Snapshot per i bucket S3 seguono le stesse regole di eliminazione delle tradizionali policy di snapshot ONTAP. Per ulteriori informazioni sulla creazione di criteri snapshot, fare riferimento a link:../data-protection/create-snapshot-policy-task.html["Creare un criterio di snapshot"].
+
+.A proposito di questa attività
+* Se una versione dell'oggetto (in un bucket con versione) o un oggetto (in un bucket non con versione) viene acquisita in più snapshot, l'oggetto verrà rimosso dal file system solo dopo l'eliminazione dell'ultimo snapshot di protezione.
+* Se è necessario eliminare un bucket S3 contenente oggetti con snapshot, assicurarsi di aver eliminato tutte le istantanee di tutti gli oggetti in tale bucket.
+* Per ripristinare un cluster a una versione ONTAP precedente a ONTAP 9.16,1, assicurati di aver eliminato tutte le S3 snapshot per tutti i bucket. Potrebbe anche essere necessario eseguire il `vserver object-store-server bucket clear-snapshot-metadata` comando per rimuovere i metadati di snapshot per un bucket S3. Per informazioni, fare riferimento alla link:../s3-snapshots/delete-s3-snapshot.html#clear-s3-snapshots-metadata["Cancellare i metadati delle snapshot S3"].
+* Quando si eliminano istantanee in batch, è possibile rimuovere un gran numero di oggetti acquisiti in più snapshot, liberando di fatto più spazio rispetto alla cancellazione di singole snapshot. Di conseguenza, potrai recuperare più spazio per gli oggetti storage.
+
+
+.Fasi
+. Per eliminare un'istantanea S3 specifica, eseguire il seguente comando:
++
+[listing]
+----
+vserver object-store-server bucket snapshot delete -vserver <svm_name> -bucket <bucket_name> -snapshot <snapshot_name>
+----
+. Per rimuovere tutte le S3 snapshot in un bucket, esegui questo comando:
++
+[listing]
+----
+vserver object-store-server bucket snapshot delete -vserver <svm_name> -bucket <bucket_name> -snapshot *
+----
+
+
+
+
+== Cancellare i metadati delle snapshot S3
+
+Con le snapshot S3, vengono generati anche i metadati di Snapshot in un bucket. I metadati della snapshot continuano a essere nel bucket anche se tutte le snapshot vengono rimosse da esso. La presenza di metadati di snapshot blocca le seguenti operazioni:
+
+* Il cluster torna a una versione di ONTAP precedente a ONTAP 9.16,1
+* Configurazione di S3 SnapMirror sulla benna
+
+
+Prima di eseguire queste operazioni, è necessario cancellare tutti i metadati dello snapshot dal bucket.
+
+.Prima di iniziare
+Assicurarsi di aver rimosso tutti gli snapshot S3 da un bucket prima di iniziare a cancellare i metadati.
+
+.Fasi
+. Per cancellare i metadati di Snapshot da un bucket, esegui questo comando:
+
+
+[listing]
+----
+vserver object-store-server bucket clear-snapshot-metadata -vserver <svm_name> -bucket <bucket_name>
+----

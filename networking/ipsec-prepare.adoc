@@ -1,0 +1,138 @@
+---
+sidebar: sidebar 
+permalink: networking/ipsec-prepare.html 
+keywords: ip security, ipsec, data-in-motion, in-flight encryption, ONTAP ipsec evolution, security policy database, spd, hardware offload, nic 
+summary: 'A partire da ONTAP 9.8, è possibile utilizzare la protezione IP (IPsec) per proteggere il traffico di rete. IPSec è una delle diverse opzioni di crittografia data-in-motion o in-flight disponibili con ONTAP. È necessario prepararsi a configurare IPsec prima di utilizzarlo in un ambiente di produzione.' 
+---
+= Prepararsi all'utilizzo della protezione IP
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.8, è possibile utilizzare la protezione IP (IPsec) per proteggere il traffico di rete. IPSec è una delle diverse opzioni di crittografia data-in-motion o in-flight disponibili con ONTAP. È necessario prepararsi a configurare IPsec prima di utilizzarlo in un ambiente di produzione.
+
+
+
+== Implementazione della protezione IP in ONTAP
+
+IPSec è uno standard Internet gestito da IETF. Fornisce crittografia e integrità dei dati nonché autenticazione per il traffico che fluisce tra gli endpoint di rete a livello IP.
+
+Con ONTAP, IPSec protegge tutto il traffico IP tra ONTAP e i vari client, inclusi i protocolli NFS, SMB e iSCSI. Oltre alla privacy e all'integrità dei dati, il traffico di rete è protetto da diversi attacchi, come il replay e gli attacchi man-in-the-middle. ONTAP utilizza l'implementazione della modalità di trasporto IPSec. Utilizza il protocollo IKE (Internet Key Exchange) versione 2 per negoziare il materiale chiave tra ONTAP e i client utilizzando IPv4 o IPv6.
+
+Quando la funzionalità IPsec è attivata su un cluster, la rete richiede una o più voci nel database dei criteri di protezione ONTAP (SPD) corrispondenti alle varie caratteristiche del traffico. Queste voci vengono associate ai dettagli di protezione specifici necessari per elaborare e inviare i dati (ad esempio, la suite di crittografia e il metodo di autenticazione). È inoltre necessaria una voce SPD corrispondente in ogni client.
+
+Per alcuni tipi di traffico, potrebbe essere preferibile un'altra opzione di crittografia dati in movimento. Ad esempio, per la crittografia del traffico NetApp SnapMirror e di peering dei cluster, si consiglia di utilizzare il protocollo TLS (Transport Layer Security) invece di IPSec. Ciò è dovuto al fatto che TLS offre prestazioni migliori nella maggior parte delle situazioni.
+
+.Informazioni correlate
+* https://www.ietf.org/["Internet Engineering Task Force"^]
+* https://www.rfc-editor.org/info/rfc4301["RFC 4301: Architettura di sicurezza per il protocollo Internet"^]
+
+
+
+
+== Evoluzione dell'implementazione di ONTAP IPSec
+
+IPSec è stato introdotto per la prima volta con ONTAP 9.8. L'implementazione ha continuato ad evolversi e migliorare come descritto di seguito.
+
+
+NOTE: Quando una funzionalità viene introdotta a partire da una specifica release di ONTAP, è supportata anche nelle versioni successive, se non diversamente specificato.
+
+.ONTAP 9.16.1
+Molte delle operazioni crittografiche, come la crittografia e i controlli di integrità, possono essere scaricate su una scheda NIC supportata. Per ulteriori informazioni, vedere <<Funzione di offload dell'hardware IPSec>> .
+
+.ONTAP 9.12.1
+Il supporto del protocollo host front-end IPSec è disponibile nelle configurazioni fabric-attached MetroCluster IP e MetroCluster. Il supporto IPSec fornito con i cluster MetroCluster è limitato al traffico host front-end e non è supportato nelle LIF intercluster MetroCluster.
+
+.ONTAP 9.10.1
+I certificati possono essere utilizzati per l'autenticazione IPsec oltre alle chiavi precondivise (PSK). Prima di ONTAP 9.10,1, per l'autenticazione sono supportati solo i PSK.
+
+.ONTAP 9.9.1
+Gli algoritmi di crittografia utilizzati da IPSec sono validati con FIPS 140-2-2. Questi algoritmi vengono elaborati dal modulo crittografico di NetApp in ONTAP che esegue la convalida FIPS 140-2.
+
+.ONTAP 9.8
+Il supporto per IPsec diventa inizialmente disponibile in base all'implementazione della modalità di trasporto.
+
+
+
+== Funzione di offload dell'hardware IPSec
+
+Se si utilizza ONTAP 9.16,1 o versioni successive, è possibile eseguire l'offload di alcune operazioni a elaborazione intensiva, come la crittografia e i controlli di integrità, a una scheda NIC (Network Interface Controller) installata nel nodo di storage. L'utilizzo di questa opzione di offload hardware può migliorare significativamente le prestazioni e il throughput del traffico di rete protetto da IPsec.
+
+
+
+=== Requisiti e raccomandazioni
+
+Prima di utilizzare la funzione di offload dell'hardware IPsec, è necessario prendere in considerazione diversi requisiti.
+
+.Schede Ethernet supportate
+È necessario installare e utilizzare solo schede Ethernet supportate sui nodi di archiviazione. Con ONTAP 9.16,1 sono supportate le seguenti schede Ethernet:
+
+* X50131A (controller Ethernet CX7 2P, 40G/100g/200G/400G)
+* X60243A (4P, controller Ethernet 10G/25g CX7)
+
+
+.Ambito del cluster
+La funzione di offload dell'hardware IPSec è configurata globalmente per il cluster. Così, ad esempio, il comando `security ipsec config` si applica a tutti i nodi nel cluster.
+
+.Configurazione coerente
+Le schede NIC supportate devono essere installate in tutti i nodi del cluster. Se una scheda NIC supportata è disponibile solo su alcuni dei nodi, è possibile riscontrare un peggioramento significativo delle prestazioni dopo un failover se alcune LIF non sono ospitate su una NIC con funzionalità offload.
+
+.Disattiva l'anti-ripetizione
+È necessario disattivare la protezione anti-replay IPsec su ONTAP (configurazione predefinita) e sui client IPsec. Se non è disattivata, la frammentazione e il percorso multiplo (percorso ridondante) non saranno supportati.
+
+
+
+=== Limitazioni
+
+Prima di utilizzare la funzione di offload dell'hardware IPsec, è necessario prendere in considerazione diverse limitazioni.
+
+.IPv6
+La versione IP 6 non è supportata per la funzione di offload dell'hardware IPsec. IPv6 è supportato solo con l'implementazione del software IPsec.
+
+.Numeri di sequenza estesi
+I numeri di sequenza estesi IPsec non sono supportati con la funzione di offload hardware. Vengono utilizzati solo i normali numeri di sequenza a 32 bit.
+
+.Aggregazione dei collegamenti
+La funzione di offload hardware IPsec non supporta l'aggregazione dei collegamenti. Pertanto, non può essere utilizzato con un'interfaccia o un gruppo di aggregazione dei collegamenti amministrato tramite i comandi all'interfaccia `network port ifgrp` CLI di ONTAP.
+
+
+
+=== Supporto di configurazione nell'interfaccia a riga di comando di ONTAP
+
+Tre comandi CLI esistenti vengono aggiornati in ONTAP 9.16,1 per supportare la funzione di offload dell'hardware IPsec come descritto di seguito. Per ulteriori informazioni, vedere anchelink:../networking/ipsec-configure.html["Configurare la protezione IP in ONTAP"].
+
+[cols="40,60"]
+|===
+| Comando ONTAP | Aggiornare 
+
+
+| `security ipsec config show` | Il parametro booleano `Offload Enabled` mostra lo stato attuale di offload NIC. 
+
+
+| `security ipsec config modify` | Il parametro `is-offload-enabled` può essere utilizzato per attivare o disattivare la funzione di offload NIC. 
+
+
+| `security ipsec config show-ipsecsa` | Sono stati aggiunti quattro nuovi contatori per visualizzare il traffico in entrata e in uscita in byte e pacchetti. 
+|===
+
+
+=== Supporto della configurazione nell'API REST ONTAP
+
+Due endpoint REST API esistenti vengono aggiornati in ONTAP 9.16,1 per supportare la funzione di offload hardware IPsec come descritto di seguito.
+
+[cols="40,60"]
+|===
+| Endpoint REST | Aggiornare 
+
+
+| `/api/security/ipsec` | Il parametro `offload_enabled` è stato aggiunto ed è disponibile con il metodo PATCH. 
+
+
+| `/api/security/ipsec/security_association` | Sono stati aggiunti due nuovi valori del contatore per tenere traccia dei byte totali e dei pacchetti elaborati dalla funzione di offload. 
+|===
+Per ulteriori informazioni sull'API REST ONTAP, https://docs.netapp.com/us-en/ontap-automation/whats-new.html["Novità dell'API REST di ONTAP"^] visitare il sito della documentazione relativa all'automazione ONTAP. È inoltre necessario consultare la documentazione di ONTAP https://docs.netapp.com/us-en/ontap-automation/reference/api_reference.html["Riferimento API"^] per informazioni dettagliate sugli endpoint IPSec.

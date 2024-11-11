@@ -1,0 +1,121 @@
+---
+sidebar: sidebar 
+permalink: authentication/oauth2-determine-access.html 
+keywords: oauth 2.0, oauth2, scopes, groups, roles, users, determine access 
+summary: Per progettare e implementare correttamente OAuth 2,0, è necessario comprendere in che modo la configurazione delle autorizzazioni viene utilizzata da ONTAP per prendere decisioni di accesso per i client. 
+---
+= Modalità con cui ONTAP determina l'accesso dei client
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ./media/
+
+
+[role="lead"]
+Per progettare e implementare correttamente OAuth 2,0, è necessario comprendere in che modo la configurazione delle autorizzazioni viene utilizzata da ONTAP per prendere decisioni di accesso per i client. I passaggi principali utilizzati per determinare l'accesso sono presentati di seguito in base alla versione ONTAP.
+
+
+NOTE: Non sono stati effettuati aggiornamenti significativi di OAuth 2,0 con ONTAP 9.15,1. Se si utilizza la versione 9.15.1, fare riferimento alla descrizione di ONTAP 9.14,1.
+
+.Informazioni correlate
+* link:../authentication/oauth2-as-servers.html#oauth-2-0-features-supported-in-ontap["Funzionalità OAuth 2,0 supportate in ONTAP"]
+
+
+
+
+== ONTAP 9.16.1
+
+ONTAP 9.16,1 espande il supporto standard OAuth 2,0 per includere estensioni specifiche di Microsoft Entra ID per i gruppi Entra ID nativi e la mappatura di ruoli esterni.
+
+.Determinare l'accesso client per ONTAP 9.16,1
+[%collapsible]
+====
+.Fase 1: Oscilloscopi autonomi
+Se il token di accesso contiene ambiti indipendenti, ONTAP esamina prima questi ambiti. Se non sono presenti oscilloscopi autonomi, passare al punto 2.
+
+Con uno o più ambiti auto-contenuti presenti, ONTAP applica ogni ambito fino a quando non può essere presa una decisione esplicita *ALLOW* o *DENY*. Se viene presa una decisione esplicita, l'elaborazione termina.
+
+Se ONTAP non è in grado di prendere una decisione di accesso esplicita, continuare con il passaggio 2.
+
+.Passaggio 2: Controllare il flag dei ruoli locali
+ONTAP esamina il parametro booleano `use-local-roles-if-present` . Il valore di questo indicatore viene impostato separatamente per ogni server di autorizzazione definito su ONTAP.
+
+* Se il valore è `true` passare alla fase 3.
+* Se il valore è `false` l'elaborazione termina e l'accesso è negato.
+
+
+.Passaggio 3: Ruolo REST di Named ONTAP
+Se il token di accesso contiene un ruolo REST denominato nel `scope` campo o `scp`, o come attestazione, ONTAP utilizza il ruolo per prendere la decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
+
+Se non è presente alcun ruolo REST denominato o se il ruolo non è stato trovato, passare al punto 4.
+
+.Fase 4: Utenti
+Estrarre il nome utente dal token di accesso e tentare di associarlo agli utenti che hanno accesso all'applicazione "http". Gli utenti vengono esaminati in base al metodo di autenticazione nel seguente ordine:
+
+* password
+* Dominio (Active Directory)
+* Nsswitch (LDAP)
+
+
+Se viene trovato un utente corrispondente, ONTAP utilizza il ruolo definito per l'utente per prendere una decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
+
+Se un utente non corrisponde o se non è presente alcun nome utente nel token di accesso, passare al punto 5.
+
+.Fase 5: Gruppi
+Se sono inclusi uno o più gruppi, viene esaminato il formato. Se i gruppi sono rappresentati come UUID, viene ricercata una tabella di associazione di gruppi interna. Se esiste una corrispondenza di gruppo e un ruolo associato, ONTAP utilizza il ruolo definito per il gruppo per prendere una decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina. Per ulteriori informazioni, vedere link:../authentication/oauth2-groups.html["Lavorare con i gruppi"].
+
+Se i gruppi sono rappresentati come nomi e configurati con autorizzazione dominio o nsswitch, ONTAP tenta di associarli rispettivamente a un gruppo Active Directory o LDAP. Se esiste una corrispondenza di gruppo, ONTAP utilizza il ruolo definito per il gruppo per prendere una decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
+
+Se non è presente alcuna corrispondenza di gruppo o se non è presente alcun gruppo nel token di accesso, l'accesso viene negato e l'elaborazione termina.
+
+====
+
+
+== ONTAP 9.14.1
+
+OAuth 2,0 iniziale supportato viene introdotto con ONTAP 9.14,1 in base alle funzionalità standard di OAuth 2,0.
+
+.Determinare l'accesso client per ONTAP 9.14,1
+[%collapsible]
+====
+.Fase 1: Oscilloscopi autonomi
+Se il token di accesso contiene ambiti indipendenti, ONTAP esamina prima questi ambiti. Se non sono presenti oscilloscopi autonomi, passare al punto 2.
+
+Con uno o più ambiti auto-contenuti presenti, ONTAP applica ogni ambito fino a quando non può essere presa una decisione esplicita *ALLOW* o *DENY*. Se viene presa una decisione esplicita, l'elaborazione termina.
+
+Se ONTAP non è in grado di prendere una decisione di accesso esplicita, continuare con il passaggio 2.
+
+.Passaggio 2: Controllare il flag dei ruoli locali
+ONTAP esamina il parametro booleano `use-local-roles-if-present` . Il valore di questo indicatore viene impostato separatamente per ogni server di autorizzazione definito su ONTAP.
+
+* Se il valore è `true` passare alla fase 3.
+* Se il valore è `false` l'elaborazione termina e l'accesso è negato.
+
+
+.Passaggio 3: Ruolo REST di Named ONTAP
+Se il token di accesso contiene un ruolo REST denominato nel `scope` campo o `scp` , ONTAP utilizza il ruolo per prendere la decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
+
+Se non è presente alcun ruolo REST denominato o se il ruolo non è stato trovato, passare al punto 4.
+
+.Fase 4: Utenti
+Estrarre il nome utente dal token di accesso e tentare di associarlo agli utenti che hanno accesso all'applicazione "http". Gli utenti vengono esaminati in base al metodo di autenticazione nel seguente ordine:
+
+* password
+* Dominio (Active Directory)
+* Nsswitch (LDAP)
+
+
+Se viene trovato un utente corrispondente, ONTAP utilizza il ruolo definito per l'utente per prendere una decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
+
+Se un utente non corrisponde o se non è presente alcun nome utente nel token di accesso, passare al punto 5.
+
+.Fase 5: Gruppi
+Se uno o più gruppi sono inclusi e configurati con autorizzazione dominio o nsswitch, ONTAP tenta di associarli rispettivamente a un gruppo Active Directory o LDAP.
+
+Se esiste una corrispondenza di gruppo, ONTAP utilizza il ruolo definito per il gruppo per prendere una decisione di accesso. Ciò comporta sempre una decisione *ALLOW* o *DENY* e l'elaborazione termina.
+
+Se non è presente alcuna corrispondenza di gruppo o se non è presente alcun gruppo nel token di accesso, l'accesso viene negato e l'elaborazione termina.
+
+====

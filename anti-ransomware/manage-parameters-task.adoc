@@ -16,23 +16,26 @@ summary: A partire da ONTAP 9.11.1, i parametri di rilevamento della protezione 
 
 
 [role="lead"]
-A partire da ONTAP 9.11.1, puoi modificare i parametri per il rilevamento del ransomware su un volume abilitato alla protezione autonoma contro il ransomware specifico e segnalare un picco noto come normale attività dei file. La regolazione dei parametri di rilevamento consente di migliorare l'accuratezza dei rapporti in base al carico di lavoro del volume specifico.
+A partire da ONTAP 9.11,1, puoi modificare i parametri per il rilevamento del ransomware su un volume specifico con la protezione autonoma dal ransomware abilitata e segnalare un picco noto come normale attività dei file. La regolazione dei parametri di rilevamento consente di migliorare l'accuratezza dei rapporti in base al carico di lavoro del volume specifico.
 
 
 
 == Come funziona il rilevamento degli attacchi
 
-Quando la protezione autonoma da ransomware (ARP) è in modalità di apprendimento, sviluppa valori di base per i comportamenti di volume. Si tratta di entropia, estensioni dei file e, a partire da ONTAP 9.11.1, IOPS. Queste baseline vengono utilizzate per valutare le minacce ransomware. Per ulteriori informazioni su questi criteri, vedere xref:index.html#what-arp-detects[Cosa rileva ARP].
+Quando la protezione autonoma da ransomware (ARP) è in modalità di apprendimento, sviluppa valori di base per i comportamenti di volume. Si tratta di entropia, estensioni dei file e, a partire da ONTAP 9.11.1, IOPS. Queste baseline vengono utilizzate per valutare le minacce ransomware. Per ulteriori informazioni su questi criteri, vedere xref:index.html#what-arp-detects[Che cosa rileva ARP].
 
 In ONTAP 9.10.1, ARP genera un avviso se rileva entrambe le seguenti condizioni:
 
-* più di 20 file con estensioni non precedentemente osservate nel volume
-* elevati dati di entropia
+* Più di 20 file con estensioni non precedentemente osservate nel volume
+* Elevati dati di entropia
 
 
-A partire da ONTAP 9.11.1, ARP emette un avviso di minaccia se _solo_ viene soddisfatta una condizione. Ad esempio, se si osservano più di 20 file con estensioni che non sono state precedentemente osservate nel volume entro un periodo di 24 ore, ARP lo classificherà come una minaccia _indipendentemente_ dall'entropia osservata. (I valori dei file 24 ore e 20 sono predefiniti, che possono essere modificati).
+A partire da ONTAP 9.11.1, ARP emette un avviso di minaccia se _solo_ viene soddisfatta una condizione. Ad esempio, se si osservano più di 20 file con estensioni che non sono state precedentemente osservate nel volume entro un periodo di 24 ore, ARP lo classificherà come una minaccia _indipendentemente_ dall'entropia osservata. I valori di 24 ore e 20 file sono predefiniti, che possono essere modificati.
 
-A partire da ONTAP 9.14.1, è possibile configurare gli avvisi quando ARP osserva una nuova estensione di file e quando ARP crea un'istantanea. Per ulteriori informazioni, vedere <<modify-alerts>>
+
+NOTE: Per ridurre un numero elevato di avvisi falsi positivi, andare a *Storage > Volumes > Security > Configure workload Characteristics* (archiviazione > volumi > sicurezza > Configura caratteristiche del carico di lavoro*) e disattivare *Monitor new file types* (monitora nuovi tipi di file*). Questa impostazione è disattivata per impostazione predefinita in ONTAP 9.14,1 P7, 9.15.1 P1 e 9.16.1 RC e versioni successive.
+
+A partire da ONTAP 9.14,1, è possibile configurare gli avvisi quando ARP osserva una nuova estensione di file e quando ARP crea uno snapshot. Per ulteriori informazioni, vedere <<modify-alerts>>.
 
 Alcuni volumi e carichi di lavoro richiedono parametri di rilevamento diversi. Ad esempio, il volume abilitato per ARP può ospitare numerosi tipi di estensioni di file, nel qual caso è possibile modificare il conteggio delle soglie per le estensioni di file mai viste prima a un numero maggiore del valore predefinito di 20 o disattivare gli avvisi in base alle estensioni di file mai viste prima. A partire da ONTAP 9.11.1, puoi modificare i parametri di rilevamento degli attacchi per adattarli meglio ai tuoi carichi di lavoro specifici.
 
@@ -75,7 +78,7 @@ Per un elenco completo dei parametri, vedere link:https://docs.netapp.com/us-en/
 
 == Segnalare le sovratensioni note
 
-ARP continua a modificare i valori di base per i parametri di rilevamento anche in modalità attiva. Se conoscete i picchi nella vostra attività di volume--o un aumento una volta o un aumento che è caratteristica di una nuova normale--dovreste segnalarlo come sicuro. La segnalazione manuale di questi picchi come sicuri aiuta a migliorare l'accuratezza delle valutazioni delle minacce di ARP.
+ARP continua a modificare i valori di base per i parametri di rilevamento anche in modalità attiva. Se si conoscono picchi nell'attività di volume, picchi una tantum o picchi caratteristici di una nuova normalità, è necessario segnalarli come sicuri. La segnalazione manuale di questi picchi come sicuri aiuta a migliorare l'accuratezza delle valutazioni delle minacce di ARP.
 
 .Segnalare un picco una tantum
 . Se in circostanze note si verifica un picco una tantum e si desidera che ARP segnali un aumento simile in circostanze future, eliminare il picco dal comportamento del carico di lavoro:
@@ -98,7 +101,7 @@ ARP continua a modificare i valori di base per i parametri di rilevamento anche 
 A partire da ONTAP 9.14.1, ARP consente di specificare gli avvisi per due eventi ARP:
 
 * Osservazione della nuova estensione di un file su un volume
-* Creazione di un'istantanea ARP
+* Creazione di uno snapshot ARP
 
 
 È possibile impostare avvisi per questi due eventi su singoli volumi o per l'intera SVM. Se abiliti gli avvisi per la SVM, le impostazioni degli avvisi vengono ereditate solo dai volumi creati in seguito all'attivazione della funzione di avviso. Per impostazione predefinita, gli avvisi non sono attivati su alcun volume.
@@ -131,7 +134,7 @@ Gli avvisi di eventi possono essere controllati con verifica multi-admin. Per ul
 +
 `security anti-ransomware volume event-log modify -vserver <svm_name> -is-enabled-on-new-file-extension-seen true`
 
-* Per impostare gli avvisi per la creazione di un'istantanea ARP:
+* Per impostare gli avvisi per la creazione di uno snapshot ARP:
 +
 `security anti-ransomware volume event-log modify -vserver <svm_name> -is-enabled-on-snapshot-copy-creation true`
 
@@ -143,7 +146,7 @@ Gli avvisi di eventi possono essere controllati con verifica multi-admin. Per ul
 +
 `security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-new-file-extension-seen true`
 
-* Per impostare gli avvisi per la creazione di un'istantanea ARP:
+* Per impostare gli avvisi per la creazione di uno snapshot ARP:
 +
 `security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-snapshot-copy-creation true`
 
