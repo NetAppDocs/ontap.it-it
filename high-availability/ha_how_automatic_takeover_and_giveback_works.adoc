@@ -20,7 +20,7 @@ Per impostazione predefinita, se un nodo della coppia ha esegue il panic, il ria
 
 Le acquisizioni automatiche possono verificarsi anche se uno dei nodi non risponde.
 
-Il giveback automatico viene eseguito per impostazione predefinita. Se si desidera controllare l'impatto del giveback sui client, è possibile disattivare il giveback automatico e utilizzare `storage failover modify -auto-giveback false -node <node>` comando. Prima di eseguire il giveback automatico (indipendentemente da ciò che lo ha attivato), il nodo partner attende un periodo di tempo fisso, come controllato da `-delay- seconds` del parametro `storage failover modify` comando. Il ritardo predefinito è di 600 secondi. Ritardando il giveback, il processo si traduce in due brevi interruzioni: Una durante il takeover e una durante il giveback.
+Il giveback automatico viene eseguito per impostazione predefinita. Se si preferisce controllare l'impatto del giveback sui client, è possibile disattivare il giveback automatico e utilizzare il `storage failover modify -auto-giveback false -node <node>` comando. Prima di eseguire il giveback automatico (indipendentemente da ciò che lo ha attivato), il nodo partner attende un periodo di tempo fisso, controllato dal `-delay- seconds` parametro del `storage failover modify` comando. Il ritardo predefinito è di 600 secondi.
 
 Questo processo evita un singolo e prolungato disservizio che include il tempo necessario per:
 
@@ -45,18 +45,18 @@ Durante il processo di Takeover si verificano le seguenti fasi:
 . Se il Takeover negoziato è avviato dall'utente, i dati aggregati vengono spostati dal nodo partner al nodo che sta eseguendo il Takeover. Una breve interruzione si verifica quando il proprietario corrente di ciascun aggregato (ad eccezione dell'aggregato root) passa al nodo di Takeover. Questa interruzione è più breve di un'interruzione che si verifica durante un'acquisizione senza ricollocazione aggregata.
 +
 
-NOTE: Un takover negoziato durante il panico non può verificarsi in caso di panico.  Un takeover può derivare da un errore non associato a un panico. Si verifica un errore quando la comunicazione tra un nodo e il suo partner viene persa, chiamata anche perdita heartbeat. In caso di takeover a causa di un guasto, l'interruzione potrebbe essere più lunga poiché il nodo partner ha bisogno di tempo per rilevare la perdita di heartbeat.
+NOTE: Un’acquisizione negoziata durante il panico non può verificarsi in caso di panico. Un takeover può derivare da un errore non associato a un panico. Si verifica un errore quando la comunicazione tra un nodo e il suo partner viene persa, chiamata anche perdita heartbeat. In caso di takeover a causa di un guasto, l'interruzione potrebbe essere più lunga poiché il nodo partner ha bisogno di tempo per rilevare la perdita di heartbeat.
 
 +
-** È possibile monitorare l'avanzamento utilizzando `storage failover show‑takeover` comando.
-** È possibile evitare il trasferimento dell'aggregato durante questa istanza di Takeover utilizzando `‑bypass‑optimization` con il `storage failover takeover` comando.
+** È possibile monitorare l'avanzamento utilizzando il `storage failover show-takeover` comando.
+** È possibile evitare il riposizionamento degli aggregati durante questa istanza di takeover utilizzando il `-bypass-optimization` parametro con il `storage failover takeover` comando.
 +
 Gli aggregati vengono ricollocati in modo seriale durante le operazioni di Takeover pianificate per ridurre l'interruzione del servizio del client. Se il trasferimento aggregato viene ignorato, si verifica un'interruzione più lunga del client durante gli eventi di acquisizione pianificati.
 
 
 
 . Se il takeover avviato dall'utente è un takeover negoziato, il nodo di destinazione viene arrestato senza problemi, seguito dal takeover dell'aggregato root del nodo di destinazione e di eventuali aggregati che non sono stati ricollocati nel primo passaggio.
-. Le interfacce logiche (LIF) dei dati migrano dal nodo di destinazione al nodo di takeover o a qualsiasi altro nodo del cluster in base alle regole di failover della LIF. È possibile evitare la migrazione LIF utilizzando `‑skip‑lif-migration` con il `storage failover takeover` comando. In caso di takeover avviato dall'utente, le LIF dati vengono migrate prima dell'inizio del takeover dello storage.  In caso di panico o guasto, a seconda della configurazione in uso, è possibile migrare le LIF dati con lo storage o dopo il completamento del takeover.
+. Le interfacce logiche (LIF) dei dati migrano dal nodo di destinazione al nodo di takeover o a qualsiasi altro nodo del cluster in base alle regole di failover della LIF. Puoi evitare la migrazione LIF usando il `-skip-lif-migration` parametro con il `storage failover takeover` comando. In caso di takeover avviato dall'utente, le LIF dati vengono migrate prima dell'inizio del takeover dello storage. In caso di panico o guasto, a seconda della configurazione in uso, è possibile migrare le LIF dati con lo storage o dopo il completamento del takeover.
 . Le sessioni SMB esistenti vengono disconnesse quando si verifica il takeover.
 +
 
@@ -127,8 +127,8 @@ Gli aggiornamenti in background del firmware del disco influiscono in modo diver
 
 Il seguente elenco descrive come gli aggiornamenti del firmware dei dischi in background influiscono su Takeover, giveback e trasferimento degli aggregati:
 
-* Se si verifica un aggiornamento del firmware del disco in background su un disco su uno dei nodi, le operazioni di Takeover avviate manualmente vengono ritardate fino al completamento dell'aggiornamento del firmware del disco su tale disco. Se l'aggiornamento del firmware del disco in background richiede più di 120 secondi, le operazioni di Takeover vengono interrotte e devono essere riavviate manualmente al termine dell'aggiornamento del firmware del disco. Se l'acquisizione è stata avviata con `‑bypass‑optimization` del parametro `storage failover takeover` comando impostato su `true`, l'aggiornamento del firmware del disco in background che si verifica sul nodo di destinazione non influisce sul takeover.
-* Se si verifica un aggiornamento del firmware del disco in background su un disco nel nodo di origine (o Takeover) e il Takeover è stato avviato manualmente con `‑options` del parametro `storage failover takeover` comando impostato su `immediate`, le operazioni di takeover iniziano immediatamente.
+* Se si verifica un aggiornamento del firmware del disco in background su un disco su uno dei nodi, le operazioni di Takeover avviate manualmente vengono ritardate fino al completamento dell'aggiornamento del firmware del disco su tale disco. Se l'aggiornamento del firmware del disco in background richiede più di 120 secondi, le operazioni di Takeover vengono interrotte e devono essere riavviate manualmente al termine dell'aggiornamento del firmware del disco. Se il takeover è stato avviato con il `-bypass-optimization` parametro del `storage failover takeover` comando impostato su `true`, l'aggiornamento del firmware del disco in background che si verifica sul nodo di destinazione non influisce sul takeover.
+* Se si verifica un aggiornamento del firmware del disco in background su un disco sul nodo di origine (o takeover) e il takeover è stato avviato manualmente con il parametro del `storage failover takeover` comando impostato su `immediate`, le operazioni di takeover vengono avviate `-options` immediatamente.
 * Se si verifica un aggiornamento del firmware del disco in background su un disco di un nodo e si verifica una situazione di panico, l'acquisizione del nodo in panello inizia immediatamente.
 * Se si verifica un aggiornamento del firmware del disco in background su un disco su uno dei nodi, il giveback degli aggregati di dati viene ritardato fino al completamento dell'aggiornamento del firmware del disco su tale disco.
 * Se l'aggiornamento del firmware del disco in background richiede più di 120 secondi, le operazioni di giveback vengono interrotte e devono essere riavviate manualmente al termine dell'aggiornamento del firmware del disco.
