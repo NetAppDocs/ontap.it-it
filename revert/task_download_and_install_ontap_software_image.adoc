@@ -11,71 +11,73 @@ summary: È necessario prima scaricare il software ONTAP, quindi installarlo.
 
 
 [role="lead"]
-È necessario prima scaricare il software ONTAP dal sito del supporto NetApp, quindi installarlo.
+Prima di ripristinare il software ONTAP corrente, è necessario scaricare la versione del software di destinazione dal sito di supporto NetApp e installarla.
 
 
 
-== Scaricare l'immagine del software
+== Scaricare l'immagine del software ONTAP
 
-Per eseguire il downgrade o il ripristino da ONTAP 9.4 e versioni successive, è possibile copiare l'immagine del software ONTAP dal sito del supporto NetApp in una cartella locale. Per eseguire il downgrade o il ripristino a ONTAP 9.3 o versioni precedenti, è necessario copiare l'immagine del software ONTAP su un server HTTP o FTP sulla rete.
+Le immagini software sono specifiche dei modelli di piattaforma. È necessario ottenere l'immagine corretta per il cluster. Le immagini software, le informazioni sulla versione del firmware e il firmware più recente per il modello di piattaforma sono disponibili sul sito del supporto NetApp. Le immagini software includono la versione più recente del firmware di sistema disponibile al momento del rilascio di una determinata versione di ONTAP.
 
-Tenere presenti le seguenti importanti informazioni:
 
-* Le immagini software sono specifiche dei modelli di piattaforma.
+NOTE: Se si ripristina un sistema con crittografia dei volumi NetApp da ONTAP 9,5 o versione successiva, è necessario scaricare l'immagine del software ONTAP per i paesi non soggetti a restrizioni, che include la crittografia dei volumi NetApp. Se si utilizza l'immagine software di ONTAP per i paesi con restrizioni per ripristinare un sistema con crittografia dei volumi NetApp, il sistema entra in panico e si perde l'accesso ai volumi.
+
+.Fasi
+. Individuare il software ONTAP di destinazione nell'link:http://mysupport.netapp.com/NOW/cgi-bin/software["Download di software"^]area del sito di supporto NetApp.
+. Copiare l'immagine software (ad esempio, 97_q_image.tgz) dal sito di assistenza NetApp
 +
-È necessario ottenere l'immagine corretta per il cluster. Le immagini software, le informazioni sulla versione del firmware e il firmware più recente per il modello di piattaforma sono disponibili sul sito del supporto NetApp.
+È possibile copiare l'immagine nella directory sul server HTTP o FTP da cui verrà inviata l'immagine o in una cartella locale.
 
-* Le immagini software includono la versione più recente del firmware di sistema disponibile al momento del rilascio di una determinata versione di ONTAP.
-* Se si esegue il downgrade di un sistema con crittografia dei volumi NetApp da ONTAP 9.5 o versioni successive, è necessario scaricare l'immagine del software ONTAP per i paesi senza restrizioni, che include crittografia dei volumi NetApp.
+
+
+
+
+== Installare l'immagine del software ONTAP
+
+Dopo aver scaricato l'immagine software ONTAP di destinazione dal sito di supporto NetApp, installarla sui nodi del cluster.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
 +
-Se si utilizza l'immagine del software ONTAP per i paesi con restrizioni per eseguire il downgrade o il ripristino di un sistema con crittografia dei volumi NetApp, il sistema esegue una panoramica e si perde l'accesso ai volumi.
-
-+
-.. Individuare il software ONTAP di destinazione nell'link:http://mysupport.netapp.com/NOW/cgi-bin/software["Download di software"^]area del sito di supporto NetApp.
-.. Copiare l'immagine del software.
-+
-*** Per ONTAP 9.3 o versioni precedenti, copiare l'immagine software (ad esempio, 93_q_image.tgz) dal sito del supporto NetApp nella directory sul server HTTP o sul server FTP da cui verrà servita l'immagine.
-*** Per ONTAP 9.4 o versioni successive, copiare l'immagine software (ad esempio, 97_q_image.tgz) dal sito di supporto NetApp nella directory sul server HTTP o FTP da cui verrà servita l'immagine o in una cartella locale.
-
-
-
-
-
-
-
-
-== Installare l'immagine software
-
-È necessario installare l'immagine software di destinazione sui nodi del cluster.
-
-* Se si esegue il downgrade o il ripristino di un sistema con crittografia dei volumi NetApp da ONTAP 9.5 o versioni successive, è necessario aver scaricato l'immagine del software ONTAP per i paesi non soggetti a restrizioni, che includono crittografia dei volumi NetApp.
-+
-Se si utilizza l'immagine del software ONTAP per i paesi con restrizioni per eseguire il downgrade o il ripristino di un sistema con crittografia dei volumi NetApp, il sistema esegue una panoramica e si perde l'accesso ai volumi.
-
-+
-.. Impostare il livello di privilegio su Advanced (avanzato), immettendo *y* quando viene richiesto di continuare: `set -privilege advanced`
+[source, cli]
+----
+set -privilege advanced
+----
 +
 Il prompt avanzato (`*>`).
 
-.. Installare l'immagine software sui nodi.
+. Immettere `y` per continuare quando richiesto .
+. Installare l'immagine del software:
 +
-Questo comando scarica e installa contemporaneamente l'immagine software su tutti i nodi. Per scaricare e installare l'immagine su ogni nodo, non specificare il parametro -background.
-
+** Per le configurazioni standard o una configurazione MetroCluster a due nodi, immettere il seguente comando:
 +
-*** Se si esegue il downgrade o si ripristina una configurazione non MetroCluster o una configurazione MetroCluster a due nodi:``system node image update -node * -package location -replace-package true -setdefault true -background true``
+[source, cli]
+----
+system node image update -node * -package location -replace-package true -setdefault true -background true
+----
 +
-Questo comando utilizza una query estesa per modificare l'immagine software di destinazione, installata come immagine alternativa, come immagine predefinita per il nodo.
+Questo comando scarica e installa contemporaneamente l'immagine software su tutti i nodi. Per scaricare e installare l'immagine su ciascun nodo uno alla volta, non specificare il `-background` parametro. Questo comando utilizza anche una query estesa per modificare l'immagine del software di destinazione, che viene installata come immagine alternativa, in modo da essere l'immagine predefinita per il nodo.
 
-*** Se si esegue il dowgrade o il ripristino di una configurazione MetroCluster a quattro o otto nodi, è necessario eseguire il seguente comando su entrambi i cluster: `system node image update -node * -package location -replace-package true true -background true -setdefault false`
+** Per una configurazione MetroCluster a quattro o otto nodi, inserisci il seguente comando su entrambi i cluster:
 +
-Questo comando utilizza una query estesa per modificare l'immagine software di destinazione, che viene installata come immagine alternativa su ciascun nodo.
-
-
-
-.. Invio `y` per continuare quando richiesto.
-.. Verificare che l'immagine software sia stata scaricata e installata su ciascun nodo: `system node image show-update-progress -node *`
+[source, cli]
+----
+system node image update -node * -package location -replace-package true true -background true -setdefault false
+----
 +
-Questo comando visualizza lo stato corrente del download e dell'installazione dell'immagine software. Continuare ad eseguire questo comando fino a quando tutti i nodi non riportano uno stato di esecuzione di Exited e uno stato di uscita di Success.
+Questo comando scarica e installa contemporaneamente l'immagine software su tutti i nodi. Per scaricare e installare l'immagine su ciascun nodo uno alla volta, non specificare il `-background` parametro. Questo comando utilizza anche una query estesa per modificare l'immagine software di destinazione, che viene installata come immagine alternativa su ciascun nodo.
+
+
+
+. Invio `y` per continuare quando richiesto.
+. Verificare che l'immagine software sia stata scaricata e installata su ciascun nodo:
++
+[source, cli]
+----
+system node image show-update-progress -node *
+----
++
+Questo comando visualizza lo stato corrente del download e dell'installazione dell'immagine software. Continuare a eseguire questo comando finché tutti i nodi non riportano un *Run Status* di "Exited" e un *Exit Status* di "Success".
 
 +
 Il comando di aggiornamento dell'immagine del nodo di sistema può non riuscire e visualizzare messaggi di errore o di avviso. Dopo aver risolto eventuali errori o avvisi, è possibile eseguire nuovamente il comando.
@@ -101,6 +103,4 @@ Status of most recent operation:
         Exit Message:   After a clean shutdown, image2 will be set as the default boot image on node1.
 2 entries were acted on.
 ----
-
-
 

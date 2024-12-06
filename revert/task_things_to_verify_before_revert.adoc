@@ -1,25 +1,34 @@
 ---
 permalink: revert/task_things_to_verify_before_revert.html 
 sidebar: sidebar 
-keywords: ontap, revert, reversion, reverting, downgrade, downgrading, preparation 
-summary: 'Diverse impostazioni di configurazione possono influire sulla preparazione all"aggiornamento del cluster.' 
+keywords: ontap, revert, reversion, reverting, downgrade, downgrading, preparation, pre-revert, checks, verification, cluster health, storage health, system time, jobs 
+summary: 'Prima di eseguire l"indirizzamento ONTAP, è necessario verificare l"integrità del cluster, lo stato dello storage e l"ora del sistema. È inoltre necessario verificare che nel cluster non siano in esecuzione processi.' 
 ---
-= Cose da verificare prima di ripristinare
+= Verifiche del sistema da eseguire prima di ripristinare un cluster ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Prima di eseguire il revert, è necessario verificare lo stato del cluster, lo stato dello storage e l'ora del sistema. È inoltre necessario eliminare tutti i processi del cluster in esecuzione e terminare correttamente tutte le sessioni SMB che non sono continuamente disponibili.
+Prima di ripristinare un cluster ONTAP, è necessario verificare lo stato di salute del cluster, lo stato dello storage e l'ora del sistema. È inoltre necessario verificare che nel cluster non siano in esecuzione processi.
 
 
 
 == Verificare lo stato del cluster
 
-Prima di ripristinare il cluster, è necessario verificare che i nodi siano integri e idonei a partecipare al cluster e che il cluster sia in quorum.
+Prima di ripristinare un cluster ONTAP, è necessario verificare che i nodi siano integri e idonei a partecipare al cluster e che il cluster sia quorum.
 
-. Verificare che i nodi del cluster siano online e idonei a partecipare al cluster: `cluster show`
+.Fasi
+. Verificare che i nodi del cluster siano online e idonei a partecipare al cluster:
++
+[source, cli]
+----
+cluster show
+----
++
+In questo esempio, tutti i nodi sono integri e idonei a partecipare al cluster.
+
 +
 [listing]
 ----
@@ -32,8 +41,12 @@ node1                 true    true
 +
 Se un nodo non è integro o non è idoneo, controllare i registri EMS per verificare la presenza di errori e intraprendere un'azione correttiva.
 
-. Impostare il livello di privilegio su Advanced: +
-`set -privilege advanced`
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
 +
 Invio `y` per continuare.
 
@@ -53,29 +66,37 @@ Si noti che ogni squillo potrebbe avere un master di quorum diverso.
  a| 
 Applicazione di gestione
  a| 
-`cluster ring show -unitname mgmt`
-
+[source, cli]
+----
+cluster ring show -unitname mgmt
+----
 
 
  a| 
 Database di posizioni dei volumi
  a| 
-`cluster ring show -unitname vldb`
-
+[source, cli]
+----
+cluster ring show -unitname vldb
+----
 
 
  a| 
 Virtual-Interface Manager
  a| 
-`cluster ring show -unitname vifmgr`
-
+[source, cli]
+----
+cluster ring show -unitname vifmgr
+----
 
 
  a| 
 Daemon di gestione SAN
  a| 
-`cluster ring show -unitname bcomd`
-
+[source, cli]
+----
+cluster ring show -unitname bcomd
+----
 |===
 +
 Questo esempio mostra il processo del database di localizzazione del volume:
@@ -94,9 +115,18 @@ node3     vldb     154      154      14847    node0     secondary
 ----
 
 
-. Tornare al livello di privilegio admin: +
-`set -privilege admin`
-. Se si opera in un ambiente SAN, verificare che ciascun nodo si trovi in un quorum SAN: `event log show  -severity informational -message-name scsiblade.*`
+. Tornare al livello di privilegio admin:
++
+[source, cli]
+----
+set -privilege admin
+----
+. Se si opera in un ambiente SAN, verificare che ciascun nodo si trovi in un quorum SAN:
++
+[source, cli]
+----
+event log show  -severity informational -message-name scsiblade.*
+----
 +
 Il messaggio di evento scsiblade più recente per ciascun nodo dovrebbe indicare che il blade scsi è in quorum.
 
@@ -118,8 +148,9 @@ link:../system-admin/index.html["Amministrazione del sistema"]
 
 == Verificare lo stato dello storage
 
-Prima di ripristinare un cluster, verificare lo stato di dischi, aggregati e volumi.
+Prima di ripristinare un cluster ONTAP, è necessario verificare lo stato di dischi, aggregati e volumi.
 
+.Fasi
 . Verificare lo stato del disco:
 +
 [cols="2*"]
@@ -130,7 +161,12 @@ Prima di ripristinare un cluster, verificare lo stato di dischi, aggregati e vol
  a| 
 Dischi rotti
  a| 
-.. Visualizzare eventuali dischi rotti: `storage disk show -state broken`
+.. Visualizzare eventuali dischi rotti:
++
+[source, cli]
+----
+storage disk show -state broken
+----
 .. Rimuovere o sostituire eventuali dischi rotti.
 
 
@@ -139,12 +175,22 @@ Dischi rotti
  a| 
 Dischi in fase di manutenzione o ricostruzione
  a| 
-.. Visualizzare i dischi in stato di manutenzione, in sospeso o di ricostruzione: `storage disk show -state maintenance|pending|reconstructing`
+.. Visualizzare i dischi in stato di manutenzione, in sospeso o di ricostruzione:
++
+[source, cli]
+----
+storage disk show -state maintenance|pending|reconstructing
+----
 .. Prima di procedere, attendere il completamento dell'operazione di manutenzione o ricostruzione.
 
 
 |===
-. Verificare che tutti gli aggregati siano online visualizzando lo stato dello storage fisico e logico, inclusi gli aggregati di storage: `storage aggregate show -state !online`
+. Verifica che tutti gli aggregati siano online visualizzando lo stato dello storage fisico e logico, inclusi gli aggregati di storage: +
++
+[source, cli]
+----
+storage aggregate show -state !online
+----
 +
 Questo comando visualizza gli aggregati _non_ online. Tutti gli aggregati devono essere online prima e dopo l'esecuzione di un aggiornamento o di una revisione importante.
 
@@ -154,7 +200,12 @@ Questo comando visualizza gli aggregati _non_ online. Tutti gli aggregati devono
 cluster1::> storage aggregate show -state !online
 There are no entries matching your query.
 ----
-. Verificare che tutti i volumi siano online visualizzando tutti i volumi _non_ online: `volume show -state !online`
+. Verificare che tutti i volumi siano online visualizzando tutti i volumi _non_ online:
++
+[source, cli]
+----
+volume show -state !online
+----
 +
 Tutti i volumi devono essere online prima e dopo l'esecuzione di un aggiornamento o di una revisione importante.
 
@@ -164,7 +215,12 @@ Tutti i volumi devono essere online prima e dopo l'esecuzione di un aggiornament
 cluster1::> volume show -state !online
 There are no entries matching your query.
 ----
-. Verificare che non vi siano volumi incoerenti: `volume show -is-inconsistent true`
+. Verificare che non vi siano volumi incoerenti:
++
+[source, cli]
+----
+volume show -is-inconsistent true
+----
 +
 Consultare l'articolo della Knowledge base link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Software/ONTAP_OS/Volume_Showing_WAFL_Inconsistent["Volume che mostra WAFL incoerente"] su come affrontare i volumi incoerenti.
 
@@ -175,12 +231,23 @@ link:../disks-aggregates/index.html["Gestione di dischi e aggregati"]
 
 
 
-== Verifica dell'ora del sistema
+== Verificare l'ora del sistema
 
-Prima di eseguire il ripristino, verificare che NTP sia configurato e che l'ora sia sincronizzata nel cluster.
+Prima di ripristinare un cluster ONTAP, è necessario verificare che NTP sia configurato e che l'ora sia sincronizzata nel cluster.
 
-. Verificare che il cluster sia associato a un server NTP: `cluster time-service ntp server show`
-. Verificare che ogni nodo abbia la stessa data e ora: `cluster date show`
+.Fasi
+. Verificare che il cluster sia associato a un server NTP:
++
+[source, cli]
+----
+cluster time-service ntp server show
+----
+. Verificare che ogni nodo abbia la stessa data e ora:
++
+[source, cli]
+----
+cluster date show
+----
 +
 [listing]
 ----
@@ -199,9 +266,18 @@ node3     4/6/2013 20:54:38   GMT
 
 == Verificare che non siano in esecuzione lavori
 
-Prima di ripristinare il software ONTAP, è necessario verificare lo stato dei processi del cluster. Se sono presenti processi di aggregato, volume, NDMP (dump o ripristino) o Snapshot (ad esempio creazione, eliminazione, spostamento, modifica, replica, e montare i job) in esecuzione o in coda, è necessario consentire il completamento dei job o interrompere le voci in coda.
+Prima di ripristinare un cluster ONTAP, è necessario verificare lo stato dei processi cluster. Se sono in esecuzione o in coda processi aggregati, volumi, NDMP (dump o ripristino) o Snapshot (come processi di creazione, eliminazione, spostamento, modifica, replica e montaggio), è necessario consentire il completamento corretto dei processi o arrestare le voci in coda.
 
-. Esaminare l'elenco di tutti i processi di aggregato, volume o Snapshot in esecuzione o in coda: `job show`
+.Fasi
+. Esaminare l'elenco di tutti i processi di aggregato, volume o Snapshot in esecuzione o in coda:
++
+[source, cli]
+----
+job show
+----
++
+In questo esempio, sono presenti due lavori in coda:
+
 +
 [listing]
 ----
@@ -214,17 +290,19 @@ Job ID Name                 Vserver    Node           State
 8630   Certificate Expiry Check
                             cluster1   -              Queued
        Description: Certificate Expiry Check
-.
-.
-.
 ----
-. Eliminare qualsiasi processo di copia Snapshot, volume o aggregato in esecuzione o in coda: `job delete -id job_id`
+. Eliminare qualsiasi processo di copia Snapshot, volume o aggregato in esecuzione o in coda:
 +
-[listing]
+[source, cli]
 ----
-cluster1::> job delete -id 8629
+job delete -id <job_id>
 ----
-. Verificare che nessun processo di aggregazione, volume o Snapshot sia in esecuzione o in coda: `job show`
+. Verificare che nessun processo di aggregazione, volume o Snapshot sia in esecuzione o in coda:
++
+[source, cli]
+----
+job show
+----
 +
 In questo esempio, tutti i processi in esecuzione e in coda sono stati eliminati:
 
@@ -244,65 +322,3 @@ Job ID Name                 Vserver    Node           State
 2 entries were displayed
 ----
 
-
-
-
-== Sessioni SMB che devono essere terminate
-
-Prima di eseguire il ripristino, è necessario identificare e terminare correttamente tutte le sessioni SMB che non sono continuamente disponibili.
-
-Le condivisioni SMB a disponibilità continua, a cui accedono i client Hyper-V o Microsoft SQL Server utilizzando il protocollo SMB 3.0, non devono essere interrotte prima dell'aggiornamento o del downgrade.
-
-. Identificare eventuali sessioni SMB stabilite che non sono continuamente disponibili: `vserver cifs session show -continuously-available No -instance`
-+
-Questo comando visualizza informazioni dettagliate sulle sessioni SMB che non hanno disponibilità continua. Prima di procedere con il downgrade di ONTAP, è necessario interrommarli.
-
-+
-[listing]
-----
-cluster1::> vserver cifs session show -continuously-available No -instance
-
-                        Node: node1
-                     Vserver: vs1
-                  Session ID: 1
-               Connection ID: 4160072788
-Incoming Data LIF IP Address: 198.51.100.5
-      Workstation IP address: 203.0.113.20
-    Authentication Mechanism: NTLMv2
-                Windows User: CIFSLAB\user1
-                   UNIX User: nobody
-                 Open Shares: 1
-                  Open Files: 2
-                  Open Other: 0
-              Connected Time: 8m 39s
-                   Idle Time: 7m 45s
-            Protocol Version: SMB2_1
-      Continuously Available: No
-1 entry was displayed.
-----
-. Se necessario, identificare i file aperti per ogni sessione SMB identificata: `vserver cifs session file show -session-id session_ID`
-+
-[listing]
-----
-cluster1::> vserver cifs session file show -session-id 1
-
-Node:       node1
-Vserver:    vs1
-Connection: 4160072788
-Session:    1
-File    File      Open Hosting                               Continuously
-ID      Type      Mode Volume          Share                 Available
-------- --------- ---- --------------- --------------------- ------------
-1       Regular   rw   vol10           homedirshare          No
-Path: \TestDocument.docx
-2       Regular   rw   vol10           homedirshare          No
-Path: \file1.txt
-2 entries were displayed.
-----
-
-
-
-
-== Autenticazione NVMe in-band
-
-Se si torna da ONTAP 9.12.1 o versione successiva a ONTAP 9.12.0 o versione precedente, è necessario link:../nvme/disable-secure-authentication-nvme-task.html["disattiva l'autenticazione in banda"] prima di tornare indietro.  Se l'autenticazione in banda mediante DH-HMAC-CHAP non è disattivata, l'operazione di revert avrà esito negativo.

@@ -1,0 +1,75 @@
+---
+permalink: revert/terminate-smb-sessions.html 
+sidebar: sidebar 
+keywords: ontap, revert, reversion, reverting, downgrade, downgrading, preparation 
+summary: 'Diverse impostazioni di configurazione possono influire sulla preparazione all"aggiornamento del cluster.' 
+---
+= Terminare determinate sessioni SMB prima di ripristinare ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di ripristinare un cluster ONTAP da qualsiasi versione di ONTAP 9, è necessario identificare e terminare senza problemi le sessioni SMB che non sono continuamente disponibili.
+
+Le condivisioni SMB a disponibilità continua, a cui accedono i client Hyper-V o Microsoft SQL Server utilizzando il protocollo SMB 3.0, non devono essere interrotte prima dell'aggiornamento o del downgrade.
+
+.Fasi
+. Identificare eventuali sessioni SMB stabilite che non sono continuamente disponibili:
++
+[source, cli]
+----
+vserver cifs session show -continuously-available No -instance
+----
++
+Questo comando visualizza informazioni dettagliate sulle sessioni SMB che non hanno disponibilità continua. Prima di procedere con il downgrade di ONTAP, è necessario interrommarli.
+
++
+[listing]
+----
+cluster1::> vserver cifs session show -continuously-available No -instance
+
+                        Node: node1
+                     Vserver: vs1
+                  Session ID: 1
+               Connection ID: 4160072788
+Incoming Data LIF IP Address: 198.51.100.5
+      Workstation IP address: 203.0.113.20
+    Authentication Mechanism: NTLMv2
+                Windows User: CIFSLAB\user1
+                   UNIX User: nobody
+                 Open Shares: 1
+                  Open Files: 2
+                  Open Other: 0
+              Connected Time: 8m 39s
+                   Idle Time: 7m 45s
+            Protocol Version: SMB2_1
+      Continuously Available: No
+1 entry was displayed.
+----
+. Se necessario, identificare i file aperti per ogni sessione SMB identificata:
++
+[source, cli]
+----
+vserver cifs session file show -session-id session_ID
+----
++
+[listing]
+----
+cluster1::> vserver cifs session file show -session-id 1
+
+Node:       node1
+Vserver:    vs1
+Connection: 4160072788
+Session:    1
+File    File      Open Hosting                               Continuously
+ID      Type      Mode Volume          Share                 Available
+------- --------- ---- --------------- --------------------- ------------
+1       Regular   rw   vol10           homedirshare          No
+Path: \TestDocument.docx
+2       Regular   rw   vol10           homedirshare          No
+Path: \file1.txt
+2 entries were displayed.
+----
+

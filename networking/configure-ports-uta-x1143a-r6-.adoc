@@ -1,0 +1,45 @@
+---
+permalink: networking/configure-ports-uta-x1143a-r6.html 
+sidebar: sidebar 
+keywords: configure, ports 
+summary: 'Per configurare l"adattatore di destinazione unificato (X1143A-R6), è necessario configurare le due porte adiacenti sullo stesso chip nella stessa modalità personality.' 
+---
+= Configurare le porte UTA X1143A-R6 per il sistema ONTAP in uso
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per impostazione predefinita, l'adattatore target unificato X1143A-R6 è configurato in modalità target FC, ma è possibile configurarne le porte come porte Ethernet e FCoE (CNA) da 10 GB o come porte di destinazione o iniziatore FC da 16 GB. Questo richiede diversi adattatori SFP+.
+
+Se configurati per Ethernet e FCoE, gli adattatori X1143A-R6 supportano il traffico di destinazione simultaneo di NIC e FCoE sulla stessa porta 10-GBE. Se configurata per FC, ciascuna coppia di due porte che condivide lo stesso ASIC può essere configurata singolarmente per la destinazione FC o la modalità iniziatore FC. Ciò significa che un singolo adattatore X1143A-R6 può supportare la modalità di destinazione FC su una coppia a due porte e la modalità iniziatore FC su un'altra coppia a due porte. Le coppie di porte collegate allo stesso ASIC devono essere configurate nella stessa modalità.
+
+In modalità FC, l'adattatore X1143A-R6 si comporta come qualsiasi dispositivo FC esistente con velocità fino a 16 Gbps. In modalità CNA, è possibile utilizzare l'adattatore X1143A-R6 per la condivisione simultanea del traffico NIC e FCoE sulla stessa porta 10 GbE. La modalità CNA supporta solo la modalità di destinazione FC per la funzione FCoE.
+
+Per configurare l'adattatore di destinazione unificato (X1143A-R6), è necessario configurare le due porte adiacenti sullo stesso chip nella stessa modalità personality.
+
+.Fasi
+. Visualizzare la configurazione delle porte:
++
+[source, cli]
+----
+system hardware unified-connect show
+----
+. Configurare le porte in base alle esigenze per Fibre Channel (FC) o Converged Network Adapter (CNA):
++
+[source, cli]
+----
+system node hardware unified-connect modify -node <node_name> -adapter <adapter_name> -mode {fcp|cna}
+----
+. Collegare i cavi appropriati per FC o Ethernet da 10 GB.
+. Verificare di avere installato il modulo SFP+ corretto:
++
+[source, cli]
+----
+network fcp adapter show -instance -node -adapter
+----
++
+Per CNA, è necessario utilizzare un SFP Ethernet da 10 GB. Per FC, è necessario utilizzare un SFP da 8 GB o un SFP da 16 GB, in base al fabric FC a cui è collegato.
+
+
