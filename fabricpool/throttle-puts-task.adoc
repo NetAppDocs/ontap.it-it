@@ -1,0 +1,35 @@
+---
+permalink: fabricpool/throttle-puts-task.html 
+sidebar: sidebar 
+keywords: throttle, fabricpool, fabric pool, tiering, put, rate, limit 
+summary: LA limitazione PUT consente agli amministratori dello storage di impostare una soglia superiore sul tasso put massimo per nodo. 
+---
+= L'FabricPool dell'acceleratore viene attivato
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Come amministratore dello storage, puoi utilizzare la limitazione PUT per impostare una soglia superiore sul massimo tasso put per nodo.
+
+La limitazione PUT è utile quando le risorse di rete o l'endpoint dell'archivio oggetti sono limitati dalle risorse. Sebbene rari, possono verificarsi vincoli delle risorse con gli archivi di oggetti sottoalimentati o durante i primi giorni di utilizzo di FabricPool quando TB o PB di dati cold iniziano a fare il Tier-out.
+
+Limitazione PUT per nodo. Il limite PUT-rate-limit minimo di strozzamento put è 8MB/s. Se si imposta il limite put-rate su un valore inferiore a 8MB/s, la velocità effettiva di 8MB GB/s su quel nodo verrà raggiunta. I nodi multipli e il tiering contemporaneamente possono consumare più larghezza di banda e saturare potenzialmente un link di rete con capacità estremamente limitata.
+
+[NOTE]
+====
+FabricPool HA MESSO le operazioni non competere per le risorse con altre applicazioni. Le operazioni PUT FabricPool vengono automaticamente collocate a una priorità più bassa ("in bullied") dalle applicazioni client e da altri carichi di lavoro ONTAP, come SnapMirror. L'utilizzo della limitazione PUT `put-rate-limit` può essere utile per ridurre il traffico di rete associato al tiering FabricPool, ma non è correlato al traffico ONTAP simultaneo.
+
+====
+.Prima di iniziare
+È richiesto il livello di privilegio avanzato.
+
+.Fasi
+. La FabricPool DI Throttle HA MESSO le operazioni utilizzando la CLI di ONTAP:
++
+[source, cli]
+----
+storage aggregate object-store put-rate-limit modify -node <name> -default <true|false> -putrate-bytes-limit <integer>[KB|MB|GB|TB|PB]
+----
+

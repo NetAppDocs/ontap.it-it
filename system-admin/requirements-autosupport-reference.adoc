@@ -1,8 +1,8 @@
 ---
-sidebar: sidebar 
 permalink: system-admin/requirements-autosupport-reference.html 
-keywords: requirements, autosupport, messages, http, https, smtp, smtps 
-summary: È necessario utilizzare HTTPS con TLSv1,2 o SMTP protetto per la consegna dei messaggi AutoSupport per garantire la massima sicurezza e supportare le funzioni AutoSupport più recenti. 
+sidebar: sidebar 
+keywords: requirements, autosupport, messages, https, smtp, smtps, tls, email, proxy, certificate, validation 
+summary: È necessario utilizzare HTTPS con TLSv1,2 o SMTPS per la consegna dei messaggi AutoSupport per garantire la massima sicurezza e supportare le funzioni AutoSupport più recenti. 
 ---
 = Preparare l'uso di AutoSupport
 :allow-uri-read: 
@@ -17,63 +17,49 @@ summary: È necessario utilizzare HTTPS con TLSv1,2 o SMTP protetto per la conse
 
 == Consegna dei messaggi AutoSupport a NetApp
 
-I messaggi AutoSupport possono essere recapitati a NetApp utilizzando il protocollo HTTP o SMTP. Per migliorare la protezione, è possibile utilizzare TLS con HTTP. A partire da ONTAP 9.15.1, è anche possibile utilizzare TLS con SMTP.
+I messaggi AutoSupport possono essere recapitati a NetApp utilizzando i protocolli HTTPS o SMTP. A partire da ONTAP 9.15.1, è anche possibile utilizzare TLS con SMTP.
 
 
-TIP: Se possibile, utilizzare HTTP con TLS (HTTPS).
+TIP: Utilizzare HTTPS quando possibile per la comunicazione con AutoSupport OnDemand e per il caricamento di file di grandi dimensioni.
 
 Notare anche quanto segue:
 
 * Per i messaggi AutoSupport è possibile configurare un solo canale di recapito per NetApp. Non è possibile utilizzare due protocolli per inviare i messaggi AutoSupport a NetApp.
 * AutoSupport limita le dimensioni massime dei file per ciascun protocollo. Se le dimensioni di un messaggio AutoSupport superano il limite configurato, AutoSupport recapita la maggior parte del messaggio possibile, ma si verifica il troncamento.
-* Se necessario, è possibile modificare la dimensione massima del file. Vedere il comando `system node autosupport modify` per ulteriori informazioni.
+* Se necessario, è possibile modificare la dimensione massima del file. Ulteriori informazioni sul[`system node autosupport modify` comando ^] nel riferimento al comando ONTAP.
 * Entrambi i protocolli possono essere trasportati su IPv4 o IPv6 in base alla famiglia di indirizzi a cui il nome risolve.
 * La connessione TCP stabilita da ONTAP per l'invio di messaggi AutoSupport è temporanea e di breve durata.
 
 
 
 
-=== HTTP
+=== HTTPS
 
 Ciò fornisce le funzioni più robuste. Tenere presente quanto segue:
 
 * AutoSupport OnDemand e il trasferimento di file di grandi dimensioni sono supportati.
-* Viene tentata prima una richiesta HTTP PUT. Se la richiesta non riesce durante la trasmissione, la richiesta viene riavviata nel punto in cui è stata arrestata.
-* Se il server non supporta PUT, viene utilizzato il metodo HTTP POST.
-* Il limite predefinito per i trasferimenti HTTP è di 50 MB.
-* Il protocollo HTTP non protetto utilizza la porta 80.
+* Viene tentata prima una richiesta HTTPS PUT. Se la richiesta non riesce durante la trasmissione, la richiesta viene riavviata nel punto in cui è stata arrestata.
+* Se il server non supporta PUT, viene utilizzato il metodo HTTPS POST.
+* Il limite predefinito per i trasferimenti HTTPS è di 50 MB.
+* Il protocollo HTTPS utilizza la porta 443.
 
 
 
 
 === SMTP
 
-Come regola generale, è necessario utilizzare SMTP solo se HTTPS/HTTP non è consentito o non è supportato per qualche motivo. Tenere presente quanto segue:
+Come regola generale, è necessario utilizzare SMTP solo se HTTPS non è consentito o non è supportato. Tenere presente quanto segue:
 
 * AutoSupport OnDemand e i trasferimenti di file di grandi dimensioni non sono supportati.
 * Se le credenziali di accesso SMTP sono configurate, vengono inviate in modo non crittografato e in chiaro.
-* Il limite predefinito per i trasferimenti HTTP è di 5 MB.
+* Il limite predefinito per i trasferimenti è di 5 MB.
 * Il protocollo SMTP non protetto utilizza la porta 25.
 
 
+.Migliorare la sicurezza SMTP con TLS
+Quando si utilizza SMTP, tutto il traffico non è crittografato e può essere facilmente intercettato e letto. A partire da ONTAP 9.15.1 è possibile utilizzare TLS anche con SMTP (SMTPS). In questo caso, viene utilizzato _Explicit TLS_ che attiva il canale protetto dopo che è stata stabilita la connessione TCP.
 
-
-=== Migliora la sicurezza con TLS
-
-Quando si utilizza HTTP o SMTP, tutto il traffico viene decrittografato e può essere facilmente intercettato e letto. Quando si utilizza HTTP, è necessario configurare sempre il protocollo in modo che utilizzi anche TLS (HTTPS).
-
-
-NOTE: A partire da ONTAP 9.15.1 è possibile utilizzare TLS anche con SMTP (SMTPS). In questo caso, viene utilizzato _Explicit TLS_ che attiva il canale protetto dopo che è stata stabilita la connessione TCP.
-
-.Per protocolli sicuri
-Le seguenti porte vengono generalmente utilizzate per le versioni sicure di questi protocolli:
-
-* HTTPS - porta 443
-* SMTPS - porta 587
-
-
-.Convalida del certificato
-Con TLS, il certificato scaricato dal server viene convalidato da ONTAP in base al certificato della CA principale. Prima di utilizzare HTTPS o SMTPS, è necessario assicurarsi che il certificato di origine sia installato in ONTAP. Vedere <<Installare il certificato del server>> per ulteriori informazioni.
+La seguente porta viene generalmente utilizzata per SMTPS: Porta 587
 
 
 
@@ -81,9 +67,11 @@ Con TLS, il certificato scaricato dal server viene convalidato da ONTAP in base 
 
 Durante la configurazione di AutoSupport, è necessario tenere in considerazione alcune considerazioni aggiuntive.
 
+Per ulteriori informazioni sui comandi pertinenti a queste considerazioni, fare riferimento a link:../system-admin/setup-autosupport-task.html["Configurare AutoSupport"].
 
 
-=== Invio di una copia locale tramite e-mail
+
+=== Inviare una copia locale tramite e-mail
 
 Indipendentemente dal protocollo utilizzato per inviare i messaggi AutoSupport a NetApp, è anche possibile inviare una copia di ciascun messaggio a uno o più indirizzi e-mail locali. Ad esempio, è possibile inviare messaggi all'organizzazione di assistenza interna o a un'organizzazione partner.
 
@@ -94,17 +82,17 @@ NOTE: Se si recapitano messaggi a NetApp utilizzando SMTP (o SMTPS) e si inviano
 
 === Proxy HTTP
 
-A seconda della configurazione di rete, il protocollo HTTPS potrebbe richiedere un'ulteriore configurazione di un URL proxy. Se HTTPS viene utilizzato per inviare messaggi AutoSupport al supporto tecnico e si dispone di un proxy, è necessario identificare l'URL del proxy. Se il proxy utilizza una porta diversa da quella predefinita (porta 3128), è possibile specificare la porta per tale proxy. Facoltativamente, è anche possibile specificare un nome utente e una password per l'autenticazione proxy.
+A seconda della configurazione di rete, il protocollo HTTPS potrebbe richiedere una configurazione aggiuntiva di un URL proxy. Se HTTPS viene utilizzato per inviare messaggi AutoSupport al supporto tecnico e si dispone di un proxy, è necessario identificare l'URL del proxy. Se il proxy utilizza una porta diversa da quella predefinita (porta 3128), è possibile specificare la porta per tale proxy. Facoltativamente, è anche possibile specificare un nome utente e una password per l'autenticazione proxy.
 
 
 
 == Installare il certificato del server
 
-Se si utilizza TLS (HTTPS o SMTPS), è necessario assicurarsi che ONTAP possa convalidare il certificato del server. Questa convalida viene eseguita in base alla CA che ha firmato il certificato del server.
+Con TLS (HTTPS o SMTPS), il certificato scaricato dal server viene convalidato da ONTAP in base al certificato della CA principale. Prima di utilizzare HTTPS o SMTPS, è necessario assicurarsi che il certificato di origine sia installato in ONTAP e che ONTAP possa convalidare il certificato del server. Questa convalida viene eseguita in base alla CA che ha firmato il certificato del server.
 
-ONTAP include un gran numero di certificati CA principali preinstallati. Pertanto, in molti casi, il certificato per il server verrà immediatamente riconosciuto da ONTAP senza ulteriori configurazioni. Tuttavia, a seconda di come è stato firmato il certificato del server, potrebbe essere necessario installare un certificato della CA principale ed eventuali certificati intermedi.
+ONTAP include un gran numero di certificati CA principali preinstallati. In molti casi, il certificato per il server verrà immediatamente riconosciuto da ONTAP senza ulteriori configurazioni. A seconda di come è stato firmato il certificato del server, potrebbe essere necessario installare un certificato della CA principale ed eventuali certificati intermedi.
 
-Seguire le istruzioni fornite di seguito per installare il certificato, se necessario. È necessario installare tutti i certificati richiesti a livello di cluster.
+Utilizzare la seguente procedura per installare il certificato, se necessario. È necessario installare tutti i certificati richiesti a livello di cluster.
 
 .Fasi
 [role="tabbed-block"]
@@ -125,29 +113,41 @@ Seguire le istruzioni fornite di seguito per installare il certificato, se neces
 --
 . Avviare l'installazione:
 +
-`security certificate install -type server-ca`
-
+[source, cli]
+----
+security certificate install -type server-ca
+----
 . Cercare il seguente messaggio della console:
 +
-`Please enter Certificate: Press <Enter> when done`
-
+[listing]
+----
+Please enter Certificate: Press <Enter> when done
+----
 . Aprire il file del certificato con un editor di testo.
 . Copiare l'intero certificato, incluse le seguenti righe:
 +
-`-----BEGIN CERTIFICATE-----`
-
+[listing]
+----
+-----BEGIN CERTIFICATE-----
+----
 +
-`-----END CERTIFICATE-----`
-
+[listing]
+----
+-----END CERTIFICATE-----
+----
 . Incollare il certificato nel terminale dopo il prompt dei comandi.
 . Premere *Invio* per completare l'installazione.
-. Verificare che il certificato sia installato utilizzando una delle seguenti opzioni:
+. Verificare che il certificato sia installato eseguendo uno dei seguenti comandi:
 +
-`security certificate show-user-installed`
-
+[source, cli]
+----
+security certificate show-user-installed
+----
 +
-`security certificate show`
-
+[source, cli]
+----
+security certificate show
+----
 
 
 --

@@ -1,0 +1,135 @@
+---
+permalink: fabricpool/fabricpool-object-deletion.html 
+sidebar: sidebar 
+keywords: fabricpool, fabric pool, tiering, delete, defrag, unreclaimed, threshold 
+summary: 'FabricPool elimina gli oggetti dopo che una determinata percentuale dei blocchi nell"oggetto non fa più riferimento a ONTAP.' 
+---
+= Eliminazione e deframmentazione degli oggetti FabricPool
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+FabricPool non elimina i blocchi dagli archivi di oggetti collegati. Invece, FabricPool elimina gli oggetti dopo che ONTAP non fa più riferimento a una determinata percentuale dei blocchi nell'oggetto.
+
+Ad esempio, ci sono 1.024 4KB blocchi in un oggetto 4MB con tiering su Amazon S3. La deframmentazione e l'eliminazione non si verificano fino a quando ONTAP non fa riferimento a meno di 205 4KB blocchi (20% di 1.024). Quando un numero sufficiente di blocchi (1.024) ha riferimenti zero, gli oggetti 4MB originali vengono eliminati e viene creato un nuovo oggetto.
+
+È possibile personalizzare la percentuale di soglia dello spazio non recuperato e impostarla su livelli predefiniti diversi per diversi archivi di oggetti. Le impostazioni predefinite sono:
+
+|===
+
+
+| Archivio oggetti | ONTAP 9.3 e versioni precedenti | ONTAP da 9,4 a 9,7 | ONTAP 9.8 e versioni successive | Cloud Volumes ONTAP 
+
+
+ a| 
+Amazon S3
+ a| 
+0%
+ a| 
+20%
+ a| 
+20%
+ a| 
+30%
+
+
+
+ a| 
+Storage Google Cloud
+ a| 
+n/a.
+ a| 
+12%
+ a| 
+20%
+ a| 
+35%
+
+
+
+ a| 
+Storage Blob Microsoft Azure
+ a| 
+n/a.
+ a| 
+15%
+ a| 
+25%
+ a| 
+35%
+
+
+
+ a| 
+NetApp ONTAP S3
+ a| 
+n/a.
+ a| 
+n/a.
+ a| 
+40%
+ a| 
+n/a.
+
+
+
+ a| 
+NetApp StorageGRID
+ a| 
+0%
+ a| 
+40%
+ a| 
+40%
+ a| 
+n/a.
+
+|===
+
+
+== Soglia spazio non recuperato
+
+La modifica delle impostazioni predefinite della soglia di spazio non recuperato aumenta o riduce la quantità accettata di frammentazione dell'oggetto. La riduzione della frammentazione ridurrà la capacità fisica utilizzata dal Tier cloud a spese di ulteriori risorse degli archivi di oggetti (letture e scritture).
+
+
+
+=== Riduzione della soglia
+
+Per evitare spese aggiuntive, considerare la riduzione delle soglie di spazio non recuperate quando si utilizzano schemi di prezzo degli archivi di oggetti che riducono il costo dello storage ma aumentano il costo delle letture. Gli esempi includono il Cool di Amazon Standard-IA e di Azure Blob Storage.
+
+Ad esempio, il tiering di un volume di progetti di 10 anni fa risparmiati per motivi legali potrebbe risultare meno costoso se si utilizza uno schema di prezzi come Standard-IA o Cool di quanto non lo fosse quando si utilizzano schemi di prezzi standard. Sebbene le letture siano più costose per un volume di questo tipo, comprese le letture richieste dalla deframmentazione degli oggetti, molto raramente si verificano.
+
+
+
+=== La soglia aumenta
+
+In alternativa, considerare l'aumento delle soglie di spazio non recuperato se la frammentazione degli oggetti causa un utilizzo di una maggiore capacità dell'archivio oggetti rispetto a quanto necessario per i dati a cui fa riferimento ONTAP. Ad esempio, l'utilizzo di una soglia di spazio non recuperato del 20% in uno scenario peggiore in cui tutti gli oggetti siano ugualmente frammentati al massimo consentito significa che è possibile che il 80% della capacità totale nel Tier cloud sia privo di riferimenti da parte di ONTAP. Ad esempio:
+
+2TB con riferimento a ONTAP + 8TB senza riferimento a ONTAP = 10TB TB di capacità totale utilizzata dal Tier cloud.
+
+In questa situazione, potrebbe essere vantaggioso aumentare la soglia di spazio non recuperato o aumentare i giorni di raffreddamento minimi del volume per ridurre la capacità utilizzata dai blocchi senza riferimenti.
+
+[NOTE]
+====
+Con la deframmentazione degli oggetti e la maggiore efficienza dello storage, i file sottostanti potrebbero diventare più frammentati man mano che i blocchi referenziati vengono scritti su oggetti nuovi e più efficienti. Per questo motivo, un significativo aumento della soglia di spazio non recuperato produce oggetti con una maggiore efficienza dello storage ma con performance di lettura sequenziale ridotte.
+
+====
+
+
+== Modificare la soglia dello spazio non recuperato
+
+È possibile personalizzare la percentuale di soglia dello spazio non recuperato per diversi archivi di oggetti.
+
+.Prima di iniziare
+È richiesto il livello di privilegio avanzato.
+
+.Fasi
+. Per modificare la soglia di spazio non recuperato predefinita, personalizzare ed eseguire il comando seguente:
++
+[source, cli]
+----
+storage aggregate object-store modify -aggregate <name> -object-store-name <name> -unreclaimedspace-threshold <%> (0%-99%)
+----
+
