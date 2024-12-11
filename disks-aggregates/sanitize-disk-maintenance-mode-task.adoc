@@ -49,35 +49,35 @@ Una volta visualizzate alcune informazioni, viene visualizzato il prompt della m
 NOTE: Il comando per dispartizionare un disco è disponibile solo a livello di DIAG e deve essere eseguito solo sotto la supervisione del supporto NetApp. Si consiglia vivamente di contattare il supporto NetApp prima di procedere. Consultare anche l'articolo della Knowledge base link:https://kb.netapp.com/Advice_and_Troubleshooting/Data_Storage_Systems/FAS_Systems/How_to_unpartition_a_spare_drive_in_ONTAP["Come dispartizionare un disco spare in ONTAP"^]
 
 +
-`disk unpartition _disk_name_`
+`disk unpartition <disk_name>`
 
 . Igienizzare i dischi specificati:
 +
-`disk sanitize start [-p _pattern1_|-r [-p _pattern2_|-r [-p _pattern3_|-r]]] [-c _cycle_count_] _disk_list_`
+`disk sanitize start [-p <pattern1>|-r [-p <pattern2>|-r [-p <pattern3>|-r]]] [-c <cycle_count>] <disk_list>`
 
 +
 
 NOTE: Non spegnere il nodo, interrompere la connettività dello storage o rimuovere i dischi di destinazione durante la pulizia. Se la pulizia viene interrotta durante la fase di formattazione, la fase di formattazione deve essere riavviata e completata prima che i dischi siano stati sanitizzati e pronti per essere restituiti al pool di riserva. Se è necessario interrompere il processo di sanificazione, è possibile farlo utilizzando `disk sanitize abort` comando. Se i dischi specificati sono sottoposti alla fase di formattazione della disinfezione, l'interruzione non avviene fino al completamento della fase.
 
 +
- `-p` `_pattern1_` `-p` `_pattern2_` `-p` `_pattern3_` specifica un ciclo di uno o tre modelli di sovrascrittura di byte esadecimali definiti dall'utente che possono essere applicati in successione ai dischi da sanificare. Il modello predefinito è tre passaggi, utilizzando 0x55 per il primo passaggio, 0xaa per il secondo passaggio e 0x3c per il terzo passaggio.
+ `-p` `<pattern1>` `-p` `<pattern2>` `-p` `<pattern3>` specifica un ciclo da uno a tre modelli di sovrascrittura di byte esadecimali definiti dall'utente che possono essere applicati in successione ai dischi da bonificare. Il modello predefinito è tre passaggi, utilizzando 0x55 per il primo passaggio, 0xaa per il secondo passaggio e 0x3c per il terzo passaggio.
 
 +
 `-r` sostituisce una sovrascrittura ripetuta con una sovrascrittura casuale per uno o tutti i passaggi.
 
 +
-`-c` `_cycle_count_` specifica il numero di volte in cui vengono applicati i modelli di sovrascrittura specificati. Il valore predefinito è un ciclo. Il valore massimo è di sette cicli.
+`-c` `<cycle_count>` specifica il numero di volte in cui vengono applicati i modelli di sovrascrittura specificati. Il valore predefinito è un ciclo. Il valore massimo è di sette cicli.
 
 +
-`_disk_list_` Specifica un elenco degli ID dei dischi spare da sanificare, separati da spazio.
+`<disk_list>` Specifica un elenco separato da spazi degli ID dei dischi di riserva da bonificare.
 
 . Se lo si desidera, controllare lo stato del processo di pulizia del disco:
 +
-`disk sanitize status [_disk_list_]`
+`disk sanitize status [<disk_list>]`
 
 . Una volta completato il processo di sanificazione, riportare i dischi allo stato spare per ciascun disco:
 +
-`disk sanitize release _disk_name_`
+`disk sanitize release <disk_name>`
 
 . Uscire dalla modalità di manutenzione.
 
@@ -86,7 +86,7 @@ NOTE: Non spegnere il nodo, interrompere la connettività dello storage o rimuov
 .Sanificazione di un disco con i comandi 8220; nodeshel 8221; (tutte le release di ONTAP 9)
 [%collapsible]
 ====
-Per tutte le versioni di ONTAP 9, quando la disinfezione del disco viene attivata utilizzando comandi nodeshell, alcuni comandi ONTAP di basso livello sono disattivati. Una volta attivata la sanificazione del disco su un nodo, non è possibile disattivarla.
+Una volta abilitata la funzione di disk sanitization utilizzando i comandi nodeshell su un nodo, non è possibile disattivarla.
 
 .Prima di iniziare
 * I dischi devono essere dischi spare; devono essere di proprietà di un nodo, ma non devono essere utilizzati in un Tier locale (aggregato).
@@ -112,11 +112,11 @@ NOTE: Il comando per dispartizionare un disco è disponibile solo a livello di D
 
 --
 +
-`disk unpartition _disk_name_`
+`disk unpartition <disk_name>`
 
 . Immettere il nodeshell per il nodo proprietario dei dischi che si desidera disinfettare:
 +
-`system node run -node _node_name_`
+`system node run -node <node_name>`
 
 . Abilitare la sanificazione del disco:
 +
@@ -131,34 +131,34 @@ Viene richiesto di confermare il comando perché è irreversibile.
 
 . Igienizzare i dischi specificati:
 +
-`disk sanitize start [-p pattern1|-r [-p pattern2|-r [-p pattern3|-r]]] [-c cycle_count] disk_list`
+`disk sanitize start [-p <pattern1>|-r [-p <pattern2>|-r [-p <pattern3>|-r]]] [-c <cycle_count>] <disk_list>`
 
 +
 
 NOTE: Non spegnere il nodo, interrompere la connettività dello storage o rimuovere i dischi di destinazione durante la pulizia. Se la pulizia viene interrotta durante la fase di formattazione, la fase di formattazione deve essere riavviata e completata prima che i dischi siano stati sanitizzati e pronti per essere restituiti al pool di riserva. Se è necessario interrompere il processo di sanificazione, è possibile farlo utilizzando il comando disk sanitize abortor. Se i dischi specificati sono sottoposti alla fase di formattazione della disinfezione, l'interruzione non avviene fino al completamento della fase.
 
 +
-`-p pattern1 -p pattern2 -p pattern3` specifica un ciclo di uno o tre modelli di sovrascrittura di byte esadecimali definiti dall'utente che possono essere applicati in successione ai dischi da sanificare. Il modello predefinito è tre passaggi, utilizzando 0x55 per il primo passaggio, 0xaa per il secondo passaggio e 0x3c per il terzo passaggio.
+`-p <pattern1> -p <pattern2> -p <pattern3>` specifica un ciclo da uno a tre modelli di sovrascrittura di byte esadecimali definiti dall'utente che possono essere applicati in successione ai dischi da bonificare. Il modello predefinito è tre passaggi, utilizzando 0x55 per il primo passaggio, 0xaa per il secondo passaggio e 0x3c per il terzo passaggio.
 
 +
 `-r` sostituisce una sovrascrittura ripetuta con una sovrascrittura casuale per uno o tutti i passaggi.
 
 +
-`-c cycle_count` specifica il numero di volte in cui vengono applicati i modelli di sovrascrittura specificati.
+`-c <cycle_count>` specifica il numero di volte in cui vengono applicati i modelli di sovrascrittura specificati.
 
 +
 Il valore predefinito è un ciclo. Il valore massimo è di sette cicli.
 
 +
-`disk_list` Specifica un elenco degli ID dei dischi spare da sanificare, separati da spazio.
+`<disk_list>` Specifica un elenco separato da spazi degli ID dei dischi di riserva da bonificare.
 
 . Se si desidera controllare lo stato del processo di pulizia del disco:
 +
-`disk sanitize status [disk_list]`
+`disk sanitize status [<disk_list>]`
 
 . Una volta completato il processo di sanificazione, riportare i dischi allo stato spare:
 +
-`disk sanitize release _disk_name_`
+`disk sanitize release <disk_name>`
 
 . Torna al livello di privilegio admin nodeshell:
 +
@@ -192,11 +192,11 @@ Attenersi alla seguente procedura:
 
 .. Assegnare i dischi sanitizzati non assegnati al nodo appropriato per ciascun disco:
 +
-`storage disk assign -disk _disk_name_ -owner _node_name_`
+`storage disk assign -disk <disk_name> -owner <node_name>`
 
 .. Riportare i dischi allo stato spare per ciascun disco:
 +
-`storage disk unfail -disk _disk_name_ -s -q`
+`storage disk unfail -disk <disk_name> -s -q`
 
 .. Tornare alla modalità amministrativa:
 +
