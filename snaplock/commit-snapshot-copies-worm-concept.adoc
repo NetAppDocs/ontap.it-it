@@ -2,16 +2,16 @@
 permalink: snaplock/commit-snapshot-copies-worm-concept.html 
 sidebar: sidebar 
 keywords: snaplock, commit, snapshot, copy, worm, snapvault, protect, snapmirror, clone, snaplock type 
-summary: È possibile utilizzare SnapLock per SnapVault per proteggere WORM le copie Snapshot sullo storage secondario. Tutte le attività di base di SnapLock vengono eseguite sulla destinazione del vault. 
+summary: È possibile utilizzare SnapLock per SnapVault per proteggere le snapshot WORM sullo storage secondario. Tutte le attività di base di SnapLock vengono eseguite sulla destinazione del vault. 
 ---
-= Assegnare le copie Snapshot a WORM su una destinazione del vault
+= Assegnare gli snapshot a WORM su una destinazione del vault
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-È possibile utilizzare SnapLock per SnapVault per proteggere WORM le copie Snapshot sullo storage secondario. Tutte le attività di base di SnapLock vengono eseguite sulla destinazione del vault. Il volume di destinazione viene montato automaticamente in sola lettura, pertanto non è necessario assegnare esplicitamente le copie Snapshot a WORM; pertanto, la creazione di copie Snapshot pianificate sul volume di destinazione utilizzando i criteri SnapMirror non è supportata.
+È possibile utilizzare SnapLock per SnapVault per proteggere le snapshot WORM sullo storage secondario. Tutte le attività di base di SnapLock vengono eseguite sulla destinazione del vault. Il volume di destinazione viene montato automaticamente in sola lettura, pertanto non è necessario impegnare esplicitamente gli snapshot in WORM.
 
 .Prima di iniziare
 * Per utilizzare System Manager per configurare la relazione, i cluster di origine e di destinazione devono eseguire ONTAP 9.15.1 o versioni successive.
@@ -32,20 +32,20 @@ summary: È possibile utilizzare SnapLock per SnapVault per proteggere WORM le c
 Il volume di origine può utilizzare storage NetApp o non NetApp. Per lo storage non NetApp, è necessario utilizzare la virtualizzazione FlexArray.
 
 
-NOTE: Non è possibile rinominare una copia Snapshot che è stata impegnata nello stato WORM.
+NOTE: Non è possibile rinominare uno snapshot che è stato assegnato allo stato WORM.
 
 È possibile clonare i volumi SnapLock, ma non i file su un volume SnapLock.
 
 
-NOTE: I LUN non sono supportati nei volumi SnapLock. Le LUN sono supportate nei volumi SnapLock solo in scenari in cui le copie Snapshot create su un volume non SnapLock vengono trasferite a un volume SnapLock per la protezione come parte della relazione del vault di SnapLock. I LUN non sono supportati nei volumi SnapLock in lettura/scrittura. Tuttavia, le copie Snapshot a prova di manomissione sono supportate sia sui volumi di origine di SnapMirror che sui volumi di destinazione che contengono LUN.
+NOTE: I LUN non sono supportati nei volumi SnapLock. I LUN sono supportati nei volumi SnapLock solo negli scenari in cui le snapshot create su un volume non SnapLock vengono trasferite in un volume SnapLock per essere protette come parte della relazione del vault di SnapLock. I LUN non sono supportati nei volumi SnapLock in lettura/scrittura. Le snapshot a prova di manomissione, tuttavia, sono supportate sia sui volumi di origine di SnapMirror che sui volumi di destinazione che contengono LUN.
 
 A partire da ONTAP 9.10.1, i volumi SnapLock e non SnapLock possono esistere sullo stesso aggregato; pertanto, non è più necessario creare un aggregato SnapLock separato se si utilizza ONTAP 9.10.1. Si utilizza l'opzione del volume '-snaplock-type' per specificare un tipo di volume SnapLock Compliance o Enterprise. Nelle versioni di ONTAP precedenti a ONTAP 9.10.1, la modalità SnapLock, Compliance o Enterprise, viene ereditata dall'aggregato. I volumi di destinazione flessibili in base alla versione non sono supportati. L'impostazione della lingua del volume di destinazione deve corrispondere all'impostazione della lingua del volume di origine.
 
-A un volume SnapLock che è una destinazione del vault è assegnato un periodo di conservazione predefinito. Il valore per questo periodo viene inizialmente impostato su un minimo di 0 anni per i volumi aziendali SnapLock e su un massimo di 30 anni per i volumi di conformità SnapLock. Ogni copia Snapshot di NetApp viene inizialmente impegnata con questo periodo di conservazione predefinito. Il periodo di conservazione può essere esteso in un secondo momento, se necessario. Per ulteriori informazioni, vedere link:set-retention-period-task.html["Imposta la panoramica del tempo di conservazione"].
+A un volume SnapLock che è una destinazione del vault è assegnato un periodo di conservazione predefinito. Il valore per questo periodo viene inizialmente impostato su un minimo di 0 anni per i volumi aziendali SnapLock e su un massimo di 30 anni per i volumi di conformità SnapLock. All'inizio, ogni snapshot NetApp viene eseguito il commit con questo periodo di conservazione predefinito. Il periodo di conservazione può essere esteso in un secondo momento, se necessario. Per ulteriori informazioni, vedere link:set-retention-period-task.html["Imposta la panoramica del tempo di conservazione"].
 
-A partire da ONTAP 9.14,1, è possibile specificare i periodi di conservazione per etichette SnapMirror specifiche nei criteri SnapMirror della relazione di SnapMirror, in modo che le copie Snapshot replicate dal volume di origine a quello di destinazione vengano conservate per il periodo di conservazione specificato nella regola. Se non viene specificato alcun periodo di conservazione, viene utilizzato il periodo di conservazione predefinito del volume di destinazione.
+A partire da ONTAP 9.14.1, è possibile specificare i periodi di conservazione per etichette SnapMirror specifiche nel criterio SnapMirror della relazione SnapMirror, in modo che gli snapshot replicati dal volume di origine a quello di destinazione vengano conservati per il periodo di conservazione specificato nella regola. Se non viene specificato alcun periodo di conservazione, viene utilizzato il periodo di conservazione predefinito del volume di destinazione.
 
-A partire da ONTAP 9.13.1, è possibile ripristinare istantaneamente una copia Snapshot bloccata sul volume SnapLock di destinazione di una relazione del vault di SnapLock creando un FlexClone con l' `snaplock-type` Opzione impostata su "non snaplock" e specifica la copia Snapshot come "snapshot principale" quando si esegue l'operazione di creazione del clone del volume. Scopri di più link:../volumes/create-flexclone-task.html?q=volume+clone["Creazione di un volume FlexClone con un tipo di SnapLock"].
+A partire da ONTAP 9.13.1, è possibile ripristinare istantaneamente uno snapshot bloccato sul volume SnapLock di destinazione di una relazione vault di SnapLock creando una FlexClone con l' `snaplock-type`opzione impostata su `non-snaplock` e specificando lo snapshot come "snapshot padre" quando si esegue l'operazione di creazione del clone del volume. Ulteriori informazioni su link:../volumes/create-flexclone-task.html?q=volume+clone["Creazione di un volume FlexClone con un tipo di SnapLock"].
 
 Per le configurazioni MetroCluster, è necessario conoscere quanto segue:
 
@@ -93,7 +93,7 @@ cluster2::> volume create -vserver SVM2 -volume dstvolB -aggregate node01_aggr -
 . Sul cluster di destinazione, link:set-retention-period-task.html["impostare il periodo di conservazione predefinito"].
 . link:../data-protection/create-replication-relationship-task.html["Creare una nuova relazione di replica"] Tra l'origine non SnapLock e la nuova destinazione SnapLock creata.
 +
-In questo esempio viene creata una nuova relazione di SnapMirror con il volume SnapLock di destinazione `dstvolB` utilizzando una policy di `XDPDefault` Per eseguire il vault delle copie Snapshot etichettate giornalmente e settimanalmente in base a una pianificazione oraria:
+Questo esempio crea una nuova relazione SnapMirror con il volume SnapLock di destinazione `dstvolB` utilizzando un criterio di `XDPDefault` per il vault degli snapshot etichettati giornalmente e settimanalmente con una pianificazione oraria:
 
 +
 [listing]
@@ -118,9 +118,9 @@ Il seguente comando inizializza la relazione tra il volume di origine `srcvolA` 
 ----
 cluster2::> snapmirror initialize -destination-path SVM2:dstvolB
 ----
-. Una volta inizializzata la relazione e inattiva, utilizzare `snapshot show` Comando sulla destinazione per verificare il tempo di scadenza del SnapLock applicato alle copie Snapshot replicate.
+. Una volta inizializzata la relazione e inattiva, utilizzare il `snapshot show` comando sulla destinazione per verificare il tempo di scadenza SnapLock applicato agli snapshot replicati.
 +
-Questo esempio elenca le copie Snapshot sul volume `dstvolB` Che hanno l'etichetta SnapMirror e la data di scadenza SnapLock:
+Questo esempio elenca gli snapshot sul volume `dstvolB` che hanno l'etichetta SnapMirror e la data di scadenza SnapLock:
 
 +
 [listing]
