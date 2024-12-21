@@ -1,0 +1,40 @@
+---
+permalink: flexcache-writeback/flexcache-write-back-guidelines.html 
+sidebar: sidebar 
+keywords: tr-4743, flexcache writeback, flexcache write-back, flexcache, write-back, write back, guidelines, best practices, performance, ontap tr, netapp tr 
+summary: Attenersi alle seguenti linee guida per garantire prestazioni ottimali quando si utilizza il write-back FlexCache. 
+---
+= Linee guida per la riscrittura di ONTAP FlexCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+La riscrittura di FlexCache implica molte interazioni complesse tra l'origine e le cache. Per ottenere prestazioni ottimali, accertarsi che l'ambiente in uso segua queste linee guida. Queste linee guida si basano sull'ultima versione di ONTAP (ONTAP 9.15.1) disponibile al momento della creazione del contenuto.
+
+**BEST PRACTICE:** testare il carico di lavoro di produzione in un ambiente non di produzione. Ciò è ancora più importante se si implementa la riscrittura di FlexCache al di fuori di queste linee guida.
+
+Le seguenti linee guida sono ben testate internamente presso NetApp. È *_fortemente_* consigliato di rimanere al loro interno. In caso contrario, potrebbe verificarsi un comportamento imprevisto.
+
+* Miglioramenti significativi per la riscrittura di FlexCache sono stati introdotti in ONTAP 9.15.1P5. Si consiglia di eseguire la versione consigliata dopo 9.15.1P5 in entrambi i cluster di origine e cache.
+* Nella sua iterazione corrente, le cache write-back di FlexCache devono essere configurate con un singolo componente per l'intero volume FlexCache. I Flexcache multi-costituenti possono provocare la rimozione indesiderata dei dati dalla cache.
+* I test sono stati eseguiti per file di dimensioni inferiori a 100GB ms e tempi di andata e ritorno WAN tra la cache e l'origine non superiori a 100ms ms. Qualsiasi carico di lavoro al di fuori di questi limiti può causare performance inaspettate.
+* La scrittura in flussi di dati alternativi SMB causa l'eliminazione del file principale dalla cache. Tutti i dati sporchi per il file principale devono essere scaricati nell'origine prima che possano essere eseguite altre operazioni su quel file. Anche il flusso di dati alternativo viene inoltrato all'origine.
+* La ridenominazione di un file causa l'eliminazione del file dalla cache. Tutti i dati sporchi per il file devono essere scaricati nell'origine prima che possano essere eseguite altre operazioni su quel file.
+* Al momento, gli unici attributi che è possibile modificare o impostare su un file nel volume FlexCache abilitato per la riscrittura sono:
++
+** Timestamp
+** Bit di modalità
+** ACL NT
+** Proprietario
+** Gruppo
+** Dimensione
++
+Tutti gli altri attributi modificati o impostati vengono inoltrati all'origine, il che potrebbe causare l'eliminazione del file dalla cache. Se è necessario modificare o impostare altri attributi nella cache, chiedere all'account team di aprire un PVR.
+
+
+
+* Gli snapshot acquisiti all'origine causano il richiamo di tutti i dati anomali in sospeso da ogni cache abilitata per la riscrittura associata a quel volume di origine. Ciò potrebbe richiedere più tentativi di esecuzione dell'operazione se è in corso un'attività di write-back significativa, in quanto la rimozione di tali file sporchi potrebbe richiedere del tempo.
+* L'origine deve rimanere piena al di sotto del 80%. Ai volumi della cache non vengono concesse deleghe di blocco esclusive se non vi è almeno il 20% di spazio rimanente nel volume di origine. In questa situazione, le chiamate a una cache abilitata per la riscrittura vengono inoltrate all'origine. In questo modo si evita di esaurire lo spazio nell'origine, con il risultato di lasciare orfani i dati sporchi in una cache abilitata per la riscrittura.
+

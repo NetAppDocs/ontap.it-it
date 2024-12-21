@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: tr-4743, flexcache writeback, flexcache write-back, use cases, workloads, technical report, netapp tr, ontap tr 
 summary: Si tratta di profili di scrittura più adatti per un FlexCache abilitato alla riscrittura. È necessario testare il carico di lavoro per vedere se la riscrittura o la riscrittura fornisce le migliori performance. 
 ---
-= Casi di utilizzo di writeback di FlexCache
+= Casi di utilizzo di write-back di ONTAP FlexCache
 :allow-uri-read: 
 
 
@@ -21,17 +21,19 @@ NOTE: Il write-back non sostituisce il write-around. Anche se la riscrittura è 
 .Dimensione del file
 La dimensione del file è meno importante del numero di scritture effettuate tra `OPEN` e `CLOSE` chiamate per un file. I file di piccole dimensioni hanno intrinsecamente `WRITE` meno chiamate, il che li rende meno ideali per la riscrittura. I file di grandi dimensioni potrebbero avere più scritture tra `OPEN` e `CLOSE` chiamate, ma ciò non è garantito.
 
+Fare riferimento alla link:../flexcache-writeback/flexcache-write-back-guidelines.html["Linee guida per la riscrittura di FlexCache"] pagina per le raccomandazioni più aggiornate relative alle dimensioni massime del file.
+
 .Dimensioni di scrittura
-Quando si scrive da un client, vengono coinvolte altre chiamate NAS diverse da quelle in scrittura:
+Quando si scrive da un client, vengono coinvolte altre chiamate NAS modificanti diverse da quelle in scrittura. Questi includono, ma non sono limitati a:
 
 * `CREATE`
 * `OPEN`
 * `CLOSE`
-* `READDIR/READDIRPLUS`
-*  `SETATTR`: `SETATTR` le chiamate che modificano solo `mtime`, , `atime`o `ctime` vengono elaborate nella cache.
+* `SETATTR`
+* `SET_INFO`
 
 
-Queste chiamate devono essere elaborate all'origine e attivano una riscrittura di tutti i dati anomali accumulati nella cache abilitata per la riscrittura per il file su cui viene eseguito. Io al file verrà interrotto fino al completamento della riscrittura.
+`SETATTR` e `SET_INFO` le chiamate che impostano `mtime`, `atime` `ctime` , `owner`, , `group` o `size` vengono elaborate nella cache. Il resto di queste chiamate deve essere elaborato all'origine e attivare una riscrittura di tutti i dati sporchi accumulati nella cache abilitata alla riscrittura per il file su cui si opera. Io al file verrà interrotto fino al completamento della riscrittura.
 
 Sapendo che queste chiamate devono attraversare la WAN, è possibile identificare i carichi di lavoro adatti per la riscrittura. In genere, maggiore è il numero di operazioni `OPEN` di scrittura che `CLOSE` è possibile effettuare tra e chiamate senza che venga emessa una delle altre chiamate elencate sopra, migliore è il guadagno di prestazioni di write-back.
 
@@ -48,7 +50,7 @@ Quando un file accumula dati sporchi in una cache, la cache li scrive in modo as
 
 == Considerazioni sulla latenza
 
-Quando FlexCache opera in modalità write-back, i client NAS ottengono maggiori benefici all'aumentare della latenza. Esiste un punto, tuttavia, in cui l'overhead del write-back supera i vantaggi ottenuti negli ambienti a bassa latenza. In alcuni test di NetApp, i benefici del writeback sono partiti attorno a una latenza minima tra cache e origine di 8ms ms. Questa latenza varia in base al carico di lavoro, quindi assicurati di verificare la tua opinione sui vantaggi in termini di point-of-return.
+Quando FlexCache opera in modalità write-back, i client NAS ottengono maggiori benefici all'aumentare della latenza. Esiste un punto, tuttavia, in cui l'overhead del write-back supera i vantaggi ottenuti negli ambienti a bassa latenza. In alcuni test di NetApp, i vantaggi della riscrittura hanno avuto inizio con una latenza minima tra cache e origine di 8ms ms. Questa latenza varia in base al carico di lavoro, quindi assicurati di verificare il punto di ritorno del tuo carico di lavoro.
 
 Il grafico seguente mostra il punto di ritorno per la riscrittura nei test di laboratorio NetApp. L' `x` asse è la dimensione del file e l' `y` asse è il tempo trascorso. Il test ha utilizzato NFSv3, montando con un `rsize` e `wsize` di 256KB, e 64ms di latenza WAN. Questo test è stato eseguito utilizzando una piccola istanza di ONTAP Select sia per la cache che per l'origine, e una singola operazione di scrittura con thread. I risultati possono variare.
 
