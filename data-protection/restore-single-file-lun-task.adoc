@@ -2,7 +2,7 @@
 permalink: data-protection/restore-single-file-lun-task.html 
 sidebar: sidebar 
 keywords: restore, single file, lun, nvme, namespace, snapmirror, destination, snapshot, copy, snap mirror, baseline, 
-summary: È possibile ripristinare un singolo file, LUN, un set di file o LUN da una copia Snapshot o uno spazio dei nomi NVMe da un volume di destinazione SnapMirror. A partire da ONTAP 9.7, puoi anche ripristinare i namespace NVMe da una destinazione sincrona SnapMirror. È possibile ripristinare i file nel volume di origine originale o in un volume diverso. 
+summary: Puoi ripristinare un singolo file, LUN, un set di file o LUN da uno snapshot o un namespace NVMe da un volume di destinazione SnapMirror. A partire da ONTAP 9.7, puoi anche ripristinare i namespace NVMe da una destinazione sincrona SnapMirror. È possibile ripristinare i file nel volume di origine originale o in un volume diverso. 
 ---
 = Ripristino di un singolo file, LUN o namespace NVMe da una destinazione SnapMirror con ONTAP
 :allow-uri-read: 
@@ -11,7 +11,7 @@ summary: È possibile ripristinare un singolo file, LUN, un set di file o LUN da
 
 
 [role="lead"]
-È possibile ripristinare un singolo file, LUN, un set di file o LUN da una copia Snapshot o uno spazio dei nomi NVMe da un volume di destinazione SnapMirror. A partire da ONTAP 9.7, puoi anche ripristinare i namespace NVMe da una destinazione sincrona SnapMirror. È possibile ripristinare i file nel volume di origine originale o in un volume diverso.
+Puoi ripristinare un singolo file, LUN, un set di file o LUN da uno snapshot o un namespace NVMe da un volume di destinazione SnapMirror. A partire da ONTAP 9.7, puoi anche ripristinare i namespace NVMe da una destinazione sincrona SnapMirror. È possibile ripristinare i file nel volume di origine originale o in un volume diverso.
 
 .Di cosa hai bisogno
 Per ripristinare un file o LUN da una destinazione sincrona SnapMirror (supportata a partire da ONTAP 9.5), occorre prima eliminare e rilasciare la relazione.
@@ -19,12 +19,12 @@ Per ripristinare un file o LUN da una destinazione sincrona SnapMirror (supporta
 .A proposito di questa attività
 Il volume su cui si ripristinano file o LUN (il volume di destinazione) deve essere un volume di lettura/scrittura:
 
-* SnapMirror esegue un _ripristino incrementale_ se i volumi di origine e di destinazione dispongono di una copia Snapshot comune (come in genere avviene quando si esegue il ripristino nel volume di origine originale).
-* In caso contrario, SnapMirror esegue un _ripristino baseline_, in cui la copia Snapshot specificata e tutti i blocchi di dati a cui fa riferimento vengono trasferiti al volume di destinazione.
+* SnapMirror esegue un _ripristino incrementale_ se i volumi di origine e di destinazione hanno uno snapshot comune (come in genere avviene quando si esegue il ripristino del volume di origine).
+* In caso contrario, SnapMirror esegue un ripristino _baseline_, in cui lo snapshot specificato e tutti i blocchi di dati a cui fa riferimento vengono trasferiti al volume di destinazione.
 
 
 .Fasi
-. Elencare le copie Snapshot nel volume di destinazione:
+. Elencare gli snapshot nel volume di destinazione:
 +
 `volume snapshot show -vserver <SVM> -volume volume`
 
@@ -32,7 +32,7 @@ Il volume su cui si ripristinano file o LUN (il volume di destinazione) deve ess
 Ulteriori informazioni su `volume snapshot show` nella link:https://docs.netapp.com/us-en/ontap-cli/volume-snapshot-show.html["Riferimento al comando ONTAP"^].
 
 +
-Nell'esempio riportato di seguito vengono illustrate le copie Snapshot di `vserverB:secondary1` destinazione:
+L'esempio seguente mostra gli snapshot sulla `vserverB:secondary1` destinazione:
 
 +
 [listing]
@@ -52,7 +52,7 @@ vserverB    secondary1  hourly.2013-01-25_0005  valid   224KB     0%    0%
 
 7 entries were displayed.
 ----
-. Ripristinare un singolo file o LUN o un set di file o LUN da una copia Snapshot in un volume di destinazione SnapMirror:
+. Ripristino di un singolo file o LUN o di un set di file o LUN da uno snapshot in un volume di destinazione SnapMirror:
 +
 `snapmirror restore -source-path <SVM:volume>|<cluster://SVM/volume>, ... -destination-path <SVM:volume>|<cluster://SVM/volume>, ... -source-snapshot snapshot -file-list <source_file_path,@destination_file_path>`
 
@@ -66,7 +66,7 @@ Ulteriori informazioni su `snapmirror restore` nella link:https://docs.netapp.co
 
 ====
 +
-Il seguente comando ripristina i file `file1` e. `file2` Dalla copia Snapshot `daily.2013-01-25_0010` nel volume di destinazione originale `secondary1`, nella stessa posizione nel file system attivo del volume di origine originale `primary1`:
+Il seguente comando ripristina i file `file1` e `file2` lo snapshot `daily.2013-01-25_0010` nel volume di destinazione originale `secondary1` , nella stessa posizione nel file system attivo del volume di origine `primary1` :
 
 +
 [listing]
@@ -77,7 +77,7 @@ cluster_dst::> snapmirror restore -source-path vserverB:secondary1 -destination-
 [Job 3479] Job is queued: snapmirror restore for the relationship with destination vserverA:primary1
 ----
 +
-Il seguente comando ripristina i file `file1` e. `file2` Dalla copia Snapshot `daily.2013-01-25_0010` nel volume di destinazione originale `secondary1`, in una posizione diversa nel file system attivo del volume di origine originale `primary1`.
+Il seguente comando ripristina i file `file1` e `file2` lo snapshot `daily.2013-01-25_0010` nel volume di destinazione originale `secondary1` , in una posizione diversa nel file system attivo del volume di origine `primary1` .
 
 +
 Il percorso del file di destinazione inizia con il simbolo @ seguito dal percorso del file dalla directory principale del volume di origine originale. In questo esempio, `file1` viene ripristinato a. `/dir1/file1.new` e il file2 viene ripristinato a. `/dir2.new/file2` acceso `primary1`:
@@ -91,7 +91,7 @@ cluster_dst::> snapmirror restore -source-path vserverB:secondary1 -destination-
 [Job 3479] Job is queued: snapmirror restore for the relationship with destination vserverA:primary1
 ----
 +
-Il seguente comando ripristina i file `file1` e. `file3` Dalla copia Snapshot `daily.2013-01-25_0010` nel volume di destinazione originale `secondary1`, in posizioni diverse nel file system attivo del volume di origine originale `primary1`e ripristini `file2` da `snap1` nella stessa posizione nel file system attivo di `primary1`.
+Il seguente comando ripristina i file `file1` e lo snapshot `daily.2013-01-25_0010` nel volume di destinazione originale `secondary1` , in diverse posizioni nel file system attivo del volume di origine e `file3` ripristina `file2` da `snap1` nella `primary1` stessa posizione nel file system attivo di `primary1`.
 
 +
 In questo esempio, il file `file1` viene ripristinato a. `/dir1/file1.new` e. `file3` viene ripristinato a. `/dir3.new/file3`:

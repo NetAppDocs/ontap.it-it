@@ -13,8 +13,6 @@ summary: Per convertire le connessioni client non trunked in connessioni trunked
 [role="lead"]
 Per convertire le connessioni client non trunked in connessioni trunked, i mount esistenti sui client Linux e VMware devono essere smontati e rimontati utilizzando le informazioni sulle LIF.
 
-Quando si immettono i comandi mount sui client, è necessario immettere gli indirizzi IP per ogni LIF nel gruppo trunking.
-
 Scopri di più link:index.html#supported-clients["client supportati"].
 
 
@@ -24,17 +22,25 @@ NOTE: L'annullamento del montaggio dei client VMware provoca interruzioni per le
 ====
 .Requisiti del client Linux
 --
-È necessario un punto di montaggio separato per ciascuna connessione nel gruppo trunking.
+Se si utilizza ONTAP 9.16.1 o versione successiva e Red Hat Enterprise Linux versione 8,7 o successiva (per RHEL 8) o 9,2 o successiva (per RHEL 9) come client Linux, è necessario un solo punto di montaggio per il gruppo trunking. Montare i volumi esportati con questo comando, utilizzando l' `trunkdiscovery`opzione:
 
-Montare i volumi esportati con comandi simili ai seguenti:
+[source, cli]
+----
+mount <lif_ip>:<volume_name> </mount_path> -o trunkdiscovery,vers=4.1
+----
+In caso contrario, è necessario un punto di montaggio separato per ciascuna connessione nel gruppo trunking. Montare i volumi esportati con comandi simili a quelli seguenti, utilizzando l' `max_connect`opzione:
 
-`mount lif1_ip:/vol-test /mnt/test1 -o vers=4.1,max_connect=2`
+[source, cli]
+----
+mount <lif1_ip>:<volume_name> </mount_path1> -o vers=4.1,max_connect=16
+----
+[source, cli]
+----
+mount <lif2_ip>:<volume_name> </mount_path2> -o vers=4.1,max_connect=16
+----
+La versione (`vers`) il valore deve essere `4.1` o versioni successive.
 
-`mount lif2_ip:/vol-test /mnt/test2 -o vers=4.1,max_connect=2`
-
-Il `vers` il valore deve essere `4.1` o versioni successive.
-
-Il `max_connect` il valore deve corrispondere al numero di connessioni nel gruppo trunking.
+Il `max_connect` il valore corrisponde al numero di connessioni nel gruppo trunking.
 
 --
 .Requisiti del client VMware

@@ -157,24 +157,49 @@ La tabella seguente mostra i sistemi operativi supportati per ciascuna versione 
 ====
 
 
-== Registrare una chiave di protezione quando UEFI Secure Boot è attivato
+== Installare ONTAP Mediator quando l'avvio protetto UEFI è attivato
 
+ONTAP Mediator può essere installato su un sistema con o senza UEFI Secure Boot abilitato.
+
+.A proposito di questa attività
+È possibile scegliere di disattivare l'avvio protetto UEFI prima di installare ONTAP Mediator se non è necessario o se si stanno risolvendo i problemi di installazione di ONTAP Mediator. Disattivare l'opzione UEFI Secure Boot dalle impostazioni del computer.
+
+[NOTE]
+====
+Consultare le istruzioni specifiche del sistema per informazioni più dettagliate su come disattivare UEFI Secure Boot.
+
+====
 Per installare ONTAP Mediator con UEFI Secure Boot attivato, è necessario registrare una chiave di protezione prima che il servizio possa avviarsi. La chiave viene generata durante la fase di compilazione dell'installazione di SCST e salvata come coppia di chiavi private-public sul computer. Utilizzare l' `mokutil`utilità per aggiungere la chiave pubblica come chiave del proprietario della macchina (MOK) al firmware UEFI, consentendo al sistema di considerare attendibile e caricare il modulo firmato. Salvare la `mokutil` passphrase in un luogo sicuro, in quanto ciò è necessario quando si riavvia il sistema per attivare il MOK.
 
-Per determinare se il sistema è abilitato per UEFI e l'avvio protetto è attivato, procedere come segue:
-
 .Fasi
-. Se `mokutil` non è installato, eseguire il seguente comando:
-+
-`yum install mokutil`
-
-. Verificare se l'avvio protetto UEFI è attivato sul sistema:
+. [[STEP_1_uefi]]verificare se l'avvio protetto UEFI è attivato sul sistema:
 +
 `mokutil --sb-state`
 
 +
 I risultati indicano se l'avvio protetto UEFI è abilitato su questo sistema.
 
++
+[cols="40,60"]
+|===
+
+
+| Se... | Vai a... 
+
+
+ a| 
+L'avvio protetto UEFI è attivato
+ a| 
+
+
+
+
+ a| 
+L'avvio protetto UEFI è disattivato
+ a| 
+link:upgrade-host-os-mediator-task.html["Aggiornare il sistema operativo host, quindi il mediatore ONTAP"]
+
+|===
 +
 [NOTE]
 ====
@@ -183,6 +208,10 @@ I risultati indicano se l'avvio protetto UEFI è abilitato su questo sistema.
 
 
 ====
+. [[step_2_uefi]]se l' `mokutil`utilità non è installata, eseguire il comando seguente:
++
+`yum install mokutil`
+
 . Aggiungere la chiave pubblica all'elenco MOK:
 +
 `mokutil --import /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.der`
@@ -195,16 +224,5 @@ NOTE: È possibile lasciare la chiave privata nella posizione predefinita o spos
 `[root@hostname ~]# ls /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/
 README.module-signing  scst_module_key.der  scst_module_key.priv`
 
-. Riavviare l'host e utilizzare UEFI Boot Manager della periferica per approvare il nuovo MOK. Sarà necessaria la passphrase fornita per il `mokutil` passaggio 2.
-
-
-
-
-== Disattivare l'avvio protetto UEFI
-
-È inoltre possibile scegliere di disattivare l'avvio protetto UEFI prima di installare ONTAP Mediator.
-
-.Fasi
-. Nelle impostazioni del BIOS della macchina fisica, disattivare l'opzione "UEFI Secure Boot" (Avvio protetto UEFI).
-. Nelle impostazioni VMware per la VM, disattivare l'opzione "Avvio sicuro" per vSphere 6.x o l'opzione "Avvio sicuro" per vSphere 7.x
+. Riavviare l'host e utilizzare UEFI Boot Manager della periferica per approvare il nuovo MOK. È necessaria la passphrase fornita per l' `mokutil`utilità in <<step_1_uefi,Passaggio in cui si verifica se l'avvio protetto UEFI è attivato sul sistema>>.
 

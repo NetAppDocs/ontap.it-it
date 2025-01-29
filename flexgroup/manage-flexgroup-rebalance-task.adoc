@@ -20,7 +20,7 @@ Il ribilanciamento di FlexGroup aiuta a ridistribuire la capacità quando si svi
 È importante tenere presente che il ribilanciamento di FlexGroup riduce le prestazioni del sistema quando un numero elevato di file viene spostato come parte di un singolo evento di ribilanciamento o su più eventi di ribilanciamento a causa della creazione di inodes multi-parte. Ogni file spostato come parte di un evento di ribilanciamento ha 2 inodes multi-parte associati a quel file. Maggiore è il numero di file con inode multiparte come percentuale del numero totale di file in un FlexGroup, maggiore sarà l'impatto sulle prestazioni. Alcuni casi di utilizzo, come una conversione da FlexVol a FlexGroup, possono portare a una quantità significativa di creazione di inode multi-parte.
 
 ====
-Il ribilanciamento è disponibile solo quando tutti i nodi del cluster eseguono ONTAP 9.12.1 o release successive. È necessario abilitare la funzionalità dati granulare su qualsiasi volume FlexGroup che esegue l'operazione di ribilanciamento.  Una volta abilitata questa funzionalità, non è possibile ripristinare ONTAP 9.11.1 e versioni precedenti a meno che non si elimini questo volume o si ripristini da una copia Snapshot creata prima dell'attivazione dell'impostazione.
+Il ribilanciamento è disponibile solo quando tutti i nodi del cluster eseguono ONTAP 9.12.1 o release successive. È necessario abilitare la funzionalità dati granulare su qualsiasi volume FlexGroup che esegue l'operazione di ribilanciamento. Una volta abilitata questa funzionalità, non è possibile ripristinare ONTAP 9.11.1 e versioni precedenti a meno che non si elimini questo volume o si ripristini da uno snapshot creato prima dell'attivazione dell'impostazione.
 
 A partire da ONTAP 9.14.1, ONTAP introduce un algoritmo per spostare senza interruzioni e in modo proattivo i file in volumi che hanno abilitato dati granulari senza interazione dell'utente. L'algoritmo funziona in scenari molto specifici e mirati per ridurre i colli di bottiglia delle prestazioni.  Gli scenari in cui questo algoritmo potrebbe agire includono un carico di scrittura molto elevato su un particolare set di file su un nodo nel cluster o un file in continua crescita in una directory principale molto attiva.
 
@@ -43,15 +43,15 @@ Il ribilanciamento con la funzionalità di ribilanciamento automatico di FlexGro
 +
 La selezione del file per il ribilanciamento automatico si basa sui blocchi salvati.  La dimensione minima del file considerata per il ribilanciamento è di 100 MB per impostazione predefinita (può essere configurata a partire da 20 MB utilizzando il parametro min-file-size mostrato di seguito) e la dimensione massima del file è di 100 GB.
 
-* File nelle copie Snapshot
+* File nelle istantanee
 +
-È possibile configurare il ribilanciamento di FlexGroup per considerare solo i file da spostare che non sono attualmente presenti in alcuna copia Snapshot. Quando si avvia il ribilanciamento, viene visualizzata una notifica se viene pianificata un'operazione di copia Snapshot in qualsiasi momento durante un'operazione di ribilanciamento.
+È possibile configurare il ribilanciamento FlexGroup in modo da considerare solo i file da spostare che non sono attualmente presenti in nessuno snapshot. Quando si avvia il ribilanciamento, viene visualizzata una notifica se un'operazione di snapshot è pianificata in qualsiasi momento durante un'operazione di ribilanciamento.
 
 +
-Le copie Snapshot sono limitate se un file viene spostato e viene sottoposto a framing nella destinazione. Un'operazione di ripristino della copia Snapshot non è consentita mentre è in corso il ribilanciamento del file.
+Le snapshot sono limitate nel caso in cui un file venga spostato e sottoposto a framing nella destinazione. Non è consentita un'operazione di ripristino snapshot mentre è in corso il ribilanciamento dei file.
 
 +
-Qualsiasi copia Snapshot creata dopo l' `granular-data` attivazione dell'opzione non può essere replicata su un sistema che esegue ONTAP 9.11.1 e versioni precedenti perché ONTAP 9.11.1 e versioni precedenti non supportano inodes multi-parte.
+Qualsiasi snapshot creato dopo l' `granular-data`attivazione dell'opzione non può essere replicato su un sistema che esegue ONTAP 9.11.1 e versioni precedenti, poiché ONTAP 9.11.1 e versioni precedenti non supportano inodes multi-parte.
 
 * Operazioni di SnapMirror
 +
@@ -59,11 +59,11 @@ Il ribilanciamento di FlexGroup deve avvenire tra le operazioni pianificate di S
 
 * Efficienza dello storage per la compressione basata su file
 +
-Con l'efficienza dello storage di compressione basato su file, il file viene decompresso prima di essere spostato a destinazione, in modo da perdere i risparmi di compressione. I risparmi di compressione vengono riottenuti dopo l'esecuzione di uno scanner in background avviato manualmente sul volume FlexGroup dopo il ribilanciamento. Tuttavia, se un file è associato a una copia Snapshot su qualsiasi volume, il file viene ignorato per la compressione.
+Con l'efficienza dello storage di compressione basato su file, il file viene decompresso prima di essere spostato a destinazione, in modo da perdere i risparmi di compressione. I risparmi di compressione vengono riottenuti dopo l'esecuzione di uno scanner in background avviato manualmente sul volume FlexGroup dopo il ribilanciamento. Tuttavia, se un file è associato a uno snapshot su qualsiasi volume, il file verrà ignorato per la compressione.
 
 * Deduplica
 +
-Lo spostamento dei file deduplicati può causare un maggiore utilizzo generale del volume FlexGroup. Durante il ribilanciamento dei file, vengono spostati solo i blocchi univoci nella destinazione, liberando tale capacità nell'origine. I blocchi condivisi rimangono sull'origine e vengono copiati nella destinazione. Anche se questo raggiunge l'obiettivo di ridurre la capacità utilizzata su un componente di origine quasi completo, può anche portare a un maggiore utilizzo generale sul volume FlexGroup a causa delle copie dei blocchi condivisi sulle nuove destinazioni. Ciò è possibile anche quando i file che fanno parte di una copia Snapshot vengono spostati. Il risparmio di spazio non viene riconosciuto completamente fino a quando il programma di copia Snapshot non viene riciclato e non sono più presenti copie dei file nelle copie Snapshot.
+Lo spostamento dei file deduplicati può causare un maggiore utilizzo generale del volume FlexGroup. Durante il ribilanciamento dei file, vengono spostati solo i blocchi univoci nella destinazione, liberando tale capacità nell'origine. I blocchi condivisi rimangono sull'origine e vengono copiati nella destinazione. Anche se questo raggiunge l'obiettivo di ridurre la capacità utilizzata su un componente di origine quasi completo, può anche portare a un maggiore utilizzo generale sul volume FlexGroup a causa delle copie dei blocchi condivisi sulle nuove destinazioni. Ciò è possibile anche quando i file che fanno parte di uno snapshot vengono spostati. I risparmi di spazio non vengono pienamente riconosciuti fino a quando non si ricicla la pianificazione dello snapshot e non ci sono più copie dei file negli snapshot.
 
 * Volumi FlexClone
 +
@@ -152,7 +152,7 @@ In alternativa, è possibile specificare le seguenti opzioni:
 [-start-time <mm/dd/yyyy-00:00:00>] Ribilancia la data e l'ora di inizio del ribilanciamento
 
 +
-[-exclude-snapshot {true|false}] Escludi i file bloccati nelle copie Snapshot
+[-exclude-istantanee {true|false}] Escludi i file bloccati nelle istantanee
 
 +
 Esempio:
@@ -170,7 +170,7 @@ volume rebalance start -vserver vs0 -volume fg1
 
 == Modificare le configurazioni di ribilanciamento FlexGroup
 
-È possibile modificare una configurazione di ribilanciamento FlexGroup per aggiornare la soglia di squilibrio, il numero di file simultanei sposta la dimensione minima del file, il runtime massimo e per includere o escludere le copie Snapshot. Le opzioni per modificare la pianificazione del ribilanciamento FlexGroup sono disponibili a partire da ONTAP 9.13.1.
+È possibile modificare una configurazione di ribilanciamento FlexGroup per aggiornare la soglia di squilibrio, il numero di file simultanei sposta le dimensioni minime del file, il runtime massimo e per includere o escludere snapshot. Le opzioni per modificare la pianificazione del ribilanciamento FlexGroup sono disponibili a partire da ONTAP 9.13.1.
 
 [role="tabbed-block"]
 ====
@@ -217,7 +217,7 @@ volume rebalance modify -vserver <SVM name> -volume <volume name>
 [-start-time <mm/dd/yyyy-00:00:00>] Ribilancia la data e l'ora di inizio del ribilanciamento
 
 +
-[-exclude-snapshot {true|false}] Escludi i file bloccati nelle copie Snapshot
+[-exclude-istantanee {true|false}] Escludi i file bloccati nelle istantanee
 
 
 
@@ -341,7 +341,7 @@ Esempio di dettagli dell'istanza di ribilanciamento:
     Minimum Imbalance Threshold per Constituent: 5%
     Maximum Concurrent File Moves per Constituent: 25
     Minimum File Size: 4KB
-    Exclude Files Stuck in Snapshot Copies: true
+    Exclude Files Stuck in snapshots: true
 ----
 
 
