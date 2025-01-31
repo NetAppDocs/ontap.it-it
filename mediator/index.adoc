@@ -37,8 +37,42 @@ CAUTION: Se si verifica un errore di installazione, potrebbe essere necessario e
 
 
 
-=== Requisiti del sistema operativo
+=== Requisiti dell'host
 
+Seguire questi requisiti quando si installa Red Hat Enterprise Linux (RHEL) o Rocky Linux e si configurano i repository associati.
+
+[NOTE]
+====
+Se si modifica il processo di installazione o configurazione, potrebbe essere necessario eseguire ulteriori operazioni.
+
+====
+.Requisiti di distribuzione Linux
+* Installare RHEL o Rocky Linux secondo le Best practice di Red Hat. Poiché CentOS 8.x è giunto al termine del ciclo di vita, le versioni compatibili di CentOS 8.x non sono consigliate.
+* Quando si installa il servizio ONTAP Mediator, assicurarsi che il sistema abbia accesso all'archivio richiesto in modo che il programma di installazione possa recuperare e installare tutte le dipendenze software richieste.
+* Per consentire al programma di installazione yum di trovare software dipendente nei repository RHEL, registrare il sistema durante l'installazione o successivamente utilizzando un abbonamento Red Hat valido.
++
+[NOTE]
+====
+Per ulteriori informazioni, consultate la documentazione di Red Hat Subscription Manager.
+
+====
+
+
+.Requisiti di rete
+* Assicurarsi che le seguenti porte siano disponibili e inutilizzate per ONTAP Mediator:
++
+** 31784
+** 3260
+
+
+* Se si utilizza un firewall di terze parti, fare riferimento alla sezione link:https://docs.netapp.com/us-en/ontap-metrocluster/install-ip/concept_mediator_requirements.html#firewall-requirements-for-ontap-mediator["Requisiti del firewall per ONTAP Mediator"^].
+* Per gli host Linux senza accesso a Internet, assicurarsi che i pacchetti richiesti siano disponibili in un repository locale.
++
+Se si utilizza il protocollo LACP (link Aggregation Control Protocol) in ambiente Linux, configurare il kernel e impostare `sysctl net.ipv4.conf.all.arp_ignore` su `2`.
+
+
+
+.Requisiti del sistema operativo
 Il sistema operativo deve soddisfare i seguenti requisiti:
 
 * installazione fisica a 64 bit o macchina virtuale
@@ -135,6 +169,58 @@ La tabella seguente mostra i sistemi operativi supportati per ciascuna versione 
 . Compatibile significa che RHEL non supporta più questa versione, ma ONTAP Mediator può ancora essere installato.
 
 
+.OS pacchetti richiesti
+I seguenti pacchetti sono richiesti dal servizio di supporto ONTAP:
+
+
+NOTE: I pacchetti vengono preinstallati o installati automaticamente dal programma di installazione di ONTAP Mediator.
+
+[cols="34,33,33"]
+|===
+
+
+| Tutte le versioni RHEL/CentOS | Pacchetti aggiuntivi per RHEL 8.x / Rocky Linux 8 | Pacchetti aggiuntivi per RHEL 9.x / Rocky Linux 9 
+
+
+ a| 
+* openssl
+* openssl-devel
+* kernel-devel- (uname -r)
+* gcc
+* fare
+* libselinux-utils
+* patch
+* bzip2
+* perl-Data-Dumper
+* perl-ExtUtils-MakeMaker
+* efibootmgr
+* mokutil
+
+ a| 
+* python3-pip
+* elfutils-libelf-devel
+* policycoreutils-python-utils
+* redhat-lsb-core
+* python39
+* python39-devel
+
+ a| 
+* python3-pip
+* elfutils-libelf-devel
+* policycoreutils-python-utils
+* python3
+* python3-devel
+
+
+|===
+Il pacchetto di installazione di Mediator è un file tar compresso autoestraente che include:
+
+* Un file RPM contenente tutte le dipendenze che non è possibile ottenere dal repository della release supportata.
+* Uno script di installazione.
+
+
+Si consiglia una certificazione SSL valida.
+
 
 
 === Considerazioni sull'aggiornamento del sistema operativo e sulla compatibilità del kernel
@@ -166,7 +252,7 @@ ONTAP Mediator può essere installato su un sistema con o senza UEFI Secure Boot
 
 [NOTE]
 ====
-Consultare le istruzioni specifiche del sistema per informazioni più dettagliate su come disattivare UEFI Secure Boot.
+Per istruzioni dettagliate sulla disattivazione di UEFI Secure Boot, consultare la documentazione relativa al sistema operativo host.
 
 ====
 Per installare ONTAP Mediator con UEFI Secure Boot attivato, è necessario registrare una chiave di protezione prima che il servizio possa avviarsi. La chiave viene generata durante la fase di compilazione dell'installazione di SCST e salvata come coppia di chiavi private-public sul computer. Utilizzare l' `mokutil`utilità per aggiungere la chiave pubblica come chiave del proprietario della macchina (MOK) al firmware UEFI, consentendo al sistema di considerare attendibile e caricare il modulo firmato. Salvare la `mokutil` passphrase in un luogo sicuro, in quanto ciò è necessario quando si riavvia il sistema per attivare il MOK.
