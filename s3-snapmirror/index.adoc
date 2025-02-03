@@ -138,3 +138,20 @@ Quando si creano nuovi bucket, è possibile controllare l'accesso creando utenti
 * link:../s3-config/create-s3-user-task.html["Creazione di un utente S3 (CLI)"]
 * link:../s3-config/create-modify-groups-task.html["Creare o modificare gruppi S3 (CLI)"]
 
+
+
+
+== Utilizzare blocco oggetti S3 e versione con SnapMirror S3
+
+È possibile utilizzare SnapMirror S3 su bucket ONTAP abilitati per blocco oggetti e versione, con alcune considerazioni:
+
+* Per replicare un bucket di origine con blocco oggetti attivato, anche il bucket di destinazione deve avere blocco oggetti attivato. Inoltre, sia l'origine che la destinazione devono avere la versione abilitata. In questo modo si evitano problemi di mirroring delle eliminazioni nel bucket di destinazione quando entrambi i bucket hanno policy di conservazione predefinite diverse.
+* S3 SnapMirror non replicherà le versioni storiche degli oggetti. Viene replicata solo la versione corrente di un oggetto.
+
+
+Quando gli oggetti bloccati vengono replicati in un bucket di destinazione, mantengono il tempo di conservazione originale. Se gli oggetti sbloccati vengono replicati, essi adotteranno il periodo di conservazione predefinito del bucket di destinazione. Ad esempio:
+
+* Il bucket A ha un periodo di conservazione predefinito di 30 giorni e il bucket B ha un periodo di conservazione predefinito di 60 giorni. Gli oggetti replicati dal bucket A al bucket B manterranno il periodo di conservazione di 30 giorni, anche se è inferiore al periodo di conservazione predefinito del bucket B.
+* Il bucket A non ha un periodo di conservazione predefinito e il bucket B ha un periodo di conservazione predefinito di 60 giorni. Quando gli oggetti sbloccati vengono replicati dal bucket A al bucket B, essi adotteranno il periodo di conservazione di 60 giorni. Se un oggetto viene bloccato manualmente nel bucket A, manterrà il periodo di conservazione originale quando viene replicato nel bucket B.
+* Il bucket A ha un periodo di conservazione predefinito di 30 giorni e il bucket B non ha un periodo di conservazione predefinito. Gli oggetti replicati dal bucket A al bucket B manterranno il periodo di conservazione di 30 giorni.
+
