@@ -14,9 +14,9 @@ summary: 'La sincronizzazione attiva di SnapMirror richiede l"installazione e l"
 
 
 [role="lead"]
-SnapMirror Active Sync utilizza i cluster in peering per garantire la disponibilità dei dati in caso di uno scenario di failover. Il mediatore ONTAP è una risorsa chiave che garantisce la business continuity, monitorando lo stato di salute di ogni cluster. Per configurare la sincronizzazione attiva di SnapMirror, è necessario prima installare ONTAP Mediator e verificare che i cluster primari e secondari siano configurati correttamente.
+SnapMirror Active Sync utilizza i cluster in peering per proteggere i dati in caso di uno scenario di failover. ONTAP Mediator è una risorsa chiave che consente la business continuity monitorando lo stato di salute di ogni cluster. Per configurare la sincronizzazione attiva di SnapMirror, è necessario prima installare ONTAP Mediator e verificare che i cluster primari e secondari siano configurati correttamente.
 
-Una volta installato il mediatore ONTAP e configurato i cluster, è necessario <<initialize-the-ontap-mediator>> ONTAP Mediator da utilizzare con la sincronizzazione attiva di SnapMirror. Devi quindi xref:protect-task.html[Creare, inizializzare e mappare il gruppo di coerenza per la sincronizzazione attiva di SnapMirror].
+Una volta installato ONTAP Mediator e configurato i cluster, <<initialize-the-ontap-mediator,Inizializzare ONTAP Mediator per la sincronizzazione attiva di SnapMirror utilizzando certificati autofirmati>>. È quindi necessario xref:protect-task.html[Creare, inizializzare e mappare il gruppo di coerenza per la sincronizzazione attiva di SnapMirror].
 
 
 
@@ -33,21 +33,21 @@ Ogni relazione peer cluster può essere associata solo a una singola istanza di 
 Ad esempio, se il cluster B ha una relazione peer con il cluster A, il cluster C e il cluster D, tutte e tre le relazioni peer del cluster possono avere un'istanza ONTAP Mediator associata univoca quando la sincronizzazione attiva di SnapMirror è configurata su ciascuna relazione. In alternativa, il cluster B può utilizzare la stessa istanza di ONTAP Mediator per tutte e tre le relazioni peer. In questo scenario, la stessa istanza di ONTAP Mediator viene elencata tre volte per il cluster.
 
 .Prerequisiti per il mediatore ONTAP
-* Il mediatore ONTAP include un proprio set di prerequisiti. È necessario soddisfare questi prerequisiti prima di installare il mediatore.
+* Il mediatore ONTAP include un proprio set di prerequisiti. È necessario soddisfare questi prerequisiti prima di installare ONTAP Mediator.
 +
 Per ulteriori informazioni, vedere link:https://docs.netapp.com/us-en/ontap-metrocluster/install-ip/task_configuring_the_ontap_mediator_service_from_a_metrocluster_ip_configuration.html["Preparare l'installazione del servizio ONTAP Mediator"^].
 
-* Per impostazione predefinita, il supporto ONTAP fornisce il servizio tramite la porta TCP 31784. Assicurarsi che la porta 31784 sia aperta e disponibile tra i cluster ONTAP e il mediatore.
+* Per impostazione predefinita, il supporto ONTAP fornisce il servizio tramite la porta TCP 31784. Assicurarsi che la porta 31784 sia aperta e disponibile tra i cluster ONTAP e ONTAP Mediator.
 
 
 
 
 == Installare il mediatore ONTAP e confermare la configurazione del cluster
 
-Procedere con ciascuna delle seguenti operazioni. Per ogni fase, è necessario confermare che la configurazione specifica è stata eseguita. Utilizza il link incluso dopo ogni passaggio per ottenere ulteriori informazioni in base alle necessità.
+Eseguire ciascuna delle seguenti operazioni per installare ONTAP Mediator e verificare la configurazione del cluster. Per ogni fase, è necessario confermare che la configurazione specifica è stata eseguita. Ogni fase include un collegamento alla procedura specifica da seguire.
 
 .Fasi
-. Installare il servizio ONTAP Mediator prima di assicurarsi che i cluster di origine e di destinazione siano configurati correttamente.
+. Installare il servizio ONTAP Mediator prima di verificare che i cluster di origine e di destinazione siano configurati correttamente.
 +
 xref:../mediator/index.html[Preparazione all'installazione o all'aggiornamento del servizio ONTAP Mediator]
 
@@ -59,11 +59,11 @@ NOTE: L'IPSpace predefinito è richiesto dalla sincronizzazione attiva di SnapMi
 +
 xref:../task_dp_prepare_mirror.html[Configurare le relazioni peer]
 
-. Verificare che le VM di storage siano create su ciascun cluster.
+. Verifica della creazione delle SVM in ciascun cluster.
 +
 xref:../smb-config/create-svms-data-access-task.html[Creazione di una SVM]
 
-. Verificare l'esistenza di una relazione peer tra le VM di storage su ciascun cluster.
+. Verifica della presenza di una relazione di peer tra le SVM di ciascun cluster.
 +
 xref:../peering/create-intercluster-svm-peer-relationship-93-later-task.html[Creazione di una relazione di peering SVM]
 
@@ -82,7 +82,7 @@ link:../networking/create_a_lif.html["Creazione di una LIF"]
 +
 xref:../san-admin/provision-storage.html[Creare LUN e mappare igroups]
 
-. Eseguire nuovamente la scansione dell'host dell'applicazione per rilevare eventuali nuove LUN.
+. Eseguire nuovamente la scansione dell'host dell'applicazione per rilevare nuovi LUN.
 
 
 
@@ -179,7 +179,7 @@ image:successful-mediator-installation.png["aggiunta mediatore riuscita"].
 
 È possibile inizializzare il mediatore ONTAP dal cluster primario o secondario utilizzando l'interfaccia CLI di ONTAP. Quando si invia il `mediator add` Su un cluster, il mediatore ONTAP viene aggiunto automaticamente sull'altro cluster.
 
-Quando si utilizza Mediator per monitorare una relazione di sincronizzazione attiva di SnapMirror, non è possibile inizializzare Mediator in ONTAP senza un certificato di autorità di certificazione (CA) o autofirmato valido. È possibile aggiungere un certificato valido all'archivio certificati per i cluster sottoposti a peering. Quando si utilizza Mediator per monitorare i sistemi MetroCluster IP, HTTPS non viene utilizzato dopo la configurazione iniziale; pertanto, i certificati non sono necessari.
+Quando si utilizza ONTAP Mediator per monitorare una relazione di sincronizzazione attiva SnapMirror, non è possibile inizializzare il Mediator in ONTAP senza un certificato di autofirmato o di autorità di certificazione (CA) valido. È possibile aggiungere un certificato valido all'archivio certificati per i cluster sottoposti a peering. Quando si utilizza ONTAP Mediator per monitorare i sistemi MetroCluster IP, HTTPS non viene utilizzato dopo la configurazione iniziale; pertanto, i certificati non sono necessari.
 
 [role="tabbed-block"]
 ====
@@ -403,12 +403,12 @@ Mediator Address Peer Cluster     Connection Status Quorum Status
 
 == Reinizializzare ONTAP Mediator con certificati di terze parti
 
-Potrebbe essere necessario reinizializzare il servizio ONTAP Mediator. In alcune situazioni potrebbe essere necessario reinizializzare il servizio ONTAP Mediator, ad esempio modificare l'indirizzo IP di ONTAP Mediator, la scadenza del certificato e altro ancora.
+Potrebbe essere necessario reinizializzare il servizio ONTAP Mediator. In alcune situazioni potrebbe essere necessario reinizializzare il servizio ONTAP Mediator, ad esempio modificare l'indirizzo IP di ONTAP Mediator, la scadenza del certificato e così via.
 
 La seguente procedura illustra la reinizializzazione di ONTAP Mediator per un caso specifico in cui un certificato autofirmato deve essere sostituito da un certificato di terze parti.
 
 .A proposito di questa attività
-È necessario sostituire i certificati autofirmati del cluster SM-BC con certificati di terze parti, rimuovere la configurazione ONTAP Mediator da ONTAP, quindi aggiungere ONTAP Mediator.
+È necessario sostituire i certificati autofirmati del cluster di sincronizzazione attiva di SnapMirror con certificati di terze parti, rimuovere la configurazione ONTAP Mediator da ONTAP, quindi aggiungere ONTAP Mediator.
 
 
 
@@ -455,7 +455,7 @@ image:configure-mediator-system-manager.png["aggiunta mediatore gestore di siste
  C2_test_cluster::*> security certificate delete -vserver C2_test_cluster -common-name ONTAPMediatorCA *
  2 entries were deleted.
 ----
-. Rimuovere il ONTAP Mediator precedentemente configurato dal cluster SM-BC utilizzando `-force true`:
+. Rimuovere il ONTAP Mediator precedentemente configurato dal cluster di sincronizzazione attiva SnapMirror utilizzando `-force true`:
 +
 *Esempio*
 
@@ -580,7 +580,7 @@ Mediator Address Peer Cluster     Connection Status Quorum Status
  C2_test_cluster::*> security certificate delete -vserver C2_test_cluster -common-name ONTAPMediatorCA *
  2 entries were deleted.
 ----
-. Rimuovere il ONTAP Mediator precedentemente configurato dal cluster SM-BC utilizzando `-force true`:
+. Rimuovere il ONTAP Mediator precedentemente configurato dal cluster di sincronizzazione attiva SnapMirror utilizzando `-force true`:
 +
 *Esempio*
 

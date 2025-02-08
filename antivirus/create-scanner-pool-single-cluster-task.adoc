@@ -2,7 +2,7 @@
 permalink: antivirus/create-scanner-pool-single-cluster-task.html 
 sidebar: sidebar 
 keywords: create, scanner pool, single cluster 
-summary: Un pool di scanner definisce i server Vscan e gli utenti con privilegi che possono connettersi alle SVM. È possibile creare un pool di scanner per una singola SVM o per tutte le SVM in un cluster. 
+summary: Un pool di scanner definisce i server Vscan e gli utenti con privilegi che possono connettersi alle SVM. 
 ---
 = Creare un pool di scanner su un singolo cluster con ONTAP
 :allow-uri-read: 
@@ -11,41 +11,29 @@ summary: Un pool di scanner definisce i server Vscan e gli utenti con privilegi 
 
 
 [role="lead"]
-Un pool di scanner definisce i server Vscan e gli utenti con privilegi che possono connettersi alle SVM. È possibile creare un pool di scanner per una singola SVM o per tutte le SVM in un cluster.
+Un pool di scanner definisce i server Vscan e gli utenti con privilegi che possono connettersi alle SVM.
 
-.Di cosa hai bisogno
+.Prima di iniziare
 * I server SVM e Vscan devono trovarsi nello stesso dominio o in domini attendibili.
-* Per i pool di scanner definiti per una singola SVM, è necessario aver configurato il connettore antivirus ONTAP con la LIF di gestione SVM o la LIF dei dati SVM.
-* Per i pool di scanner definiti per tutte le SVM in un cluster, è necessario aver configurato il connettore antivirus ONTAP con la LIF di gestione del cluster.
-* L'elenco degli utenti con privilegi deve includere l'account utente di dominio utilizzato dal server Vscan per connettersi a SVM.
+* Configurare un connettore antivirus ONTAP con la LIF di gestione cluster.
+* L'elenco degli utenti con privilegi deve includere il dominio e il nome utente utilizzati dal server Vscan per connettersi alla SVM.
 * Una volta configurato il pool di scanner, controllare lo stato della connessione ai server.
 
 
 .Fasi
 . Creazione di un pool di scanner:
 +
-`vserver vscan scanner-pool create -vserver data_SVM|cluster_admin_SVM -scanner-pool scanner_pool -hostnames Vscan_server_hostnames -privileged-users privileged_users`
+`vserver vscan scanner-pool create -vserver cluster_admin_SVM -scanner-pool scanner_pool -hostnames Vscan_server_hostnames -privileged-users privileged_users`
 
 +
-** Specificare una SVM di dati per un pool definito per una singola SVM e specificare una SVM amministrativa del cluster per un pool definito per tutte le SVM in un cluster.
+** Specifica una SVM di amministrazione cluster.
 ** Specificare un indirizzo IP o un FQDN per ciascun nome host del server Vscan.
 ** Specificare il dominio e il nome utente per ciascun utente con privilegi. Per ulteriori informazioni sui comandi descritti in questa procedura, consultare la link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^].
 
 
-+
-Il seguente comando crea un pool di scanner denominato `SP` su `vs1` SVM:
-
-+
-[listing]
-----
-cluster1::> vserver vscan scanner-pool create -vserver vs1 -scanner-pool SP -hostnames 1.1.1.1,vmwin204-27.fsct.nb -privileged-users cifs\u1,cifs\u2
-----
 . Verificare che il pool di scanner sia stato creato:
 +
-`vserver vscan scanner-pool show -vserver _data_SVM|cluster_admin_SVM_ -scanner-pool _scanner_pool_`
-
-+
-Ulteriori informazioni su `vserver vscan scanner-pool show` nella link:https://docs.netapp.com/us-en/ontap-cli/vserver-vscan-scanner-pool-show.html["Riferimento al comando ONTAP"^].
+`vserver vscan scanner-pool show -vserver cluster_admin_SVM -scanner-pool _scanner_pool_`
 
 +
 Il seguente comando visualizza i dettagli di `SP` pool di scanner:
@@ -53,19 +41,19 @@ Il seguente comando visualizza i dettagli di `SP` pool di scanner:
 +
 [listing]
 ----
-cluster1::> vserver vscan scanner-pool show -vserver vs1 -scanner-pool SP
+cluster1::> vserver vscan scanner-pool show -vserver cluster_admin_SVM -scanner-pool SP
 
-                                    Vserver: vs1
+                                    Vserver: cluster_admin_SVM
                                Scanner Pool: SP
                              Applied Policy: idle
                              Current Status: off
          Cluster on Which Policy Is Applied: -
-                  Scanner Pool Config Owner: vserver
+                  Scanner Pool Config Owner: cluster
        List of IPs of Allowed Vscan Servers: 1.1.1.1, 10.72.204.27
 List of Host Names of Allowed Vscan Servers: 1.1.1.1, vmwin204-27.fsct.nb
                    List of Privileged Users: cifs\u1, cifs\u2
 ----
 +
-È inoltre possibile utilizzare il `vserver vscan scanner-pool show` comando per visualizzare tutti i pool di scanner di una SVM. Ulteriori informazioni su `vserver vscan scanner-pool show` nella link:https://docs.netapp.com/us-en/ontap-cli/vserver-vscan-scanner-pool-show.html["Riferimento al comando ONTAP"^].
+È inoltre possibile utilizzare il `vserver vscan scanner-pool show` comando per visualizzare tutti i pool di scanner sul cluster. Ulteriori informazioni su `vserver vscan scanner-pool show` nella link:https://docs.netapp.com/us-en/ontap-cli/vserver-vscan-scanner-pool-show.html["Riferimento al comando ONTAP"^].
 
 
