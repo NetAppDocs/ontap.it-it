@@ -1,0 +1,105 @@
+---
+permalink: san-config/fc-fcoe-recommended-zoning-configuration.html 
+sidebar: sidebar 
+keywords: individual zones 
+summary: 'Nella configurazione consigliata dello zoning FC e FCoE, esiste un host initiator per zona. La zona è costituita dalla porta dell"iniziatore host e da una o più LIF di destinazione sui nodi di storage che forniscono l"accesso alle LUN fino al numero desiderato di percorsi per destinazione. Questa configurazione consente a ciascun iniziatore dell"host di accedere a qualsiasi nodo, impedendo agli host che accedono allo stesso nodo di vedere le porte degli altri' 
+---
+= Configurazioni consigliate per lo zoning FC e FCoE
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È necessario creare una configurazione di zoning se l'host non dispone di una soluzione multipathing installata, se quattro o più host sono connessi alla SAN o se la mappatura selettiva LUN non è implementata sui nodi nel cluster.
+
+Nella configurazione consigliata dello zoning FC e FCoE, ogni zona include un initiator host, una porta initiator dell'host e una o più LIF di destinazione. Questa configurazione consente a ciascun iniziatore dell'host di accedere a qualsiasi nodo, impedendo agli host che accedono allo stesso nodo di vedere le porte degli altri
+
+Aggiungere tutte le LIF dalla Storage Virtual Machine (SVM) alla zona con l'iniziatore dell'host. Ciò consente di spostare volumi o LUN senza modificare le zone esistenti o creare nuove zone.
+
+
+
+== Configurazioni di zoning a doppio fabric
+
+Sono consigliate configurazioni di zoning dual-fabric perché forniscono protezione contro la perdita di dati a causa di un guasto a un singolo componente. In una configurazione dual-fabric, ogni iniziatore dell'host è connesso a ogni nodo del cluster mediante switch diversi. Se uno switch non è disponibile, l'accesso ai dati viene mantenuto attraverso lo switch rimanente. Per gestire percorsi multipli, è necessario un software multipathing sull'host.
+
+Nella figura seguente, l'host dispone di due iniziatori e sta eseguendo un software multipathing. Esistono due zone. link:../san-admin/selective-lun-map-concept.html["Mappatura selettiva delle LUN (SLM)"] è configurato in modo che tutti i nodi siano considerati come nodi di reporting.
+
+[NOTE]
+====
+La convenzione di naming utilizzata in questa figura è solo una raccomandazione di una possibile convenzione di naming che è possibile scegliere di utilizzare per la soluzione ONTAP.
+
+====
+* Zona 1: HBA 0, LIF_1, LIF_3, LIF_5 e LIF_7
+* Zona 2: HBA 1, LIF_2, LIF_4, LIF_6 e LIF_8
+
+
+Ogni iniziatore host viene associato a zone attraverso uno switch differente. L'accesso alla zona 1 avviene tramite l'interruttore 1. L'accesso alla zona 2 avviene tramite l'interruttore 2.
+
+Ogni host può accedere a una LIF su ogni nodo. In questo modo, l'host può continuare ad accedere ai propri LUN in caso di guasto di un nodo. Le SVM hanno accesso a tutte le LIF iSCSI e FC su ogni nodo del cluster in base alla configurazione dei nodi di reporting SLM. È possibile utilizzare lo zoning di SLM, portset o switch FC per ridurre il numero di percorsi da una SVM all'host e il numero di percorsi da una SVM a una LUN.
+
+Se la configurazione include più nodi, le LIF per i nodi aggiuntivi sono incluse in queste zone.
+
+image:scm-en-drw-dual-fabric-zoning.png["Zoning a doppio fabric"]
+
+[NOTE]
+====
+Il sistema operativo host e il software di multipathing devono supportare il numero di percorsi utilizzati per accedere alle LUN sui nodi.
+
+====
+
+
+== Zoning a fabric singolo
+
+In una configurazione a fabric singolo, ogni iniziatore dell'host viene connesso a ciascun nodo storage tramite un singolo switch. Le configurazioni di zoning a fabric singolo non sono consigliate in quanto non forniscono protezione contro la perdita di dati a causa del guasto di un singolo componente. Se si sceglie di configurare la zoning a fabric singolo, ogni host deve avere due initiator per il multipathing per garantire la resilienza nella soluzione. Per gestire percorsi multipli, è necessario un software multipathing sull'host.
+
+Ciascun iniziatore dell'host deve disporre di almeno un LIF per ciascun nodo a cui può accedere l'iniziatore. Lo zoning deve consentire almeno un percorso dall'iniziatore host alla coppia di nodi ha nel cluster per fornire un percorso per la connettività LUN. Ciò significa che ogni iniziatore sull'host potrebbe avere un solo LIF di destinazione per nodo nella configurazione di zona. Se è necessario eseguire il multipath sullo stesso nodo o su più nodi del cluster, ciascun nodo avrà più LIF per nodo nella configurazione della zona. In questo modo, l'host può comunque accedere ai propri LUN in caso di guasto di un nodo o di spostamento di un volume contenente il LUN in un nodo diverso. Ciò richiede inoltre che i nodi di reporting siano impostati in modo appropriato.
+
+Quando si utilizzano switch Cisco FC e FCoE, una singola zona fabric non deve contenere più LIF di destinazione per la stessa porta fisica. Se più LIF sulla stessa porta si trovano nella stessa zona, le porte LIF potrebbero non riuscire a ripristinarsi a causa di una perdita di connessione.
+
+Nella figura seguente, l'host dispone di due iniziatori e sta eseguendo un software multipathing. Esistono due zone:
+
+[NOTE]
+====
+La convenzione di naming utilizzata in questa figura è solo una raccomandazione di una possibile convenzione di naming che è possibile scegliere di utilizzare per la soluzione ONTAP.
+
+====
+* Zona 1: HBA 0, LIF_1 e LIF_3
+* Zona 2: HBA 1, LIF_2 e LIF_4
+
+
+Se la configurazione include più nodi, le LIF per i nodi aggiuntivi sono incluse in queste zone.s.
+
+image:scm-en-drw-single-fabric-zoning.png["Zoning a fabric singolo"]
+
+In questo esempio, è possibile avere tutte e quattro le LIF in ciascuna zona. In tal caso, le zone saranno le seguenti:
+
+* Zona 1: HBA 0, LIF_1, LIF_2, LIF_3 e LIF_4
+* Zona 2: HBA 1, LIF_1, LIF_2, LIF_3 e LIF_4
+
+
+[NOTE]
+====
+Il sistema operativo host e il software di multipathing devono supportare il numero di percorsi supportati utilizzati per accedere alle LUN sui nodi. Per determinare il numero di percorsi utilizzati per accedere alle LUN sui nodi, vedere la sezione limiti della configurazione SAN.
+
+====
+
+
+== Restrizioni di zoning per switch Cisco FC e FCoE
+
+Quando si utilizzano gli switch Cisco FC e FCoE, si applicano determinate restrizioni all'utilizzo di porte fisiche e interfacce logiche (LIF) in zone.
+
+.Porte fisiche
+* FC-NVMe e FC possono condividere la stessa porta fisica da 32 GB
+* FC-NVMe e FCoE non possono condividere la stessa porta fisica
+* FC e FCoE possono condividere la stessa porta fisica, ma le LIF dei protocolli devono essere in zone separate.
+
+
+.Interfacce logiche (LIF)
+* Una zona può contenere una LIF di ogni porta di destinazione del cluster.
++
+Verificare la configurazione SLM in modo da non superare il numero massimo di percorsi consentito all'host.
+
+* Ogni LIF di una data porta deve trovarsi in una zona separata dalle altre LIF di quella porta
+* Le LIF su diverse porte fisiche possono trovarsi nella stessa zona.
+

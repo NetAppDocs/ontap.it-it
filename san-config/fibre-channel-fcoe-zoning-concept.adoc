@@ -11,36 +11,18 @@ summary: 'Una zona FC, FC-NVMe o FCoE è un raggruppamento logico di una o più 
 
 
 [role="lead"]
-Una zona FC, FC-NVMe o FCoE è un raggruppamento logico di una o più porte all'interno di un fabric. Affinché i dispositivi possano vederti, connettersi, creare sessioni e comunicare tra loro, entrambe le porte devono avere un'appartenenza di zona comune. Si consiglia di utilizzare lo zoning Single Initiator.
+Una zona FC, FC-NVMe o FCoE è un raggruppamento logico di una o più porte all'interno di un fabric. Affinché i dispositivi siano in grado di vedersi, connettersi, creare sessioni l'uno con l'altro e comunicare, entrambe le porte devono essere membri della stessa zona.
+
+Lo zoning aumenta la sicurezza limitando l'accesso e la connettività agli end-point che condividono una zona comune. Le porte che non si trovano nella stessa zona non possono comunicare tra loro. Questo riduce o elimina _crosstalk_ tra gli HBA iniziatori. In caso di problemi di connettività, lo zoning consente di isolare i problemi a un set specifico di porte, riducendo così i tempi di risoluzione.
+
+Lo zoning riduce il numero di percorsi disponibili per una determinata porta e il numero di percorsi tra un host e il sistema storage. Ad esempio, alcune soluzioni di multipathing del sistema operativo host hanno un limite al numero di percorsi che possono gestire. Lo zoning può ridurre il numero di percorsi visibili all'host in modo che i percorsi verso l'host non superino il numero massimo consentito dal sistema operativo host.
 
 
 
-== Motivi per lo zoning
+== Zoning basato sul nome
 
-* Lo zoning riduce o elimina _crosstalk_ tra gli HBA iniziatori.
-+
-Ciò si verifica anche in ambienti di piccole dimensioni ed è uno degli argomenti migliori per l'implementazione dello zoning. I sottoinsiemi di fabric logici creati con lo zoning eliminano i problemi di crosstalk.
+La suddivisione in zone in base al nome globale (WWN) specifica il numero WWN dei membri da includere nella zona. Sebbene la suddivisione in zone WWNN (World Wide Node Name) sia possibile con alcuni fornitori di switch, quando si esegue la zoning in ONTAP, è necessario utilizzare la suddivisione in zone WWPN (World Wide Port Name).
 
-* Lo zoning riduce il numero di percorsi disponibili per una determinata porta FC, FC-NVMe o FCoE e riduce il numero di percorsi tra un host e una particolare LUN visibili.
-+
-Ad esempio, alcune soluzioni di multipathing del sistema operativo host hanno un limite al numero di percorsi che possono gestire. Lo zoning può ridurre il numero di percorsi che un driver multipathing del sistema operativo vede. Se un host non dispone di una soluzione multipathing installata, è necessario verificare che sia visibile un solo percorso a un LUN utilizzando lo zoning nel fabric o una combinazione di mappatura LUN selettiva (SLM) e portset in SVM.
+La suddivisione in zone WWPN è necessaria per definire correttamente una porta specifica e per utilizzare NPIV in modo efficace. Gli switch FC devono essere zonati utilizzando i WWPN delle interfacce logiche (LIF) di destinazione, non i WWPN delle porte fisiche sul nodo. Le WWPN delle porte fisiche iniziano con "`50`" e le WWPN delle LIF iniziano con "`20`".
 
-* Lo zoning aumenta la sicurezza limitando l'accesso e la connettività agli end-point che condividono una zona comune.
-+
-Le porte che non hanno zone in comune non possono comunicare tra loro.
-
-* Lo zoning migliora l'affidabilità DELLA SAN isolando i problemi che si verificano e aiuta a ridurre i tempi di risoluzione dei problemi limitando lo spazio dei problemi.
-
-
-
-
-== Consigli per lo zoning
-
-* È necessario implementare lo zoning in qualsiasi momento, se quattro o più host sono connessi a una SAN o se SLM non è implementato sui nodi di una SAN.
-* Sebbene sia possibile utilizzare lo zoning dei nomi dei nodi in tutto il mondo con alcuni fornitori di switch, è necessario utilizzare lo zoning dei nomi delle porte in tutto il mondo per definire correttamente una porta specifica e utilizzare NPIV in modo efficace.
-* È necessario limitare le dimensioni della zona mantenendo la gestibilità.
-+
-È possibile sovrapporre più zone per limitare le dimensioni. Idealmente, viene definita una zona per ciascun host o cluster di host.
-
-* Utilizzare lo zoning a singolo iniziatore per eliminare il crosstalk tra gli HBA iniziatori.
-
+Lo zoning WWPN offre flessibilità perché l'accesso non è determinato dalla posizione in cui il dispositivo è fisicamente collegato al fabric. È possibile spostare un cavo da una porta all'altra senza riconfigurare le zone.
