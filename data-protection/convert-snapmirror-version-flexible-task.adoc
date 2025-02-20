@@ -13,8 +13,10 @@ summary: È possibile convertire facilmente una relazione di tipo DP esistente i
 [role="lead"]
 Se si esegue l'aggiornamento a ONTAP 9.12.1 o versioni successive, è necessario convertire le relazioni di tipo DP in XDP prima di eseguire l'aggiornamento. ONTAP 9.12.1 e versioni successive non supportano le relazioni di tipo DP. È possibile convertire facilmente una relazione di tipo DP esistente in XDP per sfruttare SnapMirror flessibile in versione.
 
+Prima di eseguire l'aggiornamento a ONTAP 9.12.1, è necessario convertire le relazioni di tipo DP esistenti in XDP prima di poter eseguire l'aggiornamento a ONTAP 9.12.1 e versioni successive.
+
 .A proposito di questa attività
-* SnapMirror non converte automaticamente le relazioni di tipo DP esistenti in XDP. Per convertire la relazione, è necessario interrompere ed eliminare la relazione esistente, creare una nuova relazione XDP e risincronizzare la relazione. Per informazioni generali, vedere link:version-flexible-snapmirror-default-concept.html["XDP sostituisce DP come impostazione predefinita di SnapMirror"].
+* SnapMirror non converte automaticamente le relazioni di tipo DP esistenti in XDP. Per convertire la relazione, è necessario interrompere ed eliminare la relazione esistente, creare una nuova relazione XDP e risincronizzare la relazione.
 * Durante la pianificazione della conversione, è necessario tenere presente che la preparazione in background e la fase di data warehousing di una relazione SnapMirror XDP possono richiedere molto tempo. Non è raro che la relazione di SnapMirror riporti lo stato di "preparazione" per un periodo di tempo prolungato.
 
 
@@ -266,4 +268,118 @@ volume snapshot autodelete modify -vserver <SVM> -volume <volume> -enabled true
 .Al termine
 . Utilizzare `snapmirror show` Per verificare che sia stata creata la relazione SnapMirror.
 . Quando il volume di destinazione SnapMirror XDP inizia ad aggiornare gli snapshot come definito dal criterio SnapMirror, utilizzare l'output del `snapmirror list-destinations` comando dal cluster di origine per visualizzare la nuova relazione SnapMirror XDP.
+
+
+.Ulteriori informazioni sulle relazioni di tipo DP
+A partire da ONTAP 9,3, la modalità XDP è quella predefinita e tutte le chiamate della modalità DP sulla riga di comando o negli script nuovi o esistenti vengono convertite automaticamente in modalità XDP.
+
+Le relazioni esistenti non vengono influenzate. Se una relazione è già di tipo DP, continuerà ad essere di tipo DP. A partire da ONTAP 9,5, MirrorAndVault è il criterio predefinito quando non è specificata alcuna modalità di protezione dei dati o quando la modalità XDP è specificata come tipo di relazione. La tabella seguente mostra il comportamento previsto.
+
+[cols="3*"]
+|===
+
+
+| Se si specifica... | Il tipo è... | Il criterio predefinito (se non si specifica un criterio) è... 
+
+
+ a| 
+DP
+ a| 
+XDP
+ a| 
+MirrorAllSnapshot (DR SnapMirror)
+
+
+
+ a| 
+Niente
+ a| 
+XDP
+ a| 
+MirrorAndVault (replica unificata)
+
+
+
+ a| 
+XDP
+ a| 
+XDP
+ a| 
+MirrorAndVault (replica unificata)
+
+|===
+Come illustrato nella tabella, i criteri predefiniti assegnati a XDP in circostanze diverse garantiscono che la conversione mantenga l'equivalenza funzionale dei tipi precedenti. Naturalmente, è possibile utilizzare policy diverse in base alle esigenze, incluse le policy per la replica unificata:
+
+[cols="3*"]
+|===
+
+
+| Se si specifica... | E la policy è... | Il risultato è... 
+
+
+ a| 
+DP
+ a| 
+MirrorAllSnapshot
+ a| 
+Dr. SnapMirror
+
+
+
+ a| 
+XDPDefault
+ a| 
+SnapVault
+
+
+
+ a| 
+MirrorAndVault
+ a| 
+Replica unificata
+
+
+
+ a| 
+XDP
+ a| 
+MirrorAllSnapshot
+ a| 
+Dr. SnapMirror
+
+
+
+ a| 
+XDPDefault
+ a| 
+SnapVault
+
+
+
+ a| 
+MirrorAndVault
+ a| 
+Replica unificata
+
+|===
+Le uniche eccezioni alla conversione sono le seguenti:
+
+* Le relazioni di protezione dei dati SVM continuano a essere impostate per impostazione predefinita sulla modalità DP in ONTAP 9.3 e versioni precedenti.
++
+A partire da ONTAP 9.4, le relazioni di protezione dei dati SVM passano per impostazione predefinita alla modalità XDP.
+
+* Le relazioni di protezione dei dati per la condivisione del carico del volume root continuano a essere predefinite in modalità DP.
+* Le relazioni di protezione dei dati di SnapLock continuano a essere impostate per impostazione predefinita sulla modalità DP in ONTAP 9.4 e versioni precedenti.
++
+A partire da ONTAP 9.5, le relazioni di protezione dei dati di SnapLock passano per impostazione predefinita alla modalità XDP.
+
+* Le invocazioni esplicite di DP continuano a essere predefinite in modalità DP se si imposta la seguente opzione a livello di cluster:
++
+[listing]
+----
+options replication.create_data_protection_rels.enable on
+----
++
+Questa opzione viene ignorata se non si richiama esplicitamente DP.
+
 

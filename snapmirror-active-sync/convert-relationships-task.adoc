@@ -20,7 +20,7 @@ A partire da ONTAP 9.15.1, puoi convertire tra i tipi di SnapMirror Active Sync 
 
 == Conversione in una relazione Active/Active simmetrica
 
-È possibile convertire una relazione di sincronizzazione attiva SnapMirror con protezione asincrona in modo da utilizzare Active/Active simmetrico.
+È possibile convertire una relazione di sincronizzazione attiva SnapMirror con protezione asimmetrica per utilizzare Active/Active simmetrico.
 
 .Prima di iniziare
 * Entrambi i cluster devono eseguire ONTAP 9.15.1 o versione successiva.
@@ -106,9 +106,17 @@ NOTE: Verificare che igroup non contenga mappe per LUN non replicati.
 +
 `SiteB::> lun mapping delete -vserver <svm_name> -igroup <igroup> -path <>`
 
-. Sul sito primario, modificare la configurazione dell'iniziatore per gli host esistenti per impostare il percorso prossimale per gli iniziatori sul cluster locale.
+. Nel sito primario, impostare il livello di privilegi su `advanced`:
 +
-`SiteA::> igroup initiator add-proximal-vserver -vserver <svm_name> -initiator <host> -proximal-vserver <server>`
+`SiteA::> set -privilege advanced`
+
+. Modificare la configurazione dell'iniziatore per gli host esistenti per impostare il percorso prossimale per gli iniziatori sul cluster locale.
++
+`SiteA::*> igroup initiator add-proximal-vserver -vserver <svm_name> -initiator <host> -proximal-vserver <server>`
+
++
+
+NOTE: Al termine di questo passaggio, è possibile impostare nuovamente il livello dei privilegi su admin.
 
 . Aggiungere un nuovo igroup e iniziatore per i nuovi host e impostare la prossimità dell'host per l'affinità dell'host al sito locale. Replica ennable igroup per replicare la configurazione e invertire la posizione dell'host sul cluster remoto.
 +
@@ -131,18 +139,6 @@ SiteA::> igroup initiator add-proximal-vserver -vserver vsA -initiator host2 -pr
 `snapmirror show -destination-path <destination_path>`
 
 . Se gli host esistenti sono locali al cluster primario, aggiungere l'host al secondo cluster e stabilire la connettività con il rispettivo accesso a ciascun cluster.
-. Sul sito secondario, eliminare le mappe LUN sugli igroup associati agli host remoti.
-+
-
-NOTE: Verificare che igroup non contenga mappe per LUN non replicati.
-
-+
-`SiteB::> lun mapping delete -vserver <svm_name> -igroup <igroup> -path <>`
-
-. Sul sito primario, modificare la configurazione dell'iniziatore per gli host esistenti per impostare il percorso prossimale per gli iniziatori sul cluster locale.
-+
-`SiteA::> igroup initiator add-proximal-vserver -vserver <svm_name> -initiator <host> -proximal-vserver <server>`
-
 . Sul sito secondario, aggiungere un nuovo igroup e iniziatore per i nuovi host e impostare la prossimità dell'host per l'affinità dell'host al sito locale. Mappare i LUN all'igroup.
 +
 ``
