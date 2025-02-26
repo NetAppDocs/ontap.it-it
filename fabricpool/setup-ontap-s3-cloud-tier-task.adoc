@@ -1,10 +1,10 @@
 ---
 permalink: fabricpool/setup-ontap-s3-cloud-tier-task.html 
 sidebar: sidebar 
-keywords: setting up, ontap s3, cloud tier 
+keywords: tr-4814, fabricpool, setting up, ontap s3, cloud tier, local tier, tiering, storage tiering, storage tier, lif 
 summary: Se utilizzi ONTAP 9.8 o versioni successive, puoi impostare ONTAP S3 come livello cloud per FabricPool. 
 ---
-= Configurare ONTAP S3 come Tier cloud ONTAP FabricPool
+= Configurare ONTAP S3 come Tier cloud FabricPool
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -13,22 +13,27 @@ summary: Se utilizzi ONTAP 9.8 o versioni successive, puoi impostare ONTAP S3 co
 [role="lead"]
 Se utilizzi ONTAP 9.8 o versioni successive, puoi impostare ONTAP S3 come livello cloud per FabricPool.
 
-.Di cosa hai bisogno
-È necessario disporre del nome del server ONTAP S3 e dell'indirizzo IP dei relativi LIF associati sul cluster remoto.
+.Prima di iniziare
+* È necessario disporre del nome del server ONTAP S3 e dell'indirizzo IP dei relativi LIF associati sul cluster remoto.
++
 
-[NOTE]
-====
-Il nome del server viene utilizzato come nome di dominio completo (FQDN) dalle applicazioni client. Al di fuori di ONTAP, conferma che i record DNS puntano alle LIF dati SVM che vengono utilizzate.
+NOTE: Il nome del server viene utilizzato come nome di dominio completo (FQDN) dalle applicazioni client. Al di fuori di ONTAP, conferma che i record DNS puntano alle LIF dati SVM che vengono utilizzate.
 
-====
-Sul cluster locale devono essere presenti LIF intercluster.
+* Deve essere presente <<create-lif,LIF intracluster>>nel cluster locale.
++
+Se configurato per il tiering del cluster locale, un Tier locale (noto anche come aggregato di storage nella CLI ONTAP) viene collegato a un bucket locale. FabricPool utilizza le interfacce LIF del cluster per il traffico tra cluster.
 
-link:../s3-config/create-intercluster-lifs-remote-fabricpool-tiering-task.html["Creazione di LIF intercluster per tiering FabricPool remoto"]
++
+
+NOTE: In caso di saturazione delle risorse di LIF del cluster, potrebbe verificarsi il peggioramento delle performance. Per evitare questo problema, NetApp consiglia di utilizzare cluster a quattro nodi o superiori in caso di tiering in un bucket locale, insieme a una coppia ha per il Tier locale e una coppia ha per il bucket locale. Il tiering nei bucket locali su una singola coppia ha non è consigliato.
+
+* Per abilitare il tiering della capacità (cloud) FabricPool remota utilizzando ONTAP S3, è necessario link:../s3-config/create-intercluster-lifs-remote-fabricpool-tiering-task.html["Configurare intercluster LIF"] sul client FabricPool e link:../s3-config/create-data-lifs-task.html["Configurare le LIF dati"] sul server dell'archivio di oggetti.
+
 
 .A proposito di questa attività
 Il bilanciamento del carico è abilitato per i server ONTAP S3 in ONTAP 9.8 e versioni successive. Quando il nome host del server viene risolto in più indirizzi IP, ONTAP stabilisce connessioni client con tutti gli indirizzi IP restituiti (fino a un massimo di 16 indirizzi IP). Gli indirizzi IP vengono raccolti con un metodo round-robin quando vengono stabilite le connessioni.
 
-.Procedure
+.Procedura
 Puoi impostare ONTAP S3 come livello cloud per FabricPool con Gestione di sistema ONTAP o l'interfaccia utente di ONTAP.
 
 [role="tabbed-block"]
@@ -65,8 +70,10 @@ Assegnare il nome del server S3 e gli indirizzi IP all'amministratore del server
  a| 
 Immettere il seguente comando:
 
-`dns host create -vserver svm_name -address ip_address -hostname s3_server_name`
-
+[listing]
+----
+dns host create -vserver <svm_name> -address ip_address -hostname <s3_server_name>
+----
 |===
 . Specificare le informazioni di configurazione di ONTAP S3 utilizzando `storage aggregate object-store config create` con il `-provider-type` `ONTAP_S3` parametro.
 +
@@ -96,3 +103,8 @@ Il `storage aggregate object-store config modify` consente di modificare `ONTAP_
 
 --
 ====
+[[create-lif]]
+.Informazioni correlate
+* link:../smb-config/create-lif-task.html["Creazione di una LIF per SMB"]
+* link:../nfs-config/create-lif-task.html["Crea LIF per NFS"]
+
