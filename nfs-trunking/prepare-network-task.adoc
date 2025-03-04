@@ -2,7 +2,7 @@
 permalink: nfs-trunking/prepare-network-task.html 
 sidebar: sidebar 
 keywords: NFS, servers, network, prepare, NFS trunking, LIF, trunking group, NIC 
-summary: Per sfruttare il trunking NFSv4,1, le LIF di un gruppo trunking devono risiedere sullo stesso nodo e disporre di porte home sullo stesso nodo. . 
+summary: Per sfruttare il trunking NFSv4,1, le LIF di un gruppo trunking devono risiedere sullo stesso nodo e disporre di porte home sullo stesso nodo. 
 ---
 = Preparare la rete per il trunking NFS ONTAP
 :allow-uri-read: 
@@ -14,33 +14,35 @@ Per sfruttare il trunking NFSv4,1, le LIF di un gruppo trunking devono risiedere
 .A proposito di questa attività
 Una mappatura uno a uno di LIF e NIC consente di ottenere il massimo guadagno in termini di prestazioni, ma non è necessaria per abilitare il trunking. L'installazione di almeno due NIC può offrire vantaggi in termini di prestazioni, ma non è necessaria.
 
-È possibile disporre di più gruppi di failover, ma il gruppo di failover per il trunking deve includere solo i file LIFS nel gruppo trunking.
+Tutte le LIF nel gruppo trunking devono appartenere allo stesso gruppo di failover. Si noti che quando le LIF sono configurate in un gruppo di failover sullo stesso nodo, un failover del controller su quel nodo può causare la disconnessione delle LIF. Se le LIF non sono configurate in un gruppo di failover sullo stesso nodo e il failover su un altro nodo, il trunking non funzionerà più.
 
 È necessario regolare il gruppo di failover trunking ogni volta che si aggiungono o rimuovono connessioni (e NIC sottostanti) da un gruppo di failover.
 
 .Prima di iniziare
-* Se si desidera creare un gruppo di failover, è necessario conoscere i nomi delle porte associate alle schede NIC.
+* Per creare un gruppo di failover, è necessario conoscere i nomi delle porte associate alle schede NIC.
 * Le porte devono essere tutte sullo stesso nodo.
 
 
 .Fasi
 . Verificare i nomi e lo stato delle porte di rete che si intende utilizzare:
 +
-`network port status`
-
+[source, cli]
+----
+network port show
+----
 . Creare il gruppo di failover:
 +
-`network interface failover-groups create -vserver _svm_name_ -failover-group _failover_group_name_ -targets _ports_list_`
+`network interface failover-groups create -vserver <svm_name> -failover-group <failover_group_name> -targets <ports_list>`
 
 +
 
 NOTE: Non è un requisito per avere un gruppo di failover, ma è vivamente consigliato.
 
 +
-** `_svm_name_` È il nome della SVM che contiene il server NFS.
-** `_ports_list_` è l'elenco delle porte che verranno aggiunte al gruppo di failover.
+** `<svm_name>` È il nome della SVM che contiene il server NFS.
+** `<ports_list>` è l'elenco delle porte che verranno aggiunte al gruppo di failover.
 +
-Le porte vengono aggiunte nel formato _node_name:port_number_, ad esempio, node1:e0c.
+Le porte vengono aggiunte nel formato `<node_name>:<port_number>`, ad esempio: `node1:e0c`.
 
 +
 Questo comando crea il gruppo di failover FG3 per SVM VS1 e aggiunge tre porte:
@@ -55,7 +57,7 @@ Scopri di più link:../networking/configure_failover_groups_and_policies_for_lif
 
 . Se necessario, creare LIF per i membri del gruppo trunking:
 +
-`network interface create -vserver _svm_name_ -lif _lif_name_ -home-node _node_name_ -home-port _port_name_ -address _IP_address_ -netmask _IP_address_ [-service-policy _policy_] [-auto-revert {true|false}]`
+`network interface create -vserver <svm_name> -lif <lif_name> -home-node <node_name> -home-port <port_name> -address <IP_address> -netmask <IP_address> [-service-policy <policy>] [-auto-revert <true|false>]`
 
 +
 ** `-home-node` - Il nodo da cui la LIF ritorna quando il comando di revert dell'interfaccia di rete viene eseguito sulla LIF.
@@ -74,7 +76,7 @@ Ripetere questo passaggio per ogni LIF nel gruppo trunking.
 Viene creato il seguente comando `lif-A` Per SVM `vs1`, sulla porta `e0c` del nodo `cluster1_01`:
 
 +
-`network interface create -vserver vs1 -lif lif-A -service-policy *???* -home-node cluster1_01 -home-port e0c -address 192.0.2.0`
+`network interface create -vserver vs1 -lif lif-A -service-policy default-intercluster -home-node cluster1_01 -home-port e0c -address 192.0.2.0`
 
 +
 Scopri di più link:../networking/create_lifs.html["Creazione LIF."]
@@ -83,8 +85,10 @@ Scopri di più link:../networking/create_lifs.html["Creazione LIF."]
 
 . Verificare che la LIF sia stata creata:
 +
-`network interface show`
-
+[source, cli]
+----
+network interface show
+----
 . Verificare che l'indirizzo IP configurato sia raggiungibile:
 +
 [cols="25,75"]
