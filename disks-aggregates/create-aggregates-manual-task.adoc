@@ -2,19 +2,22 @@
 permalink: disks-aggregates/create-aggregates-manual-task.html 
 sidebar: sidebar 
 keywords: ontap 9, create, aggregates, manually, manual, add, local tier 
-summary: 'Se non si desidera aggiungere un Tier locale (creare un aggregato) utilizzando le Best practice di ONTAP, è possibile eseguire il processo manualmente.' 
+summary: Se non si desidera aggiungere un livello locale utilizzando i consigli delle Best practice di ONTAP, è possibile eseguire il processo manualmente. 
 ---
-= Aggiungere manualmente i Tier locali (creare aggregati)
+= Aggiungi manualmente i Tier locali in ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Se non si desidera aggiungere un Tier locale (creare un aggregato) utilizzando le Best practice di ONTAP, è possibile eseguire il processo manualmente.
+Se non si desidera aggiungere un livello locale utilizzando i consigli delle Best practice di ONTAP, è possibile eseguire il processo manualmente.
+
+
+NOTE: Prima di ONTAP 9,7, System Manager utilizza il termine _aggregate_ per descrivere un _livello locale_. A prescindere dalla versione di ONTAP, la CLI di ONTAP utilizza il termine _aggregate_. Per ulteriori informazioni sui livelli locali, vedere link:../disks-aggregates/index.html["Dischi e Tier locali"].
 
 .Prima di iniziare
-I dischi devono essere di proprietà di un nodo prima di poter essere utilizzati in un Tier locale (aggregato).  Se il cluster non è configurato per l'utilizzo dell'assegnazione automatica della proprietà del disco, è necessario link:manual-assign-disks-ownership-prep-task.html["assegnare la proprietà manualmente"].
+I dischi devono essere di proprietà di un nodo prima di poter essere utilizzati in un Tier locale. Se il cluster non è configurato per l'utilizzo dell'assegnazione automatica della proprietà del disco, è necessario link:manual-assign-disks-ownership-prep-task.html["assegnare la proprietà manualmente"].
 
 Per ulteriori informazioni sui comandi descritti in questa procedura, consultare la link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^].
 
@@ -63,41 +66,41 @@ La pagina *Add Local Tier* (Aggiungi livello locale) visualizza i campi utilizza
 --
 .CLI
 --
-Prima di creare gli aggregati manualmente, è necessario rivedere le opzioni di configurazione del disco e simulare la creazione.
+Prima di creare manualmente i Tier locali, è necessario esaminare le opzioni di configurazione dei dischi e simulare la creazione.
 
 A questo punto, è possibile eseguire il `storage aggregate create` controllare e verificare i risultati.
 
 .Prima di iniziare
-È necessario determinare il numero di dischi e il numero di dischi hot spare necessari nell'aggregato.
+È necessario aver determinato il numero di dischi e il numero di dischi hot-spare necessari nel Tier locale.
 
 .A proposito di questa attività
 Se la partizione root-data-data è attivata e si dispone di 24 unità a stato solido (SSD) o meno nella configurazione, si consiglia di assegnare le partizioni dei dati a nodi diversi.
 
-La procedura per la creazione di aggregati su sistemi con partizione dei dati root e partizione dei dati root abilitata è la stessa della procedura per la creazione di aggregati su sistemi che utilizzano dischi non partizionati. Se la partizione dei dati root è abilitata sul sistema, utilizzare il numero di partizioni del disco per `-diskcount` opzione. Per la partizione root-data-data, il `-diskcount` l'opzione specifica il numero di dischi da utilizzare.
+La procedura per la creazione di livelli locali nei sistemi con partizione root-dati e partizione root-dati-dati abilitata è la stessa della procedura per la creazione di livelli locali nei sistemi che utilizzano dischi non partizionati. Se la partizione root-dati è abilitata sul sistema, si dovrebbe usare il numero di partizioni del disco per l' `-diskcount`opzione. Per la partizione root-dati-dati, l' `-diskcount`opzione specifica il numero di dischi da utilizzare.
 
 
-NOTE: Quando si creano più aggregati per l'utilizzo con FlexGroups, gli aggregati devono avere dimensioni il più possibile vicine.
+NOTE: Quando si creano più Tier locali da utilizzare con FlexGroup, le dimensioni dei Tier locali devono essere il più possibile vicine.
 
-Per ulteriori informazioni sulle `storage aggregate create` opzioni e i requisiti di creazione di aggregati, consultare la link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-create.html["Riferimento al comando ONTAP"^].
+Ulteriori informazioni sulle `storage aggregate create` opzioni e i requisiti di creazione dei livelli locali nella link:https://docs.netapp.com/us-en/ontap-cli/storage-aggregate-create.html["Riferimento al comando ONTAP"^].
 
 .Fasi
-. Visualizzare l'elenco delle partizioni dei dischi di riserva per verificare di disporre di una quantità sufficiente per creare l'aggregato:
+. Visualizzare l'elenco delle partizioni del disco di riserva per verificare di disporre di risorse sufficienti per creare il proprio livello locale:
 +
 `storage aggregate show-spare-disks -original-owner _node_name_`
 
 +
 Le partizioni dei dati sono visualizzate in `Local Data Usable`. Non è possibile utilizzare una partizione root come spare.
 
-. Simulare la creazione dell'aggregato:
+. Simulare la creazione del livello locale:
 +
 `storage aggregate create -aggregate _aggregate_name_ -node _node_name_ -raidtype raid_dp -diskcount _number_of_disks_or_partitions_ -simulate true`
 
 . Se dal comando simulato vengono visualizzate delle avvertenze, regolare il comando e ripetere la simulazione.
-. Creare l'aggregato:
+. Creare il livello locale:
 +
 `storage aggregate create -aggregate _aggr_name_ -node _node_name_ -raidtype raid_dp -diskcount _number_of_disks_or_partitions_`
 
-. Visualizzare l'aggregato per verificare che sia stato creato:
+. Visualizzare il livello locale per verificare che sia stato creato:
 +
 `storage aggregate show-status _aggregate_name_`
 

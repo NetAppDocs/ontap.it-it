@@ -2,26 +2,29 @@
 permalink: disks-aggregates/determine-space-usage-aggregate-concept.html 
 sidebar: sidebar 
 keywords: space, usage, aggregate, local tier, volume 
-summary: 'Puoi visualizzare la quantità di spazio utilizzata da tutti i volumi in uno o più Tier locali (aggregati) in modo da intraprendere azioni per liberare più spazio.' 
+summary: Puoi visualizzare la quantità di spazio utilizzata da tutti i volumi in uno o più Tier locali in modo da poter intraprendere azioni per liberare più spazio. 
 ---
-= Determinare l'utilizzo dello spazio in un Tier locale (aggregato)
+= Determinare l'utilizzo dello spazio in un livello locale ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Puoi visualizzare la quantità di spazio utilizzata da tutti i volumi in uno o più Tier locali (aggregati) in modo da intraprendere azioni per liberare più spazio.
+Puoi visualizzare la quantità di spazio utilizzata da tutti i volumi in uno o più Tier locali in modo da poter intraprendere azioni per liberare più spazio.
 
-WAFL riserva una percentuale dello spazio su disco totale per ottenere performance e metadati a livello di aggregato.  Lo spazio utilizzato per mantenere i volumi nell'aggregato esce dalla WAFL Reserve e non può essere modificato.
 
-In aggregati di dimensioni inferiori a 30 TB, WAFL si riserva il 10% dello spazio su disco totale per metadati e performance a livello di aggregato.
+NOTE: Prima di ONTAP 9,7, System Manager utilizza il termine _aggregate_ per descrivere un _livello locale_. A prescindere dalla versione di ONTAP, la CLI di ONTAP utilizza il termine _aggregate_. Per ulteriori informazioni sui livelli locali, vedere link:../disks-aggregates/index.html["Dischi e Tier locali"].
 
-A partire dall'ONTAP 9.12.1, negli aggregati da 30 TB o più, la quantità di spazio su disco riservato per i metadati e le performance a livello di aggregato è ridotta, con un conseguente 5% di spazio utilizzabile in più negli aggregati. La disponibilità di questi risparmi di spazio varia in base alla piattaforma e alla versione di ONTAP.
+WAFL riserva una percentuale dello spazio su disco totale per performance e metadati a livello di Tier locale. Lo spazio utilizzato per mantenere i volumi nel livello locale esce dalla riserva WAFL e non può essere modificato.
+
+Nei Tier locali di dimensioni inferiori a 30 TB, WAFL riserva il 10% dello spazio su disco totale per prestazioni e metadati a livello di Tier locale.
+
+A partire dall'ONTAP 9.12.1, nei Tier locali di almeno 30 TB, la quantità di spazio su disco riservato per i metadati e le prestazioni a livello di Tier locale è ridotta, con un conseguente 5% di spazio utilizzabile in più nei Tier locali. La disponibilità di questi risparmi di spazio varia in base alla piattaforma e alla versione di ONTAP.
 
 [cols="30,30,40"]
 |===
-| Spazio su disco riservato da ONTAP negli aggregati con capacità pari o superiore a 30 TB | Si applica alle piattaforme | Nelle versioni ONTAP 
+| Spazio su disco riservato da ONTAP nei Tier locali 30 TB o superiori | Si applica alle piattaforme | Nelle versioni ONTAP 
 
 
 | 5% | Tutte le piattaforme AFF e FAS | ONTAP 9.14.1 e versioni successive 
@@ -32,42 +35,42 @@ A partire dall'ONTAP 9.12.1, negli aggregati da 30 TB o più, la quantità di sp
 
 | 10% | Tutte le piattaforme | ONTAP 9.11.1 e versioni successive 
 |===
-È possibile visualizzare l'utilizzo dello spazio da parte di tutti i volumi in uno o più aggregati con `aggregate show-space` comando. In questo modo, è possibile individuare i volumi che consumano più spazio nei relativi aggregati di contenimento, in modo da poter intraprendere azioni per liberare più spazio.
+Con il comando puoi visualizzare l'utilizzo dello spazio per tutti i volumi in uno o più Tier locali `aggregate show-space`. In questo modo è possibile individuare i volumi che consumano maggiormente spazio nei Tier locali contenenti, in modo da intraprendere azioni per liberare più spazio.
 
-Lo spazio utilizzato in un aggregato è direttamente influenzato dallo spazio utilizzato nei volumi FlexVol in esso contenuti. Le misure adottate per aumentare lo spazio in un volume influiscono anche sullo spazio nell'aggregato.
+Lo spazio utilizzato in un livello locale è direttamente influenzato dallo spazio utilizzato nei volumi FlexVol in esso contenuti. Le misure adottate per aumentare lo spazio in un volume influiscono anche sullo spazio nel livello locale.
 
 
-NOTE: A partire da ONTAP 9.15.1, sono disponibili due nuovi contatori di metadati. Oltre alle modifiche apportate a diversi contatori esistenti, è possibile ottenere una visualizzazione più chiara della quantità di dati utente allocati. Vedere link:../volumes/determine-space-usage-volume-aggregate-concept.html["Determinare l'utilizzo dello spazio in un volume o aggregato"] per ulteriori informazioni.
+NOTE: A partire da ONTAP 9.15.1, sono disponibili due nuovi contatori di metadati. Oltre alle modifiche apportate a diversi contatori esistenti, è possibile ottenere una visualizzazione più chiara della quantità di dati utente allocati. Per ulteriori informazioni, vedere link:../volumes/determine-space-usage-volume-aggregate-concept.html["Determina l'utilizzo dello spazio in un volume o Tier locale"] .
 
 Le seguenti righe sono incluse in `aggregate show-space` output del comando:
 
 * *Volume Footprint*
 +
-Il totale di tutte le impronte di volume all'interno dell'aggregato. Include tutto lo spazio utilizzato o riservato da tutti i dati e i metadati di tutti i volumi nell'aggregato contenente.
+Il totale di tutti gli ingombri del volume all'interno del livello locale. Include tutto lo spazio utilizzato o riservato da tutti i dati e i metadati di tutti i volumi nel Tier locale contenente.
 
 * *Metadati aggregati*
 +
-I metadati totali del file system richiesti dall'aggregato, come ad esempio bitmap di allocazione e file inode.
+I metadati totali del file system richiesti dal livello locale, come bitmap di allocazione e file inode.
 
 * *Snapshot Reserve*
 +
-La quantità di spazio riservata agli snapshot di aggregati, in base alle dimensioni del volume. Viene considerato spazio utilizzato e non è disponibile per il volume o l'aggregazione di dati o metadati.
+La quantità di spazio riservata agli snapshot del Tier locale, in base alle dimensioni del volume. Viene considerato spazio utilizzato e non è disponibile per dati o metadati relativi a volumi o Tier locali.
 
 * *Snapshot Reserve inutilizzabile*
 +
-La quantità di spazio allocata in origine per la riserva di snapshot dell'aggregato non disponibile per gli snapshot dell'aggregato in quanto utilizzata dai volumi associati all'aggregato. Può essere eseguito solo per gli aggregati con una riserva di snapshot di aggregati diversi dallo zero.
+La quantità di spazio allocato originariamente per la riserva di snapshot del Tier locale che non è disponibile per gli snapshot del Tier locale perché viene utilizzata dai volumi associati al Tier locale. Può verificarsi solo per i Tier locali con una riserva di snapshot di Tier locale diversa da zero.
 
 * *Totale utilizzato*
 +
-La somma di tutto lo spazio utilizzato o riservato nell'aggregato da volumi, metadati o Snapshot.
+La somma di tutto lo spazio utilizzato o riservato nel Tier locale da volumi, metadati o snapshot.
 
 * *Totale fisico utilizzato*
 +
-La quantità di spazio utilizzata per i dati ora (anziché essere riservata per uso futuro). Include lo spazio utilizzato dalle snapshot di aggregati.
+La quantità di spazio utilizzata per i dati ora (anziché essere riservata per uso futuro). Include lo spazio utilizzato dalle snapshot del Tier locale.
 
 
 
-Nell'esempio seguente viene mostrato l' `aggregate show-space`output del comando per un aggregato la cui riserva di snapshot è 5%. Se la riserva istantanea era 0, la riga non viene visualizzata.
+Nell'esempio seguente viene mostrato l' `aggregate show-space`output del comando per un livello locale la cui riserva di snapshot è 5%. Se la riserva istantanea era 0, la riga non viene visualizzata.
 
 ....
 cluster1::> storage aggregate show-space

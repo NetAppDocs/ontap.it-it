@@ -2,9 +2,9 @@
 permalink: disks-aggregates/add-disks-local-tier-aggr-task.html 
 sidebar: sidebar 
 keywords: add, expand, aggregate, add drives, add disks, add capacity, local tier, add disks to local tier, add disks to aggregate, increase storage, increase aggregate size, local tier, capacity, disk, expand storage, add drives, add disks, add capacity 
-summary: 'È possibile aggiungere dischi a un Tier locale (aggregato) in modo che possa fornire più storage ai volumi associati.' 
+summary: È possibile aggiungere dischi a un Tier locale in modo da fornire più storage ai volumi associati. 
 ---
-= Aggiunta di capacità a un Tier locale (aggiunta di dischi a un aggregato)
+= Aggiungi capacità a un livello locale in ONTAP
 :hardbreaks:
 :toclevels: 1
 :allow-uri-read: 
@@ -16,7 +16,10 @@ summary: 'È possibile aggiungere dischi a un Tier locale (aggregato) in modo ch
 
 
 [role="lead"]
-È possibile aggiungere dischi a un Tier locale (aggregato) in modo che possa fornire più storage ai volumi associati.
+È possibile aggiungere dischi a un Tier locale in modo da fornire più storage ai volumi associati.
+
+
+NOTE: Prima di ONTAP 9,7, System Manager utilizza il termine _aggregate_ per descrivere un _livello locale_. A prescindere dalla versione di ONTAP, la CLI di ONTAP utilizza il termine _aggregate_. Per ulteriori informazioni sui livelli locali, vedere link:../disks-aggregates/index.html["Dischi e Tier locali"].
 
 [role="tabbed-block"]
 ====
@@ -70,30 +73,30 @@ A partire da ONTAP 9.11.1
 .Fasi
 . (Solo per ONTAP 9,7) selezionare *(ritorna alla versione classica)*.
 . Selezionare *hardware e diagnostica > aggregati*.
-. Selezionare l'aggregato a cui si desidera aggiungere dischi di capacità, quindi selezionare *azioni > Aggiungi capacità*.
+. Selezionare il livello locale a cui si desidera aggiungere dischi di capacità, quindi selezionare *azioni > Aggiungi capacità*.
 +
 
-NOTE: È necessario aggiungere dischi delle stesse dimensioni degli altri dischi dell'aggregato.
+NOTE: È necessario aggiungere dischi delle stesse dimensioni degli altri dischi nel livello locale.
 
 . (Solo per ONTAP 9,7) selezionare *passa alla nuova esperienza*.
-. Selezionare *Storage > Tier* per verificare le dimensioni del nuovo aggregato.
+. Selezionare *archiviazione > livelli* per verificare le dimensioni del nuovo livello locale.
 
 
 --
 .CLI
 --
 .Prima di iniziare
-È necessario conoscere le dimensioni del gruppo RAID per l'aggregato a cui si aggiunge lo storage.
+È necessario conoscere le dimensioni del gruppo RAID per il livello locale a cui si aggiunge lo storage.
 
 .A proposito di questa attività
-Questa procedura per l'aggiunta di dischi partizionati a un aggregato è simile alla procedura per l'aggiunta di dischi non partizionati.
+Questa procedura per l'aggiunta di dischi partizionati a un livello locale è simile alla procedura per l'aggiunta di dischi non partizionati.
 
-Quando si espande un aggregato, è necessario sapere se si stanno aggiungendo partizioni o dischi non partizionati all'aggregato. Quando si aggiungono unità non partizionate a un aggregato esistente, la dimensione dei gruppi RAID esistenti viene ereditata dal nuovo gruppo RAID, che può influire sul numero di dischi di parità richiesti. Se un disco non partizionato viene aggiunto a un gruppo RAID composto da dischi partizionati, il nuovo disco viene partizionato, lasciando una partizione spare inutilizzata.
+Quando si espande un livello locale, è necessario sapere se si stanno aggiungendo dischi di partizione o non partizionati al livello locale. Quando si aggiungono unità non partizionate a un livello locale esistente, le dimensioni dei gruppi RAID esistenti vengono ereditate dal nuovo gruppo RAID, che può influire sul numero di dischi di parità richiesti. Se un disco non partizionato viene aggiunto a un gruppo RAID composto da dischi partizionati, il nuovo disco viene partizionato, lasciando una partizione spare inutilizzata.
 
 Quando si effettua il provisioning delle partizioni, è necessario assicurarsi di non lasciare il nodo senza un disco con entrambe le partizioni come spare. In caso contrario, e il nodo subisce un'interruzione del controller, è possibile che non siano disponibili informazioni preziose sul problema (il file principale) da fornire al supporto tecnico.
 
 .Fasi
-. Mostrare lo storage di riserva disponibile sul sistema proprietario dell'aggregato:
+. Mostrare lo storage di riserva disponibile nel sistema proprietario del Tier locale:
 +
 `storage aggregate show-spare-disks -original-owner _node_name_`
 
@@ -121,7 +124,7 @@ Original Owner: cl1-s2
  1.0.10                      BSAS    7200 block                0B  73.89GB  828.0GB zeroed
 2 entries were displayed.
 ----
-. Mostra i gruppi RAID correnti per l'aggregato:
+. Mostrare i gruppi RAID correnti per il livello locale:
 +
 [source, cli]
 ----
@@ -184,13 +187,13 @@ Aggregate capacity available for volume use would be increased by 1.83TB.
 storage aggregate add-disks -aggregate <aggr_name> -raidgroup new -diskcount <number_of_disks_or_partitions>
 ----
 +
-Quando si crea un aggregato Flash Pool, se si aggiungono dischi con un checksum diverso dall'aggregato o se si aggiungono dischi a un aggregato di checksum misto, è necessario utilizzare `-checksumstyle` parametro.
+Quando si crea un Tier locale di Flash Pool, se si aggiungono dischi con un checksum diverso da quello locale o si aggiungono dischi a un Tier locale di checksum misti, occorre utilizzare il `-checksumstyle` parametro.
 
 +
-Se si aggiungono dischi a un aggregato di Flash Pool, è necessario utilizzare `-disktype` parametro per specificare il tipo di disco.
+Se si aggiungono dischi a un Tier locale di Flash Pool, occorre utilizzare il `-disktype` parametro per specificare il tipo di disco.
 
 +
-È possibile utilizzare `-disksize` parametro per specificare la dimensione dei dischi da aggiungere. Per l'aggiunta all'aggregato vengono selezionati solo i dischi con dimensioni approssimativamente specificate.
+È possibile utilizzare il `-disksize` parametro per specificare la dimensione dei dischi da aggiungere. Solo i dischi con dimensioni approssimativamente specificate vengono selezionati per l'aggiunta al livello locale.
 
 +
 [listing]

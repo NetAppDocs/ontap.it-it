@@ -2,20 +2,23 @@
 permalink: disks-aggregates/relocate-aggregate-ownership-task.html 
 sidebar: sidebar 
 keywords: relocate, aggregate, ownership, local tier 
-summary: 'È possibile modificare la proprietà di un Tier locale (aggregato) solo tra i nodi all"interno di una coppia ha.' 
+summary: È possibile modificare la proprietà di un Tier locale solo tra i nodi di una coppia ha. 
 ---
-= Trasferire la proprietà di un Tier locale (aggregato) all'interno di una coppia ha
+= Spostamento della proprietà di un Tier locale ONTAP all'interno di una coppia ha
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-È possibile modificare la proprietà dei Tier locali (aggregati) tra i nodi di una coppia ha senza interrompere il servizio dai Tier locali.
+Puoi modificare la proprietà dei Tier locali tra i nodi di una coppia ha senza interrompere il servizio dai Tier locali.
+
+
+NOTE: Prima di ONTAP 9,7, System Manager utilizza il termine _aggregate_ per descrivere un _livello locale_. A prescindere dalla versione di ONTAP, la CLI di ONTAP utilizza il termine _aggregate_. Per ulteriori informazioni sui livelli locali, vedere link:../disks-aggregates/index.html["Dischi e Tier locali"].
 
 Entrambi i nodi di una coppia ha sono fisicamente collegati tra loro a dischi o LUN di array. Ogni LUN di dischi o array è di proprietà di uno dei nodi.
 
-La proprietà di tutti i dischi o le LUN degli array all'interno di un Tier locale (aggregato) cambia temporaneamente da un nodo all'altro quando si verifica un Takeover. Tuttavia, le operazioni di trasferimento dei Tier locali possono anche modificare in modo permanente la proprietà (ad esempio, se eseguite per il bilanciamento del carico). La proprietà cambia senza alcun processo di copia dei dati o spostamento fisico dei dischi o delle LUN degli array.
+La proprietà di tutti i dischi o delle array LUN di un Tier locale cambia temporaneamente da un nodo all'altro in caso di takeover. Tuttavia, le operazioni di trasferimento dei Tier locali possono anche modificare in modo permanente la proprietà (ad esempio, se eseguite per il bilanciamento del carico). La proprietà cambia senza alcun processo di copia dei dati o spostamento fisico dei dischi o delle LUN degli array.
 
 .A proposito di questa attività
 * Poiché i limiti del numero di volumi vengono validati a livello di programmazione durante le operazioni di trasferimento dei livelli locali, non è necessario controllarli manualmente.
@@ -40,17 +43,17 @@ Queste operazioni possono includere quanto segue:
 
 * Se si dispone di una configurazione MetroCluster, non è necessario avviare il trasferimento locale del Tier durante le operazioni di disaster recovery (_switchover_, _healing_ o _switchback_).
 * Se si dispone di una configurazione MetroCluster e si avvia il trasferimento locale del Tier su un Tier locale switchover, l'operazione potrebbe non riuscire perché supera il numero di limiti di volume del partner DR.
-* Non è consigliabile avviare il trasferimento locale del Tier su aggregati corrotti o in fase di manutenzione.
+* Non avviare il trasferimento locale dei livelli su livelli locali danneggiati o sottoposti a manutenzione.
 * Prima di iniziare il trasferimento locale del Tier, salvare i core dump sui nodi di origine e di destinazione.
 
 
 .Fasi
-. Visualizzare gli aggregati sul nodo per confermare quali aggregati spostare e assicurarsi che siano online e in buone condizioni:
+. Visualizzare i Tier locali sul nodo per confermare i Tier locali da spostare e assicurarsi che siano online e in buone condizioni:
 +
 `storage aggregate show -node _source-node_`
 
 +
-Il comando seguente mostra sei aggregati sui quattro nodi del cluster. Tutti gli aggregati sono online. Node1 e node3 formano una coppia ha e Node2 e node4 formano una coppia ha.
+Questo comando mostra sei Tier locali sui quattro nodi del cluster. Tutti i livelli locali sono online. Node1 e node3 formano una coppia ha e Node2 e node4 formano una coppia ha.
 
 +
 [listing]
@@ -72,12 +75,12 @@ aggr_5     239.0GB   239.0GB    0% online       4 node4  raid_dp,
                                                          normal
 6 entries were displayed.
 ----
-. Emettere il comando per avviare il trasferimento dell'aggregato:
+. Immettere il comando per avviare il trasferimento dei livelli locali:
 +
 `storage aggregate relocation start -aggregate-list _aggregate-1_, _aggregate-2_... -node _source-node_ -destination _destination-node_`
 
 +
-Il seguente comando sposta gli aggregati aggr_1 e aggr_2 da Node1 a node3. Node3 è il partner ha di Node1. Gli aggregati possono essere spostati solo all'interno della coppia ha.
+Il seguente comando sposta il livello locale aggr_1 e aggr_2 da Node1 a node3. Node3 è il partner ha di Node1. È possibile spostare i Tier locali solo all'interno della coppia ha.
 
 +
 [listing]
@@ -86,12 +89,12 @@ cluster::> storage aggregate relocation start -aggregate-list aggr_1, aggr_2 -no
 Run the storage aggregate relocation show command to check relocation status.
 node1::storage aggregate>
 ----
-. Monitorare l'avanzamento del trasferimento degli aggregati con `storage aggregate relocation show` comando:
+. Monitorare lo stato di avanzamento della rilocazione dei Tier locali con il `storage aggregate relocation show` comando:
 +
 `storage aggregate relocation show -node _source-node_`
 
 +
-Il seguente comando mostra l'avanzamento degli aggregati che vengono spostati al nodo 3:
+Il seguente comando mostra l'avanzamento dei livelli locali che vengono spostati in node3:
 
 +
 [listing]
@@ -106,6 +109,6 @@ node1
 node1::storage aggregate>
 ----
 +
-Al termine del trasferimento, l'output di questo comando mostra ogni aggregato con uno stato di trasferimento di "`Done`".
+Al termine del trasferimento, l'output di questo comando mostra ogni livello locale con uno stato di rilocazione di "`Done'".
 
 
