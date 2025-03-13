@@ -1,0 +1,74 @@
+---
+permalink: flexcache-hot-spot/flexcache-hotspot-remediation-client-config.html 
+sidebar: sidebar 
+keywords: tr, hotspot, hot-spot, flexcache, hdfa, client configuration 
+summary: 'Per risolvere il problema dell"hotspotting, il client deve essere configurato correttamente per fare la sua parte nel prevenire il collo di bottiglia della CPU.' 
+---
+= Configurare i client per distribuire le connessioni NAS ONTAP
+:allow-uri-read: 
+
+
+[role="lead"]
+Per rimediare agli hotspotting, configurare correttamente il client per fare la sua parte nel prevenire i colli di bottiglia della CPU.
+
+
+
+== Configurazione del client Linux
+
+Sia che tu abbia scelto una distribuzione HDFA intra-SVM o inter-SVM, dovresti utilizzare `autofs` in Linux per assicurarti che i client stiano bilanciando il carico nei diversi HDFS.  `autofs`La configurazione sarà diversa per inter e intra-SVM.
+
+.Prima di iniziare
+Sarà necessario `autofs` installare le dipendenze appropriate. Per informazioni su questa procedura, fare riferimento alla documentazione di Linux.
+
+.A proposito di questa attività
+I passaggi descritti utilizzeranno un file di esempio `/etc/auto_master` con la seguente voce:
+
+[listing]
+----
+/flexcache auto_hotspot
+----
+Questa configurazione consente `autofs` di cercare un file chiamato `auto_hotspot` nella `/etc` directory ogni volta che un processo tenta di accedere alla `/flexcache` directory. Il contenuto del `auto_hotspot` file determinerà il server NFS e il percorso di giunzione da montare all'interno della `/flexcache` directory. Gli esempi descritti sono configurazioni diverse per il `auto_hotspot` file.
+
+
+
+=== Configurazione automatica HDFA intra-SVM
+
+Nell'esempio seguente, verrà creata una `autofs` mappa per il diagramma in <<Figure-1,figura 1>>. Poiché ogni cache ha lo stesso percorso di giunzione e il nome host `cache` ha quattro record DNS A, è necessaria una sola riga:
+
+[listing]
+----
+hotspot cache:/hotspot
+----
+Questa semplice riga farà sì che il client NFS esegua una ricerca DNS per hostname `cache`. DNS è configurato per restituire gli IP in modo round-robin. In questo modo si otterrà una distribuzione uniforme delle connessioni NAS front-end. Una volta ricevuto l'IP, il client monterà il percorso di giunzione `/hotspot` su `/flexcache/hotspot`. Può essere connesso a SVM1, SVM2, SVM3 o SVM4, ma una SVM specifica non è importante.
+
+.Figura 1: HDFA 2x2 inter-SVM
+image:flexcache-hotspot-hdfa-2x2x2-inter-svm-hdfa.png["Figura 1: 2x2x2 HDFA"]
+
+
+
+=== Configurazione automatica HDFA intra-SVM
+
+Nell'esempio seguente, verrà creata una `autofs` mappa per il diagramma in <<Figure-2,figura 2>>. Dobbiamo assicurarci che i client NFS montino gli IP che fanno parte dell'implementazione del percorso di giunzione HDF. In altre parole, non vogliamo montare `/hotspot1` con altro che IP 192.168.0.11. Per fare questo, possiamo elencare tutte e quattro le coppie IP/Junction-path per una posizione di montaggio locale nella `auto_hotspot` mappa.
+
+
+NOTE: La barra rovesciata (`\`) nell'esempio seguente continua la voce alla riga successiva, facilitando la lettura.
+
+[listing]
+----
+hotspot     cache1:/hostspot1 \
+            cache2:/hostspot2 \
+            cache3:/hostspot3 \
+            cache4:/hostspot4
+----
+Quando il client tenta di accedere a `/flexcache/hotspot`, `autofs` esegue una ricerca in avanti per tutti e quattro i nomi host. Supponendo che tutti e quattro gli IP si trovino nella stessa subnet del client o in una subnet diversa, `autofs` verrà inviato un ping NULL NFS a ciascun IP.
+
+Questo ping NULL richiede l'elaborazione del pacchetto da parte del servizio NFS di ONTAP, ma non richiede alcun accesso al disco. Il primo ping a tornare sarà l'IP e Junction-path `autofs` sceglie di montare.
+
+.Figura 2: HDFA intra-SVM 4x1x4
+image:flexcache-hotspot-hdfa-4x1x4-intra-svm-hdfa.png["Figura 2: HDFA intra-SVM s4x1x4"]
+
+
+
+== Configurazione del client Windows
+
+Con i client Windows, è consigliabile utilizzare un HDFA intra-SVM. Per bilanciare il carico tra i diversi HDFS della SVM, è necessario aggiungere un nome di condivisione univoco a ciascun HDF. Quindi, seguire i passaggi descritti in link:https://learn.microsoft.com/en-us/windows-server/storage/dfs-namespaces/create-a-dfs-namespace["Documentazione Microsoft"^] per implementare più destinazioni DFS per la stessa cartella.

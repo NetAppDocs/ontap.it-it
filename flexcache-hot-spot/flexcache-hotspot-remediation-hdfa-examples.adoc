@@ -1,0 +1,38 @@
+---
+permalink: flexcache-hot-spot/flexcache-hotspot-remediation-hdfa-examples.html 
+sidebar: sidebar 
+keywords: tr, hotspot, hot-spot, flexcache, hdfa, compare, examples 
+summary: Scegli la densità degli array FlexCache e scopri in che modo può aiutarti a risolvere i problemi di hot spotting. 
+---
+= Determinare la densità ONTAP FlexCache
+:allow-uri-read: 
+
+
+[role="lead"]
+La vostra prima decisione di progettazione per la correzione degli hotspot è quella di calcolare la densità FlexCache. I seguenti esempi sono cluster a quattro nodi. Si supponga che il conteggio dei file sia distribuito uniformemente tra tutti i componenti di ciascun HDF. Supponi anche una distribuzione uniforme di connessioni NAS front-end in tutti i nodi.
+
+Sebbene questi esempi non siano le uniche configurazioni che è possibile utilizzare, è necessario comprendere il principio di progettazione guida per creare HDFS pari al numero consentito dai requisiti di spazio e dalle risorse disponibili.
+
+
+NOTE: Gli HDFA sono rappresentati utilizzando la seguente sintassi: `HDFs per HDFA x nodes per HDF x constituents per node per HDF`
+
+
+
+== 2x2x2 Configurazione HDFA
+
+<<Figure-1,Figura 1>> È un esempio di configurazione HDFA 2x2: Due HDFS, ciascuno dei quali copre due nodi e ogni nodo contiene due volumi costituenti. In questo esempio, ogni client ha il 50% di possibilità di accedere direttamente all'hot file. Due dei quattro clienti hanno traffico est-ovest. Cosa importante, oggi esistono due HDFS, il che significa due diverse cache del file hot. Ci sono ora due CPU/affinità di volume che forniscono l'accesso all'hot file.
+
+.Figura 1: Configurazione HDFA 2x2x2
+image:flexcache-hotspot-hdfa-2x2x2.png["Figura 1: Configurazione HDFA 2x2x2"]
+
+
+
+== 4x1x4 Configurazione HDFA
+
+<<Figure-2,Figura 2>> rappresenta una configurazione ottimale. Si tratta di un esempio di una configurazione HDFA 4x1x4: Quattro HDFS, ciascuno contenuto in un singolo nodo, e ciascun nodo contenente quattro costituenti. In questo esempio, ogni client ha accesso diretto a una cache dell'hot file. Poiché ci sono quattro file memorizzati nella cache su quattro nodi diversi, quattro diverse CPU/affinità di volume aiutano ad accedere al file hot. Inoltre, non viene generato traffico est-ovest.
+
+.Figura 2: Configurazione HDFA 4x1x4
+image:flexcache-hotspot-hdfa-4x1x4.png["Figura 2: HDFA 4x1x4"]
+
+.Cosa succederà
+Dopo aver deciso la densità necessaria per rendere HDFS, se si accede a HDFS con NFS con link:flexcache-hotspot-remediation-intra-inter-svm-hdfa.html["HDFA inter-SVM e HDFA intra-SVM"], è necessario prendere un'altra decisione.

@@ -1,0 +1,73 @@
+---
+permalink: flexcache-hot-spot/flexcache-hotspot-remediation-architecture.html 
+sidebar: sidebar 
+keywords: hotspot, FlexCache, hdfa, problem, solution, ONTAP 
+summary: 'Scopri come l"architettura con FlexCache ad alta densità aiuta a risolvere i problemi degli hotspot.' 
+---
+= Progettazione di una soluzione di risoluzione degli hotspot ONTAP FlexCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Per risolvere i problemi di hot-spotting, esplora le cause alla base dei colli di bottiglia, perché il provisioning automatico di FlexCache non è sufficiente e i dettagli tecnici necessari per progettare efficacemente una soluzione FlexCache. Comprendendo e implementando array FlexCache ad alta densità (HDFA), potete ottimizzare le performance ed eliminare i colli di bottiglia nei vostri carichi di lavoro high-demand.
+
+
+
+== Comprendere il collo di bottiglia
+
+Di seguito <<Figure-1,immagine>> viene illustrato un tipico scenario di hotspotting a file singolo. Il volume è un FlexGroup con un singolo componente per nodo e il file risiede nel nodo 1.
+
+Se si distribuiscono tutte le connessioni di rete dei client NAS su diversi nodi nel cluster, si continuano a creare colli di bottiglia sulla CPU che gestisce l'affinità del volume in cui risiede il file hot. Inoltre, viene introdotto il traffico di rete cluster (traffico est-ovest) alle chiamate provenienti da client connessi a nodi diversi da dove risiede il file. L'overhead del traffico est-ovest è generalmente piccolo, ma per i carichi di lavoro di calcolo dalle performance elevate ogni bit conta.
+
+.Figura 1: Scenario hotspot FlexGroup a file singolo
+image:flexcache-hotspot-hdfa-flexgroup.png["Figura 1: Scenario hotspot FlexGroup a file singolo"]
+
+
+
+== Perché un FlexCache con provisioning automatico non è la risposta
+
+Per rimediare agli hotspot, eliminare il collo di bottiglia della CPU e preferibilmente anche il traffico est-ovest. FlexCache può aiutare se impostato correttamente.
+
+Nell'esempio seguente, FlexCache viene sottoposto a provisioning automatico con argomenti di System Manager, BlueXP  o CLI predefiniti. <<Figure-1,Figura 1>> E <<Figure-2,figura 2>>all'inizio appaiono gli stessi: Entrambi sono container NAS a quattro nodi, che costituiscono un singolo componente. L'unica differenza consiste nel fatto che il container NAS della figura 1 è un FlexGroup, mentre il container NAS della figura 2 è un FlexCache. Ogni figura presenta un profilo dello stesso collo di bottiglia: La CPU del nodo 1 per l'accesso al servizio di affinità dei volumi al file hot e il traffico est-ovest che contribuisce alla latenza. Un FlexCache con provisioning automatico non ha eliminato il collo di bottiglia.
+
+.Figura 2: Scenario FlexCache con provisioning automatico
+image:flexcache-hotspot-hdfa-1x4x1.png["Figura 2: Scenario FlexCache con provisioning automatico"]
+
+
+
+== Anatomia di un FlexCache
+
+Per progettare in modo efficace un FlexCache per la correzione degli hotspot, è necessario conoscere alcuni dettagli tecnici su FlexCache.
+
+FlexCache è sempre un FlexGroup sparso. Un FlexGroup è costituito da più FlexVol. Questi FlexVol sono chiamati costituenti di FlexGroup. In un layout predefinito di FlexGroup sono presenti uno o più componenti per nodo nel cluster. I componenti sono "cuciti insieme" sotto un livello di astrazione e presentati al client come un singolo contenitore NAS di grandi dimensioni. Quando un file viene scritto in un FlexGroup, le euristiche di acquisizione determinano su quale componente verrà memorizzato il file. Potrebbe trattarsi di un componente contenente la connessione NAS del client o di un nodo diverso. La posizione è irrilevante perché tutto funziona sotto il livello di astrazione ed è invisibile al client.
+
+Applichiamo questa comprensione di FlexGroup a FlexCache. Poiché FlexCache è costruito su un FlexGroup, per impostazione predefinita si dispone di un singolo FlexCache con elementi costitutivi in tutti i nodi del cluster, come illustrato in <<Figure-1,figura 1>>. Nella maggior parte dei casi, questa è una cosa grande. Si stanno utilizzando tutte le risorse nel cluster.
+
+Per risolvere i problemi dei file hot, tuttavia, ciò non è ideale a causa dei due colli di bottiglia: La CPU per un singolo file e il traffico est-ovest. Se si crea una FlexCache con i componenti su ogni nodo per un file hot, tale file si troverà ancora in uno solo dei componenti. Ciò significa che è disponibile una sola CPU per l'assistenza di tutti gli accessi al file hot. Si desidera inoltre limitare la quantità di traffico est-ovest necessaria per raggiungere l'hot file.
+
+La soluzione è un array di Flexcache ad alta densità.
+
+
+
+== Anatomia di un FlexCache ad alta densità
+
+Un HDF (High-Density FlexCache) presenta componenti su un numero di nodi pari a quello consentito dai requisiti di capacità per i dati memorizzati nella cache. L'obiettivo è attivare la cache su un singolo nodo. Se i requisiti di capacità rendono impossibile l'operazione, è possibile collocare dei componenti solo su pochi nodi.
+
+Ad esempio, un cluster a 24 nodi può avere tre Flexcache ad alta densità:
+
+* Uno che interessa i nodi da 1 a 8
+* Un secondo che attraversa i nodi da 9 a 16
+* Un terzo che attraversa i nodi dal 17 al 24
+
+
+Questi tre HDFS costituirebbero un array FlexCache ad alta densità (HDFA). Se i file sono distribuiti in modo uniforme all'interno di ciascun HDF, è possibile che il file richiesto dal client risieda localmente nella connessione NAS front-end. Se avessi 12 HDFS che coprono solo due nodi ciascuno, avrai il 50% delle possibilità che il file sia locale. Se è possibile comprimere HDF in un singolo nodo e crearne 24, si garantisce che il file sia locale.
+
+Questa configurazione eliminerà tutto il traffico est-ovest e, cosa più importante, fornirà 24 CPU/volume affinità per l'accesso al file hot.
+
+.Quali sono le prossime novità?
+link:flexcache-hotspot-remediation-hdfa-examples.html["Decidere sulla densità degli array FlexCache"]
+
+.Informazioni correlate
+link:../volume-admin/index.html["Documentazione su FlexGroup e TR"]
