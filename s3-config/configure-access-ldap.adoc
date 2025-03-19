@@ -30,7 +30,7 @@ Prima di configurare i gruppi LDAP e attivare la modalità di associazione rapid
 
 
 
-== Configurare l'accesso S3 per i servizi di directory esterni
+== Configurare l'accesso S3 per LDAP
 
 . Specificare LDAP come _name service database_ della SVM per il gruppo e la password per LDAP:
 +
@@ -91,23 +91,49 @@ NOTE: Il client S3 potrebbe richiedere una chiave segreta. In assenza di una chi
 
 
 
-=== Autenticazione delle risorse per Active Directory per utenti senza UID e GID
+=== Il metodo di autenticazione è nsswitch e LDAP è abilitato esempio:
+
+[listing]
+----
+$curl -siku <user>:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user>,"<key_time_to_live>":"PT6H3M"}'
+----
+
+NOTE: Indirizza l'API alla LIF di gestione cluster, non alla LIF dati della SVM. Se si desidera consentire agli utenti di generare le proprie chiavi, è necessario aggiungere autorizzazioni HTTP al ruolo per utilizzare curl. Questa autorizzazione si aggiunge alle autorizzazioni API S3.
+
+
+
+== Configurare l'accesso S3 per Active Directory o server CIFS
 
 Se il gruppo di ricerca specificato nell'istruzione dei criteri bucket o gli utenti che fanno parte del gruppo di origine non hanno impostato UID e GID, le ricerche non vengono eseguite quando questi attributi non vengono trovati. Active Directory utilizza il SID, non l'UID. Se le voci SID non possono essere mappate su UID, i dati necessari devono essere portati su ONTAP.
 
 A tale scopo, utilizza questa link:../authentication/enable-ad-users-groups-access-cluster-svm-task.html["creazione della directory attiva del vserver"]soluzione in modo che la SVM possa autenticarsi con Active Directory e ottenere le informazioni necessarie su utenti e gruppi.
 
+In alternativa, utilizzare link:..authentication/enable-ad-users-groups-access-cluster-svm-task.html["creazione cifs vserver"] per creare un server SMB in un dominio Active Directory.
+
 Per evitare errori di ricerca, NetApp consiglia di utilizzare domini attendibili per l'autorizzazione delle risorse in formato UPN: `nasgroup/group@trusted_domain.com`
 
 
 
-=== Per generare le chiavi di accesso utente per gli utenti di dominio attendibili quando non viene utilizzato il bind veloce LDAP
+=== Genera chiavi quando il metodo di autenticazione è dominio e i domini attendibili sono configurati in Active Directory
 
 Utilizzare l' `s3/services/<svm_uuid>/users` endpoint con gli utenti specificati in formato UPN. Esempio:
 
 [listing]
 ----
-$curl -siku FQDN\\user:<user_name> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user[@fqdn](https://github.com/fqdn)>,"<key_time_to_live>":"PT6H3M"}'
+$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user@fqdn>,"<key_time_to_live>":"PT6H3M"}'
 ----
 
-NOTE: Indirizza l'API alla LIF di gestione cluster, non alla LIF dati della SVM.
+NOTE: Indirizza l'API alla LIF di gestione cluster, non alla LIF dati della SVM. Se si desidera consentire agli utenti di generare le proprie chiavi, è necessario aggiungere autorizzazioni HTTP al ruolo per utilizzare curl. Questa autorizzazione si aggiunge alle autorizzazioni API S3.
+
+
+
+=== Generare le chiavi quando il metodo di autenticazione è dominio e non sono presenti domini attendibili:
+
+(Possibile se LDAP è disattivato o se gli utenti non POSIX non sono configurati UID e GID).
+
+[listing]
+----
+$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user[@fqdn]>,"<key_time_to_live>":"PT6H3M"}'
+----
+
+NOTE: Indirizza l'API alla LIF di gestione cluster, non alla LIF dati della SVM. Se si desidera consentire agli utenti di generare le proprie chiavi, è necessario aggiungere autorizzazioni HTTP al ruolo per utilizzare curl. Questa autorizzazione si aggiunge alle autorizzazioni API S3. È necessario aggiungere il valore di dominio facoltativo (@fqdn) a un nome utente solo se non sono presenti domini attendibili.
