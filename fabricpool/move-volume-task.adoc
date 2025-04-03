@@ -2,7 +2,7 @@
 permalink: fabricpool/move-volume-task.html 
 sidebar: sidebar 
 keywords: aggregate, local tier, moving, volume, fabricpool, fabric pool, tiering, policy, policies, block, capacity, cold data, 
-summary: Quando si sposta un volume in FabricPool, è possibile specificare o modificare il criterio di tiering per il volume durante lo spostamento. A partire da ONTAP 9.8, quando si sposta un volume non FabricPool con la funzione di reporting dei dati inattivi attivata, FabricPool utilizza una mappa termica per leggere i blocchi tierable e sposta i dati cold nel Tier di capacità sulla destinazione FabricPool. 
+summary: 'È importante comprendere come funziona lo spostamento dei volumi con FabricPool, perché le modifiche che avvengono sia nel Tier locale, che nel Tier cloud collegato e nel volume (policy di tiering dei volumi) possono avere un notevole impatto sulla funzionalità.' 
 ---
 = Sposta un volume in un Tier locale ONTAP abilitato per FabricPool
 :allow-uri-read: 
@@ -11,43 +11,60 @@ summary: Quando si sposta un volume in FabricPool, è possibile specificare o mo
 
 
 [role="lead"]
-Quando si sposta un volume in FabricPool, è possibile specificare o modificare il criterio di tiering per il volume durante lo spostamento. A partire da ONTAP 9.8, quando si sposta un volume non FabricPool con la funzione di reporting dei dati inattivi attivata, FabricPool utilizza una mappa termica per leggere i blocchi tierable e sposta i dati cold nel Tier di capacità sulla destinazione FabricPool.
+A link:../volumes/move-volume-task.html["spostamento del volume"] è il modo in cui ONTAP sposta un volume senza interruzioni da un Tier locale (origine) a un altro (destinazione). È possibile eseguire lo spostamento dei volumi per diversi motivi, anche se i motivi più comuni sono la gestione del ciclo di vita dell'hardware, l'espansione dei cluster e il bilanciamento del carico.
+
+È importante comprendere come funziona lo spostamento dei volumi con FabricPool, perché le modifiche che avvengono sia nel Tier locale, che nel Tier cloud collegato e nel volume (policy di tiering dei volumi) possono avere un notevole impatto sulla funzionalità.
 
 
 NOTE: Prima di ONTAP 9,7, System Manager utilizza il termine _aggregate_ per descrivere un _livello locale_. A prescindere dalla versione di ONTAP, la CLI di ONTAP utilizza il termine _aggregate_. Per ulteriori informazioni sui livelli locali, vedere link:../disks-aggregates/index.html["Dischi e Tier locali"].
 
-.Prima di iniziare
-Devi comprendere come la modifica della policy di tiering possa influire sul tempo necessario per far diventare i dati più freddi e spostarli nel Tier cloud.
 
-link:tiering-policies-concept.html#what-happens-to-the-tiering-policy-when-you-move-a-volume["Cosa accade alla policy di tiering quando si sposta un volume"]
 
-.A proposito di questa attività
-Se un volume non FabricPool ha abilitato il reporting di dati inattivi, quando sposti un volume con policy di tiering `auto` o `snapshot-only` in un FabricPool, FabricPool legge i blocchi adattabili alla temperatura da un file di mappa termica e quando la policy di tiering è impostata su `auto` nel volume non FabricPool, FabricPool utilizza tale temperatura per spostare i dati cold direttamente nel Tier di capacità nella destinazione FabricPool.
+== Tier locale di destinazione
 
-Non utilizzare `-tiering-policy` Opzione di spostamento del volume se si utilizza ONTAP 9.8 e si desidera che FabricPools utilizzi le informazioni di reporting dei dati inattive per spostare i dati direttamente nel livello di capacità. L'utilizzo di questa opzione fa sì che FabricPools ignori i dati relativi alla temperatura e segua invece il comportamento di spostamento delle release precedenti a ONTAP 9.8.
+Se il Tier locale di destinazione di uno spostamento del volume non ha un Tier cloud collegato, i dati del volume di origine archiviati nel Tier cloud vengono scritti nel Tier locale nel Tier locale di destinazione.
 
-.Fase
-. Utilizzare `volume move start` Comando per spostare un volume in FabricPool.
-+
-Il `-tiering-policy` il parametro opzionale consente di specificare il criterio di tiering per il volume.
+A partire da ONTAP 9,8, quando un volume è link:determine-data-inactive-reporting-task.html["report dei dati inattivi"] abilitato, FabricPool utilizzerà la mappa termica del volume per mettere immediatamente in coda i dati cold e iniziare il tiering non appena vengono scritti nell'aggregato di destinazione.
 
-+
-È possibile specificare uno dei seguenti criteri di tiering:
-
-+
-** `snapshot-only` (impostazione predefinita)
-** `auto`
-** `all`
-** `none`+link:tiering-policies-concept.html#types-of-fabricpool-tiering-policies["Tipi di policy di tiering FabricPool"]
+Prima di ONTAP 9,8, lo spostamento di un volume in un altro livello locale ripristina il periodo di inattività dei blocchi nel livello locale. Ad esempio, un volume che utilizza la policy di tiering automatico dei volumi con dati nel Tier locale che non è stato attivo da 20 giorni, ma non è ancora stato sottoposto a tiering, ripristinerà la temperatura dei dati a 0 giorni dopo lo spostamento di un volume.
 
 
 
+== Spostamenti dei volumi ottimizzati
 
-.Esempio di spostamento di un volume in FabricPool
-Nell'esempio seguente un volume denominato "`myvol2'" della SVM "VS1" viene spostato nel Tier locale abilitato FabricPool "dest_FabricPool". Il volume viene impostato in modo esplicito per l'utilizzo della `none` policy di tiering:
+A partire da ONTAP 9,6, se il Tier locale di destinazione di uno spostamento del volume utilizza lo stesso bucket del Tier locale di origine, i dati sul volume di origine memorizzato nel bucket non si spostano di nuovo nel Tier locale. Questo spostamento ottimizzato dei volumi produce una notevole efficienza della rete.
+
+[NOTE]
+====
+Alcune configurazioni sono incompatibili con spostamenti ottimizzati dei volumi:
+
+* Modifica della policy di tiering durante lo spostamento dei volumi
+* Aggregati di destinazione e origine con chiavi di crittografia diverse
+* Volumi FlexClone
+* Volumi padre FlexClone
+* MetroCluster (supporta spostamenti di volumi ottimizzati in ONTAP 9,8 e versioni successive)
+* Bucket mirror FabricPool non sincronizzati
+
+
+====
+Se il Tier locale di destinazione di uno spostamento del volume ha un Tier cloud collegato, i dati del volume di origine archiviati nel Tier cloud vengono dapprima scritti nel Tier locale nel Tier locale di destinazione. Viene quindi scritto nel Tier cloud sul Tier locale di destinazione se questo approccio è appropriato per la policy di tiering del volume.
+
+La scrittura dei dati nel Tier locale migliora per prima cosa le performance dello spostamento del volume e riduce il tempo di cutover. Se non viene specificata una policy di tiering dei volumi durante lo spostamento di un volume, il volume di destinazione utilizza la policy di tiering del volume di origine.
+
+Se durante lo spostamento del volume viene specificata un'altra policy di tiering, il volume di destinazione viene creato con la policy di tiering specificata e lo spostamento del volume non è ottimizzato.
+
+
+NOTE: Quando si utilizza una relazione di disaster recovery di SVM, i volumi di origine e destinazione devono utilizzare la stessa policy di tiering.
+
+.Fasi
+. Utilizzare il `volume move start` comando per spostare un volume da un Tier locale di origine a un Tier locale di destinazione.
+
+
+.Esempio di spostamento di un volume
+Nell'esempio seguente viene spostato un volume denominato `myvol2` `vs1` SVM in `dest_FabricPool` un Tier locale abilitato per FabricPool.
 
 [listing]
 ----
 cluster1::> volume move start -vserver vs1 -volume myvol2
--destination-aggregate dest_FabricPool -tiering-policy none
+-destination-aggregate dest_FabricPool
 ----
