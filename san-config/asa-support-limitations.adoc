@@ -1,0 +1,148 @@
+---
+permalink: san-config/asa-support-limitations.html 
+sidebar: sidebar 
+keywords: all flash san array, asa, san, array, software, configuration, configure, configuring, setup, set up, limitations, restrictions, nvme, mcc ip, persistent ports, host, settings, utilities, ways to identify 
+summary: 'I limiti di configurazione e il supporto degli array SAN all-flash (ASA) variano in base alla versione di ONTAP.' 
+---
+= Limiti di configurazione e supporto degli array SAN all-flash
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+I limiti di configurazione e il supporto degli array SAN all-flash (ASA) variano in base alla versione di ONTAP.
+
+I dettagli più aggiornati sui limiti di configurazione supportati sono disponibili in link:https://hwu.netapp.com/["NetApp Hardware Universe"^].
+
+
+NOTE: Queste limitazioni si applicano agli attuali sistemi ASA. Se si dispone di un sistema ASA R2 (ASA A1K, ASA A90, ASA A70, ASA A50, ASA A30 o ASA A20), vedere link:https://docs.netapp.com/us-en/asa-r2/manage-data/storage-limits.html["Limiti di archiviazione del sistema ASA R2"].
+
+
+
+== Protocolli SAN e numero di nodi supportati per cluster
+
+I protocolli SAN supportati e il numero massimo di nodi per cluster dipendono dalla configurazione non MetroCluster o MetroCluster:
+
+[role="tabbed-block"]
+====
+.Configurazioni non MetroCluster
+--
+La tabella seguente mostra il supporto ASA per i protocolli SAN e il numero supportato di nodi per cluster nelle configurazioni non MetroCluster:
+
+[cols="3*"]
+|===
+| Inizio con ONTAP... | Supporto del protocollo | Numero massimo di nodi per cluster 
+
+
+| 9.11.1  a| 
+* NVMe/TCP
+* NVMe/FC
+
+ a| 
+12
+
+
+
+| 9.10.1  a| 
+* NVMe/TCP
+
+ a| 
+2
+
+
+
+.2+| 9.9.1  a| 
+* NVMe/FC
+
+ a| 
+2
+
+
+
+ a| 
+* FC
+* ISCSI
+
+ a| 
+12
+
+
+
+| 9.7  a| 
+* FC
+* ISCSI
+
+ a| 
+2
+
+|===
+--
+.Configurazioni IP MetroCluster
+--
+La tabella seguente mostra il supporto di ASA per i protocolli SAN e il numero supportato di nodi per cluster nelle configurazioni IP di MetroCluster:
+
+[cols="3*"]
+|===
+| Inizio con ONTAP... | Supporto del protocollo | Numero massimo di nodi per cluster 
+
+
+| 9.15.1  a| 
+* NVMe/TCP
+
+| 2 nodi per cluster in configurazioni MetroCluster IP a quattro nodi 
+
+
+| 9.12.1  a| 
+* NVMe/FC
+
+ a| 
+2 nodi per cluster in configurazioni MetroCluster IP a quattro nodi
+
+
+
+| 9.9.1  a| 
+* FC
+* ISCSI
+
+ a| 
+4 nodi per cluster in configurazioni MetroCluster IP a 8 nodi
+
+
+
+| 9.7  a| 
+* FC
+* ISCSI
+
+ a| 
+2 nodi per cluster in configurazioni MetroCluster IP a quattro nodi
+
+|===
+--
+====
+
+
+== Supporto per porte persistenti
+
+A partire da ONTAP 9,8, le porte persistenti sono abilitate per impostazione predefinita sugli array All-Flash SAN (ASA) configurati per utilizzare il protocollo FC. Le porte persistenti sono disponibili solo per FC e richiedono l'appartenenza alla zona identificata dal World Wide Port Name (WWPN).
+
+Le porte persistenti riducono l'impatto dei takeover creando una LIF ombra sulla porta fisica corrispondente del partner ad alta disponibilità (ha). Quando un nodo viene sostituito, la LIF shadow sul nodo partner assume l'identità della LIF originale, inclusa la WWPNe. Prima che lo stato del percorso verso il nodo preso in consegna venga modificato in difettoso, la LIF shadow viene visualizzata come percorso attivo/ottimizzato verso lo stack MPIO host e l'i/o viene spostato. In questo modo si riducono le interruzioni di i/o perché l'host rileva sempre lo stesso numero di percorsi verso la destinazione, anche durante le operazioni di failover dello storage.
+
+Per le porte persistenti, le seguenti caratteristiche della porta FCP devono essere identiche all'interno della coppia ha:
+
+* Numero di porte FCP
+* Nomi delle porte FCP
+* Velocità delle porte FCP
+* Zoning basato su WWPN FCP LIF
+
+
+Se una di queste caratteristiche non è identica all'interno della coppia ha, viene generato il seguente messaggio EMS:
+
+`EMS : scsiblade.lif.persistent.ports.fcp.init.error`
+
+Per ulteriori informazioni sulle porte permanenti, vedere link:https://www.netapp.com/pdf.html?item=/media/10680-tr4080pdf.pdf["Report tecnico NetApp 4080: Best practice per le SAN moderne"^].
