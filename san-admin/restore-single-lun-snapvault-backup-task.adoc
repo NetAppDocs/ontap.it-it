@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: ontap 9.2, restore, single, lun, snapvault backup 
 summary: È possibile ripristinare una singola LUN in una nuova posizione o nella posizione originale. Puoi eseguire il ripristino da qualsiasi Snapshot nel volume secondario SnapVault. Per ripristinare il LUN nella posizione originale, ripristinarlo in una nuova posizione, quindi copiarlo. 
 ---
-= Ripristinare una singola LUN da un backup SnapVault
+= Ripristinare una singola LUN da un backup ONTAP SnapVault
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -25,7 +25,12 @@ Il processo include la creazione di un clone del volume di lettura e scrittura d
 Il LUN nel clone ha un percorso e un numero di serie diversi dal LUN originale. Le prenotazioni persistenti non vengono conservate.
 
 .Fasi
-. Eseguire `snapmirror show` Per verificare il volume secondario che contiene il backup di SnapVault.
+. Verificare il volume secondario che contiene il backup SnapVault.
++
+[source, cli]
+----
+snapmirror show
+----
 +
 [listing]
 ----
@@ -39,7 +44,12 @@ vserverA:srcvolA
                         Snapmirrored
                                 Idle       -         true    -
 ----
-. Eseguire `volume snapshot show` il comando per identificare lo snapshot da cui si desidera ripristinare il LUN.
+. Identificare lo snapshot da cui si desidera ripristinare il LUN.
++
+[source, cli]
+----
+volume snapshot show
+----
 +
 [listing]
 ----
@@ -53,7 +63,12 @@ vserverB
                  snap1.2013-02-10_0015 valid  112KB     0%    0%
                  snap2.2013-02-11_0010  valid  164KB     0%    0%
 ----
-. Eseguire `volume clone create` il comando per creare un clone in lettura/scrittura dallo snapshot desiderato.
+. Creare un clone in lettura/scrittura dallo snapshot desiderato
++
+[source, cli]
+----
+volume clone create -vserver <SVM_name> -flexclone <flexclone_name> -type <type> -parent-volume <parent_volume_name> -parent-snapshot <snapshot_name>
+----
 +
 Il clone del volume viene creato nello stesso aggregato del backup di SnapVault. Lo spazio nell'aggregato deve essere sufficiente per memorizzare il clone.
 
@@ -65,7 +80,12 @@ cluster::> volume clone create -vserver vserverB
   -parent-snapshot daily.2013-02-10_0010
 [Job 108] Job succeeded: Successful
 ----
-. Eseguire `lun show` Per elencare i LUN nel clone del volume.
+. Elenca i LUN nel clone del volume.
++
+[source, cli]
+----
+lun show -vserver <SVM_name> -volume <flexclone_volume_name>
+----
 +
 [listing]
 ----
@@ -82,7 +102,12 @@ vserverB  /vol/dstvolB_clone/lun_C  online  unmapped windows
 +
 Ulteriori informazioni su `lun show` nella link:https://docs.netapp.com/us-en/ontap-cli/lun-show.html["Riferimento al comando ONTAP"^].
 
-. Se l'igroup per l'host desiderato non esiste già sulla SVM contenente il backup SnapVault, eseguire `igroup create` per creare un igroup.
+. Se l'igroup per l'host desiderato non esiste già nella SVM contenente il backup di SnapVault, creare un igroup.
++
+[source, cli]
+----
+igroup create -vserver <SVM_name> -igroup <igroup_name> -protocol <protocol> -ostype <os_type> -initiator <initiator_name>
+----
 +
 Questo esempio crea un igroup per un host Windows che utilizza il protocollo iSCSI:
 
@@ -93,7 +118,12 @@ cluster::> igroup create -vserver vserverB -igroup temp_igroup
   -protocol iscsi -ostype windows
   -initiator iqn.1991-05.com.microsoft:hostA
 ----
-. Eseguire `lun mapping create` Per mappare la copia LUN desiderata sull'igroup.
+. Mappare la copia LUN desiderata all'igroup.
++
+[source, cli]
+----
+lun mapping create -vserver <SVM_name> -path <lun_path> -igroup <igroup_name>
+----
 +
 [listing]
 ----

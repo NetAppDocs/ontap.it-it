@@ -31,8 +31,14 @@ A seconda dei privilegi assegnati dall'amministratore del cluster, un amministra
 
 Quando il nodo raggiunge il carico di divisione massimo, il nodo interrompe temporaneamente l'accettazione delle richieste di creazione dei file FlexClone e dei LUN FlexClone ed emette un `EBUSY` messaggio di errore. Quando il carico suddiviso per il nodo scende al di sotto del massimo, il nodo accetta le richieste di creazione di file FlexClone e LUN FlexClone di nuovo. Prima di riprovare la richiesta di creazione, attendere che il nodo disponga della capacità necessaria per creare i cloni.
 
+Il LUN FlexClone eredita l'attributo space reservations del LUN padre. Un LUN FlexClone riservato allo spazio richiede tanto spazio quanto il LUN padre riservato allo spazio. Se il LUN FlexClone non è riservato allo spazio, il volume deve disporre di spazio sufficiente per consentire le modifiche apportate al clone.
+
 .Fasi
-. Creare un file FlexClone o un LUN FlexClone utilizzando `volume file clone create` comando.
+. Se si sta clonando un LUN, verificare che quest'ultimo non sia mappato o su cui viene scritto.
+. Creare il LUN o il file FlexClone:
++
+`volume file clone create -vserver _vserver_name_ -volume _volume_name_ -source-path _source_path_ -destination-path _destination_path_`
+
 +
 Nell'esempio seguente viene illustrato come creare un file FlexClone file1_clone del file padre file1_source nel volume vol1:
 
@@ -46,5 +52,45 @@ Ulteriori informazioni su `volume file clone create` nella link:https://docs.net
 
 
 
-.Informazioni correlate
-link:../concepts/manual-pages.html["Riferimento al comando ONTAP"]
+
+
+== Creazione di LUN FlexClone da uno snapshot in un volume
+
+È possibile utilizzare uno snapshot nel volume per creare copie FlexClone delle LUN. Le copie FlexClone delle LUN sono sia leggibili che scrivibili.
+
+.Di cosa hai bisogno
+È necessario installare una licenza FlexClone. Questa licenza è inclusa con link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP uno"].
+
+.A proposito di questa attività
+Il LUN FlexClone eredita l'attributo space reservations del LUN padre. Un LUN FlexClone riservato allo spazio richiede tanto spazio quanto il LUN padre riservato allo spazio. Se il LUN FlexClone non è riservato allo spazio, il volume deve disporre di spazio sufficiente per consentire le modifiche apportate al clone.
+
+.Fasi
+. Verificare che il LUN non sia mappato o in cui sia in corso la scrittura.
+. Creare uno snapshot del volume che contiene i LUN:
++
+`volume snapshot create -vserver _vserver_name_ -volume _volume_name_ -snapshot _snapshot_name_`
+
++
+È necessario creare uno snapshot (snapshot di backup) del LUN da clonare.
+
+. Creare il LUN FlexClone dallo snapshot:
++
+`volume file clone create -vserver _vserver_name_ -volume _volume_name_ -source-path _source_path_ -snapshot-name _snapshot_name_ -destination-path _destination_path_`
+
++
+Se è necessario che il LUN FlexClone sia disponibile per l'eliminazione automatica, è possibile includere `-autodelete true`. Se si crea questo LUN FlexClone in un volume utilizzando il provisioning semi-thick, è necessario attivare l'eliminazione automatica per tutti i LUN FlexClone.
+
+. Verificare che il LUN FlexClone sia corretto:
++
+`lun show -vserver _vserver_name_`
+
++
+[listing]
+----
+
+Vserver Path                      State    Mapped    Type     Size
+------- ----------------------    -------- --------- -------- -------
+vs1     /vol/vol1/lun1_clone      online   unmapped windows   47.07MB
+vs1     /vol/vol1/lun1_snap_clone online   unmapped windows   47.07MB
+----
+

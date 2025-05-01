@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: back up, lun, through, host, backup, system 
 summary: È possibile utilizzare un LUN clonato da uno snapshot come dati di origine per il sistema di backup host. 
 ---
-= Eseguire il backup di un LUN tramite un sistema di backup host
+= Utilizzare un sistema di backup host per proteggere un LUN sul sistema di storage ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -21,52 +21,54 @@ Un LUN di produzione deve esistere ed essere mappato a un igroup che includa il 
 +
 È possibile utilizzare il comando fornito dal sistema operativo host oppure SnapDrive per Windows o SnapDrive per UNIX. Puoi anche scegliere di includere questo passo nello script di pre-elaborazione del backup SAN.
 
-. Utilizzare il `volume snapshot create` comando per creare uno snapshot del LUN di produzione.
+. Creare una snapshot della LUN di produzione.
 +
-`volume snapshot create -vserver vs0 -volume vol3 -snapshot vol3_snapshot -comment "Single snapshot" -foreground false`
-
-. Utilizzare `volume file clone create` Per creare un clone del LUN di produzione.
+[source, cli]
+----
+volume snapshot create -vserver <SVM_name> -volume <volume_name> -snapshot <snapshot> -comment <comment> -foreground false
+----
+. Creare un clone della LUN di produzione.
 +
-`volume file clone create -vserver vs3 -volume vol3 -source-path lun1 -snapshot-name snap_vol3 -destination-path lun1_backup`
-
-. Utilizzare `lun igroup create` Per creare un igroup che includa il WWPN del server di backup.
+[source, cli]
+----
+volume file clone create -vserver <SMV_name> -volume <volume> -source-path <path> -snapshot-name <snapshot> -destination-path <destination_path>
+----
+. Creare un igroup che includa il WWPN del server di backup.
 +
-`lun igroup create -vserver vs3 -igroup igroup3 -protocol fc -ostype windows -initiator 10:00:00:00:c9:73:5b:91`
-
+[source, cli]
+----
+lun igroup create -vserver <SVM_name> -igroup <igroup> -protocol <protocol> -ostype <os_type> -initiator <initiator>
+----
+. Associare il clone LUN creato al passaggio 3 all'host di backup.
 +
-Ulteriori informazioni su `lun igroup create` nella link:https://docs.netapp.com/us-en/ontap-cli/lun-igroup-create.html["Riferimento al comando ONTAP"^].
-
-. Utilizzare `lun mapping create` Per mappare il clone LUN creato al punto 3 all'host di backup.
-+
-`lun mapping create -vserver vs3 -volume vol3 -lun lun1_backup -igroup igroup3`
-
+[source, cli]
+----
+lun mapping create -vserver <SVM_name> -volume <volume_name> -lun <lun_name> -igroup <igroup>
+----
 +
 È possibile scegliere di inserire questo passo nello script di post-elaborazione dell'applicazione DI backup SAN.
-
-+
-Ulteriori informazioni su `lun mapping create` nella link:https://docs.netapp.com/us-en/ontap-cli/lun-mapping-create.html["Riferimento al comando ONTAP"^].
 
 . Individuare il nuovo LUN dall'host e rendere il file system disponibile all'host.
 +
 È possibile scegliere di inserire questo passo nello script di post-elaborazione dell'applicazione DI backup SAN.
 
 . Eseguire il backup dei dati nel clone LUN dall'host di backup su nastro utilizzando l'applicazione DI backup SAN.
-. Utilizzare `lun modify` Comando per portare offline il clone del LUN.
+. Portare il clone LUN offline.
 +
-`lun modify -vserver vs3 -path /vol/vol3/lun1_backup -state offline`
-
+[source, cli]
+----
+lun modify -vserver <SVM_name> -path <path> -state offline
+----
+. Rimuovere il clone del LUN.
 +
-Ulteriori informazioni su `lun modify` nella link:https://docs.netapp.com/us-en/ontap-cli/lun-modify.html["Riferimento al comando ONTAP"^].
-
-. Utilizzare `lun delete` Per rimuovere il clone del LUN.
+[source, cli]
+----
+lun delete -vserver <SVM_name> -volume <volume> -lun <lun_name>
+----
+. Rimuovere l'istantanea.
 +
-`lun delete -vserver vs3 -volume vol3 -lun lun1_backup`
-
-+
-Ulteriori informazioni su `lun delete` nella link:https://docs.netapp.com/us-en/ontap-cli/lun-delete.html["Riferimento al comando ONTAP"^].
-
-. Utilizzare il `volume snapshot delete` comando per rimuovere l'istantanea.
-+
-`volume snapshot delete -vserver vs3 -volume vol3 -snapshot vol3_snapshot`
-
+[source, cli]
+----
+volume snapshot delete -vserver <SVM_name> -volume <volume> -snapshot <snapshot>
+----
 

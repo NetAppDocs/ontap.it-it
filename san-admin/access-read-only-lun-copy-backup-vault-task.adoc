@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: access, read-only, lun, copy, snapvault, backup 
 summary: 'È possibile accedere a una copia di sola lettura di un LUN dall"ultimo snapshot in un backup SnapVault. L"ID LUN, il percorso e il numero di serie sono diversi dal LUN di origine e devono essere prima mappati. Le prenotazioni persistenti, le mappature LUN e gli igroups non vengono replicati nel volume secondario SnapVault.' 
 ---
-= Accedere a una copia LUN di sola lettura da un backup di SnapVault
+= Accesso a una copia LUN in sola lettura da un backup ONTAP SnapVault
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -26,7 +26,12 @@ summary: 'È possibile accedere a una copia di sola lettura di un LUN dall"ultim
 Se viene aggiunto un nuovo snapshot al volume secondario SnapVault mentre è stata mappata una LUN da uno snapshot precedente, il contenuto della LUN mappata cambia. Il LUN è ancora mappato con gli stessi identificatori, ma i dati vengono acquisiti dal nuovo snapshot. Se le dimensioni del LUN cambiano, alcuni host rilevano automaticamente la modifica delle dimensioni; gli host Windows richiedono una nuova scansione del disco per rilevare qualsiasi modifica delle dimensioni.
 
 .Fasi
-. Eseguire `lun show` Per elencare i LUN disponibili nel volume secondario SnapVault.
+. Elenca i LUN disponibili nel volume secondario di SnapVault.
++
+[source, cli]
+----
+lun show
+----
 +
 In questo esempio, è possibile visualizzare i LUN originali nel volume primario srcvolA e le copie nel volume secondario SnapVault dstvolB:
 
@@ -49,7 +54,12 @@ vserverB  /vol/dstvolB/lun_C  online  unmapped windows  300.0GB
 +
 Ulteriori informazioni su `lun show` nella link:https://docs.netapp.com/us-en/ontap-cli/lun-show.html["Riferimento al comando ONTAP"^].
 
-. Se l'igroup per l'host desiderato non esiste già sulla SVM contenente il volume secondario SnapVault, eseguire `igroup create` per creare un igroup.
+. Se il igroup per l'host desiderato non esiste già sulla SVM contenente il volume secondario SnapVault, creare un igroup.
++
+[source, cli]
+----
+igroup create -vserver <SVM_name> -igroup <igroup_name> -protocol <protocol> -ostype <ostype> -initiator <initiator_name>
+----
 +
 Questo comando crea un igroup per un host Windows che utilizza il protocollo iSCSI:
 
@@ -60,7 +70,12 @@ cluster::> igroup create -vserver vserverB -igroup temp_igroup
   -protocol iscsi -ostype windows
   -initiator iqn.1991-05.com.microsoft:hostA
 ----
-. Eseguire `lun mapping create` Per mappare la copia LUN desiderata sull'igroup.
+. Mappare la copia LUN desiderata all'igroup.
++
+[source, cli]
+----
+lun mapping create -vserver <SVM_name> -path <LUN_path> -igroup <igroup_name>
+----
 +
 [listing]
 ----

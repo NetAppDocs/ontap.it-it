@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: ontap 9.2, restore, luns, in a volume, snapvault, backup 
 summary: 'Se è necessario ripristinare una o più LUN di un volume da un backup SnapVault, è possibile ripristinare l"intero volume. Il ripristino del volume influisce su tutti i LUN del volume.' 
 ---
-= Ripristinare tutte le LUN di un volume da un backup SnapVault
+= Ripristino di tutte le LUN di un volume da un backup ONTAP SnapVault
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -23,7 +23,12 @@ Dopo il ripristino del volume, i LUN rimangono mappati agli igroups a cui sono s
 
 .Fasi
 . Arrestare i/o su tutti i LUN del volume.
-. Eseguire `snapmirror show` Per verificare il volume secondario che contiene il volume secondario SnapVault.
+. Verificare il volume secondario che contiene il volume secondario SnapVault.
++
+[source, cli]
+----
+snapmirror show
+----
 +
 [listing]
 ----
@@ -37,7 +42,12 @@ vserverA:srcvolA
                         Snapmirrored
                                 Idle       -         true    -
 ----
-. Eseguire il `volume snapshot show` comando per identificare lo snapshot da cui si desidera eseguire il ripristino.
+. Identificare lo snapshot da cui si desidera eseguire il ripristino.
++
+[source, cli]
+----
+volume snapshot show
+----
 +
 [listing]
 ----
@@ -51,7 +61,12 @@ vserverB
                  snap1.2013-02-10_0015 valid  112KB     0%    0%
                  snap2.2013-02-11_0010  valid  164KB     0%    0%
 ----
-. Eseguire il `snapmirror restore` comando e specificare l' `-source-snapshot`opzione per specificare lo snapshot da utilizzare.
+. Specificare l'istantanea da utilizzare.
++
+[source, cli]
+----
+snapmirror restore -destination-path <destination_path> -source-path <source_path> -source-snapshot <snapshot_name>
+----
 +
 La destinazione specificata per il ripristino è il volume originale su cui si sta eseguendo il ripristino.
 
@@ -116,5 +131,3 @@ vserverB  /vol/dstvolB/lun_C  online  unmapped windows  300.0GB
 6 entries were displayed.
 ----
 Una volta ripristinato il volume dal volume secondario SnapVault, il volume di origine non contiene più lun_D. Non è necessario rimappare le LUN nel volume di origine dopo il ripristino, perché sono ancora mappate.
-
-Ulteriori informazioni su `lun show` nella link:https://docs.netapp.com/us-en/ontap-cli/lun-show.html["Riferimento al comando ONTAP"^].
