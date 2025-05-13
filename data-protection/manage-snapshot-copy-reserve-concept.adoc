@@ -1,10 +1,10 @@
 ---
 permalink: data-protection/manage-snapshot-copy-reserve-concept.html 
 sidebar: sidebar 
-keywords: manage, snapshot, copy, reserve 
+keywords: manage, snapshot, copy, reserve, increase, protected files 
 summary: La riserva di snapshot mette da parte una percentuale di spazio su disco per gli snapshot, cinque percento per impostazione predefinita. Poiché gli snapshot utilizzano spazio nel file system attivo quando la riserva di snapshot è esaurita, è possibile aumentare la riserva di snapshot in base alle necessità. In alternativa, puoi eliminare automaticamente gli snapshot quando la riserva è piena. 
 ---
-= Consente di gestire la panoramica della riserva istantanea
+= Informazioni sulla gestione della riserva istantanea di ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -12,3 +12,50 @@ summary: La riserva di snapshot mette da parte una percentuale di spazio su disc
 
 [role="lead"]
 La _snapshot Reserve_ mette da parte una percentuale di spazio su disco per gli snapshot, il 5% per impostazione predefinita. Poiché gli snapshot utilizzano spazio nel file system attivo quando la riserva di snapshot è esaurita, è possibile aumentare la riserva di snapshot in base alle necessità. In alternativa, puoi eliminare automaticamente gli snapshot quando la riserva è piena.
+
+
+
+== Quando aumentare la riserva istantanea
+
+Nel decidere se aumentare la riserva di snapshot, è importante ricordare che un'istantanea registra solo le modifiche apportate ai file dall'ultima istantanea. Consuma spazio su disco solo quando i blocchi nel file system attivo vengono modificati o cancellati.
+
+Ciò significa che la velocità di modifica del file system è il fattore chiave per determinare la quantità di spazio su disco utilizzata dagli snapshot. Indipendentemente dal numero di snapshot create, non occuperanno spazio su disco se il file system attivo non è stato modificato.
+
+Un FlexVol volume contenente i registri delle transazioni dei database, ad esempio, potrebbe avere una riserva di snapshot fino al 20% per tenere conto del maggiore tasso di modifiche. Non solo si desidera creare più snapshot per acquisire gli aggiornamenti più frequenti del database, ma si desidera anche disporre di una riserva di snapshot più ampia per gestire lo spazio su disco aggiuntivo occupato dalle snapshot.
+
+[TIP]
+====
+Una snapshot è costituita da puntatori ai blocchi anziché da copie di blocchi. Si può pensare a un puntatore come a una "rivendicazione" su un blocco: ONTAP "mantiene" il blocco fino a quando lo snapshot non viene eliminato.
+
+====
+image:how-snapshots-consume-disk-space.gif["Spazio su disco occupato dalle snapshot"]
+
+
+
+== In che modo l'eliminazione dei file protetti può ridurre lo spazio dei file rispetto al previsto
+
+Un'istantanea punta a un blocco anche dopo aver eliminato il file che ha utilizzato il blocco. Questo spiega perché una riserva di snapshot esaurita può portare al risultato controintuitivo in cui l'eliminazione di un intero file system comporta una minore disponibilità di spazio rispetto al file system occupato.
+
+Si consideri il seguente esempio. Prima di eliminare qualsiasi file, il `df` l'output del comando è il seguente:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 3000000 0       100%
+/vol/vol0/.snapshot 1000000 500000  500000   50%
+----
+Dopo aver eliminato l'intero file system e aver creato uno snapshot del volume, `df` il comando genera il seguente output:
+
+[listing]
+----
+
+Filesystem          kbytes  used    avail  capacity
+/vol/vol0/          3000000 2500000 500000   83%
+/vol/vol0/.snapshot 1000000 3500000 0       350%
+----
+Come mostra l'output, tutti i 3 GB utilizzati in precedenza dal file system attivo vengono ora utilizzati dagli snapshot, oltre ai 0,5 GB utilizzati prima dell'eliminazione.
+
+Poiché lo spazio su disco utilizzato dagli snapshot supera ora la riserva snapshot, l'overflow di 2,5 GB "spills" nello spazio riservato ai file attivi, lasciandovi 0,5 GB di spazio libero per i file dove ci si poteva ragionevolmente aspettare 3 GB.
+
+Per ulteriori informazioni sui comandi descritti in questa procedura, consultare la link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^].
