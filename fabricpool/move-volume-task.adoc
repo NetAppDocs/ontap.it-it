@@ -34,6 +34,8 @@ Prima di ONTAP 9,8, lo spostamento di un volume in un altro livello locale ripri
 
 A partire da ONTAP 9,6, se il Tier locale di destinazione di uno spostamento del volume utilizza lo stesso bucket del Tier locale di origine, i dati sul volume di origine memorizzato nel bucket non si spostano di nuovo nel Tier locale. I dati in tiering rimangono a riposo e solo i dati più utilizzati devono essere spostati da un Tier locale a un altro. Questo spostamento ottimizzato dei volumi produce una notevole efficienza della rete.
 
+Ad esempio, uno spostamento di volume ottimizzato da 300 TB significa che, anche se 300 TB di dati inattivi vengono spostati da un livello locale a un altro, non verranno attivati 300 TB di letture e 300 TB di scritture nell'archivio oggetti.
+
 Gli spostamenti di volumi non ottimizzati generano traffico aggiuntivo di rete e calcolo (letture/GET e scritture/put), un aumento delle richieste sul cluster ONTAP e sull'archivio di oggetti, aumentando potenzialmente i costi durante il tiering negli archivi di oggetti pubblici.
 
 [NOTE]
@@ -59,11 +61,15 @@ Se durante lo spostamento del volume viene specificata un'altra policy di tierin
 
 === Metadati per volumi
 
-Indipendentemente dall'ottimizzazione dello spostamento di un volume, ONTAP memorizza le informazioni relative all'ubicazione di tutti i dati, inclusi i dati locali e i Tier. Quando un volume viene spostato da un Tier locale a un altro, queste informazioni devono essere spostate anche nel Tier locale di destinazione. Questi metadati rimangono sempre nel Tier locale, ma a seconda della quantità di dati in tiering questo può portare il processo di spostamento del volume a una conclusione più lunga del previsto.
+Indipendentemente dall'ottimizzazione dello spostamento di un volume, ONTAP memorizza una quantità significativa di metadati relativi a posizione, efficienza di archiviazione, autorizzazioni, modelli di utilizzo, ecc. di tutti i dati, sia locali che a livelli. I metadati rimangono sempre sul livello locale e non sono a livelli. Quando un volume viene spostato da un Tier locale a un altro, queste informazioni devono essere spostate anche nel Tier locale di destinazione.
 
-Ad esempio, uno spostamento di un volume ottimizzato di 300TB:significa che non è necessario spostare 300TB TB di dati "cold" da un Tier locale a un altro (o attivare 300TB GB di letture e 300TB TB di scritture nell'archivio di oggetti). Ma significa che i metadati associati a 300TB TB di dati (circa 15TB TB di dati in questo esempio) dovranno essere scritti nel Tier locale di destinazione.
 
-È importante comprendere che il "throughput" riportato dal `volume move show` comando non rappresenta il throughput in termini di spostamento dei dati dal Tier cloud, ma i metadati vengono aggiornati localmente.
+
+=== Durata
+
+Gli spostamenti di volume richiedono ancora tempo per essere completati e ci si dovrebbe aspettare che uno spostamento di volume ottimizzato richieda all'incirca lo stesso tempo dello spostamento di una stessa quantità di dati non suddivisi in livelli.
+
+È importante capire che la "capacità di elaborazione" riportata dal  `volume move show` il comando non rappresenta la produttività in termini di dati spostati dal livello cloud, ma dati di volume aggiornati localmente.
 
 
 NOTE: Quando si utilizza una relazione di disaster recovery di SVM, i volumi di origine e destinazione devono utilizzare la stessa policy di tiering.
