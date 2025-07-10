@@ -105,14 +105,14 @@ Non utilizzare la modalità di associazione rapida LDAP per l'autenticazione qua
 
 [listing]
 ----
-$curl -siku <user>:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user>,"<key_time_to_live>":"PT6H3M"}'
+$curl -siku <user>:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user>,"key_time_to_live":"PT6H3M"}
 ----
 
 NOTE: Indirizza l'API alla LIF di gestione cluster, non alla LIF dati della SVM. Se si desidera consentire agli utenti di generare le proprie chiavi, è necessario aggiungere autorizzazioni HTTP al ruolo per utilizzare curl. Questa autorizzazione si aggiunge alle autorizzazioni API S3.
 
 
 
-== Configurare l'accesso S3 per Active Directory o server CIFS
+== Configurare l'accesso S3 per i server Active Directory o SMB
 
 Se il gruppo di ricerca specificato nell'istruzione dei criteri bucket o gli utenti che fanno parte del gruppo di origine non hanno impostato UID e GID, le ricerche non vengono eseguite quando questi attributi non vengono trovati. Active Directory utilizza il SID, non l'UID. Se le voci SID non possono essere mappate su UID, i dati necessari devono essere portati su ONTAP.
 
@@ -120,7 +120,7 @@ A tale scopo, utilizza questa link:../authentication/enable-ad-users-groups-acce
 
 In alternativa, utilizzare link:../authentication/enable-ad-users-groups-access-cluster-svm-task.html["creazione cifs vserver"] per creare un server SMB in un dominio Active Directory.
 
-Per evitare errori di ricerca, NetApp consiglia di utilizzare domini attendibili per l'autorizzazione delle risorse in formato UPN: `nasgroup/group@trusted_domain.com`
+Se si utilizzano nomi di dominio diversi per i server dei nomi e gli archivi di oggetti, potrebbero verificarsi errori di ricerca. Per evitare errori di ricerca, NetApp consiglia di utilizzare domini attendibili per l'autorizzazione delle risorse in formato UPN:  `nasgroup/group@trusted_domain.com` I domini attendibili sono quelli che sono stati aggiunti all'elenco dei domini attendibili del server SMB. Scopri come link:../smb-admin/add-remove-replace-trusted-domains-preferred-lists-task.html["aggiungere, rimuovere e modificare i domini attendibili preferiti"] nell'elenco dei server SMB.
 
 
 
@@ -130,7 +130,7 @@ Utilizzare l' `s3/services/<svm_uuid>/users` endpoint con gli utenti specificati
 
 [listing]
 ----
-$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user@fqdn>,"<key_time_to_live>":"PT6H3M"}'
+$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user@fqdn>,"key_time_to_live":"PT6H3M"}
 ----
 
 NOTE: Indirizza l'API alla LIF di gestione cluster, non alla LIF dati della SVM. Se si desidera consentire agli utenti di generare le proprie chiavi, è necessario aggiungere autorizzazioni HTTP al ruolo per utilizzare curl. Questa autorizzazione si aggiunge alle autorizzazioni API S3.
@@ -143,7 +143,7 @@ Questa azione è possibile quando LDAP è disattivato o quando gli utenti non PO
 
 [listing]
 ----
-$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user[@fqdn]>,"<key_time_to_live>":"PT6H3M"}'
+$curl -siku FQDN\\user:<user_password> -X POST https://<LIF_IP_Address>/api/protocols/s3/services/<SVM_UUID>/users -d {"comment":"<S3_user_name>", "name":<user[@fqdn]>,"key_time_to_live":"PT6H3M"}
 ----
 
 NOTE: Indirizza l'API alla LIF di gestione cluster, non alla LIF dati della SVM. Se si desidera consentire agli utenti di generare le proprie chiavi, è necessario aggiungere autorizzazioni HTTP al ruolo per utilizzare curl. Questa autorizzazione si aggiunge alle autorizzazioni API S3. È necessario aggiungere il valore di dominio facoltativo (@fqdn) a un nome utente solo se non sono presenti domini attendibili.
