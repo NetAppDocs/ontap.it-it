@@ -37,10 +37,10 @@ Per alcuni tipi di traffico, potrebbe essere preferibile un'altra opzione di cri
 
 == Evoluzione dell'implementazione di ONTAP IPSec
 
-IPSec è stato introdotto per la prima volta con ONTAP 9.8. L'implementazione ha continuato ad evolversi e migliorare come descritto di seguito.
+IPsec è stato introdotto per la prima volta con ONTAP 9.8. L'implementazione ha continuato a evolversi nelle successive versioni ONTAP , come descritto di seguito.
 
-
-NOTE: Quando una funzionalità viene introdotta a partire da una specifica release di ONTAP, è supportata anche nelle versioni successive, se non diversamente specificato.
+.ONTAP 9.17.1
+Il supporto per l'offload hardware IPsec è esteso a link:../networking/combine_physical_ports_to_create_interface_groups.html["gruppi di aggregazione di link"] . link:../networking/ipsec-configure.html#define-the-security-policy-database-spd["Chiavi pre-condivise postquantistiche (PPK)"] sono supportati per l'autenticazione con chiavi pre-condivise IPsec (PSK).
 
 .ONTAP 9.16.1
 Molte delle operazioni crittografiche, come la crittografia e i controlli di integrità, possono essere scaricate su una scheda NIC supportata. Per ulteriori informazioni, vedere <<Funzione di offload dell'hardware IPSec>> .
@@ -49,7 +49,7 @@ Molte delle operazioni crittografiche, come la crittografia e i controlli di int
 Il supporto del protocollo host front-end IPSec è disponibile nelle configurazioni fabric-attached MetroCluster IP e MetroCluster. Il supporto IPSec fornito con i cluster MetroCluster è limitato al traffico host front-end e non è supportato nelle LIF intercluster MetroCluster.
 
 .ONTAP 9.10.1
-I certificati possono essere utilizzati per l'autenticazione IPsec oltre alle chiavi precondivise (PSK). Prima di ONTAP 9.10,1, per l'autenticazione sono supportati solo i PSK.
+Oltre alle PSK, è possibile utilizzare i certificati per l'autenticazione IPsec. Prima di ONTAP 9.10.1, solo le PSK erano supportate per l'autenticazione.
 
 .ONTAP 9.9.1
 Gli algoritmi di crittografia utilizzati da IPSec sono validati con FIPS 140-2-2. Questi algoritmi vengono elaborati dal modulo crittografico di NetApp in ONTAP che esegue la convalida FIPS 140-2.
@@ -70,35 +70,39 @@ Se si utilizza ONTAP 9.16,1 o versioni successive, è possibile eseguire l'offlo
 Prima di utilizzare la funzione di offload dell'hardware IPsec, è necessario prendere in considerazione diversi requisiti.
 
 .Schede Ethernet supportate
-È necessario installare e utilizzare solo schede Ethernet supportate. Le seguenti schede Ethernet sono supportate con ONTAP 9.16.1 sulle seguenti piattaforme. Per ulteriori informazioni sulle piattaforme e le schede supportate, vedere link:https://hwu.netapp.com/["NetApp Hardware Universe"^].
+È necessario installare e utilizzare solo schede Ethernet supportate. Le seguenti schede Ethernet sono supportate a partire da ONTAP 9.16.1:
 
 * X50131A (controller Ethernet 2P, 40G/100g/200G/400G)
-+
-La scheda X50131A è supportata sulle seguenti piattaforme:
-
-+
-** ASA A1K
-** ASA A90
-** ASA A70
-** AFF A1K
-** AFF A90
-** AFF A70
-
-
 * X60132A (controller Ethernet 4P, 10G/25g)
-+
-La scheda X60132A è supportata sulle seguenti piattaforme:
-
-+
-** ASA A50
-** ASA A30
-** ASA A20
-** AFF A50
-** AFF A30
-** AFF A20
 
 
+ONTAP 9.17.1 aggiunge il supporto per le seguenti schede Ethernet:
 
+* X50135A (controller Ethernet 2p, 40G/100G)
+* X60135A (controller Ethernet 2p, 40G/100G)
+
+
+Le schede X50131A e X50135A sono supportate sulle seguenti piattaforme:
+
+* ASA A1K
+* ASA A90
+* ASA A70
+* AFF A1K
+* AFF A90
+* AFF A70
+
+
+Le schede X60132A e X60135A sono supportate sulle seguenti piattaforme:
+
+* ASA A50
+* ASA A30
+* ASA A20
+* AFF A50
+* AFF A30
+* AFF A20
+
+
+Vedi il link:https://hwu.netapp.com/["NetApp Hardware Universe"^] per maggiori informazioni sulle piattaforme e sulle schede supportate.
 
 .Ambito del cluster
 La funzione di offload dell'hardware IPSec è configurata globalmente per il cluster. Così, ad esempio, il comando `security ipsec config` si applica a tutti i nodi nel cluster.
@@ -124,13 +128,15 @@ security ipsec config modify -replay-window 0
 Prima di utilizzare la funzione di offload dell'hardware IPsec, è necessario prendere in considerazione diverse limitazioni.
 
 .IPv6
-La versione IP 6 non è supportata per la funzione di offload dell'hardware IPsec. IPv6 è supportato solo con l'implementazione del software IPsec.
+IPv6 non è supportato per la funzionalità di offload hardware IPsec. IPv6 è supportato solo con l'implementazione software IPsec.
 
 .Numeri di sequenza estesi
 I numeri di sequenza estesi IPsec non sono supportati con la funzione di offload hardware. Vengono utilizzati solo i normali numeri di sequenza a 32 bit.
 
 .Aggregazione dei collegamenti
-La funzione di offload hardware IPsec non supporta l'aggregazione dei collegamenti. Pertanto, non può essere utilizzato con un'interfaccia o un gruppo di aggregazione dei collegamenti amministrato tramite i comandi all'interfaccia `network port ifgrp` CLI di ONTAP.
+A partire da ONTAP 9.17.1, è possibile utilizzare la funzionalità di offload hardware IPsec con un link:../networking/combine_physical_ports_to_create_interface_groups.html["gruppo di aggregazione di link"] .
+
+Prima della versione 9.17.1, la funzionalità di offload hardware IPsec non supporta l'aggregazione di link. Non può essere utilizzata con un'interfaccia o un gruppo di aggregazione di link amministrato tramite  `network port ifgrp` comandi nella CLI ONTAP .
 
 
 

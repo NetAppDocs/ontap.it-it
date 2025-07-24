@@ -1,0 +1,84 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/cloud-mediator-config-task.html 
+keywords: SM-BC, SMBC, cluster, peering, ONTAP Cloud Mediator, initialize, snapmirror active sync 
+summary: Quando si utilizza ONTAP Cloud Mediator con SnapMirror ActiveSync, è necessario innanzitutto confermare che i servizi BlueXP e le informazioni client siano configurati. 
+---
+= Configurare ONTAP Cloud Mediator per la sincronizzazione attiva SnapMirror
+:hardbreaks:
+:allow-uri-read: 
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.17.1, è possibile utilizzare ONTAP Cloud Mediator per garantire la continuità operativa monitorando lo stato di salute di ciascun cluster. ONTAP Cloud Mediator è un servizio basato su cloud. Quando si utilizza ONTAP Cloud Mediator con SnapMirror ActiveSync, è necessario innanzitutto verificare che i servizi BlueXP e le informazioni client siano configurati e garantire il corretto peering dei cluster.
+
+Come ONTAP Mediator, ONTAP Cloud Mediator fornisce un archivio persistente e protetto per i metadati ad alta disponibilità (HA) utilizzati dai cluster ONTAP in una relazione di sincronizzazione attiva SnapMirror . ONTAP Cloud Mediator offre una funzionalità di query sincrona sullo stato di salute dei nodi per facilitare la determinazione del quorum e funge da proxy ping per il rilevamento della vitalità del controller.
+
+.Prima di iniziare
+Prima di configurare ONTAP Cloud Mediator, è necessario confermare le seguenti informazioni:
+
+* Il cluster è configurato.
++
+link:cluster-config-task.html["Configurare i cluster ONTAP per la sincronizzazione attiva SnapMirror"]
+
+* Hai un abbonamento BlueXP valido.
++
+link:https://docs.netapp.com/us-en/bluexp-setup-admin/task-subscribe-standard-mode.html["Abbonati ai servizi dati BlueXP (modalità standard)"]
+
+* Hai copiato l'ID organizzazione BlueXP dalla console BlueXP e creato un account di servizio membro BlueXP da utilizzare durante la configurazione ONTAP Cloud Mediator. Quando crei l'account di servizio, l'organizzazione deve essere impostata sulla sottoscrizione in cui hai configurato ONTAP Cloud Mediator. La categoria deve essere impostata su *Applicazione* e il tipo di ruolo deve essere *Ruolo di configurazione di ONTAP Mediator*. Devi salvare l'ID client e il segreto client quando crei il ruolo.
++
+link:https://docs.netapp.com/us-en/bluexp-setup-admin/task-iam-manage-members-permissions.html#add-members["Aggiungi membri BlueXP e account di servizio"]
+
+
+
+.Fasi
+È possibile aggiungere ONTAP Cloud Mediator tramite System Manager o ONTAP CLI.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Vai a *Protezione > Panoramica > Mediatore* e seleziona *Aggiungi*.
+. Nella finestra *Aggiungi un mediatore*, seleziona *Cloud* come tipo di mediatore e inserisci le seguenti informazioni:
++
+** ID organizzazione BlueXP
+** ID cliente BlueXP
+** Segreto del client BlueXP
+
+
+. Selezionare il peer del cluster.
+. Se si utilizza un proxy HTTP e non è ancora configurato, immettere le informazioni sul proxy HTTP per gli host locali e remoti.
++
+Si consiglia di utilizzare un server proxy diverso per ogni peer del cluster.
+
+. Facoltativo: se è necessario installare un certificato CA radice in ONTAP, in particolare quando si utilizza un server proxy, incollare il certificato nella casella di testo fornita.
+. Selezionare *Aggiungi*.
+. Passare a *Protezione > Panoramica* e verificare lo stato della relazione tra i cluster ActiveSync SnapMirror e ONTAP Cloud Mediator.
+
+
+--
+.CLI
+--
+. Configurare ONTAP Cloud Mediator: 
+`snapmirror mediator add -peer-cluster <peerClusterName> -type cloud -bluexp-org-id <BlueXP Organization ID> -service-account-client-id <Service Account Client ID> -use-http-proxy-local <true|false> -use-http-proxy-remote <true|false>`
+. Controlla lo stato di ONTAP Cloud Mediator: 
+`snapmirror mediator show`
++
+Esempio:
+
++
+[listing]
+----
+C1_cluster::> snapmirror mediator show
+Mediator Address Peer Cluster     Connection Status Quorum Status Type
+---------------- ---------------- ----------------- ------------- -------
+0.0.0.0          C2_cluster       connected         true          cloud
+----
+
+
+--
+====

@@ -1,0 +1,93 @@
+---
+permalink: system-admin/use-hsts-task.html 
+sidebar: sidebar 
+keywords: manage, http, https, hsts, strict transport security, security, web, access, certificate, encrypted, connection, server, browser, web services 
+summary: Utilizzare HSTS per imporre connessioni HTTPS per i servizi Web ONTAP . 
+---
+= Utilizzare HSTS per i servizi Web ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+HTTP Strict Transport Security (HSTS) è un meccanismo di policy di sicurezza web che aiuta a proteggere i siti web da attacchi man-in-the-middle, come gli attacchi di downgrade del protocollo e il dirottamento dei cookie. Imponendo l'uso di HTTPS, HSTS garantisce che tutte le comunicazioni tra il browser dell'utente e il server siano crittografate. A partire da ONTAP 9.17.1, ONTAP può imporre connessioni HTTPS per i servizi web ONTAP .
+
+
+NOTE: HSTS viene applicato dal browser web solo dopo aver stabilito una connessione HTTPS sicura iniziale con ONTAP. Se il browser non stabilisce una connessione sicura iniziale, HSTS non verrà applicato. Consultare la documentazione del browser per informazioni sulla gestione di HSTS.
+
+.A proposito di questa attività
+* Per la versione 9.17.1 e successive, HSTS è abilitato per impostazione predefinita per i cluster ONTAP appena installati. Quando si esegue l'aggiornamento alla versione 9.17.1, HSTS non è abilitato per impostazione predefinita. È necessario abilitare HSTS dopo l'aggiornamento.
+* HSTS è supportato per tutti link:../system-admin/manage-web-services-concept.html["Servizi web ONTAP"] .
+
+
+.Prima di iniziare
+* Per le seguenti attività sono richiesti privilegi avanzati.
+
+
+
+
+== Mostra la configurazione HSTS
+
+È possibile visualizzare la configurazione HSTS corrente per verificare se è abilitata e visualizzare l'impostazione dell'età massima.
+
+.Fasi
+. Utilizzare il  `system services web show` comando per mostrare la configurazione corrente dei servizi web, incluse le impostazioni HSTS:
++
+[listing]
+----
+cluster-1::system services web*> show
+
+                   External Web Services: true
+                               HTTP Port: 80
+                              HTTPS Port: 443
+                         Protocol Status: online
+                       Per Address Limit: 80
+                     Wait Queue Capacity: 192
+                            HTTP Enabled: true
+                 CSRF Protection Enabled: true
+Maximum Number of Concurrent CSRF Tokens: 500
+       CSRF Token Idle Timeout (Seconds): 900
+   CSRF Token Absolute Timeout (Seconds): 0
+          Allow Web Management via Cloud: true
+Enforce Network Interface Service-Policy: -
+                            HSTS Enabled: true
+                  HSTS max age (Seconds): 63072000
+----
+
+
+
+
+== Abilita HSTS e imposta l'età massima
+
+A partire da ONTAP 9.17.1, HSTS è abilitato per impostazione predefinita sui nuovi cluster ONTAP . Se si aggiorna un cluster esistente alla versione 9.17.1 o successiva, è necessario abilitare manualmente HSTS sul cluster per imporre l'utilizzo di HTTPS. È possibile abilitare HSTS e impostare l'età massima. È possibile modificare l'età massima in qualsiasi momento se HSTS è abilitato. Una volta abilitato HSTS, i browser inizieranno a imporre connessioni sicure solo dopo aver stabilito una connessione sicura iniziale.
+
+.Fasi
+. Utilizzare il  `system services web modify` comando per abilitare HSTS o modificare l'età massima:
++
+[source, cli]
+----
+system services web modify -hsts-enabled true -hsts-max-age <seconds>
+----
++
+`-hsts-max-age` Specifica la durata in secondi per cui il browser ricorderà di attivare HTTPS. Il valore predefinito è 63072000 secondi (due anni).
+
+
+
+
+
+== Disabilitare HSTS
+
+I browser salvano l'impostazione relativa all'età massima di HSTS a ogni connessione e continuano ad applicare HSTS per l'intera durata, anche se HSTS è disabilitato su ONTAP. Dopo la disabilitazione, il browser dovrà attendere il raggiungimento della durata massima configurata per interrompere l'applicazione di HSTS. Se durante questo periodo di tempo diventa impossibile stabilire una connessione sicura, i browser che applicano HSTS non consentiranno l'accesso ai servizi web ONTAP fino alla risoluzione del problema o alla scadenza dell'età massima del browser.
+
+.Fasi
+. Disabilitare HSTS utilizzando  `system services web modify` comando:
++
+[source, cli]
+----
+system services web modify -hsts-enabled false
+----
+
+
+.Informazioni correlate
+link:https://datatracker.ietf.org/doc/html/rfc6797["RFC 6797 - Sicurezza del trasporto HTTP rigorosa (HSTS)"^]

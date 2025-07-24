@@ -11,32 +11,40 @@ summary: Le attività di gestione registrate nel registro di audit sono incluse 
 
 
 [role="lead"]
-Le attività di gestione registrate nel registro di audit sono incluse nei report standard di AutoSupport e alcune attività di registrazione sono incluse nei messaggi EMS. È inoltre possibile inoltrare il registro di controllo alle destinazioni specificate e visualizzare i file di registro di controllo utilizzando la CLI o un browser Web.
+Le attività di gestione registrate nel registro di controllo sono incluse nei report standard AutoSupport e alcune attività di registrazione sono incluse nei messaggi EMS. È inoltre possibile inoltrare il registro di controllo a destinazioni specificate e visualizzare i file di registro di controllo utilizzando l'interfaccia a riga di comando ONTAP o un browser web.
 
 A partire da ONTAP 9.11.1, è possibile visualizzare il contenuto del registro di controllo utilizzando Gestione di sistema.
 
 A partire da ONTAP 9.12.1, ONTAP fornisce avvisi di manomissione per i registri di controllo. ONTAP esegue un lavoro giornaliero in background per verificare la presenza di manomissioni di file audit.log e invia un avviso EMS se trova file di registro modificati o manomessi.
 
-ONTAP registra le attività di gestione eseguite sul cluster, ad esempio la richiesta emessa, l'utente che ha attivato la richiesta, il metodo di accesso dell'utente e l'ora della richiesta.
+A partire da ONTAP 9.17.1 e da ONTAP 9.16.1 P4 e dalle release successive della patch 9.16.1, link:audit-manage-cross-cluster-requests.html["è anche possibile registrare le attività di gestione remota avviate da un cluster peer utilizzando operazioni tra cluster"]. Queste attività includono operazioni interne e guidate dall'utente che hanno origine da un altro cluster
+
+.Attività di gestione registrate in ONTAP
+ONTAP registra le attività di gestione eseguite su un cluster, ad esempio la richiesta emessa, l'utente che ha attivato la richiesta, il metodo di accesso dell'utente e l'ora della richiesta.
 
 Le attività di gestione possono essere di uno dei seguenti tipi:
 
-* Richieste SET, che in genere si applicano a comandi o operazioni non di visualizzazione:
+* *Richieste SET*:
 +
+** Queste richieste si applicano in genere a comandi o operazioni non di visualizzazione.
 ** Queste richieste vengono emesse quando si esegue un `create`, `modify`, o. `delete` ad esempio.
-** Le richieste di set vengono registrate per impostazione predefinita.
+** Le richieste SET vengono registrate per impostazione predefinita.
 
 
-* Richieste GET, che recuperano le informazioni e le visualizzano nell'interfaccia di gestione:
+* *Richieste GET*:
 +
+** Queste richieste recuperano informazioni e le visualizzano nell'interfaccia di gestione.
 ** Queste richieste vengono emesse quando si esegue un `show` ad esempio.
-** LE richieste GET non vengono registrate per impostazione predefinita, ma è possibile controllare se LE richieste GET inviate dall'interfaccia CLI ONTAP (`-cliget`), dall'API ONTAP (`-ontapiget`) O dall'API REST (`-httpget`) sono registrati nel file.
+** Le richieste GET non vengono registrate per impostazione predefinita, ma è possibile controllare se le richieste GET vengono inviate dalla CLI ONTAP (`-cliget` ), dall'API ONTAP (`-ontapiget` ), oppure dall'API REST ONTAP (`-httpget` ) vengono registrati nel file.
 
 
 
 
-ONTAP registra le attività di gestione in `/mroot/etc/log/mlog/audit.log` file di un nodo. I comandi delle tre shell per i comandi CLI--la clustershell, il nodeshell e la shell di sistema non interattiva (i comandi interattivi della shell di sistema non sono registrati)--così come i comandi API sono registrati qui. I registri di audit includono timestamp per mostrare se tutti i nodi di un cluster sono sincronizzati in base all'ora.
+.Registrazione e rotazione del registro di controllo
+Attività di gestione dei record ONTAP nel  `/mroot/etc/log/mlog/audit.log` File di un nodo. I comandi provenienti dalle tre shell per i comandi CLI: clustershell, nodeshell e systemshell non interattiva, nonché i comandi API, vengono registrati qui. I comandi systemshell interattivi non vengono registrati. I log di audit includono timestamp per indicare se tutti i nodi di un cluster sono sincronizzati.
 
 Il `audit.log` Il file viene inviato dallo strumento AutoSupport ai destinatari specificati. È inoltre possibile inoltrare il contenuto in modo sicuro alle destinazioni esterne specificate, ad esempio un server Splunk o syslog.
 
 Il `audit.log` il file viene ruotato ogni giorno. La rotazione si verifica anche quando raggiunge 100 MB di dimensione e le precedenti 48 copie vengono conservate (con un totale massimo di 49 file). Quando il file di audit esegue la rotazione giornaliera, non viene generato alcun messaggio EMS. Se il file di audit ruota a causa del superamento del limite di dimensione del file, viene generato un messaggio EMS.
+
+Quando si abilita l'audit GET, si consiglia di configurare l'inoltro dei log per evitare la perdita di dati dovuta alla rapida rotazione dei log. Per ulteriori informazioni, consultare il seguente articolo della Knowledge Base: https://kb.netapp.com/on-prem/ontap/Ontap_OS/OS-KBs/Enabling_audit-log_forwarding["Abilitazione dell'inoltro del registro di controllo"^] .

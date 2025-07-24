@@ -1,0 +1,231 @@
+---
+permalink: encryption-at-rest/manage-keys-barbican-task.html 
+sidebar: sidebar 
+keywords: openstack, barbican, key vault, NVE keys, kms, keys, encryption, netapp volume encryption 
+summary: Utilizzare Barbican KMS per gestire le chiavi ONTAP NVE. 
+---
+= Gestisci le chiavi ONTAP con Barbican KMS
+:hardbreaks:
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.17.1, è possibile utilizzare OpenStack link:https://docs.openstack.org/barbican/latest/["Barbican KMS"^] per proteggere le chiavi di crittografia ONTAP . Barbican KMS è un servizio per l'archiviazione e l'accesso sicuro alle chiavi. Barbican KMS può essere utilizzato per proteggere le chiavi NetApp Volume Encryption (NVE) per le SVM di dati. Barbican si basa su link:https://docs.openstack.org/keystone/latest/["OpenStack Keystone"^] , servizio di identità di OpenStack, per l'autenticazione.
+
+.A proposito di questa attività
+È possibile configurare la gestione delle chiavi con Barbican KMS tramite la CLI o l'API REST ONTAP . Con la versione 9.17.1, il supporto di Barbican KMS presenta le seguenti limitazioni:
+
+* Barbican KMS non è supportato per NetApp Storage Encryption (NSE) e NetApp Aggregate Encryption (NAE). In alternativa, è possibile utilizzare link:enable-external-key-management-96-later-nve-task.html["KMIP esterni"] o il link:enable-onboard-key-management-96-later-nve-task.html["Gestore delle chiavi di bordo (OKM)"] per le chiavi NSE e NVE.
+* Barbican KMS non è supportato per le configurazioni MetroCluster .
+* Barbican KMS può essere configurato solo per una SVM dati. Non è disponibile per la SVM amministrativa.
+
+
+Salvo diversa indicazione, gli amministratori dell'  `admin` livello di privilegio può eseguire le seguenti procedure.
+
+.Prima di iniziare
+* Barbican KMS e OpenStack Keystone devono essere configurati. La SVM utilizzata con Barbican deve avere accesso di rete ai server Barbican e OpenStack Keystone .
+* Se si utilizza un'autorità di certificazione (CA) personalizzata per i server Barbican e OpenStack Keystone , è necessario installare il certificato CA con  `security certificate install -type server-ca -vserver <admin_svm>` .
+
+
+
+
+== Crea e attiva una configurazione Barbican KMS
+
+È possibile creare una nuova configurazione Barbican KMS per una SVM e attivarla. Una SVM può avere più configurazioni Barbican KMS inattive, ma solo una può essere attiva alla volta.
+
+.Fasi
+. Crea una nuova configurazione Barbican KMS inattiva per una SVM:
++
+[source, cli]
+----
+security key-manager external barbican create-config -vserver <svm_name> -config-name <unique_config_name> -key-id <key_id> -keystone-url <keystone_url> -application-cred-id <keystone_applications_credentials_id>
+----
++
+** `-key-id` è l'identificatore della chiave di crittografia a chiave Barbican (KEK). Inserisci un URL completo, incluso  `https://` .
+
+
++
+
+NOTE: Alcuni URL includono il carattere punto interrogativo (?). Il punto interrogativo attiva la guida attiva della riga di comando ONTAP . Per inserire un URL con un punto interrogativo, è necessario prima disattivare la guida attiva con il comando  `set -active-help false` . L'aiuto attivo può essere successivamente riattivato con il comando  `set -active-help true` . Scopri di più nel link:https://docs.netapp.com/us-en/ontap-cli/set.html["Riferimento al comando ONTAP"] .
+
++
+** `-keystone-url` è l'URL dell'host di autorizzazione OpenStack Keystone . Inserisci un URL completo, incluso  `https://` .
+** `-application-cred-id` è l'ID delle credenziali dell'applicazione.
++
+Dopo aver inserito questo comando, ti verrà richiesta la chiave segreta delle credenziali dell'applicazione. Questo comando crea una configurazione Barbican KMS inattiva.
+
++
+L'esempio seguente crea una nuova configurazione Barbican KMS inattiva denominata  `config1` per l'SVM  `svm1` :
+
++
+[listing]
+----
+cluster1::> security key-manager external barbican create-config -vserver svm1 -config-name config1 -keystone-url https://172.21.76.152:5000/v3 -application-cred-id app123 -key-id https://172.21.76.153:9311/v1/secrets/<id_value>
+
+Enter the Application Credentials Secret for authentication with Keystone: <key_value>
+----
+
+
+. Attiva la nuova configurazione Barbican KMS:
++
+[source, cli]
+----
+security key-manager keystore enable -vserver <svm_name> -config-name <unique_config_name> -keystore barbican
+----
++
+È possibile utilizzare questo comando per passare da una configurazione Barbican KMS all'altra. Se è già presente una configurazione Barbican KMS attiva sulla SVM, questa verrà disattivata e la nuova configurazione verrà attivata.
+
+. Verificare che la nuova configurazione Barbican KMS sia attiva:
++
+[source, cli]
+----
+security key-manager external barbican check -vserver <svm_name> -node <node_name>
+----
++
+Questo comando fornirà lo stato della configurazione Barbican KMS attiva sull'SVM o sul nodo. Ad esempio, se l'SVM  `svm1` sul nodo  `node1` ha una configurazione Barbican KMS attiva, il seguente comando restituirà lo stato di tale configurazione:
+
++
+[listing]
+----
+cluster1::> security key-manager external barbican check -node node1
+
+Vserver: svm1
+Node: node1
+
+Category: service_reachability
+              Status: OK
+
+Category: kms_wrapped_key_status
+              Status: OK
+----
+
+
+
+
+== Aggiornare le credenziali e le impostazioni di una configurazione Barbican KMS
+
+È possibile visualizzare e aggiornare le impostazioni correnti di una configurazione Barbican KMS attiva o inattiva.
+
+.Fasi
+. Visualizza le attuali configurazioni Barbican KMS per una SVM:
++
+[source, cli]
+----
+security key-manager external barbican show -vserver <svm_name>
+----
++
+Per ogni configurazione Barbican KMS sull'SVM vengono visualizzati l'ID chiave, l'URL OpenStack Keystone e l'ID delle credenziali dell'applicazione.
+
+. Aggiornare le impostazioni di una configurazione Barbican KMS:
++
+[source, cli]
+----
+security key-manager external barbican update-config -vserver <svm_name> -config-name <unique_config_name> -timeout <timeout> -verify <true|false> -verify-host <true|false>
+----
++
+Questo comando aggiorna le impostazioni di timeout e verifica della configurazione Barbican KMS specificata.  `timeout` determina il tempo in secondi che ONTAP attenderà che Barbican risponda prima che la connessione fallisca. L'impostazione predefinita  `timeout` è di dieci secondi.  `verify` E  `verify-host` Determina se l'identità e il nome host dell'host Barbican debbano essere verificati prima della connessione. Per impostazione predefinita, questi parametri sono impostati su  `true` . IL  `vserver` E  `config-name` I parametri sono obbligatori. Gli altri parametri sono facoltativi.
+
+. Se necessario, aggiorna le credenziali di una configurazione Barbican KMS attiva o inattiva:
++
+[source, cli]
+----
+security key-manager external barbican update-credentials -vserver <svm_name> -config-name <unique_config_name> -application-cred-id <keystone_applications_credentials_id>
+----
++
+Dopo aver immesso questo comando, ti verrà richiesta la chiave segreta delle nuove credenziali dell'applicazione.
+
+. Se necessario, ripristinare una chiave di crittografia della chiave SVM (KEK) mancante per una configurazione Barbican KMS attiva:
++
+.. Ripristinare un SVM KEK mancante con  `security key-manager external barbican restore` :
++
+[source, cli]
+----
+security key-manager external barbican restore -vserver <svm_name>
+----
++
+Questo comando ripristinerà l'SVM KEK per la configurazione Barbican KMS attiva comunicando con il server Barbican.
+
+
+
+. Se necessario, ricodificare la SVM KEK per una configurazione Barbican KMS:
++
+.. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+.. Ripristinare la chiave SVM KEK con  `security key-manager external barbican rekey-internal` :
++
+[source, cli]
+----
+security key-manager external barbican rekey-internal -vserver <svm_name>
+----
++
+Questo comando genera una nuova SVM KEK per la SVM specificata e riesegui il wrapping delle chiavi di crittografia del volume con la nuova SVM KEK. La nuova SVM KEK sarà protetta dalla configurazione Barbican KMS attiva.
+
+
+
+
+
+
+
+== Migrazione delle chiavi tra Barbican KMS e Onboard Key Manager
+
+È possibile migrare le chiavi da Barbican KMS a Onboard Key Manager (OKM) e viceversa. Per ulteriori informazioni su OKM, consultare link:enable-onboard-key-management-96-later-nse-task.html["Attiva la gestione delle chiavi integrata in ONTAP 9.6 e versioni successive"] .
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Se necessario, migrare le chiavi da Barbican KMS a OKM:
++
+[source, cli]
+----
+security key-manager key migrate -from-vserver <svm_name> -to-vserver <admin_svm_name>
+----
++
+`svm_name` è il nome dell'SVM con la configurazione Barbican KMS.
+
+. Se necessario, migrare le chiavi dall'OKM al Barbican KMS:
++
+[source, cli]
+----
+security key-manager key migrate -from-vserver <admin_svm_name> -to-vserver <svm_name>
+----
+
+
+
+
+== Disabilitare ed eliminare una configurazione Barbican KMS
+
+È possibile disattivare una configurazione Barbican KMS attiva senza volumi crittografati ed eliminare una configurazione Barbican KMS inattiva.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Disabilitare una configurazione Barbican KMS attiva:
++
+[source, cli]
+----
+security key-manager keystore disable -vserver <svm_name>
+----
++
+Se sull'SVM sono presenti volumi crittografati NVE, è necessario decrittografarli o <<Migrazione delle chiavi tra Barbican KMS e Onboard Key Manager,migrare le chiavi>> prima di disabilitare la configurazione di Barbican KMS. L'attivazione di una nuova configurazione di Barbican KMS non richiede la decrittografia dei volumi NVE o la migrazione delle chiavi e disabiliterà la configurazione di Barbican KMS attualmente attiva.
+
+. Elimina una configurazione Barbican KMS inattiva:
++
+[source, cli]
+----
+security key-manager keystore delete -vserver <svm_name> -config-name <unique_config_name> -type barbican
+----
+

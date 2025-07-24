@@ -1,7 +1,7 @@
 ---
 sidebar: sidebar 
 permalink: anti-ransomware/manage-parameters-task.html 
-keywords: anti-ransomware overview, ransomware, security, modify, security anti-ransomware attack, parameters 
+keywords: ransomware, security, modify, security anti-ransomware attack, parameters 
 summary: A partire da ONTAP 9.11.1, i parametri di rilevamento della protezione autonoma dal ransomware possono essere modificati in base al workload. 
 ---
 = Gestire i parametri di rilevamento degli attacchi alla protezione autonoma dal ransomware di ONTAP
@@ -22,8 +22,13 @@ A partire da ONTAP 9.11.1, puoi modificare i parametri per il rilevamento del ra
 
 == Come funziona il rilevamento degli attacchi
 
-Quando la protezione autonoma da ransomware (ARP) è in modalità di apprendimento, sviluppa valori di base per i comportamenti di volume. Si tratta di entropia, estensioni dei file e, a partire da ONTAP 9.11.1, IOPS. Queste baseline vengono utilizzate per valutare le minacce ransomware. Per ulteriori informazioni su questi criteri, vedere xref:index.html#what-arp-detects[Che cosa rileva ARP].
+Quando Autonomous Ransomware Protection (ARP) è in modalità di apprendimento o valutazione, sviluppa valori di base per i comportamenti dei volumi. Questi includono entropia, estensioni dei file e, a partire da ONTAP 9.11.1, IOPS. Questi valori di base vengono utilizzati per valutare le minacce ransomware. Per ulteriori informazioni su questi criteri, consultare link:index.html#what-arp-detects["Che cosa rileva ARP"] .
 
+Alcuni volumi e carichi di lavoro richiedono parametri di rilevamento diversi. Ad esempio, il volume abilitato per ARP può ospitare numerosi tipi di estensioni di file, nel qual caso è possibile modificare il conteggio delle soglie per le estensioni di file mai viste prima a un numero maggiore del valore predefinito di 20 o disattivare gli avvisi in base alle estensioni di file mai viste prima. A partire da ONTAP 9.11.1, puoi modificare i parametri di rilevamento degli attacchi per adattarli meglio ai tuoi carichi di lavoro specifici.
+
+A partire da ONTAP 9.14.1, è possibile configurare gli avvisi quando ARP osserva una nuova estensione di file e quando ARP crea uno snapshot. Per ulteriori informazioni, vedere <<modify-alerts>>.
+
+.Rilevamento degli attacchi negli ambienti NAS
 In ONTAP 9.10.1, ARP genera un avviso se rileva entrambe le seguenti condizioni:
 
 * Più di 20 file con estensioni non precedentemente osservate nel volume
@@ -33,28 +38,30 @@ In ONTAP 9.10.1, ARP genera un avviso se rileva entrambe le seguenti condizioni:
 A partire da ONTAP 9.11.1, ARP emette un avviso di minaccia se _solo_ viene soddisfatta una condizione. Ad esempio, se si osservano più di 20 file con estensioni che non sono state precedentemente osservate nel volume entro un periodo di 24 ore, ARP lo classificherà come una minaccia _indipendentemente_ dall'entropia osservata. I valori di 24 ore e 20 file sono predefiniti, che possono essere modificati.
 
 
-NOTE: Per ridurre un numero elevato di avvisi falsi positivi, andare a *Storage > Volumes > Security > Configure workload Characteristics* (archiviazione > volumi > sicurezza > Configura caratteristiche del carico di lavoro*) e disattivare *Monitor new file types* (monitora nuovi tipi di file*). Questa impostazione è disattivata per impostazione predefinita in ONTAP 9.14,1 P7, 9.15.1 P1 e 9.16.1 RC e versioni successive.
+NOTE: Per ridurre l'elevato numero di falsi positivi, accedere a *Archiviazione > Volumi > Sicurezza > Configura caratteristiche carico di lavoro* e disattivare *Monitoraggio nuovi tipi di file*. Questa impostazione è disattivata per impostazione predefinita in ONTAP 9.14.1 P7, 9.15.1 P1, 9.16.1 e versioni successive.
 
-A partire da ONTAP 9.14.1, è possibile configurare gli avvisi quando ARP osserva una nuova estensione di file e quando ARP crea uno snapshot. Per ulteriori informazioni, vedere <<modify-alerts>>.
-
-Alcuni volumi e carichi di lavoro richiedono parametri di rilevamento diversi. Ad esempio, il volume abilitato per ARP può ospitare numerosi tipi di estensioni di file, nel qual caso è possibile modificare il conteggio delle soglie per le estensioni di file mai viste prima a un numero maggiore del valore predefinito di 20 o disattivare gli avvisi in base alle estensioni di file mai viste prima. A partire da ONTAP 9.11.1, puoi modificare i parametri di rilevamento degli attacchi per adattarli meglio ai tuoi carichi di lavoro specifici.
+.Rilevamento degli attacchi in ambienti SAN
+A partire da ONTAP 9.17.1, ARP emette un avviso se rileva velocità di crittografia elevate che superano una soglia appresa automaticamente. Questa soglia viene stabilita dopo un link:respond-san-entropy-eval-period.html["periodo di valutazione"] ma può essere modificato.
 
 
 
 == Modificare i parametri di rilevamento degli attacchi
 
-A seconda dei comportamenti previsti del volume abilitato per ARP, è possibile modificare i parametri di rilevamento degli attacchi.
+A seconda del comportamento previsto del volume abilitato per ARP, potrebbe essere necessario modificare i parametri di rilevamento degli attacchi.
 
 .Fasi
 . Visualizzare i parametri di rilevamento degli attacchi esistenti:
 +
-`security anti-ransomware volume attack-detection-parameters show -vserver <svm_name> -volume <volume_name>`
-
+[source, cli]
+----
+security anti-ransomware volume attack-detection-parameters show -vserver <svm_name> -volume <volume_name>
+----
 +
 ....
 security anti-ransomware volume attack-detection-parameters show -vserver vs1 -volume vol1
                                              Vserver Name : vs1
                                               Volume Name : vol1
+           Block Device Auto Learned Encryption Threshold : 10
             Is Detection Based on High Entropy Data Rate? : true
   Is Detection Based on Never Seen before File Extension? : true
                   Is Detection Based on File Create Rate? : true
@@ -68,10 +75,7 @@ security anti-ransomware volume attack-detection-parameters show -vserver vs1 -v
  Never Seen before File Extensions Count Notify Threshold : 20
        Never Seen before File Extensions Duration in Hour : 24
 ....
-+
-Ulteriori informazioni su `security anti-ransomware volume attack-detection-parameters show` nella link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-attack-detection-parameters-show.html["Riferimento al comando ONTAP"^].
-
-. Tutti i campi visualizzati sono modificabili con valori booleani o interi. Per modificare un campo, utilizzare `security anti-ransomware volume attack-detection-parameters modify` comando.
+. Tutti i campi mostrati sono modificabili con valori booleani o interi. Per modificare un campo, utilizzare il  `security anti-ransomware volume attack-detection-parameters modify` comando.
 +
 Ulteriori informazioni su `security anti-ransomware volume attack-detection-parameters modify` nella link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-attack-detection-parameters-modify.html["Riferimento al comando ONTAP"^].
 
@@ -96,7 +100,10 @@ Ulteriori informazioni su `security anti-ransomware volume workload-behavior cle
 .Modificare il picco della linea di base
 . Se un picco segnalato deve essere considerato un normale comportamento dell'applicazione, riportare il picco in quanto tale per modificare il valore di picco della linea di base.
 +
-`security anti-ransomware volume workload-behavior update-baseline-from-surge -vserver <svm_name> -volume <volume_name>` Ulteriori informazioni su `security anti-ransomware volume workload-behavior update-baseline-from-surge` nella link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-workload-behavior-update-baseline-from-surge.html["Riferimento al comando ONTAP"^].
+`security anti-ransomware volume workload-behavior update-baseline-from-surge -vserver <svm_name> -volume <volume_name>`
+
++
+Scopri di più su  `security anti-ransomware volume workload-behavior update-baseline-from-surge` nel link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-workload-behavior-update-baseline-from-surge.html["Riferimento al comando ONTAP"^] .
 
 
 
@@ -112,24 +119,27 @@ A partire da ONTAP 9.14.1, ARP consente di specificare gli avvisi per due eventi
 
 È possibile impostare avvisi per questi due eventi su singoli volumi o per l'intera SVM. Se abiliti gli avvisi per la SVM, le impostazioni degli avvisi vengono ereditate solo dai volumi creati in seguito all'attivazione della funzione di avviso. Per impostazione predefinita, gli avvisi non sono attivati su alcun volume.
 
-Gli avvisi di eventi possono essere controllati con verifica multi-admin. Per ulteriori informazioni, vedere xref:use-cases-restrictions-concept.html#multi-admin-verification-with-volumes-protected-with-arp[Verifica multi-admin con volumi protetti con ARP].
+Gli avvisi sugli eventi possono essere controllati tramite la verifica multi-amministratore. Per ulteriori informazioni, consultare link:use-cases-restrictions-concept.html#multi-admin-verification-with-volumes-protected-with-arp["Verifica multi-admin con volumi protetti con ARP"] .
+
+.Fasi
+È possibile utilizzare System Manager o ONTAP CLI per impostare avvisi per eventi ARP.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
 .Impostare gli avvisi per un volume
-. Passare a **volumi**. Selezionare il singolo volume per il quale si desidera modificare le impostazioni.
-. Selezionare la scheda **sicurezza**, quindi **Impostazioni protezione eventi**.
-. Per ricevere avvisi relativi a **Nuova estensione rilevata** e **istantanea ransomware creata**, selezionare il menu a discesa sotto l'intestazione **gravità**. Modificare l'impostazione da **non generare evento** a **Avviso**.
-. Selezionare **Salva**.
+. Vai a *Volumi*. Seleziona il singolo volume di cui desideri modificare le impostazioni.
+. Selezionare la scheda *Sicurezza*, quindi *Impostazioni gravità evento*.
+. Per ricevere avvisi per *Nuova estensione file rilevata* e *Creazione snapshot ransomware*, seleziona il menu a discesa sotto la voce *Gravità*. Modifica l'impostazione da *Non generare evento* a *Avviso*.
+. Selezionare *Salva*.
 
 
 .Impostare gli avvisi per una SVM
-. Accedere a **Storage VM** quindi selezionare la SVM per la quale si desidera abilitare le impostazioni.
-. Sotto l'intestazione **sicurezza**, individuare la scheda **Anti-ransomware**. Selezionare image:../media/icon_kabob.gif["Icona delle opzioni di menu"] quindi **Modifica gravità evento ransomware**.
-. Per ricevere avvisi relativi a **Nuova estensione rilevata** e **istantanea ransomware creata**, selezionare il menu a discesa sotto l'intestazione **gravità**. Modificare l'impostazione da **non generare evento** a **Avviso**.
-. Selezionare **Salva**.
+. Passare a *Storage VM*, quindi selezionare la SVM per la quale si desidera abilitare le impostazioni.
+. Sotto la voce *Sicurezza*, individua la scheda *Anti-ransomware*. Seleziona image:../media/icon_kabob.gif["Icona delle opzioni di menu"] quindi *Modifica gravità evento ransomware*.
+. Per ricevere avvisi per *Nuova estensione file rilevata* e *Creazione snapshot ransomware*, seleziona il menu a discesa sotto la voce *Gravità*. Modifica l'impostazione da *Non generare evento* a *Avviso*.
+. Selezionare *Salva*.
 
 
 --
@@ -145,9 +155,6 @@ Gli avvisi di eventi possono essere controllati con verifica multi-admin. Per ul
 `security anti-ransomware volume event-log modify -vserver <svm_name> -is-enabled-on-snapshot-copy-creation true`
 
 * Confermare le impostazioni con `anti-ransomware volume event-log show` comando.
-+
-Ulteriori informazioni su `security anti-ransomware volume event-log show` nella link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-event-log-show.html["Riferimento al comando ONTAP"^].
-
 
 
 .Impostare gli avvisi per una SVM
@@ -159,14 +166,10 @@ Ulteriori informazioni su `security anti-ransomware volume event-log show` nella
 +
 `security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-snapshot-copy-creation true`
 
-+
-Ulteriori informazioni su `security anti-ransomware vserver event-log modify` nella link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-vserver-event-log-modify.html["Riferimento al comando ONTAP"^].
-
 * Confermare le impostazioni con `security anti-ransomware vserver event-log show` comando.
-+
-Ulteriori informazioni su `security anti-ransomware vserver event-log show` nella link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-vserver-event-log-show.html["Riferimento al comando ONTAP"^].
 
 
+Scopri di più su  `security anti-ransomware vserver event-log` comandi nel link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security-anti-ransomware-vserver-event-log["Riferimento al comando ONTAP"^] .
 
 --
 ====

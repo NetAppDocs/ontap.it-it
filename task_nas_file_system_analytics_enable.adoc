@@ -18,6 +18,9 @@ summary: 'Per raccogliere e visualizzare i dati di utilizzo, ad esempio l"analis
 [role="lead"]
 Per raccogliere e visualizzare i dati di utilizzo, ad esempio l'analisi della capacità, è necessario attivare l'analisi del file system su un volume.
 
+
+NOTE: A partire da ONTAP 9.17.1, i volumi creati su SVM di nuova creazione su cluster ONTAP allocati per protocolli NAS ora hanno la funzionalità File System Analytics (FSA) abilitata per impostazione predefinita. La funzionalità FSA viene attivata automaticamente non appena viene creato un volume, fornendo funzionalità di analisi immediate senza ulteriori configurazioni. Se non si desidera abilitare la funzionalità File System Analytics sui nuovi volumi, è necessario  https://docs.netapp.com/us-en/ontap-cli/volume-analytics-off.html["disabilitare FSA sui nuovi volumi"^] dall'SVM.
+
 .A proposito di questa attività
 * A partire da ONTAP 9.8, è possibile attivare l'analisi del file system su un volume nuovo o esistente. Se si aggiorna un sistema a ONTAP 9.8 o versioni successive, assicurarsi che tutti i processi di aggiornamento siano stati completati prima di attivare l'analisi del file system.
 * Il tempo necessario per abilitare l'analisi dipende dalle dimensioni e dal contenuto del volume. System Manager visualizza l'avanzamento e presenta i dati di analisi una volta completati. Se sono necessarie informazioni più precise sull'avanzamento della scansione di inizializzazione, è possibile utilizzare il comando CLI ONTAP `volume analytics show`.
@@ -61,8 +64,15 @@ Per raccogliere e visualizzare i dati di utilizzo, ad esempio l'analisi della ca
 .CLI
 --
 .Abilitare l'analisi del file system con la CLI
-. Eseguire il seguente comando:
-`volume analytics on -vserver _svm_name_ -volume _volume_name_ [-foreground {true|false}]`Per impostazione predefinita, il comando viene eseguito in primo piano; ONTAP visualizza l'avanzamento e presenta i dati di analisi al termine. Per informazioni più precise, è possibile eseguire il comando in background utilizzando `-foreground false` e quindi utilizzare `volume analytics show` Per visualizzare l'avanzamento dell'inizializzazione nella CLI.
+. Esegui il seguente comando:
++
+[source, cli]
+----
+volume analytics on -vserver <svm_name> -volume <volume_name> [-foreground {true|false}]
+----
++
+Per impostazione predefinita, il comando viene eseguito in primo piano; ONTAP visualizza lo stato di avanzamento e presenta dati analitici al termine. Se sono necessarie informazioni più precise, è possibile eseguire il comando in background utilizzando  `-foreground false` opzione e quindi utilizzare l'  `volume analytics show` comando per visualizzare l'avanzamento dell'inizializzazione nella CLI.
+
 . Dopo aver attivato correttamente l'analisi del file system, utilizzare Gestione sistema o l'API REST di ONTAP per visualizzare i dati analitici.
 
 
@@ -84,22 +94,22 @@ A partire da ONTAP 9.13.1, puoi modificare le impostazioni di SVM o del cluster 
 Se si utilizza System Manager, è possibile modificare le impostazioni della macchina virtuale dello storage o del cluster per abilitare l'analisi della capacità e il monitoraggio delle attività alla creazione del volume per impostazione predefinita. L'abilitazione predefinita si applica solo ai volumi creati dopo la modifica delle impostazioni, non ai volumi esistenti.
 
 .Modificare le impostazioni di analisi del file system su un cluster
-. In System Manager, accedere a **Impostazioni cluster**.
-. In **Impostazioni cluster**, esaminare la scheda Impostazioni file system. Per modificare le impostazioni, selezionare l' image:icon_gear.gif["Icona delle azioni"] icona .
-. Nel campo **monitoraggio attività**, immettere i nomi delle SVM per cui attivare il monitoraggio attività per per impostazione predefinita. Se si lascia il campo vuoto, il monitoraggio attività viene disattivato su tutte le SVM.
+. In Gestione sistema, vai a *Impostazioni cluster*.
+. Nelle *Impostazioni cluster*, rivedere la scheda Impostazioni file system. Per modificare le impostazioni, selezionare image:icon_gear.gif["Icona delle azioni"] icona.
+. Nel campo *Monitoraggio attività*, inserisci i nomi delle SVM per cui abilitare il monitoraggio attività per impostazione predefinita. Lasciando vuoto il campo, il monitoraggio attività rimarrà disabilitato su tutte le SVM.
 +
-Deselezionare la casella **Enable on new storage vms** (attiva sulle nuove macchine virtuali storage) per disattivare il monitoraggio delle attività per impostazione predefinita sulle nuove macchine virtuali storage.
+Deseleziona la casella *Abilita su nuove VM di archiviazione* per disabilitare il monitoraggio delle attività per impostazione predefinita sulle nuove VM di archiviazione.
 
-. Nel campo **Analytics**, immettere i nomi delle VM di storage per le quali si desidera abilitare l'analisi della capacità per impostazione predefinita. Lasciando il campo vuoto, l'analisi della capacità viene disattivata su tutte le SVM.
+. Nel campo *Analisi*, inserisci i nomi delle VM di storage per cui desideri abilitare l'analisi della capacità per impostazione predefinita. Lasciando vuoto il campo, l'analisi della capacità rimarrà disabilitata su tutte le SVM.
 +
-Deselezionare la casella **Enable on new storage VM** (attiva sulle nuove macchine virtuali storage) per disattivare l'analisi della capacità per impostazione predefinita sulle nuove macchine virtuali storage.
+Deseleziona la casella *Abilita su nuove VM di archiviazione* per disabilitare per impostazione predefinita l'analisi della capacità sulle nuove VM di archiviazione.
 
-. Selezionare **Salva**.
+. Selezionare *Salva*.
 
 
 .Modificare le impostazioni di analisi del file system su una SVM
-. Selezionare la SVM che si desidera modificare, quindi **Impostazioni Storage VM**.
-. Nella scheda **analisi del file system**, utilizzare i pulsanti per attivare o disattivare il monitoraggio delle attività e l'analisi della capacità per tutti i nuovi volumi sulla VM di storage.
+. Selezionare la SVM che si desidera modificare, quindi *Impostazioni VM di archiviazione*.
+. Nella scheda *Analisi file system*, utilizzare i pulsanti di attivazione/disattivazione per abilitare o disabilitare il monitoraggio delle attività e l'analisi della capacità per tutti i nuovi volumi sulla VM di archiviazione.
 
 
 --
@@ -108,13 +118,18 @@ Deselezionare la casella **Enable on new storage VM** (attiva sulle nuove macchi
 È possibile configurare la VM di storage per abilitare l'analisi del file system per impostazione predefinita sui nuovi volumi utilizzando l'interfaccia CLI di ONTAP.
 
 .Abilitare l'analisi del file system per impostazione predefinita su una SVM
-. Modificare la SVM per attivare l'analisi della capacità e il monitoraggio delle attività per impostazione predefinita su tutti i volumi appena creati:
-`vserver modify -vserver _svm_name_ -auto-enable-activity-tracking true -auto-enable-analytics true`
+. Modificare l'SVM per abilitare l'analisi della capacità e il monitoraggio delle attività per impostazione predefinita su tutti i volumi appena creati:
++
+[source, cli]
+----
+vserver modify -vserver <svm_name> -auto-enable-activity-tracking true -auto-enable-analytics true
+----
++
+Ulteriori informazioni su `vserver modify` nella link:https://docs.netapp.com/us-en/ontap-cli/vserver-modify.html["Riferimento al comando ONTAP"^].
+
 
 
 --
-Ulteriori informazioni su `vserver modify` nella link:https://docs.netapp.com/us-en/ontap-cli/vserver-modify.html["Riferimento al comando ONTAP"^].
-
 ====
 .Informazioni correlate
 * link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^]

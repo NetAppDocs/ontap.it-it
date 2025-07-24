@@ -4,7 +4,7 @@ permalink: snapmirror-active-sync/index.html
 keywords: SM-BC, SMBC, failover, terms, benefits, snapmirror active sync, TR-4878 
 summary: Utilizza SnapMirror Active Sync per proteggere le applicazioni con le LUN, consentendo il failover delle applicazioni in modo trasparente, garantendo la business continuity in caso di disastro. 
 ---
-= Panoramica della sincronizzazione attiva di SnapMirror in ONTAP
+= Scopri di più sulla sincronizzazione attiva ONTAP SnapMirror
 :hardbreaks:
 :allow-uri-read: 
 :nofooter: 
@@ -16,9 +16,68 @@ summary: Utilizza SnapMirror Active Sync per proteggere le applicazioni con le L
 [role="lead"]
 La sincronizzazione attiva di SnapMirror (detta anche SnapMirror Business Continuity _[SM-BC]_) permette ai servizi aziendali di continuare a funzionare anche attraverso un guasto completo del sito, supportando il failover delle applicazioni in modo trasparente utilizzando una copia secondaria. Non sono richiesti interventi manuali o script personalizzati per attivare un failover con la sincronizzazione attiva di SnapMirror.
 
-Disponibile a partire da ONTAP 9,9.1, la sincronizzazione attiva di SnapMirror è supportata sui cluster AFF, sui cluster ASA (All-Flash SAN Array) e su C-Series (AFF o ASA). I cluster primari e secondari devono essere dello stesso tipo: ASA o AFF. La sincronizzazione attiva di SnapMirror protegge le applicazioni con LUN iSCSI o FCP.
+Il supporto per la sincronizzazione attiva SnapMirror varia a seconda della versione di ONTAP:
 
-A partire da ONTAP 9.15.1, la sincronizzazione attiva di SnapMirror supporta un xref:architecture-concept.html[funzionalità active/active simmetrica]. Active/Active simmetrico consente operazioni di i/o in lettura e scrittura da entrambe le copie di una LUN protetta con replica sincrona bidirezionale, in modo che entrambe le copie LUN possano servire le operazioni di i/o a livello locale. Prima di ONTAP 9.15.1, la sincronizzazione attiva di SnapMirror supporta solo configurazioni Active/Active asimmetriche, in cui i dati sul sito secondario sono sottoposti a un proxy in un LUN. A partire da ONTAP 9.16.1 GA, è supportato anche Active/Active simmetrico in cluster ONTAP a quattro nodi.
+[cols="4*"]
+|===
+
+
+| Versione di ONTAP | Cluster supportati | Protocolli supportati | Configurazioni supportate 
+
+
+| 9.17.1 e versioni successive  a| 
+* AFF
+* ASA
+* C-Series
+* ASA r2
+
+ a| 
+* ISCSI
+* FC
+* NVMe
+
+ a| 
+* Asimmetrico attivo/attivo
+
+
+
+NOTE: L'attivo/attivo asimmetrico non supporta ASA r2 e NVMe Per ulteriori informazioni sul supporto NVMe, vedere link:../nvme/support-limitations.html["Configurazione, supporto e limitazioni NVMe"] .
+
+* Attivo/attivo simmetrico
+
+
+
+
+| 9.15.1 e versioni successive  a| 
+* AFF
+* ASA
+* C-Series
+
+ a| 
+* ISCSI
+* FC
+
+ a| 
+* Asimmetrico attivo/attivo
+* Le configurazioni simmetriche attive/attive supportano cluster a 2 nodi in ONTAP 9.15.1. I cluster a 4 nodi sono supportati in ONTAP 9.16.1 e versioni successive.
+
+
+
+
+| 9.9.1 e versioni successive  a| 
+* AFF
+* ASA
+* Serie C *
+
+ a| 
+* ISCSI
+* FC
+
+ a| 
+Asimmetrico attivo/attivo
+
+|===
+I cluster primari e secondari devono essere dello stesso tipo: link:../san-admin/learn-about-asa.html["ASA"] , link:https://docs.netapp.com/us-en/asa-r2/get-started/learn-about.html["ASA r2"^] , o AFF.
 
 
 NOTE: A partire da luglio 2024, il contenuto dei report tecnici precedentemente pubblicati come PDF è stato integrato nella documentazione del prodotto ONTAP. La documentazione relativa alla sincronizzazione attiva di ONTAP SnapMirror ora include il contenuto del documento _TR-4878: Sincronizzazione attiva di SnapMirror_.
@@ -35,35 +94,34 @@ SnapMirror Active Sync offre i seguenti benefici:
 * Possibilità di testare il failover per ogni applicazione.
 * Creazione istantanea di cloni in mirroring senza influire negativamente sulla disponibilità applicativa.
 * Possibilità di implementare carichi di lavoro protetti e non protetti nello stesso cluster ONTAP.
-* L'identità LUN rimane invariata, pertanto l'applicazione le vede come un dispositivo virtuale condiviso.
+* L'identità della LUN, dello spazio dei nomi NVMe, del sottosistema NVMe o dell'unità di archiviazione rimane la stessa, quindi l'applicazione li vede come un dispositivo virtuale condiviso.
 * Possibilità di riutilizzare i cluster secondari con la flessibilità per creare cloni istantanei per l'utilizzo delle applicazioni a scopo di sviluppo-test, UAT o di reporting senza influire negativamente sulla disponibilità o sulla performance applicativa.
 
 
-SnapMirror Active Sync ti consente di proteggere le LUN dei dati, il che permette il failover delle applicazioni in modo trasparente al fine della business continuity in caso di disastro. Per ulteriori informazioni, vedere link:use-cases-concept.html["Casi di utilizzo"].
+La sincronizzazione attiva SnapMirror consente di proteggere le LUN dei dati o gli spazi dei nomi NVMe, consentendo alle applicazioni di eseguire il failover in modo trasparente per garantire la continuità aziendale in caso di emergenza. Per ulteriori informazioni, consultare link:use-cases-concept.html["Casi di utilizzo"] .
 
 
 
 == Concetti chiave
 
-SnapMirror Active Sync utilizza gruppi di coerenza e ONTAP Mediator per garantire che i dati vengano replicati e serviti anche in caso di emergenza. Nel pianificare la distribuzione di SnapMirror Active Sync, è importante comprendere i concetti fondamentali di SnapMirror Active Sync e la sua architettura.
+SnapMirror Active Sync utilizza gruppi di coerenza e ONTAP Mediator o, a partire da ONTAP 9.17.1, ONTAP Cloud Mediator per garantire che i dati vengano replicati e gestiti anche in caso di emergenza. Quando si pianifica l'implementazione SnapMirror Active Sync, è importante comprendere i concetti essenziali di SnapMirror Active Sync e della sua architettura.
 
 .Asimmetria e simmetria
-SnapMirror Active Sync supporta soluzioni asimmetriche e, a partire da ONTAP 9.15.1, Active/Active simmetriche. Queste opzioni fanno riferimento al modo in cui gli host accedono ai percorsi di storage e scrivono i dati. In una configurazione asimmetrica, i dati sul sito secondario vengono forniti a un LUN. In una configurazione Active/Active simmetrica, entrambi i siti possono accedere allo storage locale per l'i/o attivo
+Nelle configurazioni simmetriche attive/attive, entrambi i siti possono accedere allo storage locale per l'I/O attivo. La configurazione simmetrica attiva/attiva è ottimizzata per applicazioni in cluster, tra cui VMware vMSC, Windows Failover Cluster con SQL e Oracle RAC.
 
-Active/Active simmetrico è ottimizzato per le applicazioni in cluster, tra cui VMware vMSC, Windows failover Cluster con SQL e Oracle RAC.
-
+ In asymmetric active/active configurations data on the secondary site is proxied to a LUN, namespace or storage unit.
 Per ulteriori informazioni, vedere xref:architecture-concept.html[Architettura SnapMirror Active Sync].
 
 .Gruppo di coerenza
-R link:../consistency-groups/index.html["gruppo di coerenza"] Una raccolta di volumi FlexVol che offre una garanzia di coerenza per il workload dell'applicazione da proteggere per la business continuity.
+Per i sistemi AFF e ASA a link:../consistency-groups/index.html["gruppo di coerenza"] è una raccolta di volumi FlexVol che forniscono una garanzia di coerenza per il carico di lavoro dell'applicazione che deve essere protetto per la continuità aziendale. Nei sistemi ASA r2, un gruppo di coerenza è una raccolta di unità di storage.
 
-Lo scopo di un gruppo di coerenza è quello di acquisire immagini snapshot simultanee di più volumi, garantendo così copie coerenti con i crash di una raccolta di volumi in un point-in-time. Un gruppo di coerenza garantisce che tutti i volumi di un set di dati siano inattivi e quindi schioccati esattamente nello stesso momento. In questo modo, si otterrà un punto di ripristino coerente con i dati nei volumi che supportano il set di dati. Un gruppo di coerenza mantiene quindi la coerenza dell'ordine di scrittura dipendente. Se si decide di proteggere le applicazioni per la business continuity, il gruppo di volumi corrispondenti a questa applicazione deve essere aggiunto a un gruppo di coerenza in modo da stabilire una relazione di protezione dei dati tra un gruppo di coerenza di origine e uno di destinazione. La coerenza di origine e destinazione deve contenere lo stesso numero e tipo di volumi.
+Lo scopo di un gruppo di coerenza è acquisire immagini snapshot simultanee di una raccolta di volumi o unità di storage, garantendo così copie della raccolta coerenti con gli arresti anomali in un determinato momento. Un gruppo di coerenza garantisce che tutti i volumi di un set di dati vengano messi in stato di quiescenza e quindi acquisiti esattamente nello stesso momento. Ciò fornisce un punto di ripristino coerente a livello di dati su tutti i volumi o le unità di storage che supportano il set di dati. Un gruppo di coerenza mantiene quindi la coerenza dell'ordine di scrittura dipendente. Se si decide di proteggere le applicazioni per la continuità operativa, il gruppo di volumi o unità di storage corrispondente a tale applicazione deve essere aggiunto a un gruppo di coerenza in modo da stabilire una relazione di protezione dei dati tra un gruppo di coerenza di origine e uno di destinazione. La coerenza di origine e di destinazione deve contenere lo stesso numero e tipo di volumi.
 
 .Costituente
-Un singolo volume o LUN che fa parte del gruppo di coerenza protetto nella relazione di sincronizzazione attiva di SnapMirror.
+Un singolo volume, LUN o namespace NVMe (a partire da ONTAP 9.17.1) che fa parte del gruppo di coerenza protetto nella relazione di sincronizzazione attiva SnapMirror .
 
 .Mediatore ONTAP
-Il link:../mediator/index.html["Mediatore ONTAP"] Riceve informazioni sulla salute dei cluster e dei nodi ONTAP in peering, orchestrando tra i due e determinando l'integrità e il funzionamento di ciascun nodo/cluster. ONTAP Mediator fornisce le informazioni sanitarie relative a:
+IL link:../mediator/index.html["Mediatore ONTAP"] Riceve informazioni sullo stato di salute dei cluster e dei nodi ONTAP peer, orchestrando i due e determinando se ciascun nodo/cluster è integro e funzionante. ONTAP Mediator fornisce informazioni sullo stato di salute relative a:
 
 * Cluster peer ONTAP
 * Nodi del cluster peer ONTAP
@@ -80,6 +138,9 @@ Grazie a queste informazioni sullo stato di salute di ONTAP Mediator, i cluster 
 
 
 NOTE: A partire da ONTAP 9.15.1, System Manager visualizza lo stato della relazione di sincronizzazione attiva di SnapMirror da uno dei cluster. È inoltre possibile monitorare lo stato di ONTAP Mediator da entrambi i cluster in Gestione di sistema. Nelle release precedenti di ONTAP, System Manager visualizza lo stato delle relazioni di sincronizzazione attive di SnapMirror dal cluster di origine.
+
+.Mediatore cloud ONTAP
+ONTAP Cloud Mediator è disponibile a partire da ONTAP 9.17.1. ONTAP Cloud Mediator fornisce gli stessi servizi di ONTAP Mediator, ma è ospitato nel cloud tramite BlueXP.
 
 .Failover pianificato
 Operazione manuale per la modifica del ruolo delle copie in una relazione di sincronizzazione attiva di SnapMirror. I siti primari diventano i secondari, mentre i siti secondari diventano quelli primari.
