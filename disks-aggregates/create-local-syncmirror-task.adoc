@@ -1,0 +1,63 @@
+---
+permalink: disks-aggregates/create-local-syncmirror-task.html 
+sidebar: sidebar 
+keywords: ontap 9, create, aggregates, syncmirror, sync mirror, add, local tier 
+summary: È possibile abilitare SyncMirror quando si crea manualmente un livello locale per eseguire il mirroring sincrono dei dati del livello locale. 
+---
+= Aggiungi livelli locali ONTAP con SyncMirror abilitato
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+È possibile abilitare SyncMirror quando si crea manualmente un livello locale per eseguire il mirroring sincrono dei dati del livello locale.
+
+Scopri di più su link:../concepts/mirrored-unmirrored-aggregates-concept.html["livelli locali speculari e non speculari"] .
+
+.Prima di iniziare
+* Il cluster deve essere inizializzato solo con storage interno.
+* La configurazione del cluster deve essere completata su entrambi i nodi.
+
+
+.A proposito di questa attività
+Questa procedura crea livelli locali di dati speculari di dimensioni uguali su ciascun nodo del cluster e ogni livello locale ha un numero di dischi pari a 44.
+
+.Fasi
+. Disabilita l'assegnazione automatica dello spazio di archiviazione:
++
+`storage disk option modify -node * -autoassign off`
+
+. Verificare che l'assegnazione automatica sia disabilitata:
++
+`storage disk option show`
+
+. Fissare il ripiano esterno.
+. Assegnare le unità esterne a ciascun nodo specificando il pool 1:
++
+`storage disk assign -disk <disk ID> -owner <node name> -pool 1`
+
+. Esegui il mirroring del livello locale radice su ciascun nodo:
++
+`storage aggregate mirror -aggregate <node1 root-aggr>`
+
++
+`storage aggregate mirror -aggregate <node2 root-aggr>`
+
++
+
+NOTE: Le unità nel pool 1 vengono automaticamente partizionate in modo da corrispondere a quelle nel plex 0.
+
+. Sul nodo 1, creare un livello locale di dati speculari utilizzando un numero di dischi pari a 44.  In questo modo vengono selezionate 22 partizioni dal pool 0 e 22 partizioni dal pool 1.
++
+`storage aggregate create -node <node1 name> -aggregate <node1 aggr-name> -diskcount 44 -mirror true`
+
+. Sul nodo 2, creare un livello locale di dati speculari utilizzando un numero di dischi pari a 44.  In questo modo vengono selezionate 22 partizioni dal pool 0 e 22 partizioni dal pool 1.
++
+`storage aggregate create -node <node2 name> -aggregate <node2 aggr-name> -diskcount 44 -mirror true`
+
+. Verificare che i livelli locali di pari dimensioni siano stati creati correttamente:
++
+`storage aggregate show`
+
+
