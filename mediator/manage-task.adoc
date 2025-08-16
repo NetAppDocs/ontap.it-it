@@ -205,12 +205,18 @@ CGroup: /system.slice/ontap_mediator.service
 
 
 
-== Disinstallare manualmente SCST per eseguire la manutenzione dell'host
+== Eseguire la manutenzione dell'host
+
+Se la VM che esegue ONTAP Mediator deve essere aggiornata con un kernel più recente, ciò potrebbe causare problemi di compatibilità con i moduli kernel SCST utilizzati da ONTAP Mediator.  In questo scenario, NetApp consiglia di disinstallare e reinstallare manualmente SCST.
+
+
+
+=== Passaggio 1: disinstallare manualmente SCST
 
 Per disinstallare SCST, è necessario il pacchetto tar SCST utilizzato per la versione installata di ONTAP Mediator.
 
 .Fasi
-. Scaricare il pacchetto SCST appropriato (come mostrato nella tabella seguente) e scaricarlo.
+. Scaricare il bundle SCST appropriato (come mostrato nella tabella seguente) ed estrarlo.
 +
 [cols="50,50"]
 |===
@@ -295,7 +301,13 @@ Mediatore ONTAP 1.0
 scst-3.3.0.tar.bz2
 
 |===
-. Eseguire i seguenti comandi nella directory "scst":
++
+.. Accedi al pacchetto open source dalink:https://scst.sourceforge.net/downloads.html["Download di SCST Sourceforge"^] .
+.. Seleziona *Scarica le versioni rilasciate*.
+.. Estrarre il bundle nella macchina virtuale.
+
+
+. Eseguire i seguenti comandi di disinstallazione in `scst` elenco:
 +
 .. `systemctl stop mediator-scst`
 .. `make scstadm_uninstall`
@@ -309,11 +321,14 @@ scst-3.3.0.tar.bz2
 
 
 
-== Installare manualmente SCST per eseguire la manutenzione dell'host
+=== Passaggio 2: installare manualmente SCST
 
-Per installare manualmente SCST, è necessario disporre del pacchetto tar SCST utilizzato per la versione installata di ONTAP Mediator (vedere la <<scst-bundle-table,tabella precedente>>).
+Per installare manualmente SCST, è necessario il bundle tar SCST utilizzato per la versione installata di ONTAP Mediator (vedere<<scst-bundle-table,Tabella SCST>> ).
 
-. Eseguire i seguenti comandi nella directory "scst":
+
+NOTE: Eseguire questo passaggio prima di installare ONTAP Mediator.  Se la versione SCST in uso è più recente della versione fornita con il programma di installazione ONTAP Mediator, il programma di installazione salta questo passaggio.
+
+. Eseguire i seguenti comandi di installazione in `scst` elenco:
 +
 .. `make 2release`
 .. `make scst_install`
@@ -321,13 +336,25 @@ Per installare manualmente SCST, è necessario disporre del pacchetto tar SCST u
 .. `make iscsi_install`
 .. `make scstadm_install`
 .. `depmod`
++
+[NOTE]
+====
+Se stai eseguendo una prima installazione e desideri preinstallare ONTAP Mediator, esegui il seguente comando prima di procedere con il passaggio successivo:
+
+`mkdir -p /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys` .
+
+====
 .. `cp scst/src/certs/scst_module_key.der /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/`
 .. `patch /etc/init.d/scst < /opt/netapp/lib/ontap_mediator/systemd/scst.patch`
++
+
+NOTE: Se stai eseguendo un'installazione per la prima volta e desideri preinstallare SCST prima di installare ONTAP Mediator, puoi saltare questo passaggio.  Durante l'installazione, il programma di installazione ONTAP Mediator applica tutte le patch rilevanti ai componenti SCST.
+
 
 
 . Se, in alternativa, Secure Boot è attivato, prima di riavviare il computer, procedere come segue:
 +
-.. Determinare ogni nome di file per i moduli "scst_vdisk", "scst" e "iscsi_scst":
+.. Determinare ciascun nome di file per il `scst_vdisk` , `scst` , E `iscsi_scst` moduli:
 +
 ....
 [root@localhost ~]# modinfo -n scst_vdisk
@@ -339,7 +366,7 @@ Per installare manualmente SCST, è necessario disporre del pacchetto tar SCST u
 ....
 [root@localhost ~]# uname -r
 ....
-.. Firmare ogni file con il kernel:
+.. Firmare ogni file del modulo con il kernel:
 +
 ....
 [root@localhost ~]# /usr/src/kernels/<KERNEL-RELEASE>/scripts/sign-file \sha256 \
@@ -347,7 +374,7 @@ Per installare manualmente SCST, è necessario disporre del pacchetto tar SCST u
 /opt/netapp/lib/ontap_mediator/ontap_mediator/SCST_mod_keys/scst_module_key.der \
 _module-filename_
 ....
-.. Installare la chiave corretta con il firmware UEFI.
+.. Installare la chiave UEFI con il firmware.
 +
 Le istruzioni per l'installazione della chiave UEFI sono disponibili all'indirizzo:
 
