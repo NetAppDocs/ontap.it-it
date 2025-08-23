@@ -2,7 +2,7 @@
 sidebar: sidebar 
 permalink: multi-admin-verify/manage-requests-task.html 
 keywords: ontap, mav, multi, admin, multi admin verify, verification, administrator, protected, operation, rules, request, cluster, approve, rbac, manage, cli, system, manager 
-summary: 'Quando gli amministratori di un gruppo di approvazione MAV (amministratori MAV) ricevono una notifica di una richiesta di esecuzione dell"operazione in sospeso, devono rispondere con un messaggio di approvazione o veto entro un periodo di tempo fisso (scadenza dell"approvazione).' 
+summary: 'Quando gli amministratori di un gruppo di approvazione MAV vengono informati di una richiesta di operazione in sospeso, devono rispondere con un"approvazione o un veto entro un tempo stabilito.' 
 ---
 = Gestire le richieste di operazioni protette da MAV in ONTAP
 :allow-uri-read: 
@@ -11,7 +11,7 @@ summary: 'Quando gli amministratori di un gruppo di approvazione MAV (amministra
 
 
 [role="lead"]
-Quando gli amministratori di un gruppo di approvazione MAV (amministratori MAV) ricevono una notifica di una richiesta di esecuzione dell'operazione in sospeso, devono rispondere con un messaggio di approvazione o veto entro un periodo di tempo fisso (scadenza dell'approvazione). Se non si riceve un numero sufficiente di approvazioni, il richiedente deve eliminare la richiesta ed effettuare un'altra.
+Quando gli amministratori di un gruppo di approvazione MAV (amministratori MAV) vengono informati di una richiesta di esecuzione di un'operazione in sospeso, devono rispondere con un messaggio di approvazione o di veto entro un periodo di tempo stabilito (scadenza dell'approvazione).  Se non si riceve un numero sufficiente di approvazioni, il richiedente deve eliminare la richiesta e presentarne un'altra.
 
 .A proposito di questa attività
 Le richieste di approvazione sono identificate con numeri di indice, inclusi nei messaggi e-mail e nelle visualizzazioni della coda di richiesta.
@@ -35,15 +35,23 @@ Commento:: Eventuali commenti associati alla richiesta.
 Utenti consentiti:: L'elenco degli utenti autorizzati a eseguire l'operazione protetta per cui la richiesta è approvata. Se `users-permitted` è vuoto, quindi qualsiasi utente con autorizzazioni appropriate può eseguire l'operazione.
 
 
-Tutte le richieste scadute o eseguite vengono eliminate quando viene raggiunto un limite di 1000 richieste o quando il tempo di scadenza è superiore a 8 ore per le richieste scadute. Le richieste vetoed vengono eliminate una volta contrassegnate come scadute.
+.Richiedi l'eliminazione
+Quando viene creata una nuova richiesta di amministratore, il sistema controlla una richiesta esistente per l'eliminazione in base ai seguenti criteri:
+
+* La richiesta deve essere scaduta o eseguita.
+* Se la richiesta è stata elaborata più di un giorno prima della scadenza dell'approvazione, verrà eliminata.
+* Se nella tabella sono presenti più di 1000 richieste, una richiesta più vecchia viene eliminata per mantenere il limite.
 
 
+Se dopo questa pulizia il numero di richieste supera 1000, viene inviato un avviso agli amministratori.
 
-== Procedura di System Manager
-
+[role="tabbed-block"]
+====
+.System Manager
+--
 Gli amministratori MAV ricevono messaggi e-mail con i dettagli della richiesta di approvazione, il periodo di scadenza della richiesta e un link per approvare o rifiutare la richiesta. È possibile accedere a una finestra di dialogo di approvazione facendo clic sul collegamento nell'e-mail o accedendo a *Eventi e lavori> Richieste* in System Manager.
 
-La finestra *Requests* (Richieste) è disponibile quando è attivata la verifica multi-admin, mostrando le richieste in sospeso in base all'ID di accesso dell'utente e al ruolo MAV (approvatore o meno).
+La finestra *Richieste* è disponibile quando è abilitata la verifica multi-amministratore e mostra le richieste in sospeso in base all'ID di accesso dell'utente e al ruolo MAV (approvatore o meno).
 
 * Operazione
 * Indice (numero)
@@ -60,11 +68,10 @@ Se una richiesta viene respinta da un responsabile dell'approvazione, non sono p
 
 Gli amministratori MAV dispongono di controlli aggiuntivi in questa finestra; possono approvare, rifiutare o eliminare singole operazioni o gruppi di operazioni selezionati. Tuttavia, se l'amministratore MAV è l'utente richiedente, non può approvare, rifiutare o eliminare le proprie richieste.
 
-
-
-== Procedura CLI
-
-. Quando viene inviata una notifica via email delle richieste in sospeso, annotare il numero di indice della richiesta e il periodo di scadenza dell'approvazione. Il numero dell'indice può essere visualizzato anche utilizzando le opzioni *show* o *show-pending* indicate di seguito.
+--
+.CLI
+--
+. Quando si riceve una notifica via e-mail delle richieste in sospeso, annotare il numero di indice della richiesta e il periodo di scadenza dell'approvazione.  Il numero di indice può essere visualizzato anche utilizzando le opzioni *show* o *show-pending* menzionate di seguito.
 . Approvare o veto la richiesta.
 +
 [cols="50,50"]
@@ -170,6 +177,8 @@ Required Approvers: 2
            Comment: -
    Users Permitted: -
 ----
+--
+====
 .Informazioni correlate
 * link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+multi-admin-verify["sicurezza multi-admin-verify"^]
 
