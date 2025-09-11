@@ -121,7 +121,7 @@ TIP: Il comando `security anti-ransomware volume workload-behavior show` mostra 
 | Attivo  a| 
 Dopo aver eseguito ARP in modalità di apprendimento per un tempo sufficiente a valutare le caratteristiche del carico di lavoro, è possibile passare alla modalità attiva e iniziare a proteggere i dati. A partire da ONTAP 9.13.1, ARP determina automaticamente l'intervallo di apprendimento ottimale e automatizza il passaggio, che potrebbe avvenire prima di 30 giorni.
 
-Con ONTAP dalla versione 9.10.1 alla 9.15.1, ARP passa alla modalità attiva al termine del periodo di apprendimento ottimale. Dopo il passaggio di ARP alla modalità attiva, ONTAP crea snapshot ARP per proteggere i dati in caso di rilevamento di una minaccia.
+Con ONTAP dalla versione 9.15.1 alla 9.10.1, ARP passa alla modalità attiva al termine del periodo di apprendimento ottimale. Dopo il passaggio di ARP alla modalità attiva, ONTAP crea snapshot ARP per proteggere i dati in caso di rilevamento di una minaccia.
 
 In modalità attiva, se un'estensione di file viene contrassegnata come anomala, è necessario valutare l'avviso. È possibile intervenire sull'avviso per proteggere i dati oppure contrassegnarlo come falso positivo. Contrassegnare un avviso come falso positivo aggiorna il profilo dell'avviso. Ad esempio, se l'avviso viene attivato da una nuova estensione di file e lo si contrassegna come falso positivo, non si riceverà alcun avviso la prossima volta che l'estensione del file verrà rilevata.
  a| 
@@ -193,26 +193,28 @@ La tabella seguente riassume le differenze degli snapshot ARP tra ONTAP 9.16.1 e
 
 [cols="1,3,3"]
 |===
-| Funzione | ONTAP 9.16.1 e precedenti | ONTAP 9.17.1 e versioni successive 
+| Funzione | ONTAP 9.17.1 e versioni successive | ONTAP 9.16.1 e precedenti 
 
 
 | Trigger di creazione  a| 
+Gli snapshot vengono creati a intervalli fissi di 4 ore, indipendentemente da qualsiasi fattore scatenante specifico, e non sono necessariamente indicativi di un attacco.
+ a| 
 * Viene rilevata un'elevata entropia
 * È stata rilevata una nuova estensione di file (9.15.1 e precedenti)
 * È stato rilevato un aumento delle operazioni sui file (9.15.1 e precedenti)
 
 
 L'intervallo di creazione degli snapshot si basa sul tipo di trigger.
+
+
+
  a| 
 * Gli snapshot vengono creati a intervalli fissi di 4 ore, indipendentemente da qualsiasi trigger specifico
 * Conferma di un attacco
 
 
 In base al tipo di trigger viene creato uno snapshot "periodico" o "di attacco".
-
-
-
-| Convenzione sui nomi anteposti | "Backup anti-ransomware" | "Backup periodico anti-ransomware" "Backup anti-attacco anti-ransomware" 
+| Convenzione sui nomi anteposti | "Backup periodico anti-ransomware" "Backup anti-attacco anti-ransomware" 
 
 
 | Comportamento di eliminazione | Lo snapshot ARP è bloccato e non può essere eliminato dall'amministratore | Lo snapshot ARP è bloccato e non può essere eliminato dall'amministratore 
@@ -222,14 +224,17 @@ In base al tipo di trigger viene creato uno snapshot "periodico" o "di attacco".
 
 
 | Periodo di conservazione  a| 
-* Determinato in base alle condizioni di attivazione (non fisso)
-* Gli snapshot creati prima dell'attacco vengono conservati finché l'amministratore non contrassegna l'attacco come vero o falso positivo (chiaro-sospetto).
-
- a| 
 Normalmente gli snapshot vengono conservati per 12 ore.
 
 * Volumi NAS: se un attacco viene confermato dall'analisi dei file, gli snapshot creati prima dell'attacco vengono conservati finché l'amministratore non contrassegna l'attacco come vero o falso positivo (chiaro-sospetto).
 * Archivi dati di volumi SAN o VM: se un attacco viene confermato dall'analisi dell'entropia dei blocchi, gli snapshot creati prima dell'attacco vengono conservati per 10 giorni (configurabile).
++
+Il periodo di conservazione di uno snapshot creato prima dell'inizio di un attacco è esteso a 10 giorni (configurabile).
+
+
+ a| 
+* Determinato in base alle condizioni di attivazione (non fisso)
+* Gli snapshot creati prima dell'attacco vengono conservati finché l'amministratore non contrassegna l'attacco come vero o falso positivo (chiaro-sospetto).
 
 
 
@@ -240,8 +245,6 @@ Gli amministratori possono eseguire un'azione di cancellazione del sospetto che 
 * 24 ore per la conservazione dei falsi positivi
 * 7 giorni per la conservazione dei veri positivi
 
-
-Questo comportamento di conservazione precauzionale non esisteva prima di ONTAP 9.16.1
  a| 
 Gli amministratori possono eseguire un'azione di cancellazione del sospetto che imposta la conservazione in base alla conferma:
 
@@ -249,9 +252,11 @@ Gli amministratori possono eseguire un'azione di cancellazione del sospetto che 
 * 7 giorni per la conservazione dei veri positivi
 
 
+Questo comportamento di conservazione precauzionale non esisteva prima di ONTAP 9.16.1
 
 
-| Tempo di scadenza | Nessuno | Per tutti gli snapshot è impostato un tempo di scadenza 
+
+| Tempo di scadenza | Per tutti gli snapshot è impostato un tempo di scadenza | Nessuno 
 |===
 
 
