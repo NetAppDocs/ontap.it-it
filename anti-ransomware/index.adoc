@@ -16,7 +16,7 @@ summary: 'La protezione autonoma dal ransomware utilizza l"analisi del carico di
 
 
 [role="lead"]
-A partire da ONTAP 9.10.1, gli amministratori ONTAP possono abilitare Autonomous Ransomware Protection (ARP) per eseguire l'analisi del carico di lavoro in ambienti NAS (NFS e SMB) per rilevare e segnalare in modo proattivo attività anomale che potrebbero indicare un attacco ransomware. A partire da ONTAP 9.17.1, ARP supporta anche volumi di dispositivi a blocchi, inclusi volumi SAN contenenti LUN, o volumi NAS contenenti dischi virtuali da hypervisor come VMware, Hyper-V e KVM.
+A partire da ONTAP 9.10.1, gli amministratori ONTAP possono abilitare Autonomous Ransomware Protection (ARP) per eseguire l'analisi del carico di lavoro in ambienti NAS (NFS e SMB) per rilevare e segnalare in modo proattivo attività anomale che potrebbero indicare un attacco ransomware. A partire da ONTAP 9.17.1, ARP supporta anche volumi di dispositivi a blocchi, inclusi volumi SAN contenenti LUN o namespace NVMe, oppure volumi NAS contenenti dischi virtuali da hypervisor quali VMware, Hyper-V e KVM.
 
 ARP è integrato direttamente in ONTAP, garantendo controllo e coordinamento integrati con le altre funzionalità di ONTAP. ARP opera in tempo reale, elaborando i dati durante la scrittura o la lettura dal file system e rilevando e rispondendo rapidamente a potenziali attacchi ransomware.
 
@@ -189,7 +189,7 @@ A partire da ONTAP 9.17.1, gli snapshot ARP vengono generati a intervalli regola
 
 A partire da ONTAP 9.11.1, è possibile modificare le impostazioni di conservazione. Per ulteriori informazioni, consultare link:modify-automatic-shapshot-options-task.html["Modificare le opzioni per le istantanee"] .
 
-La tabella seguente riassume le differenze degli snapshot ARP tra ONTAP 9.16.1 e versioni precedenti e ONTAP 9.17.1.
+La tabella seguente riassume le differenze degli snapshot ARP in base alla versione.
 
 [cols="1,3,3"]
 |===
@@ -197,7 +197,11 @@ La tabella seguente riassume le differenze degli snapshot ARP tra ONTAP 9.16.1 e
 
 
 | Trigger di creazione  a| 
-Gli snapshot vengono creati a intervalli fissi di 4 ore, indipendentemente da qualsiasi fattore scatenante specifico, e non sono necessariamente indicativi di un attacco.
+* Gli snapshot vengono creati a intervalli fissi di 4 ore, indipendentemente da qualsiasi trigger specifico
+* Conferma di un attacco
+
+
+In base al tipo di trigger viene creato uno snapshot "periodico" o "di attacco".
  a| 
 * Viene rilevata un'elevata entropia
 * È stata rilevata una nuova estensione di file (9.15.1 e precedenti)
@@ -208,13 +212,7 @@ L'intervallo di creazione degli snapshot si basa sul tipo di trigger.
 
 
 
- a| 
-* Gli snapshot vengono creati a intervalli fissi di 4 ore, indipendentemente da qualsiasi trigger specifico
-* Conferma di un attacco
-
-
-In base al tipo di trigger viene creato uno snapshot "periodico" o "di attacco".
-| Convenzione sui nomi anteposti | "Backup periodico anti-ransomware" "Backup anti-attacco anti-ransomware" 
+| Convenzione sui nomi anteposti | "Backup periodico anti-ransomware" "Backup anti-attacco anti-ransomware" | "Backup anti-ransomware" 
 
 
 | Comportamento di eliminazione | Lo snapshot ARP è bloccato e non può essere eliminato dall'amministratore | Lo snapshot ARP è bloccato e non può essere eliminato dall'amministratore 
@@ -228,9 +226,6 @@ Normalmente gli snapshot vengono conservati per 12 ore.
 
 * Volumi NAS: se un attacco viene confermato dall'analisi dei file, gli snapshot creati prima dell'attacco vengono conservati finché l'amministratore non contrassegna l'attacco come vero o falso positivo (chiaro-sospetto).
 * Archivi dati di volumi SAN o VM: se un attacco viene confermato dall'analisi dell'entropia dei blocchi, gli snapshot creati prima dell'attacco vengono conservati per 10 giorni (configurabile).
-+
-Il periodo di conservazione di uno snapshot creato prima dell'inizio di un attacco è esteso a 10 giorni (configurabile).
-
 
  a| 
 * Determinato in base alle condizioni di attivazione (non fisso)
