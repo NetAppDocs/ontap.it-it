@@ -4,22 +4,49 @@ sidebar: sidebar
 keywords: enable, temperature, sensitive, storage, efficiency, sequential packing 
 summary: 'Introdotta in ONTAP 9.8, l"efficienza dello storage sensibile alla temperatura viene abilitata automaticamente su alcuni volumi AFF o manualmente sui volumi esistenti.' 
 ---
-= Panoramica dell'efficienza dello storage sensibile alla temperatura
+= Scopri l'efficienza di stoccaggio sensibile alla temperatura ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-ONTAP offre vantaggi per l'efficienza dello storage sensibile alla temperatura, valutando la frequenza di accesso ai dati del volume e eseguendo la mappatura di tale frequenza con il grado di compressione applicato a tali dati. Per i dati cold a cui si accede raramente, i blocchi di dati più grandi vengono compressi, mentre per i dati hot, a cui si accede frequentemente e che vengono sovrascritti più spesso, i blocchi di dati più piccoli vengono compressi, rendendo il processo più efficiente.
+ONTAP offre vantaggi in termini di efficienza di archiviazione sensibile alla temperatura (TSSE) valutando la frequenza con cui si accede ai dati del volume e associando tale frequenza al grado di compressione applicato a tali dati.  Per i dati freddi a cui si accede raramente, vengono compressi blocchi di dati più grandi, mentre per i dati caldi, a cui si accede frequentemente e che vengono sovrascritti più spesso, vengono compressi blocchi di dati più piccoli, rendendo il processo più efficiente.
 
-L'efficienza dello storage sensibile alla temperatura (TSSE) viene introdotta in ONTAP 9.8 e attivata automaticamente sui volumi AFF appena creati con thin provisioning. È possibile abilitare l'efficienza dello storage sensibile alla temperatura sui volumi AFF esistenti e sui volumi DP non AFF con thin provisioning.
+TSSE è stato introdotto in ONTAP 9.8 e viene abilitato automaticamente sui nuovi volumi AFF con provisioning sottile.  È possibile abilitare l'efficienza di archiviazione sensibile alla temperatura sui volumi AFF esistenti e sui volumi DP non AFF con provisioning sottile.
+
+L'efficienza di archiviazione sensibile alla temperatura non viene applicata alle seguenti piattaforme:
+
+[cols="2"]
+|===
+| Piattaforma | Versione di ONTAP 
 
 
-NOTE: L'efficienza dello storage sensibile alla temperatura non viene applicata alle piattaforme AFF A70, AFF A90 e AFF A1K. La compressione non si basa sui dati "hot" o "cold" su queste piattaforme, pertanto la compressione inizia senza attendere che i dati diventino "cold".
+ a| 
+* AFF A1K
+* AFF A90
+* AFF A70
+* FAS90
+* FAS70
+
+| 9.15.1 o versione successiva 
+
+
+ a| 
+* AFF A50
+* AFF A30
+
+| 9.16.1 o versione successiva 
+|===
+Queste piattaforme utilizzanolink:../concepts/builtin-storage-efficiency-concept.html["Efficienza dello storage della CPU o del processore di offload dedicato"] .  La compressione viene eseguita utilizzando la CPU principale o un processore offload dedicato e non si basa su dati caldi o freddi.
+
+
+NOTE: Nel tempo, la quantità di spazio utilizzata nel volume potrebbe risultare più pronunciata con TSSE rispetto alla compressione adattiva 8K.  Questo comportamento è previsto a causa delle differenze architettoniche tra TSSE e compressione adattiva 8K.
 
 .Introduzione delle modalità "predefinite" ed "efficienti"
 A partire da ONTAP 9.10,1, le modalità di efficienza dello storage a livello di volume _default_ e _efficiente_ sono introdotte solo per i sistemi AFF. Le due modalità consentono di scegliere tra la compressione dei file (predefinita), ovvero la modalità predefinita per la creazione di nuovi volumi AFF, o l'efficienza dello storage sensibile alla temperatura (efficiente), che utilizza la compressione automatica adattiva per ottenere maggiori risparmi di compressione sui dati cold e a cui si accede raramente.
+
+Quando si esegue l'aggiornamento a ONTAP 9.10.1 e versioni successive, ai volumi esistenti viene assegnata una modalità di efficienza dello storage basata sul tipo di compressione attualmente attivata sui volumi. Durante un aggiornamento, ai volumi con compressione attivata viene assegnata la modalità predefinita e ai volumi con efficienza dello storage sensibile alla temperatura attivata viene assegnata la modalità efficiente. Se la compressione non è attivata, la modalità di efficienza dello storage rimane vuota.
 
 Con ONTAP 9.10,1, link:../volumes/set-efficiency-mode-task.html["l'efficienza dello storage sensibile alla temperatura deve essere impostata in modo esplicito"] per attivare la compressione automatica adattiva. Tuttavia, altre funzionalità di efficienza dello storage, come la compattazione dei dati, la pianificazione della deduplica automatica, la deduplica inline, la deduplica inline tra volumi e la deduplica in background tra volumi, sono attivate per impostazione predefinita sulle piattaforme AFF sia per le modalità predefinite che per quelle efficienti.
 
@@ -41,9 +68,3 @@ NOTE: Una volta impostata la modalità di efficienza dello storage su efficiente
 
 .Efficienza dello storage migliorata grazie al confezionamento sequenziale di blocchi fisici contigui
 A partire da ONTAP 9.13.1, l'efficienza dello storage sensibile alla temperatura aggiunge un impacchettamento sequenziale di blocchi fisici contigui per migliorare ulteriormente l'efficienza dello storage. I volumi con efficienza dello storage sensibile alla temperatura attivata dispongono automaticamente del packing sequenziale attivato quando si aggiornano i sistemi a ONTAP 9.13.1. Dopo aver attivato la compressione sequenziale, è necessario link:../volumes/run-efficiency-operations-manual-task.html["reimballare manualmente i dati esistenti"].
-
-
-
-== Considerazioni sull'upgrade
-
-Quando si esegue l'aggiornamento a ONTAP 9.10.1 e versioni successive, ai volumi esistenti viene assegnata una modalità di efficienza dello storage basata sul tipo di compressione attualmente attivata sui volumi. Durante un aggiornamento, ai volumi con compressione attivata viene assegnata la modalità predefinita e ai volumi con efficienza dello storage sensibile alla temperatura attivata viene assegnata la modalità efficiente. Se la compressione non è attivata, la modalità di efficienza dello storage rimane vuota.
