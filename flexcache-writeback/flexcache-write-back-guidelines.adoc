@@ -11,15 +11,15 @@ summary: Attenersi alle seguenti linee guida per garantire prestazioni ottimali 
 
 
 [role="lead"]
-La riscrittura di FlexCache implica molte interazioni complesse tra l'origine e le cache. Per ottenere prestazioni ottimali, accertarsi che l'ambiente in uso segua queste linee guida. Queste linee guida si basano sull'ultima versione di ONTAP (ONTAP 9.15.1) disponibile al momento della creazione del contenuto.
+La scrittura FlexCache comporta numerose interazioni complesse tra l'origine e le cache. Per ottenere prestazioni ottimali, è necessario assicurarsi che l'ambiente segua queste linee guida. Queste linee guida si basano sull'ultima versione principale ONTAP (ONTAP 9.17.1.) disponibile al momento della creazione del contenuto.
 
 Come Best practice, testare il carico di lavoro di produzione in un ambiente non di produzione. Ciò è ancora più importante se si implementa la riscrittura di FlexCache al di fuori di queste linee guida.
 
 Le seguenti linee guida sono ben testate internamente presso NetApp. È *_fortemente_* consigliato di rimanere al loro interno. In caso contrario, potrebbe verificarsi un comportamento imprevisto.
 
-* Miglioramenti significativi per la riscrittura di FlexCache sono stati introdotti in ONTAP 9.15.1P5. Si consiglia di eseguire la versione consigliata dopo 9.15.1P5 in entrambi i cluster di origine e cache.
+* In ONTAP 9.17.1P1 sono stati introdotti miglioramenti significativi per il write-back FlexCache . Si consiglia *_fortemente_* di eseguire la versione corrente consigliata dopo la 9.17.1P1 sia nei cluster di origine che in quelli di cache. Se non riesci a eseguire la linea di codice 9.17.1, la versione P più recente consigliata è la 9.16.1. ONTAP 9.15.1 non dispone di tutte le correzioni e i miglioramenti necessari per il write-back FlexCache e non è consigliato per carichi di lavoro di produzione.
 * Nella sua iterazione corrente, le cache write-back di FlexCache devono essere configurate con un singolo componente per l'intero volume FlexCache. I Flexcache multi-costituenti possono provocare la rimozione indesiderata dei dati dalla cache.
-* I test sono stati eseguiti per file di dimensioni inferiori a 100GB ms e tempi di andata e ritorno WAN tra la cache e l'origine non superiori a 100ms ms. Qualsiasi carico di lavoro al di fuori di questi limiti può causare performance inaspettate.
+* I test sono stati eseguiti su file di dimensioni inferiori a 100 GB e tempi di andata e ritorno WAN tra la cache e l'origine non superiori a 200 ms. Qualsiasi carico di lavoro al di fuori di questi limiti potrebbe dare luogo a caratteristiche prestazionali impreviste.
 * La scrittura in flussi di dati alternativi SMB causa l'eliminazione del file principale dalla cache. Tutti i dati sporchi per il file principale devono essere scaricati nell'origine prima che possano essere eseguite altre operazioni su quel file. Anche il flusso di dati alternativo viene inoltrato all'origine.
 * La ridenominazione di un file causa l'eliminazione del file dalla cache. Tutti i dati sporchi per il file devono essere scaricati nell'origine prima che possano essere eseguite altre operazioni su quel file.
 * Al momento, gli unici attributi che è possibile modificare o impostare su un file nel volume FlexCache abilitato per la riscrittura sono:
@@ -36,5 +36,7 @@ Tutti gli altri attributi modificati o impostati vengono inoltrati all'origine, 
 
 
 * Gli snapshot acquisiti all'origine causano il richiamo di tutti i dati anomali in sospeso da ogni cache abilitata per la riscrittura associata a quel volume di origine. Ciò potrebbe richiedere più tentativi di esecuzione dell'operazione se è in corso un'attività di write-back significativa, in quanto la rimozione di tali file sporchi potrebbe richiedere del tempo.
+* I blocchi opportunistici SMB (Oplock) per le scritture non sono supportati sui volumi FlexCache abilitati per la scrittura.
 * L'origine deve rimanere piena al di sotto del 80%. Ai volumi della cache non vengono concesse deleghe di blocco esclusive se non vi è almeno il 20% di spazio rimanente nel volume di origine. In questa situazione, le chiamate a una cache abilitata per la riscrittura vengono inoltrate all'origine. In questo modo si evita di esaurire lo spazio nell'origine, con il risultato di lasciare orfani i dati sporchi in una cache abilitata per la riscrittura.
+* Una larghezza di banda ridotta e/o reti intercluster con perdite possono avere un effetto negativo significativo sulle prestazioni di writeback FlexCache . Sebbene non vi sia un requisito specifico di larghezza di banda, poiché dipende fortemente dal carico di lavoro, si consiglia *_fortemente_* di verificare l'integrità del collegamento intercluster tra la/le cache e l'origine.
 
