@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: svm, migrate, defaults, cutover, cleanup 
 summary: Al termine di una migrazione SVM, i client vengono tagliati automaticamente nel cluster di destinazione e la SVM non necessaria viene rimossa dal cluster di origine. Il cutover automatico e il cleanup automatico della sorgente sono attivati per impostazione predefinita. Se necessario, è possibile disattivare il cutover automatico del client per sospendere la migrazione prima che si verifichi il cutover ed è anche possibile disattivare il cleanup SVM di origine automatico. 
 ---
-= Migrare una SVM
+= Migrare un ONTAP SVM
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -12,6 +12,9 @@ summary: Al termine di una migrazione SVM, i client vengono tagliati automaticam
 
 [role="lead"]
 Al termine di una migrazione SVM, i client vengono tagliati automaticamente nel cluster di destinazione e la SVM non necessaria viene rimossa dal cluster di origine. Il cutover automatico e il cleanup automatico della sorgente sono attivati per impostazione predefinita. Se necessario, è possibile disattivare il cutover automatico del client per sospendere la migrazione prima che si verifichi il cutover ed è anche possibile disattivare il cleanup SVM di origine automatico.
+
+.A proposito di questa attività
+Questa procedura si applica ai sistemi FAS, AFF e ASA .  Se hai un sistema ASA r2 (ASA A1K, ASA A90, ASA A70, ASA A50, ASA A30, ASA A20 o ASA C30), seguilink:https://docs.netapp.com/us-en/asa-r2/manage-data/migrate-svm.html["questi passaggi"^] per migrare una SVM. I sistemi ASA r2 offrono un'esperienza ONTAP semplificata, specifica per i clienti che utilizzano solo SAN.
 
 * È possibile utilizzare `-auto-cutover false` opzione per sospendere la migrazione quando normalmente si verifica il cutover automatico del client e quindi eseguire manualmente il cutover in un secondo momento.
 +
@@ -25,23 +28,29 @@ xref:manual-source-removal-task.adoc[Rimuovere manualmente la SVM di origine dop
 
 
 
-== Migrare una SVM con il cutover automatico attivato
+== Migrare un ONTAP SVM con cutover automatico abilitato
 
 Per impostazione predefinita, i client vengono tagliati automaticamente nel cluster di destinazione al termine della migrazione e la SVM non necessaria viene rimossa dal cluster di origine.
 
 .Fasi
 . Dal cluster di destinazione, eseguire i controlli preliminari per la migrazione:
 +
-`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -check-only true`
-
+[source, cli]
+----
+vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -check-only true`
+----
 . Dal cluster di destinazione, avviare la migrazione SVM:
 +
-`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_`
-
+[source, cli]
+----
+vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name>
+----
 . Controllare lo stato della migrazione:
 +
-`dest_cluster> vserver migrate show`
-
+[source, cli]
+----
+vserver migrate show
+----
 +
 Lo stato visualizza Migrate-complete (migrazione completata) al termine della migrazione SVM.
 
@@ -49,44 +58,58 @@ Lo stato visualizza Migrate-complete (migrazione completata) al termine della mi
 
 
 
-== Migrare una SVM con il cutover automatico del client disattivato
+== Migrare un ONTAP SVM con il passaggio automatico del client disabilitato
 
 È possibile utilizzare l'opzione -auto-cutover false per sospendere la migrazione quando si verifica normalmente un cutover automatico del client e quindi eseguire manualmente il cutover in un secondo momento. Vedere xref:manual-client-cutover-task.adoc[Cutover manuale dei client dopo la migrazione SVM].
 
 .Fasi
 . Dal cluster di destinazione, eseguire i controlli preliminari per la migrazione:
 +
-`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -check-only true`
-
+[source, cli]
+----
+vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -check-only true`
+----
 . Dal cluster di destinazione, avviare la migrazione SVM:
 +
-`dest_cluster> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -auto-cutover false`
-
+[source, cli]
+----
+vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -auto-cutover false`
+----
 . Controllare lo stato della migrazione:
 +
-`dest_cluster> vserver migrate show`Lo stato visualizza Ready-for-cutover quando la migrazione SVM completa i trasferimenti di dati asincroni ed è pronta per l'operazione di cutover.
+[source, cli]
+----
+vserver migrate show
+----
+
+
+Lo stato visualizza pronto per il cutover quando la migrazione SVM completa i trasferimenti di dati asincroni ed è pronta per l'operazione di cutover.
 
 
 
-
-
-== Migrazione di una SVM con pulitura origine disattivata
+== Migrare un ONTAP SVM con la pulizia della sorgente disabilitata
 
 È possibile utilizzare l'opzione Advance Privilege -auto-source-cleanup false per disattivare la rimozione della SVM di origine dopo il cutover e quindi attivare manualmente la pulitura della sorgente in un secondo momento, dopo il cutover. Vedere xref:manual-source-removal-task.adoc[Rimuovere manualmente SVM di origine].
 
 .Fasi
 . Dal cluster di destinazione, eseguire i controlli preliminari per la migrazione:
 +
-`dest_cluster*> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -check-only true`
-
+[source, cli]
+----
+vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -check-only true`
+----
 . Dal cluster di destinazione, avviare la migrazione SVM:
 +
-`dest_cluster*> vserver migrate start -vserver _SVM_name_ -source-cluster _cluster_name_ -auto-source-cleanup false`
-
+[source, cli]
+----
+vserver migrate start -vserver <SVM_name> -source-cluster <cluster_name> -auto-source-cleanup false`
+----
 . Controllare lo stato della migrazione:
 +
-`dest_cluster*> vserver migrate show`
-
+[source, cli]
+----
+vserver migrate show
+----
 +
 Lo stato visualizza Ready-for-source-cleanup quando la migrazione SVM è completa ed è pronto per rimuovere SVM sul cluster di origine.
 

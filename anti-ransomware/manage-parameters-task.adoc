@@ -24,7 +24,7 @@ A partire da ONTAP 9.11.1, puoi modificare i parametri per il rilevamento del ra
 
 Quando Autonomous Ransomware Protection (ARP) è in modalità di apprendimento o valutazione, sviluppa valori di base per i comportamenti dei volumi. Questi includono entropia, estensioni dei file e, a partire da ONTAP 9.11.1, IOPS. Questi valori di base vengono utilizzati per valutare le minacce ransomware. Per ulteriori informazioni su questi criteri, consultare link:index.html#what-arp-detects["Che cosa rileva ARP"] .
 
-Alcuni volumi e carichi di lavoro richiedono parametri di rilevamento diversi. Ad esempio, il volume abilitato per ARP può ospitare numerosi tipi di estensioni di file, nel qual caso è possibile modificare il conteggio delle soglie per le estensioni di file mai viste prima a un numero maggiore del valore predefinito di 20 o disattivare gli avvisi in base alle estensioni di file mai viste prima. A partire da ONTAP 9.11.1, puoi modificare i parametri di rilevamento degli attacchi per adattarli meglio ai tuoi carichi di lavoro specifici.
+Determinati volumi e carichi di lavoro richiedono parametri di rilevamento diversi.  Ad esempio, il volume abilitato per ARP potrebbe ospitare numerosi tipi di estensioni di file, nel qual caso potrebbe essere necessario modificare il conteggio soglia per le estensioni di file mai viste prima su un numero maggiore del valore predefinito di 20 oppure disabilitare gli avvisi basati sulle estensioni di file mai viste prima.  A partire da ONTAP 9.11.1, è possibile modificare i parametri di rilevamento degli attacchi in modo che si adattino meglio ai carichi di lavoro specifici.
 
 A partire da ONTAP 9.14.1, è possibile configurare gli avvisi quando ARP osserva una nuova estensione di file e quando ARP crea uno snapshot. Per ulteriori informazioni, vedere <<modify-alerts>>.
 
@@ -47,7 +47,7 @@ A partire da ONTAP 9.17.1, ARP emette un avviso se rileva velocità di crittogra
 
 == Modificare i parametri di rilevamento degli attacchi
 
-A seconda del comportamento previsto del volume abilitato per ARP, potrebbe essere necessario modificare i parametri di rilevamento degli attacchi.
+A seconda dei comportamenti previsti del volume abilitato per ARP, potrebbe essere necessario modificare i parametri di rilevamento degli attacchi.
 
 .Fasi
 . Visualizzare i parametri di rilevamento degli attacchi esistenti:
@@ -72,8 +72,8 @@ security anti-ransomware volume attack-detection-parameters show -vserver vs1 -v
                  File Create Rate Surge Notify Percentage : 100
                  File Rename Rate Surge Notify Percentage : 100
                  File Delete Rate Surge Notify Percentage : 100
- Never Seen before File Extensions Count Notify Threshold : 20
-       Never Seen before File Extensions Duration in Hour : 24
+ Never Seen before File Extensions Count Notify Threshold : 5
+       Never Seen before File Extensions Duration in Hour : 48
 ....
 . Tutti i campi mostrati sono modificabili con valori booleani o interi. Per modificare un campo, utilizzare il  `security anti-ransomware volume attack-detection-parameters modify` comando.
 +
@@ -90,8 +90,10 @@ ARP continua a modificare i valori di base per i parametri di rilevamento anche 
 .Segnalare un picco una tantum
 . Se in circostanze note si verifica un picco una tantum e si desidera che ARP segnali un aumento simile in circostanze future, eliminare il picco dal comportamento del carico di lavoro:
 +
-`security anti-ransomware volume workload-behavior clear-surge -vserver <svm_name> -volume <volume_name>`
-
+[source, cli]
+----
+security anti-ransomware volume workload-behavior clear-surge -vserver <svm_name> -volume <volume_name>
+----
 +
 Ulteriori informazioni su `security anti-ransomware volume workload-behavior clear-surge` nella link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-workload-behavior-clear-surge.html["Riferimento al comando ONTAP"^].
 
@@ -100,8 +102,10 @@ Ulteriori informazioni su `security anti-ransomware volume workload-behavior cle
 .Modificare il picco della linea di base
 . Se un picco segnalato deve essere considerato un normale comportamento dell'applicazione, riportare il picco in quanto tale per modificare il valore di picco della linea di base.
 +
-`security anti-ransomware volume workload-behavior update-baseline-from-surge -vserver <svm_name> -volume <volume_name>`
-
+[source, cli]
+----
+security anti-ransomware volume workload-behavior update-baseline-from-surge -vserver <svm_name> -volume <volume_name>
+----
 +
 Scopri di più su  `security anti-ransomware volume workload-behavior update-baseline-from-surge` nel link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-workload-behavior-update-baseline-from-surge.html["Riferimento al comando ONTAP"^] .
 
@@ -148,24 +152,32 @@ Gli avvisi sugli eventi possono essere controllati tramite la verifica multi-amm
 .Impostare gli avvisi per un volume
 * Per impostare gli avvisi per una nuova estensione file:
 +
-`security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-new-file-extension-seen true`
-
+[source, cli]
+----
+security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-new-file-extension-seen true`
+----
 * Per impostare gli avvisi per la creazione di uno snapshot ARP:
 +
-`security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-snapshot-copy-creation true`
-
+[source, cli]
+----
+security anti-ransomware volume event-log modify -vserver <svm_name> -volume <volume_name> -is-enabled-on-snapshot-copy-creation true
+----
 * Confermare le impostazioni con `anti-ransomware volume event-log show` comando.
 
 
 .Impostare gli avvisi per una SVM
 * Per impostare gli avvisi per una nuova estensione file:
 +
-`security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-new-file-extension-seen true`
-
+[source, cli]
+----
+security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-new-file-extension-seen true
+----
 * Per impostare gli avvisi per la creazione di uno snapshot ARP:
 +
-`security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-snapshot-copy-creation true`
-
+[source, cli]
+----
+security anti-ransomware vserver event-log modify -vserver <svm_name> -is-enabled-on-snapshot-copy-creation true
+----
 * Confermare le impostazioni con `security anti-ransomware vserver event-log show` comando.
 
 

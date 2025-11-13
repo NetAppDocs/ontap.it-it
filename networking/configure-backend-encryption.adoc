@@ -1,0 +1,99 @@
+---
+sidebar: sidebar 
+permalink: networking/configure-backend-encryption.html 
+keywords: cluster network, encryption, TLS, data-in-flight, backend network 
+summary: Configurare le impostazioni di crittografia della rete del cluster 
+---
+= Configurare la crittografia di rete del cluster backend ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.18.1, è possibile configurare la crittografia Transport Layer Security (TLS) per i dati in transito sulla rete del cluster back-end.  Questa crittografia protegge i dati dei clienti memorizzati in ONTAP quando vengono trasmessi tra i nodi ONTAP sulla rete del cluster back-end.
+
+.A proposito di questa attività
+* Per impostazione predefinita, la crittografia della rete del cluster backend è disabilitata.
+* Quando è abilitata la crittografia della rete del cluster backend, tutti i dati dei clienti archiviati in ONTAP vengono crittografati quando vengono trasmessi tra i nodi ONTAP sulla rete del cluster backend.  Una parte del traffico di rete del cluster, come i dati del percorso di controllo, non è crittografata.
+* Per impostazione predefinita, la crittografia della rete del cluster backend utilizzerà certificati generati automaticamente per ciascun nodo del cluster.  Puoi<<Gestire i certificati di crittografia della rete del cluster>> su ogni nodo per utilizzare un certificato installato personalizzato.
+
+
+.Prima di iniziare
+* Devi essere un amministratore ONTAP presso `admin` livello di privilegio per eseguire le seguenti attività.
+* Tutti i nodi del cluster devono eseguire ONTAP 9.18.1 o versione successiva per abilitare la crittografia della rete del cluster backend.
+
+
+
+
+== Abilita o disabilita la crittografia per la comunicazione di rete del cluster
+
+.Fasi
+. Visualizza lo stato attuale della crittografia della rete del cluster:
++
+[source, cli]
+----
+security cluster-network show
+----
++
+Questo comando mostra lo stato attuale della crittografia della rete del cluster:
+
++
+[source]
+----
+Cluster-1::*> security cluster-network show
+
+Enabled: true
+
+Mode: tls
+
+Status: READY
+----
+. Abilita o disabilita la crittografia di rete del cluster backend TLS:
++
+[source, cli]
+----
+security cluster-network modify -enabled <true|false>
+----
++
+Questo comando abilita o disabilita la comunicazione crittografata per i dati dei clienti in transito sulla rete del cluster back-end.
+
+
+
+
+
+== Gestire i certificati di crittografia della rete del cluster
+
+. Visualizza le informazioni correnti sul certificato di crittografia della rete del cluster:
++
+[source, cli]
+----
+security cluster-network certificate show
+----
++
+Questo comando mostra le informazioni correnti sul certificato di crittografia della rete del cluster:
+
++
+[source]
+----
+security cluster-network certificate show
+Node                  Certificate Name                      CA
+--------------------- -----------------------------------   --------------
+node1                 -                                     Cluster-1_Root_CA
+node2                 -                                     Cluster-1_Root_CA
+node3                 google_issued_cert1                   Google_CA1
+node4                 google_issued_cert2                   Google_CA1
+----
++
+Per ogni nodo del cluster vengono visualizzati i nomi dei certificati e delle autorità di certificazione (CA).
+
+. Modificare il certificato di crittografia della rete del cluster per un nodo:
++
+[source, cli]
+----
+security cluster-network certificate modify -node <node_name> -name <certificate_name>
+----
++
+Questo comando modifica il certificato di crittografia della rete del cluster per un nodo specifico.  Prima di eseguire questo comando, il certificato deve essere installato e firmato da una CA installata.  Per ulteriori informazioni sulla gestione dei certificati, fare riferimento alink:../authentication/manage-certificates-sm-task.html["Gestione dei certificati ONTAP con Gestione sistema"] .  Se `-name` Se non è specificato, viene utilizzato il certificato predefinito generato automaticamente.
+
+

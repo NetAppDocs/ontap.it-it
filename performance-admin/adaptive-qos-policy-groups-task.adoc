@@ -11,7 +11,7 @@ summary: 'È possibile utilizzare un gruppo di criteri QoS adattivi per scalare 
 
 
 [role="lead"]
-È possibile utilizzare un gruppo di policy _Adaptive QoS_ per scalare automaticamente un limite di throughput o le dimensioni da pavimento a volume, mantenendo il rapporto tra IOPS e TB|GB al variare delle dimensioni del volume. Si tratta di un vantaggio significativo quando si gestiscono centinaia o migliaia di carichi di lavoro in un'implementazione di grandi dimensioni.
+È possibile utilizzare un gruppo di policy _QoS adattivo_ per adattare automaticamente un limite massimo o minimo di throughput alle dimensioni del volume, mantenendo il rapporto tra IOPS e TB/GB al variare delle dimensioni del volume.  Si tratta di un vantaggio significativo quando si gestiscono centinaia o migliaia di carichi di lavoro in una distribuzione di grandi dimensioni.
 
 .Prima di iniziare
 * È necessario eseguire ONTAP 9.3 o versione successiva. I gruppi di policy QoS adattivi sono disponibili a partire da ONTAP 9.3.
@@ -25,14 +25,14 @@ I gruppi di policy di QoS adattivi non sono sempre condivisi: Il limite di throu
 
 Il rapporto tra i limiti di throughput e le dimensioni degli oggetti di storage è determinato dall'interazione dei seguenti campi:
 
-* `expected-iops` È il minimo IOPS previsto per TB|GB allocati.
+* `expected-iops`è il minimo IOPS previsto per TB/GB allocato.
 +
 [NOTE]
 ====
  `expected-iops` È garantita solo sulle piattaforme AFF. `expected-iops` È garantita per FabricPool solo se la policy di tiering è impostata su "nessuno" e nessun blocco è nel cloud. `expected-iops` È garantito per i volumi che non sono in una relazione sincrona SnapMirror.
 
 ====
-* `peak-iops` È il massimo IOPS possibile per TB|GB allocati o utilizzati.
+* `peak-iops`è il massimo IOPS possibile per TB/GB allocato o utilizzato.
 * `expected-iops-allocation` specifica se per gli iops previsti viene utilizzato lo spazio allocato (impostazione predefinita) o lo spazio utilizzato.
 +
 [NOTE]
@@ -47,6 +47,10 @@ Ad esempio, se si imposta `expected-iops` Fino a 1,000 IOPS/TB e le dimensioni d
 
 * `block-size` Specifica la dimensione del blocco i/o dell'applicazione. L'impostazione predefinita è 32K. I valori validi sono 8K, 16K, 32K, 64K, QUALSIASI. QUALSIASI indica che la dimensione del blocco non viene applicata.
 
+
+
+
+== Gruppi di policy QoS adattive predefinite
 
 Sono disponibili tre gruppi di criteri QoS adattivi predefiniti, come mostrato nella tabella seguente. È possibile applicare questi gruppi di criteri direttamente a un volume.
 
@@ -88,37 +92,59 @@ Sono disponibili tre gruppi di criteri QoS adattivi predefiniti, come mostrato n
 75
 
 |===
-Non è possibile assegnare un oggetto di storage a un gruppo di criteri se l'oggetto contenente o i relativi oggetti figlio appartengono a un gruppo di criteri. Nella tabella seguente sono elencate le restrizioni.
+
+
+== Restrizioni di assegnazione del gruppo di criteri degli oggetti di archiviazione
+
+In alcuni casi non è possibile assegnare un oggetto di archiviazione a un gruppo di policy se l'oggetto che lo contiene o i suoi oggetti figlio appartengono a un gruppo di policy.
+
+A partire da ONTAP 9.18.1, è possibile utilizzare criteri QoS nidificati, che consentono di assegnare gruppi di criteri sia all'oggetto contenitore, ad esempio una SVM, sia al suo oggetto figlio, ad esempio un volume.  In un ambiente multi-tenant, i criteri QoS annidati consentono agli amministratori di suddividere i limiti QoS sulle SVM tra i volumi e i qtree all'interno della SVM e di fornire la possibilità di bilanciare le risorse di archiviazione tra gli ambienti di elaborazione, consentendo al contempo la definizione delle priorità dei carichi di lavoro critici per la missione.
+
+I criteri QoS annidati sono supportati per le seguenti coppie di oggetti:
+
+* SVM e volumi FlexVol o FlexGroup contenuti nell'SVM.
+* Volumi FlexVol o FlexGroup e qtree all'interno dei volumi.
+
+
+Per le policy QoS nidificate, viene utilizzata la policy applicabile più restrittiva.
+
+Nella tabella seguente sono elencate le restrizioni.
 
 |===
-| Se si assegna... | Quindi non è possibile assegnare... 
+| Se si assegna... | Quindi non è possibile assegnare a un gruppo di policy... 
 
 
  a| 
 SVM a un gruppo di criteri
  a| 
-Qualsiasi oggetto di storage contenuto dalla SVM a un gruppo di criteri
+Tutti gli oggetti di archiviazione contenuti nell'SVM.
+
+
+NOTE: Se si esegue ONTAP 9.18.1, i volumi FlexVol e FlexGroup contenuti nelle SVM _possono_ essere assegnati a un gruppo di policy.
 
 
 
  a| 
 Su un gruppo di criteri
  a| 
-Volumi contenenti SVM o LUN figlio di un gruppo di criteri
+L'SVM contenente il volume o eventuali LUN figlio.
+
+
+NOTE: Se si esegue ONTAP 9.18.1 e versioni successive, l'SVM contenente il volume _può_ essere assegnato a un gruppo di policy.  Inoltre, è possibile assegnare qtree nei volumi FlexVol o FlexGroup .
 
 
 
  a| 
 LUN a un gruppo di criteri
  a| 
-I LUN contenenti un volume o una SVM in un gruppo di criteri
+Il volume o SVM contenente i LUN
 
 
 
  a| 
 Su un gruppo di criteri
  a| 
-Il file contenente un volume o una SVM in un gruppo di criteri
+Il volume o SVM contenente il file
 
 |===
 .Fasi

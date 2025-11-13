@@ -1,0 +1,58 @@
+---
+sidebar: sidebar 
+permalink: high-availability/ha-pair-encryption.html 
+keywords: cluster network, encryption, TLS, data-in-flight 
+summary: Configurare la comunicazione crittografata tra i nodi della coppia HA 
+---
+= Configurare la crittografia per il traffico ONTAP HA
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.18.1, è possibile configurare la crittografia per il traffico di rete tra nodi di coppia ad alta disponibilità (HA).  Questa crittografia protegge i dati dei clienti e i metadati inviati tra i nodi in una coppia HA.
+
+.A proposito di questa attività
+* Per impostazione predefinita, la crittografia per il traffico HA è disabilitata.
+* L'abilitazione o la disabilitazione della crittografia del traffico HA influisce su tutte le coppie HA nel cluster.  Non è possibile abilitare o disabilitare la crittografia per singoli nodi.
+* Quando si abilita la crittografia del traffico HA, tutti i dati e i metadati dei clienti trasmessi tra i nodi della coppia HA vengono crittografati.  Parte del traffico HA, come i metadati del file system e i messaggi heartbeat, non è crittografato.
+* Quando la crittografia del traffico HA è abilitata e nuove coppie HA vengono aggiunte al cluster, è necessario abilitare manualmente la crittografia del traffico HA per i nuovi nodi rieseguendo il comando `security ha-network modify -enabled true` comando.
+
+
+.Prima di iniziare
+* Devi essere un amministratore ONTAP presso `admin` livello di privilegio per eseguire la seguente procedura.
+* Prima di abilitare la crittografia del traffico HA, è necessariolink:../encryption-at-rest/configure-external-key-management-concept.html["Configurare la gestione esterna delle chiavi"] .
+* Per abilitare la crittografia del traffico HA, tutti i nodi del cluster devono eseguire ONTAP 9.18.1 o versione successiva.
+
+
+.Fasi
+. Visualizza lo stato di crittografia attuale per il traffico HA:
++
+[source, cli]
+----
+security ha-network show
+----
++
+Questo comando mostra lo stato corrente della crittografia del traffico HA per ciascun nodo:
+
++
+[source]
+----
+security ha-network show
+Node                  Enabled
+--------------------- --------------------
+node1                 true
+node2                 true
+node3                 true
+node4                 true
+4 entries were displayed.
+----
+. Abilita o disabilita la crittografia per il traffico HA:
+
+
+[source, cli]
+----
+security ha-network modify -enabled <true|false>
+----
+Questo comando abilita o disabilita il traffico HA crittografato per tutti i nodi del cluster.  Quando vengono aggiunte nuove coppie HA al cluster, sarà necessario eseguire nuovamente questo comando per abilitare la crittografia del traffico HA per i nuovi nodi.
