@@ -9,12 +9,12 @@ summary: 'Cambiare regolarmente la passphrase di gestione delle chiavi integrate
 
 
 [role="lead"]
-Cambiare regolarmente la passphrase di gestione delle chiavi integrate.  Conservare la nuova passphrase in un luogo sicuro, all'esterno del sistema di archiviazione.
+NetApp consiglia di modificare regolarmente la passphrase di gestione delle chiavi integrate. È necessario conservare la nuova passphrase in un luogo sicuro, esterno al sistema di archiviazione.
 
 .Prima di iniziare
 * Per eseguire questa attività, è necessario essere un amministratore del cluster o di SVM.
 * Per questa attività sono richiesti privilegi avanzati.
-* Se si sta amministrando un ambiente ONTAP MetroCluster , è necessario aggiornare la passphrase su entrambi i cluster
+* In un ambiente MetroCluster , dopo aver aggiornato la passphrase sul cluster locale, sincronizzare l'aggiornamento della passphrase sul cluster partner.
 
 
 .Fasi
@@ -22,41 +22,65 @@ Cambiare regolarmente la passphrase di gestione delle chiavi integrate.  Conserv
 +
 `set -privilege advanced`
 
-. Modificare la passphrase di gestione della chiave integrata:
+. Modificare la passphrase di gestione delle chiavi integrate. Il comando da utilizzare dipende dalla versione ONTAP in esecuzione.
 +
-[cols="25,75"]
-|===
-
-
-| Per questa versione di ONTAP... | Utilizzare questo comando... 
-
-
- a| 
-ONTAP 9.6 e versioni successive
- a| 
+[role="tabbed-block"]
+====
+.ONTAP 9.6 e versioni successive
+--
 `security key-manager onboard update-passphrase`
 
-
-
- a| 
-ONTAP 9.5 e versioni precedenti
- a| 
+--
+.ONTAP 9.5 e versioni precedenti
+--
 `security key-manager update-passphrase`
 
-|===
+--
+====
 . Inserisci una passphrase compresa tra 32 e 256 caratteri oppure, per "`cc-mode`", una passphrase compresa tra 64 e 256 caratteri.
 +
 Se la passphrase "`cc-mode`" specificata è inferiore a 64 caratteri, si verifica un ritardo di cinque secondi prima che l'operazione di configurazione del gestore delle chiavi visualizzi nuovamente il prompt della passphrase.
 
 . Al prompt di conferma della passphrase, immettere nuovamente la passphrase.
+. Se si utilizza una configurazione MetroCluster , sincronizzare la passphrase aggiornata sul cluster partner.
++
+.. Sincronizzare la passphrase sul cluster partner scegliendo il comando corretto per la versione ONTAP :
++
+[role="tabbed-block"]
+====
+.ONTAP 9.6 e versioni successive
+--
+`security key-manager onboard sync`
+
+--
+.ONTAP 9.5 e versioni precedenti
+--
+*** In ONTAP 9.5, eseguire:
++
+`security key-manager setup -sync-metrocluster-config`
+
+*** In ONTAP 9.4 e versioni precedenti, dopo aver aggiornato la passphrase sul cluster locale, attendere 20 secondi, quindi eseguire il seguente comando sul cluster partner:
++
+`security key-manager setup`
+
+
+
+--
+====
+.. Quando richiesto, immettere la nuova passphrase.
++
+Su entrambi i cluster deve essere utilizzata la stessa passphrase.
+
+
+
 
 
 .Al termine
-Copiare la passphrase di gestione della chiave integrata in una posizione sicura all'esterno del sistema di storage per un utilizzo futuro.
+Copiare la passphrase di gestione delle chiavi integrate in un luogo sicuro all'esterno del sistema di archiviazione per un utilizzo futuro.
 
-È necessario eseguire il backup manuale delle informazioni di gestione delle chiavi ogni volta che si modifica la passphrase di gestione delle chiavi integrata.
+Eseguire manualmente il backup delle informazioni di gestione delle chiavi ogni volta che si modifica la passphrase di gestione delle chiavi integrata.
 
 .Informazioni correlate
-* link:backup-key-management-information-manual-task.html["Backup manuale delle informazioni di gestione delle chiavi integrate"]
+* link:backup-key-management-information-manual-task.html["Eseguire il backup manuale delle informazioni di gestione delle chiavi integrate"]
 * link:https://docs.netapp.com/us-en/ontap-cli/security-key-manager-onboard-update-passphrase.html["aggiornamento passphrase integrato del gestore delle chiavi di sicurezza"^]
 

@@ -15,16 +15,32 @@ summary: È necessario risincronizzare una relazione di replica dopo aver reso s
 
 A partire da ONTAP 9.8, è possibile utilizzare Gestione sistema per eseguire un'operazione di risincronizzazione inversa per eliminare una relazione di protezione esistente e invertire le funzioni dei volumi di origine e di destinazione. Quindi si utilizza il volume di destinazione per fornire i dati durante la riparazione o la sostituzione dell'origine, l'aggiornamento dell'origine e il ripristino della configurazione originale dei sistemi.
 
-.A proposito di questa attività
-* Sebbene la risincronizzazione non richieda un trasferimento di riferimento, può richiedere molto tempo. È possibile eseguire la risincronizzazione in ore non di punta.
-* La risincronizzazione dei volumi che fanno parte di una configurazione fan-out o a cascata può richiedere più tempo. Non è raro che la relazione di SnapMirror riporti lo stato di "preparazione" per un periodo di tempo prolungato.
-
-
 [NOTE]
 ====
 System Manager non supporta la risincronizzazione inversa con relazioni intracluster. È possibile utilizzare l'interfaccia utente di ONTAP per eseguire operazioni di risincronizzazione inversa con relazioni intracluster.
 
 ====
+.A proposito di questa attività
+* Sebbene la risincronizzazione non richieda un trasferimento di riferimento, può richiedere molto tempo. È possibile eseguire la risincronizzazione in ore non di punta.
+* La risincronizzazione dei volumi che fanno parte di una configurazione fan-out o a cascata può richiedere più tempo. Non è raro che la relazione di SnapMirror riporti lo stato di "preparazione" per un periodo di tempo prolungato.
+* A partire da ONTAP 9.13.1, ONTAP tenta di utilizzare la risincronizzazione rapida per impostazione predefinita per ridurre il tempo di risincronizzazione. Per utilizzare la sincronizzazione rapida per impostazione predefinita, devono essere soddisfatte le seguenti condizioni:
++
+** I volumi FlexVol non hanno cloni sul volume
+** Quando si utilizza la policy MirrorAllSnapshots
++
+
+NOTE: Utilizzando `-quick-resync` può consumare spazio aggiuntivo sul volume di destinazione della risincronizzazione a causa della rimozione dell'efficienza di archiviazione sui blocchi di dati trasferiti. Questo consumo di spazio aggiuntivo viene recuperato come parte dell'applicazione di efficienza di archiviazione in linea o post-replica sulla destinazione di risincronizzazione.
+
++
+IL `-quick-resync` il parametro è facoltativo. È possibile abilitare o disabilitare la risincronizzazione rapida utilizzando `-quick-resync true|false` parametro con il `snapmirror resync` comando.
+
++
+Per maggiori informazioni su `-quick-resync`, vedere il link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-resync.html["Riferimento al comando ONTAP"^].
+
+
+
+
+
 .Fasi
 Per eseguire questa attività, è possibile utilizzare Gestione sistema o l'interfaccia CLI di ONTAP. Se si utilizza l'interfaccia CLI di ONTAP, la procedura è la stessa indipendentemente dal fatto che si stia rendendo scrivibile un volume di destinazione o si stia aggiornando la relazione di replica.
 
