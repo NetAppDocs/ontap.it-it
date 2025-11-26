@@ -1,0 +1,180 @@
+---
+permalink: pnfs/pnfs-architecture-concept.html 
+sidebar: sidebar 
+keywords: tr-4063, pnfs, architecture, metadata server, data server, parallel nfs, layout, technical report 
+summary: 'L"architettura pNFS separa i metadati e i percorsi dei dati per offrire vantaggi in termini di prestazioni attraverso la localizzazione e la parallelizzazione dei dati.' 
+---
+= Scopri di più sull'architettura pNFS in ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+L'architettura pNFS è composta da tre componenti principali: un client NFS che supporta pNFS, un server di metadati che fornisce un percorso dedicato per le operazioni sui metadati e un server di dati che fornisce percorsi localizzati ai file.
+
+L'accesso client a pNFS necessita della connettività di rete ai percorsi di dati e metadati disponibili sul server NFS. Se il server NFS contiene interfacce di rete non raggiungibili dai client, il server potrebbe segnalare al client percorsi dati inaccessibili, il che può causare interruzioni.
+
+
+
+== Server di metadati
+
+Il server dei metadati in pNFS viene stabilito quando un client avvia un montaggio utilizzando NFSv4.1 o versione successiva quando pNFS è abilitato sul server NFS. Una volta eseguita questa operazione, tutto il traffico di metadati viene inviato tramite questa connessione e rimane su questa connessione per tutta la durata del montaggio, anche se l'interfaccia viene migrata su un altro nodo.
+
+.Stabilire il server dei metadati in pNFS in ONTAP
+image::pNFS_fig_007.png[Stabilire il server dei metadati in pNFS in ONTAP]
+
+Il supporto pNFS viene determinato durante la chiamata di montaggio, in particolare nelle chiamate EXCHANGE_ID. Ciò può essere osservato in un'acquisizione di pacchetti sotto le operazioni NFS come flag. Quando i flag pNFS `EXCHGID4_FLAG_USE_PNFS_DS` E `EXCHGID4_FLAG_USE_PNFS_MDS` sono impostati su 1, l'interfaccia è idonea sia per le operazioni sui dati che sui metadati in pNFS.
+
+.Cattura di pacchetti per il montaggio pNFS
+image::pNFS_fig_008.png[Cattura di pacchetti per il montaggio pNFS]
+
+I metadati in NFS sono generalmente costituiti da attributi di file e cartelle, come handle di file, autorizzazioni, orari di accesso e modifica e informazioni sulla proprietà. I metadati possono includere anche la creazione e l'eliminazione di chiamate, il collegamento e la disconnessione di chiamate e le rinomine.
+
+In pNFS, esiste anche un sottoinsieme di chiamate di metadati specifiche per la funzionalità pNFS e sono trattate in modo più dettagliato in link:https://www.rfc-editor.org/rfc/rfc5661.html#section-12.3["RFC 5661"^]. Queste chiamate vengono utilizzate per aiutare a determinare i dispositivi idonei per pNFS, le mappature dei dispositivi sui set di dati e altre informazioni richieste. La tabella seguente mostra un elenco di queste operazioni sui metadati specifiche di pNFS.
+
+[cols="30,70"]
+|===
+| Operazione | Descrizione 
+
+
+| LAYOUTGET | Ottiene la mappa del server dati dal server metadati. 
+
+
+| LAYOUTCOMMIT | I server eseguono il commit del layout e aggiornano le mappe dei metadati. 
+
+
+| LAYOUTRETURN | Restituisce il layout o il nuovo layout se i dati vengono modificati. 
+
+
+| GETDEVICEINFO | Il client riceve informazioni aggiornate su un server dati nel cluster di archiviazione. 
+
+
+| GETDEVICELIST | Il client richiede l'elenco di tutti i server dati che partecipano al cluster di archiviazione. 
+
+
+| CB_LAYOUTRECALL | Se vengono rilevati conflitti, il server richiama il layout dei dati da un client. 
+
+
+| CB_RECALL_ANY | Restituisce tutti i layout al server dei metadati. 
+
+
+| CB_NOTIFY_DEVICEID | Notifica eventuali modifiche all'ID del dispositivo. 
+|===
+
+
+== Informazioni sul percorso dati
+
+Dopo che il server dei metadati è stato stabilito e le operazioni sui dati hanno inizio, ONTAP inizia a tracciare gli ID dei dispositivi idonei per le operazioni di lettura e scrittura pNFS, nonché le mappature dei dispositivi, che associano i volumi nel cluster alle interfacce di rete locali. Questo processo si verifica quando viene eseguita un'operazione di lettura o scrittura nel mount. Chiamate di metadati, come `GETATTR`. non attiverà queste mappature dei dispositivi. In quanto tale, l'esecuzione di un `ls` il comando all'interno del punto di montaggio non aggiornerà le mappature.
+
+I dispositivi e le mappature possono essere visualizzati utilizzando ONTAP CLI con privilegi avanzati, come mostrato di seguito.
+
+[listing]
+----
+::*> pnfs devices show -vserver DEMO
+  (vserver nfs pnfs devices show)
+Vserver Name     Mapping ID      Volume MSID     Mapping Status  Generation
+---------------  --------------- --------------- --------------- -------------
+DEMO             16              2157024470      available       1
+
+::*> pnfs devices mappings show -vserver SVM
+  (vserver nfs pnfs devices mappings show)
+Vserver Name    Mapping ID      Dsid            LIF IP
+--------------  --------------- --------------- --------------------
+DEMO            16              2488            10.193.67.211
+----
+
+NOTE: In questi comandi i nomi dei volumi non sono presenti. Vengono invece utilizzati gli ID numerici associati a tali volumi: l'ID del set master (MSID) e l'ID del set di dati (DSID). Per trovare i volumi associati alle mappature, è possibile utilizzare `volume show -dsid [dsid_numeric]` O `volume show -msid [msid_numeric]` nel privilegio avanzato ONTAP CLI.
+
+Quando un client tenta di leggere o scrivere su un file situato su un nodo remoto rispetto alla connessione al server dei metadati, pNFS negozierà i percorsi di accesso appropriati per garantire la località dei dati per tali operazioni e il client verrà reindirizzato al dispositivo pNFS pubblicizzato anziché tentare di attraversare la rete del cluster per accedere al file. Ciò aiuta a ridurre il sovraccarico della CPU e la latenza di rete.
+
+.Percorso di lettura remoto tramite NFSv4.1 senza pNFS
+image::pNFS_fig_009.png[Percorso di lettura remoto tramite NFSv4.1 senza pNFS]
+
+.Percorso di lettura localizzato tramite pNFS
+image::pNFS_fig_010.png[Percorso di lettura localizzato tramite pNFS]
+
+
+
+== Percorso di controllo pNFS
+
+Oltre alle porzioni di metadati e dati di pNFS, esiste anche un percorso di controllo pNFS. Il percorso di controllo viene utilizzato dal server NFS per sincronizzare le informazioni del file system. In un cluster ONTAP , la rete del cluster backend si replica periodicamente per garantire che tutti i dispositivi pNFS e le mappature dei dispositivi siano sincronizzati.
+
+
+
+== Flusso di lavoro di popolamento del dispositivo pNFS
+
+Di seguito viene descritto come un dispositivo pNFS si popola in ONTAP dopo che un client effettua una richiesta di lettura o scrittura di un file in un volume.
+
+. Il client richiede la lettura o la scrittura; viene eseguita un'operazione OPEN e viene recuperato l'handle del file.
+. Una volta eseguita l'operazione OPEN, il client invia l'handle del file allo storage tramite una chiamata LAYOUTGET tramite la connessione al server dei metadati.
+. LAYOUTGET restituisce al client informazioni sul layout del file, come l'ID dello stato, la dimensione della striscia, il segmento del file e l'ID del dispositivo.
+. Il client prende quindi l'ID del dispositivo e invia una chiamata GETDEVINFO al server per recuperare l'indirizzo IP associato al dispositivo.
+. L'archiviazione invia una risposta con l'elenco degli indirizzi IP associati per l'accesso locale al dispositivo.
+. Il client continua la conversazione NFS tramite l'indirizzo IP locale inviato dallo storage.
+
+
+
+
+== Interazione di pNFS con i volumi FlexGroup
+
+I volumi FlexGroup in ONTAP presentano lo storage come componenti FlexVol volume che si estendono su più nodi in un cluster, consentendo a un carico di lavoro di sfruttare più risorse hardware mantenendo un singolo punto di montaggio. Poiché più nodi con più interfacce di rete interagiscono con il carico di lavoro, è naturale vedere il traffico remoto attraversare la rete del cluster backend in ONTAP.
+
+.Accesso a un singolo file in un volume FlexGroup senza pNFS
+image::pNFS_fig_011.png[Accesso a un singolo file in un volume FlexGroup senza pNFS]
+
+Quando si utilizza pNFS, ONTAP tiene traccia dei layout dei file e dei volumi del volume FlexGroup e li mappa alle interfacce dati locali nel cluster. Ad esempio, se un volume costituente contenente un file a cui si sta accedendo risiede sul nodo 1, ONTAP notificherà al client di reindirizzare il traffico dati all'interfaccia dati sul nodo 1.
+
+.Accesso a un singolo file in un volume FlexGroup con pNFS
+image::pNFS_fig_012.png[Accesso a un singolo file in un volume FlexGroup con pNFS]
+
+pNFS consente inoltre la presentazione di percorsi di rete paralleli ai file da un singolo client, cosa che NFSv4.1 senza pNFS non fornisce. Ad esempio, se un client desidera accedere a quattro file contemporaneamente dallo stesso mount utilizzando NFSv4.1 senza pNFS, verrà utilizzato lo stesso percorso di rete per tutti i file e il cluster ONTAP invierà invece richieste remote a tali file. Il percorso di montaggio può diventare un collo di bottiglia per le operazioni, poiché tutte seguono un unico percorso e arrivano a un unico nodo, oltre a gestire operazioni sui metadati insieme alle operazioni sui dati.
+
+.Accesso simultaneo a più file in un volume FlexGroup senza pNFS
+image::pNFS_fig_013.png[Accesso simultaneo a più file in un volume FlexGroup senza pNFS]
+
+Quando pNFS viene utilizzato per accedere simultaneamente agli stessi quattro file da un singolo client, il client e il server negoziano i percorsi locali per ciascun nodo con i file e utilizzano più connessioni TCP per le operazioni sui dati, mentre il percorso di montaggio funge da posizione per tutte le operazioni sui metadati. Ciò offre vantaggi in termini di latenza grazie all'utilizzo di percorsi locali ai file, ma può anche aggiungere vantaggi in termini di produttività grazie all'utilizzo di più interfacce di rete, a condizione che i client possano inviare dati sufficienti a saturare la rete.
+
+.Accesso simultaneo a più file in un volume FlexGroup con pNFS
+image::pNFS_fig_014.png[Accesso simultaneo a più file in un volume FlexGroup con pNFS]
+
+Di seguito sono riportati i risultati di un semplice test eseguito su un singolo client RHEL 9.5 in cui quattro file da 10 GB (tutti residenti su volumi costituenti diversi su due nodi del cluster ONTAP ) vengono letti in parallelo utilizzando dd. Per ogni file, la produttività complessiva e il tempo di completamento sono stati migliorati utilizzando pNFS. Utilizzando NFSv4.1 senza pNFS, il delta delle prestazioni tra i file locali al punto di montaggio e quelli remoti era maggiore rispetto a quello con pNFS.
+
+[cols="40,30,30"]
+|===
+| Test | Velocità per file (MB/s) | Tempo di completamento per file 
+
+
+| NFSv4.1: nessun pNFS  a| 
+* File.1–228 (locale)
+* File.2–227 (locale)
+* File.3–192 (remoto)
+* File.4–192 (remoto)
+
+ a| 
+* File.1–46 (locale)
+* File.2–46.1 (locale)
+* File.3–54.5 (remoto)
+* File.4–54.5 (remoto)
+
+
+
+
+| NFSv4.1: con pNFS  a| 
+* File.1–248 (locale)
+* File.2–246 (locale)
+* File.3–244 (locale tramite pNFS)
+* File.4–244 (locale tramite pNFS)
+
+ a| 
+* File.1–42.3 (locale)
+* File.2–42.6 (locale)
+* File.3–43 (locale tramite pNFS)
+* File.4–43 (locale tramite pNFS)
+
+
+|===
+.Informazioni correlate
+* link:../flexgroup/index.html["Gestione dei volumi FlexGroup"]
+* https://www.netapp.com/pdf.html?item=/media/12385-tr4571pdf.pdf["Rapporto tecnico NetApp 4571: Best practice FlexGroup"^]
+
