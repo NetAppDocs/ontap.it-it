@@ -50,7 +50,7 @@ image:workflow_svm_migrate.gif["Workflow di migrazione delle SVM. Questo riepilo
 | AFF serie A. | ONTAP 9.10.1 e versioni successive 
 |===
 
-NOTE: Durante la migrazione da un cluster AFF a un cluster FAS con aggregati ibridi, il posizionamento automatico del volume tenterà di eseguire una corrispondenza di aggregati simili.  Ad esempio, se il cluster di origine ha 60 volumi, il posizionamento del volume tenterà di trovare un aggregato AFF sulla destinazione in cui posizionare i volumi.  Se non c'è spazio sufficiente sugli aggregati AFF , i volumi verranno posizionati su aggregati con dischi non flash.
+NOTE: Durante la migrazione da un cluster AFF a un cluster FAS con aggregati ibridi, il posizionamento automatico del volume tenta di eseguire una corrispondenza di aggregati simili. Ad esempio, se il cluster di origine ha 60 volumi, il posizionamento del volume tenta di trovare un aggregato AFF sulla destinazione in cui posizionare i volumi. Quando non c'è spazio sufficiente sugli aggregati AFF , i volumi vengono posizionati su aggregati con dischi non flash.
 
 
 
@@ -119,23 +119,27 @@ A seconda della versione di ONTAP installata sul cluster, la rete che collega i 
 
 Prima di iniziare una migrazione SVM, è necessario soddisfare i seguenti prerequisiti:
 
-* Devi essere un amministratore del cluster.
-* link:../peering/create-cluster-relationship-93-later-task.html["I cluster di origine e di destinazione devono essere connessi in peering l'uno all'altro"].
-* I cluster di destinazione e di origine devono avere SnapMirror sincrono link:../system-admin/install-license-task.html["licenza installata"]. Questa licenza è inclusa con link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP uno"].
-* Tutti i nodi nel cluster di origine devono eseguire ONTAP 9.10.1 o versione successiva. Per informazioni sul supporto specifico dei controller di array ONTAP, vedere link:https://hwu.netapp.com/["Hardware Universe"^].
-* Tutti i nodi nel cluster di origine devono eseguire la stessa versione di ONTAP.
-* Tutti i nodi nel cluster di destinazione devono eseguire la stessa versione di ONTAP.
-* La versione ONTAP del cluster di destinazione deve essere uguale o non superiore a due versioni principali più recenti del cluster di origine.
-* I cluster di origine e di destinazione devono supportare la stessa subnet IP per l'accesso ai dati LIF.
-* La SVM di origine deve contenere meno di xref:Maximum supported volumes per SVM[numero massimo di volumi di dati supportati per la release].
-* Nella destinazione deve essere disponibile spazio sufficiente per il posizionamento del volume.
-* Se l'SVM di origine ha volumi crittografati, è necessario configurare Onboard Key Manager o la gestione delle chiavi esterne a livello di cluster sulla destinazione.
+* Sei un amministratore del cluster.
+* link:../peering/create-cluster-relationship-93-later-task.html["I cluster di origine e di destinazione sono collegati tra loro"].
+* I cluster di origine e destinazione hanno la sincronizzazione SnapMirror link:../system-admin/install-license-task.html["licenza installata"]. Questa licenza è inclusa con link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP uno"].
+* Tutti i nodi nel cluster di origine eseguono ONTAP 9.10.1 o versione successiva. Per il supporto specifico del controller array ONTAP , vedere link:https://hwu.netapp.com/["Hardware Universe"^].
+* Tutti i nodi nel cluster di origine eseguono la stessa versione ONTAP .
+* Tutti i nodi nel cluster di destinazione eseguono la stessa versione ONTAP .
+* La versione ONTAP del cluster di destinazione è uguale o non superiore a due versioni principali più recenti del cluster di origine.
+* I cluster di origine e di destinazione supportano la stessa subnet IP per l'accesso ai dati LIF.
+* L'SVM di origine contiene meno di xref:Maximum supported volumes per SVM[numero massimo di volumi di dati supportati per la release].
+* Nella destinazione è disponibile spazio sufficiente per il posizionamento del volume.
+* Onboard Key Manager o la gestione delle chiavi esterne vengono configurati a livello di cluster sulla destinazione se l'SVM di origine ha volumi crittografati.
 +
-** In questo caso, i gestori delle chiavi configurati a livello SVM sull'origine non migreranno alla destinazione. La destinazione utilizzerà il gestore delle chiavi a livello di cluster.
+** In questo caso, i gestori delle chiavi configurati a livello SVM sull'origine non migrano alla destinazione. La destinazione utilizza il gestore delle chiavi a livello di cluster.
 
 
 * Se l'origine ha volumi crittografati ed è configurata per NetApp Aggregate Encryption (NAE), anche la destinazione deve essere configurata per NAE.
 * Se stai migrando una SVM tra una configurazione non MetroCluster e una configurazione MetroCluster o tra due configurazioni MetroCluster, verifica che la tua configurazione soddisfi i seguenti requisiti:
++
+
+NOTE: La migrazione di una SVM tra il cluster locale e quello partner in una configurazione MetroCluster non è supportata.
+
 +
 ** I cluster MetroCluster di origine e destinazione sono in stato "normale". Ciò significa che non possono essere in modalità di commutazione o nello stato di "attesa per lo switchback".
 ** I cluster MetroCluster di origine e destinazione non sono in fase di transizione da FC a IP o di refresh dell'hardware.
@@ -159,12 +163,12 @@ Durante la migrazione delle SVM, è consigliabile lasciare il 30% di spazio a di
 
 == Operazioni SVM
 
-È necessario controllare le operazioni che possono entrare in conflitto con una migrazione SVM:
+Verificare le operazioni che potrebbero entrare in conflitto con una migrazione SVM:
 
 * Non sono in corso operazioni di failover
 * WAFLIRON non può essere in esecuzione
 * Impronta digitale non in corso
-* Vol move, rehosting, cloning, create, convert o analytics non sono in esecuzione
+* Lo spostamento, il rehosting, la clonazione, la creazione, la conversione o l'analisi del volume non sono in esecuzione
 * Nessuna migrazione SVM è in esecuzione sul cluster di destinazione. È consentita una sola migrazione SVM alla volta.
 
 
@@ -239,19 +243,20 @@ Le seguenti migrazioni SVM di MetroCluster non sono supportate per tutte le vers
 
 * Migrazione di una SVM tra due configurazioni FC di MetroCluster
 * Migrazione di una SVM tra una configurazione non MetroCluster e una configurazione MetroCluster FC
+* Migrazione di una SVM tra il cluster locale e quello partner nella stessa configurazione MetroCluster .
 
 
 Vedi il <<Prerequisiti,prerequisiti>> per migrare una SVM in una configurazione MetroCluster .
 
 
 
-| NetApp aggregate Encryption (NAE) | ONTAP 9.11.1 | I volumi NAE devono essere posizionati sulla destinazione di supporto NAE. Se non è disponibile alcuna destinazione NAE, l'operazione di migrazione avrà esito negativo. 
+| NetApp aggregate Encryption (NAE) | ONTAP 9.11.1 | I volumi NAE devono essere posizionati sulla destinazione di supporto NAE. Se non è disponibile alcuna destinazione NAE, l'operazione di migrazione fallisce. 
 
 
 | Configurazioni NDMP | Non supportato |  
 
 
-| NetApp Volume Encryption (NVE) | ONTAP 9.10.1 | I volumi NVE verranno migrati come volumi NVE sulla destinazione. 
+| NetApp Volume Encryption (NVE) | ONTAP 9.10.1 | I volumi NVE vengono migrati come volumi NVE nella destinazione. 
 
 
 | Registri di audit NFS e SMB | ONTAP 9.13.1  a| 
@@ -305,7 +310,7 @@ Le migrazioni SMB sono discontinue e richiedono un aggiornamento del client dopo
 
 | Fonte asincrona di SnapMirror | ONTAP 9.11.1  a| 
 * I trasferimenti possono continuare normalmente sulle relazioni di FlexVol SnapMirror durante la maggior parte della migrazione.
-* Eventuali trasferimenti in corso vengono annullati durante il cutover e i nuovi trasferimenti falliscono durante il cutover e non possono essere riavviati fino al completamento della migrazione.
+* Tutti i trasferimenti in corso vengono annullati durante il passaggio e i nuovi trasferimenti falliscono durante il passaggio. Non potranno essere riavviati finché la migrazione non sarà completata.
 * I trasferimenti pianificati che sono stati annullati o persi durante la migrazione non vengono avviati automaticamente al termine della migrazione.
 +
 [NOTE]
