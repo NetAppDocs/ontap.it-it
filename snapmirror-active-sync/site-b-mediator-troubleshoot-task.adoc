@@ -54,7 +54,37 @@ C1_cluster 			  1-80-000011           Unavailable    ok
 .Soluzione
 Forzare un failover per abilitare l'i/o dal sito B e quindi stabilire una relazione RTO zero dal sito B al sito A. Completare i seguenti passaggi per eseguire un failover forzato sul sito B.
 
-. Annullare la mappatura di tutte le LUN appartenenti al gruppo di coerenza dal sito B.
+. Annullare la mappatura di tutti i LUN appartenenti al gruppo di coerenza dal sito B. Questa operazione non riuscirà, quindi è necessario prima modificare l'igroup per rimuovere la SVM del peer di replicazione e quindi eliminare la mappa LUN.
+
+
+Esempio:
+
+[listing]
+----
+C1_cluster::> lun mapping show
+Vserver    Path                                      Igroup   LUN ID  Protocol
+---------- ----------------------------------------  -------  ------  --------
+vs0        /vol/cg1_lun/lun_1                        igroup1       0  mixed
+vs0        /vol/cg1_lun/lun_2                        igroup1       1  mixed
+2 entries were displayed.
+
+C1_cluster::> lun mapping delete -path /vol/cg1_lun/lun_5 -igroup igroup1
+Error: command failed: The peer cluster is unreachable and a SnapMirror
+       Mediator is not configured. The configuration is locked for replicated
+       objects in this Vserver peer relationship on both clusters. The only
+       supported configuration change is to manually disable replication on
+       both sides of the relationship, after which configuration changes are
+       supported.
+C1_cluster::> igroup modify -igroup igroup1 -replication-peer -
+
+C1_cluster::> lun mapping delete -path /vol/cg1_lun/lun_1 -igroup igroup1
+
+C1_cluster::> lun mapping show
+Vserver    Path                                      Igroup   LUN ID  Protocol
+---------- ----------------------------------------  -------  ------  --------
+vs0        /vol/cg1_lun/lun_2                        igroup1       1  mixed
+1 entries were displayed.
+----
 . Eliminare la relazione del gruppo di coerenza di SnapMirror utilizzando l'opzione force (forza).
 . Inserisci il comando SnapMirror breaker (`snapmirror break -destination_path _svm_:_volume_`) Sui volumi costituenti del gruppo di coerenza per convertire volumi da DP a RW, per abilitare i/o dal sito B.
 +

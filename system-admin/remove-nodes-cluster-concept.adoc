@@ -14,10 +14,10 @@ summary: È possibile rimuovere i nodi indesiderati da un cluster, un nodo alla 
 È possibile rimuovere i nodi indesiderati da un cluster, un nodo alla volta. Dopo aver rimosso un nodo, è necessario rimuovere anche il partner di failover. Se si rimuove un nodo, i relativi dati diventano inaccessibili o cancellati.
 
 .Prima di iniziare
-Prima di rimuovere i nodi dal cluster, devono essere soddisfatte le seguenti condizioni:
+Prima di rimuovere i nodi dal cluster, è necessario soddisfare le seguenti condizioni:
 
 * Più della metà dei nodi nel cluster deve essere integro.
-* Tutti i dati, i volumi e gli aggregati non root sono stati ricollocati o rimossi dal nodo.
+* Tutti i dati, i volumi e gli aggregati non root devono essere riposizionati o rimossi dal nodo.
 +
 ** Tutti i dati sul nodo che si desidera rimuovere devono essere stati svuotati. Questo potrebbe includere link:../encryption-at-rest/secure-purge-data-encrypted-volume-concept.html["eliminazione dei dati da un volume crittografato"].
 ** Tutti i volumi non root lo sono link:../volumes/move-volume-task.html["spostato"] da aggregati di proprietà del nodo.
@@ -114,7 +114,11 @@ Il nodo master è il nodo che contiene processi quali `mgmt` , `vldb`, , `vifmgr
 cluster modify -node <node_name> -eligibility false
 ----
 +
-In questo modo il nodo verrà contrassegnato come non integro fino a quando l'idoneità non verrà ripristinata nel passaggio successivo. Quando il nodo master non è idoneo, uno dei nodi rimanenti viene selezionato dal quorum del cluster come nuovo master.
+Il nodo viene contrassegnato come non funzionante finché non viene ripristinata l'idoneità. Quando il nodo master non è più idoneo, uno dei nodi rimanenti viene eletto dal quorum del cluster come nuovo master.
+
++
+
+NOTE: Se si esegue questo passaggio sul primo nodo di una coppia HA, è necessario contrassegnare solo quel nodo come non idoneo. Non modificare lo stato del partner HA. Se il nodo partner viene selezionato come nuovo master, è necessario verificare se contiene epsilon prima di renderlo non idoneo. Ciò avviene ripetendo questi passaggi per rimuovere il nodo partner.
 
 .. Rendere il nodo master precedente idoneo a partecipare nuovamente al cluster:
 +
