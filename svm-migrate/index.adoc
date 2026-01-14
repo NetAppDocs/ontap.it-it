@@ -130,6 +130,7 @@ Prima di iniziare una migrazione SVM, è necessario soddisfare i seguenti prereq
 * Tutti i nodi nel cluster di destinazione eseguono la stessa versione ONTAP .
 * La versione ONTAP del cluster di destinazione è uguale o non superiore a due versioni principali più recenti del cluster di origine.
 * I cluster di origine e di destinazione supportano la stessa subnet IP per l'accesso ai dati LIF.
+* Sia il cluster di origine che quello di destinazione devono avere almeno un'interfaccia che abbia accesso a tutte le reti dell'SVM in migrazione, altrimenti il pre-controllo della migrazione non andrà a buon fine.
 * L'SVM di origine contiene meno di xref:Maximum supported volumes per SVM[numero massimo di volumi di dati supportati per la release].
 * Nella destinazione è disponibile spazio sufficiente per il posizionamento del volume.
 * Onboard Key Manager o la gestione delle chiavi esterne vengono configurati a livello di cluster sulla destinazione se l'SVM di origine ha volumi crittografati.
@@ -190,7 +191,26 @@ Per informazioni sull'interoperabilità della versione di ONTAP tra un'origine e
 | Funzione | Release supportata per la prima volta | Commenti 
 
 
+| Registri di controllo (NFS e SMB) | ONTAP 9.13.1  a| 
+[NOTE]
+====
+Per la migrazione delle SVM on-premise con audit abilitato, devi disabilitare l'audit sulla SVM di origine ed eseguire la migrazione.
+
+====
+Prima della migrazione SVM:
+
+* link:../nas-audit/enable-disable-auditing-svms-task.html["Il registro di controllo deve essere abilitato sul cluster di destinazione"].
+* link:../nas-audit/commands-modify-auditing-config-reference.html?q=audit+log+destination+path["Occorre creare il percorso di destinazione dell'audit log dalla SVM di origine nel cluster di destinazione"].
+
+
+
+
 | Protezione ransomware autonoma | ONTAP 9.12.1 |  
+
+
+| Istanze cloud | Non supportato  a| 
+La migrazione di SVM da o verso istanze on-premise al cloud non è supportata.
+
 
 
 | Cloud Volumes ONTAP | Non supportato |  
@@ -262,20 +282,6 @@ Vedi il <<Prerequisiti,prerequisiti>> per migrare una SVM in una configurazione 
 | NetApp Volume Encryption (NVE) | ONTAP 9.10.1 | I volumi NVE vengono migrati come volumi NVE nella destinazione. 
 
 
-| Registri di audit NFS e SMB | ONTAP 9.13.1  a| 
-[NOTE]
-====
-Per la migrazione delle SVM on-premise con audit abilitato, devi disabilitare l'audit sulla SVM di origine ed eseguire la migrazione.
-
-====
-Prima della migrazione SVM:
-
-* link:../nas-audit/enable-disable-auditing-svms-task.html["Il reindirizzamento del log di audit deve essere abilitato sul cluster di destinazione"].
-* link:../nas-audit/commands-modify-auditing-config-reference.html?q=audit+log+destination+path["Occorre creare il percorso di destinazione dell'audit log dalla SVM di origine nel cluster di destinazione"].
-
-
-
-
 | NFS v3, NFS v4.1 e NFS v4.2 | ONTAP 9.10.1 |  
 
 
@@ -291,6 +297,9 @@ Prima della migrazione SVM:
 | Onboard Key Manager (OKM) con la modalità Common Criteria attivata sul cluster di origine | Non supportato |  
 
 
+| ONTAP Select | Non supportato | La migrazione di SVM da o verso istanze ONTAP Select non è supportata. 
+
+
 | Qtree | ONTAP 9.14.1 |  
 
 
@@ -300,7 +309,7 @@ Prima della migrazione SVM:
 | S3 | Non supportato |  
 
 
-| Protocollo SMB | ONTAP 9.12.1  a| 
+| Protocollo SMB | ONTAP 9.12.1 Tuttavia, il protocollo SMB1 non è supportato.  a| 
 Le migrazioni SMB sono discontinue e richiedono un aggiornamento del client dopo la migrazione.
 
 
@@ -429,3 +438,10 @@ La seguente tabella indica le operazioni di volume supportate nella SVM in migra
 
 | Ripristinare il file dallo snapshot | Consentito | Consentito | Non supportato 
 |===
+
+
+== Informazioni post-migrazione
+
+* Dopo la migrazione, i criteri di snapshot locali hanno l'estensione -MIG, che potrebbe interrompere parte dell'automazione. Dovresti cercare questa estensione e rinominare le policy come necessario.
+* I volumi SnapMirror di destinazione del vault migrati devono eseguire una nuova sincronizzazione per riattivare la protezione. La risincronizzazione del vault è necessaria perché la migrazione crea una nuova baseline tra le SVM di migrazione, più recente della baseline precedente del vault. L'esecuzione di una risincronizzazione riattiva il vault, eliminando anche tutti i dati più recenti rispetto alla baseline del vault corrente, in particolare lo snapshot generato durante la migrazione.
+
