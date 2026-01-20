@@ -30,22 +30,51 @@ NOTE: La risincronizzazione rapida non preserva l'efficienza dello storage dei v
 
 Questa procedura presuppone che la linea di base nel volume di origine originale sia intatta. Se la linea di base non è intatta, è necessario creare e inizializzare la relazione tra il volume da cui si stanno fornendo i dati e il volume di origine originale prima di eseguire la procedura.
 
-A partire da ONTAP 9.8, è possibile utilizzare Gestione sistema per riattivare una VM di storage di origine dopo un disastro. La riattivazione della VM di storage di origine interrompe la VM di storage di destinazione e riattiva la replica dall'origine alla destinazione.
-
-Quando utilizzi System Manager per riattivare la VM dello storage di origine, System Manager esegue in background le seguenti operazioni:
-
-* Crea una relazione DR SVM inversa dalla destinazione originale all'origine utilizzando la risincronizzazione di SnapMirror
-* Arresta la SVM di destinazione
-* Aggiorna la relazione di SnapMirror
-* Interrompe la relazione di SnapMirror
-* Riavvia la SVM originale
-* Effettua una risincronizzazione di SnapMirror dell'origine originale verso la destinazione originale
-* Elimina le relazioni di SnapMirror
-
+A partire da ONTAP 9.8, è possibile utilizzare System Manager per riattivare una VM di archiviazione di origine dopo un disastro.
 
 .Fasi
-È necessario eseguire questa attività utilizzando ONTAP CLI.
+È possibile eseguire questa attività utilizzando System Manager o ONTAP CLI.
 
+[role="tabbed-block"]
+====
+.System Manager ONTAP 9.17.1 e versioni successive
+--
+. Nel cluster di destinazione, selezionare la relazione di protezione desiderata: fare clic su *Protezione > Replica*.
+. Passa il cursore sul nome della fonte, clicca image:icon_kabob.gif["Icona delle opzioni di menu"]e fai clic su *Risincronizzazione inversa*.
+. Nella finestra *Reverse Resync Relationship* (relazione risincronizzazione inversa), fare clic su *Reverse Resync* (risincronizzazione inversa*)
++
+La relazione scompare dalla tabella *Replicazione* e ora viene gestita dal cluster di origine originale.
+
+. Nel cluster di origine, fare clic su *Protezione > Replica* e verificare che la risincronizzazione inversa sia completa controllando che lo stato sia *Mirrored*.
+. Nel cluster di destinazione originale, vai a *Cluster > VM di archiviazione*.
+. Individua la VM di archiviazione, passa il cursore sul nome della VM di archiviazione, fai clic image:icon_kabob.gif["Icona delle opzioni di menu"]e fare clic su *Stop*.
+. Nella finestra *Arresta VM di archiviazione*, fare clic su *Arresta*.
+. Nel cluster di origine, vai su *Protezione > Replica* e individua la VM di archiviazione che desideri riattivare, passa il cursore sul nome della VM di archiviazione, fai clic su image:icon_kabob.gif["Icona delle opzioni di menu"]e fare clic su *Attiva VM di archiviazione di destinazione*.
+. Nella finestra *Attiva VM di archiviazione di destinazione*, seleziona *Attiva la VM di archiviazione di destinazione e interrompi la relazione*, quindi fai clic su *Attiva*.
+. Quando torni alla pagina *Replica*, passa di nuovo il cursore sul nome della VM di archiviazione, fai clic su image:icon_kabob.gif["Icona delle opzioni di menu"]e fai clic su *Risincronizzazione inversa*.
+
+
+--
+.System Manager ONTAP 9.16.1 e versioni precedenti
+--
+. Nel cluster di destinazione, selezionare la relazione di protezione desiderata: fare clic su *Protezione > Relazioni*.
+. Passa il cursore sul nome della fonte, clicca image:icon_kabob.gif["Icona delle opzioni di menu"]e fai clic su *Risincronizzazione inversa*.
+. Nella finestra *Reverse Resync Relationship* (relazione risincronizzazione inversa), fare clic su *Reverse Resync* (risincronizzazione inversa*)
++
+La relazione scompare dalla tabella *Relazioni* perché ora è gestita dal cluster di origine originale.
+
+. Nel cluster di origine, fare clic su *Protezione > Relazioni* e verificare che la risincronizzazione inversa sia completa controllando che lo stato sia visualizzato come *Mirrored*.
+. Nel cluster di destinazione originale, vai su *Archiviazione > VM di archiviazione*.
+. Individua la VM di archiviazione, passa il cursore sul nome della VM di archiviazione, fai clic image:icon_kabob.gif["Icona delle opzioni di menu"]e fare clic su *Stop*.
+. Nella finestra *Arresta VM di archiviazione*, fare clic su *Arresta*.
+. Nel cluster di origine, individua la VM di archiviazione (che ora è la SVM di origine della relazione invertita), passa il cursore sul nome della SVM, fai clic su image:icon_kabob.gif["Icona delle opzioni di menu"]e fare clic su *Attiva VM di archiviazione di destinazione*.
+. Nella finestra *Attiva VM di archiviazione di destinazione*, seleziona *Attiva la VM di archiviazione di destinazione e interrompi la relazione* e fai clic su *Attiva*.
+. Quando torni alla pagina *Relazioni*, passa di nuovo il cursore sul nome della VM di archiviazione, fai clic su image:icon_kabob.gif["Icona delle opzioni di menu"]e fai clic su *Risincronizzazione inversa*.
+
+
+--
+.CLI
+--
 . Dalla SVM di origine originale o dal cluster di origine, creare una relazione DR SVM inversa utilizzando la stessa configurazione, policy e impostazioni di conservazione delle identità della relazione DR SVM originale:
 +
 [source, cli]
@@ -254,6 +283,8 @@ cluster_dst::> snapmirror release -source-path svm_backup: -destination-path svm
 ----
 
 
+--
+====
 .Cosa succederà
 * Utilizzare `snapmirror show` Per verificare che sia stata creata la relazione SnapMirror.
 +
