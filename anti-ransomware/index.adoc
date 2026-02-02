@@ -26,6 +26,12 @@ ARP crea snapshot bloccati a intervalli regolari, oltre a quelli programmati, pe
 
 == Licenze e abilitazione
 
+Per utilizzare ARP è necessaria una licenza. Decidi se abilitare ARP per impostazione predefinita sui nuovi volumi o abilitarlo manualmente per volume.
+
+
+
+=== Opzioni di licenza per ARP
+
 Il supporto ARP è incluso conlink:https://kb.netapp.com/onprem/ontap/os/ONTAP_9.10.1_and_later_licensing_overview["Licenza ONTAP One"^] . Se non si dispone della licenza ONTAP One, sono disponibili altre licenze per l'uso ARP che variano a seconda della versione di ONTAP
 
 [cols="2*"]
@@ -50,15 +56,34 @@ ONTAP 9.10.1
 * Se si passa da ONTAP 9.11.1 o versione successiva a ONTAP 9.10.1 e si è abilitato ARP con la licenza Anti_ransomware, verrà visualizzato un messaggio di avviso e potrebbe essere necessario riconfigurare ARP. link:../revert/anti-ransomware-license-task.html["Scopri come ripristinare ARP"] .
 
 
-link:enable-task.html["È possibile abilitare la protezione autonoma da ransomware (ARP) su un volume esistente o creare un nuovo volume e abilitare ARP"] .
+
+
+=== Opzioni di abilitazione per ARP
+
+ARP fornisce opzioni di abilitazione flessibili a livello di cluster, SVM e volume, consentendo di configurare l'abilitazione automatica predefinita per i nuovi volumi o di abilitare ARP manualmente sui volumi esistenti, secondo necessità.
+
+.Abilitazione automatica predefinita sui nuovi volumi
+A partire da ONTAP 9.18.1, ARP è abilitato automaticamente per impostazione predefinita su tutti i nuovi volumi per AFF serie A e AFF serie C, ASA e ASA r2. Questa abilitazione automatica predefinita di ARP non si applica a link:use-cases-restrictions-concept.html#unsupported-configurations["volumi o configurazioni non supportate"].
+
+L'abilitazione predefinita di ARP sui nuovi volumi entra in vigore dopo un grace period di 12 ore a seguito di un aggiornamento o immediatamente per una nuova installazione di ONTAP 9.18.1, a condizione che in entrambi i casi sia installata una licenza ARP. È obbligatorio <<manual-default-enablement,abilitare ARP manualmente>> sui volumi esistenti.
+
+Durante il grace period, puoi link:default-enable-change.html["disattivare l'abilitazione predefinita per i nuovi volumi a livello di cluster utilizzando System Manager o la ONTAP CLI"]. Se non effettui l'opt-out, ARP viene automaticamente abilitato per tutti i nuovi volumi creati dopo la fine del grace period. Se le esigenze cambiano dopo il grace period, hai anche la flessibilità di attivare o disattivare l'abilitazione predefinita in qualsiasi momento.
+
+.Abilitazione manuale predefinita sui nuovi volumi
+Se hai disabilitato l'abilitazione automatica predefinita di ARP a livello di cluster, puoi anche scegliere di link:enable-default-task.html["abilitare manualmente ARP per impostazione predefinita su tutti i nuovi volumi"] a livello di SVM. Per ONTAP 9.17.1 e versioni precedenti, questo è l'unico modo per configurare ARP in modo che sia abilitato per impostazione predefinita sui nuovi volumi.
+
+.Abilitazione ARP su tutti o su specifici volumi esistenti
+A partire dalla versione 9.18.1, è possibile abilitare manualmente ARP su tutti i volumi esistenti dal livello di cluster (selezionare *Cluster > Security* e image:icon_kabob.gif["Icona delle opzioni di menu"] nella sezione *Anti-ransomware*, quindi selezionare *Abilita su tutti i volumi esistenti*).
+
+Se preferisci limitare l'abilitazione ARP a un volume specifico, puoi link:enable-task.html["abilitare ARP su base per-volume"].
 
 
 
 == Strategia di protezione ransomware di ONTAP
 
-Una strategia efficace per il rilevamento dei ransomware dovrebbe includere più di un singolo livello di protezione.  Consideriamo come analogia le caratteristiche di sicurezza di un veicolo.  Non puoi fare affidamento su un singolo elemento, come la cintura di sicurezza, per essere completamente protetto in caso di incidente.  Gli airbag, i freni antibloccaggio e l'avviso di collisione frontale sono dispositivi di sicurezza che, nel complesso, contribuiscono a ottenere risultati migliori.  La protezione contro il ransomware dovrebbe essere vista allo stesso modo.
+Una protezione efficace contro il ransomware richiede che molti livelli di protezione lavorino insieme.
 
-Sebbene ONTAP includa funzionalità come FPolicy, snapshot, SnapLock e Active IQ Digital Advisor (noto anche come Digital Advisor) per contribuire alla protezione dal ransomware, le seguenti informazioni si concentrano sulla funzionalità ARP con capacità di apprendimento automatico.
+Mentre ONTAP include funzionalità come FPolicy, snapshot, SnapLock e Active IQ Digital Advisor (noto anche come Digital Advisor) per contribuire alla protezione dal ransomware, ARP fornisce un ulteriore livello di difesa.
 
 Per saperne di più sulle altre funzionalità del portfolio NetApp che proteggono dal ransomware, vedere link:https://docs.netapp.com/us-en/ontap-technical-reports/ransomware-solutions/ransomware-active-iq.html["Ransomware e il portfolio di protezione di NetApp"^] .
 
@@ -164,7 +189,7 @@ Dopo il periodo di valutazione, è possibile determinare se la protezione ARP SA
 
 == Valutazione delle minacce e istantanee ARP
 
-ARP valuta la probabilità di minaccia in base ai dati in ingresso, confrontandoli con l'analisi appresa. Quando ARP rileva un'anomalia, viene assegnata una misurazione. Un'istantanea può essere assegnata al momento del rilevamento o a intervalli regolari.
+ARP valuta la probabilità di minaccia in base ai dati in ingresso confrontati con le analisi apprese. Quando ARP rileva un'anomalia, viene assegnata una misurazione. ARP potrebbe assegnare uno Snapshot al momento del rilevamento o a intervalli regolari.
 
 
 
@@ -304,6 +329,51 @@ A partire da ONTAP 9.16,1, gli aggiornamenti per la protezione per ARP/ai sono d
 
 link:arp-ai-automatic-updates.html["Ulteriori informazioni sugli aggiornamenti ARP/ai"]
 
+
+
+== Differenze tra ARP/AI e i modelli ARP in sintesi
+
+[cols="1,1,1"]
+|===
+| Funzione | ARP | ARP/IA 
+
+
+| Versioni ONTAP | ONTAP 9.10.1-9.15.1 | ONTAP 9.16.1 e versioni successive; 9.15.1 (tech preview) 
+
+
+| Metodo di rilevamento | Analizza l'attività dei file, l'entropia dei dati e i tipi di estensione dei file | Modello di intelligenza artificiale/apprendimento automatico addestrato su grandi set di dati forensi; analizza l'entropia e il comportamento dei file 
+
+
+| Periodo di apprendimento | Richiede la modalità di apprendimento di 30 giorni per i volumi NAS FlexVol (commutazione automatica disponibile in 9.13.1 e versioni successive) | Nessun periodo di apprendimento; attivo immediatamente dopo l'abilitazione 
+
+
+| Supporto del tipo di volume  a| 
+* FlexVol: 9.10.1 e versioni successive
+* FlexGroup: 9.13.1 e versioni successive
+* SAN: Non supportato
+
+ a| 
+* FlexVol: 9.16.1 e versioni successive
+* FlexGroup: 9.18.1 e versioni successive
+* SAN: 9.17.1 e versioni successive (con evaluation period)
+
+
+
+
+| Creazione di Snapshot | Attivato da elevata entropia, nuove estensioni di file o picchi di operazioni sui file | Creato a intervalli fissi di 4 ore e alla conferma dell'attacco 
+
+
+| Conservazione degli snapshot | Conservato finché l'amministratore non cancella l'attività sospetta | Predefinito a 12 ore; esteso in base alla conferma dell'attacco (24 ore per falso positivo, 7 giorni per positivo confermato) 
+
+
+| Aggiornamenti | Logica di rilevamento statico (aggiornata solo con gli aggiornamenti ONTAP) | Aggiornamenti di sicurezza automatici indipendenti dalle release ONTAP 
+
+
+| Distribuzione | Abilitazione manuale per volume o impostazione predefinita a livello SVM | Abilitazione manuale per volume o impostazione predefinita a livello SVM; abilitazione predefinita su tutti i nuovi volumi a livello di cluster per i sistemi supportati in 9.18.1 e versioni successive 
+
+
+| Periodo di valutazione | Non applicabile | Necessario per i volumi SAN (2-4 settimane) per stabilire le soglie di crittografia di base 
+|===
 .Informazioni correlate
 * link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^]
 
