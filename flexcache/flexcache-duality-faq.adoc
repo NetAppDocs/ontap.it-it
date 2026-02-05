@@ -1,0 +1,45 @@
+---
+permalink: flexcache/flexcache-duality-faq.html 
+sidebar: sidebar 
+keywords: duality, faq, frequently asked questions, flexcache, ontap s3, s3, nas, smb, nfs 
+summary: Domande frequenti sulla dualità di FlexCache introdotta in ONTAP 9.18.1. 
+---
+= FAQ sulla dualità di FlexCache
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Questa FAQ risponde alle domande più comuni sulla dualità di FlexCache introdotta in ONTAP 9.18.1.
+
+
+
+== Domande frequenti
+
+.Che cos'è la "dualità"?
+La dualità consente l'accesso unificato agli stessi dati utilizzando sia i protocolli file (NAS) che oggetto (S3). Introdotta in ONTAP 9.12.1 senza supporto FlexCache, la dualità è stata estesa in ONTAP 9.18.1 per includere i volumi FlexCache, consentendo l'accesso tramite protocollo S3 ai file NAS memorizzati nella cache di un volume FlexCache.
+
+.Quali operazioni S3 sono supportate su un bucket S3 FlexCache?
+Le operazioni S3 supportate sui bucket NAS S3 standard sono supportate sui bucket NAS S3 FlexCache, con l'eccezione dell'operazione  `COPY`. Per un elenco aggiornato delle operazioni non supportate per un bucket NAS S3 standard, visitare il link:https://docs.netapp.com/us-en/ontap/s3-multiprotocol/index.html#s3-and-nas-interoperability["documentazione di interoperabilità"].
+
+.Posso utilizzare FlexCache in modalità write-back con la dualità FlexCache?
+No. Se un bucket NAS S3 FlexCache viene creato su un volume FlexCache, il volume FlexCache *deve* essere in modalità write-around. Se si tenta di creare un bucket NAS S3 FlexCache su un volume FlexCache in modalità write-back, l'operazione non andrà a buon fine.
+
+.Non riesco ad aggiornare uno dei miei cluster a ONTAP 9.18.1 a causa di limitazioni hardware. La dualità funzionerà ancora nel mio cluster se solo il cache cluster esegue ONTAP 9.18.1?
+No. Sia il cache cluster che l'origin cluster devono avere una versione minima effettiva del cluster pari a 9.18.1. Se si tenta di creare un bucket NAS S3 FlexCache su un cache cluster in peering con un origin cluster che esegue una versione di ONTAP precedente alla 9.18.1, l'operazione non riuscirà.
+
+.Ho una configurazione MetroCluster. Posso usare la dualità FlexCache?
+No. La dualità di FlexCache non è supportata nelle configurazioni MetroCluster.
+
+.Posso verificare l'accesso S3 ai file in un FlexCache S3 NAS bucket?
+L'audit S3 è fornito dalla funzionalità di audit NAS che utilizzano i volumi FlexCache. Per ulteriori informazioni sull'audit NAS dei volumi FlexCache, vedere link:audit-flexcache-volumes-concept.html["Scopri di più sull'audit di FlexCache"].
+
+.Cosa devo aspettarmi se il cache cluster si disconnette dal cluster di origine?
+Le richieste S3 a un FlexCache bucket NAS S3 non riusciranno con un  `503 Service Unavailable` errore se il cache cluster è disconnesso dal cluster di origine.
+
+.Posso utilizzare operazioni S3 multiparte con la dualità di FlexCache?
+Per il corretto funzionamento delle operazioni S3 multipart, il volume FlexCache sottostante deve avere il campo granular-data impostato su 'advanced'. Questo campo è impostato sul valore impostato per il volume di origine.
+
+.La dualità di FlexCache supporta l'accesso HTTP e HTTPS?
+Sì. Per impostazione predefinita, HTTPS è obbligatorio. È possibile configurare il servizio S3 per consentire l'accesso HTTP se necessario.
