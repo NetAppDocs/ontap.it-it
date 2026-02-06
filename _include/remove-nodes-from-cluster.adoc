@@ -1,0 +1,148 @@
+= 
+:allow-uri-read: 
+
+
+. Impostare il livello di privilegio su avanzato:
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Identifica il nodo nel cluster che ha epsilon:
++
+[source, cli]
+----
+cluster show
+----
++
+Nell'esempio seguente, "node0" attualmente detiene epsilon:
+
++
+[listing]
+----
+cluster::*>
+Node                 Health  Eligibility  Epsilon
+-------------------- ------- ------------ ------------
+node0                true    true         true
+node1                true    true         false
+node2                true    true         false
+node3                true    true         false
+----
+. [[epsilon-true]]Se il nodo che stai rimuovendo detiene epsilon:
++
+.. Sposta epsilon dal nodo che stai rimuovendo:
++
+[source, cli]
+----
+cluster modify -node <name_of_node_to_be_removed> -epsilon false
+----
+.. Sposta epsilon su un nodo che non stai rimuovendo:
++
+[source, cli]
+----
+cluster modify -node <node_name> -epsilon true
+----
+
+
+. Identificare il nodo master corrente:
++
+[source, cli]
+----
+cluster ring show
+----
++
+Il nodo master è il nodo che contiene processi quali `mgmt` , `vldb`, , `vifmgr` `bcomd` e `crs`.
+
+. Se il nodo che stai rimuovendo è il nodo master corrente, abilita un altro nodo nel cluster affinché venga eletto come nodo master:
++
+.. Rendere il nodo master corrente non idoneo a partecipare al cluster:
++
+[source, cli]
+----
+cluster modify -node <node_name> -eligibility false
+----
++
+Il nodo viene contrassegnato come non funzionante finché non ne viene ripristinata l'idoneità. Quando il nodo master diventa non idoneo, uno dei nodi rimanenti viene eletto dal quorum del cluster come nuovo master.
+
++
+[NOTE]
+====
+Se si esegue questo passaggio sul primo nodo di una coppia HA, è necessario contrassegnare solo quel nodo come non idoneo. Non modificare lo stato del partner HA.
+
+Se il nodo partner viene selezionato come nuovo master, è necessario verificare se detiene epsilon prima di renderlo non idoneo. Se il nodo partner detiene epsilon, è necessario spostare epsilon su un nodo diverso che rimane nel cluster prima di renderlo non idoneo. Si esegue questa operazione quando si ripetono questi passaggi per rimuovere il nodo partner.
+
+====
+.. Rendere il nodo master precedente idoneo a partecipare nuovamente al cluster:
++
+[source, cli]
+----
+cluster modify -node <node_name> -eligibility true
+----
+
+
+. Accedere al LIF di gestione del nodo remoto o al LIF di gestione del cluster su un nodo che non si sta rimuovendo dal cluster.
+. Rimuovi i nodi dal cluster:
++
+|===
+| Per questa versione di ONTAP... | Utilizzare questo comando... 
+
+
+ a| 
+ONTAP 9.3
+ a| 
+[source, cli]
+----
+cluster unjoin
+----
+
+
+ a| 
+ONTAP 9.4 e versioni successive
+ a| 
+Con nome nodo:
+
+[source, cli]
+----
+cluster remove-node -node <node_name>
+----
+Con IP nodo:
+
+[source, cli]
+----
+cluster remove-node -cluster_ip <node_ip>
+----
+|===
++
+Se si dispone di un cluster con versione mista e si sta rimuovendo l'ultimo nodo della versione inferiore, utilizzare `-skip-last-low-version-node-check` con questi comandi.
+
++
+Il sistema informa l'utente di quanto segue:
+
++
+** È inoltre necessario rimuovere il partner di failover del nodo dal cluster.
+** Dopo aver rimosso il nodo e prima che possa essere ricollegato a un cluster, è necessario utilizzare l'opzione del menu di boot *(4) Pulisci configurazione e inizializza tutti i dischi* o l'opzione *(9) Configura partizionamento unità avanzato* per cancellare la configurazione del nodo e inizializzare tutti i dischi.
++
+Viene generato un messaggio di errore se si verificano condizioni che è necessario risolvere prima di rimuovere il nodo. Ad esempio, il messaggio potrebbe indicare che il nodo dispone di risorse condivise che è necessario rimuovere o che si trova in una configurazione ha del cluster o in una configurazione di failover dello storage che è necessario disattivare.
+
++
+Se il nodo è il master del quorum, il cluster perderà brevemente e tornerà al quorum. Questa perdita di quorum è temporanea e non influisce sulle operazioni dei dati.
+
+
+
+. Se un messaggio di errore indica condizioni di errore, risolvere tali condizioni ed eseguire nuovamente il `cluster remove-node` oppure `cluster unjoin` comando.
++
+Il nodo si riavvia automaticamente dopo essere stato rimosso correttamente dal cluster.
+
+. Se si sta ridisponendo il nodo, cancellare la configurazione del nodo e inizializzare tutti i dischi:
++
+.. Durante il processo di avvio, premere Ctrl-C per visualizzare il menu di avvio quando richiesto.
+.. Selezionare l'opzione del menu di boot *(4) Pulisci la configurazione e inizializza tutti i dischi*.
+
+
+. [[return-admin]]Torna al livello di privilegio admin:
++
+[source, cli]
+----
+set -privilege admin
+----
+
