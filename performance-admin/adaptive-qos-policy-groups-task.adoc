@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: use, adaptive, qos, policy, groups 
 summary: 'È possibile utilizzare un gruppo di criteri QoS adattivi per scalare automaticamente un limite di throughput o le dimensioni da pavimento a volume, mantenendo il rapporto tra IOPS e TB|GB al variare delle dimensioni del volume. Si tratta di un vantaggio significativo quando si gestiscono centinaia o migliaia di carichi di lavoro in un"implementazione di grandi dimensioni.' 
 ---
-= Utilizza i gruppi di criteri QoS adattivi in ONTAP
+= Imposta il throughput con i gruppi di policy QoS adattivi ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -14,13 +14,17 @@ summary: 'È possibile utilizzare un gruppo di criteri QoS adattivi per scalare 
 È possibile utilizzare un gruppo di policy _QoS adattivo_ per adattare automaticamente un limite massimo o minimo di throughput alle dimensioni del volume, mantenendo il rapporto tra IOPS e TB/GB al variare delle dimensioni del volume.  Si tratta di un vantaggio significativo quando si gestiscono centinaia o migliaia di carichi di lavoro in una distribuzione di grandi dimensioni.
 
 .Prima di iniziare
-* È necessario eseguire ONTAP 9.3 o versione successiva. I gruppi di policy QoS adattivi sono disponibili a partire da ONTAP 9.3.
+* È necessario eseguire ONTAP 9.3 o versioni successive.
 * Per creare un gruppo di criteri, è necessario essere un amministratore del cluster.
+* L'oggetto di archiviazione che si desidera aggiungere al gruppo di policy deve essere membro di un gruppo di policy non adattivo
++
+Un oggetto di archiviazione può essere membro di un gruppo di policy adattive o di un gruppo di policy non adattive, ma non di entrambi.
+
+* L'SVM dell'oggetto di archiviazione e la policy devono essere gli stessi.
+* L'oggetto di archiviazione deve essere online.
 
 
 .A proposito di questa attività
-Un oggetto storage può essere membro di un gruppo di criteri adattivi o non adattivi, ma non di entrambi. La SVM dell'oggetto di storage e il criterio devono essere identici. L'oggetto di storage deve essere in linea.
-
 I gruppi di policy di QoS adattivi non sono sempre condivisi: Il limite di throughput definito o il piano si applica a ciascun carico di lavoro membro singolarmente.
 
 Il rapporto tra i limiti di throughput e le dimensioni degli oggetti di storage è determinato dall'interazione dei seguenti campi:
@@ -29,17 +33,11 @@ Il rapporto tra i limiti di throughput e le dimensioni degli oggetti di storage 
 +
 [NOTE]
 ====
- `expected-iops` È garantita solo sulle piattaforme AFF. `expected-iops` È garantita per FabricPool solo se la policy di tiering è impostata su "nessuno" e nessun blocco è nel cloud. `expected-iops` È garantito per i volumi che non sono in una relazione sincrona SnapMirror.
+ `expected-iops` è garantito sulle piattaforme AFF solo per i volumi che non sono in una relazione sincrona SnapMirror.  `expected-iops` è garantito per FabricPool solo se la policy di tiering è impostata su "none" e nessun blocco si trova nel cloud.
 
 ====
 * `peak-iops`è il massimo IOPS possibile per TB/GB allocato o utilizzato.
-* `expected-iops-allocation` specifica se per gli iops previsti viene utilizzato lo spazio allocato (impostazione predefinita) o lo spazio utilizzato.
-+
-[NOTE]
-====
-`expected-iops-allocation` È disponibile in ONTAP 9.5 e versioni successive. Non è supportato in ONTAP 9.4 e versioni precedenti.
-
-====
+* `expected-iops-allocation`specifica se viene utilizzato lo spazio allocato (impostazione predefinita) o lo spazio utilizzato per expected-iops. `expected-iops-allocation is available beginning with ONTAP 9.5.`
 * `peak-iops-allocation` specifica se viene utilizzato lo spazio allocato o lo spazio utilizzato (impostazione predefinita) per `peak-iops`.
 *  `absolute-min-iops` È il numero minimo assoluto di IOPS. È possibile utilizzare questo campo con oggetti di storage molto piccoli. Sovrascrive entrambi `peak-iops` e/o. `expected-iops` quando `absolute-min-iops` è maggiore del valore calcolato `expected-iops`.
 +
@@ -48,11 +46,67 @@ Ad esempio, se si imposta `expected-iops` Fino a 1,000 IOPS/TB e le dimensioni d
 * `block-size` Specifica la dimensione del blocco i/o dell'applicazione. L'impostazione predefinita è 32K. I valori validi sono 8K, 16K, 32K, 64K, QUALSIASI. QUALSIASI indica che la dimensione del blocco non viene applicata.
 
 
+.Fasi
+. Creare un gruppo di criteri QoS adattivi:
++
+[source, cli]
+----
+qos adaptive-policy-group create -policy group _policy_group_ -vserver _SVM_ -expected-iops _number_of_iops_/TB|GB -peak-iops _number_of_iops_/TB|GB -expected-iops-allocation-space|used-space -peak-iops-allocation allocated-space|used-space -absolute-min-iops _number_of_iops_ -block-size 8K|16K|32K|64K|ANY
+----
++
+Ulteriori informazioni su `qos adaptive-policy-group create` nella link:https://docs.netapp.com/us-en/ontap-cli/qos-adaptive-policy-group-create.html["Riferimento al comando ONTAP"^].
+
++
+[NOTE]
+====
+`-expected-iops-allocation` e. `-block-size` È disponibile in ONTAP 9.5 e versioni successive. Queste opzioni non sono supportate in ONTAP 9.4 e versioni precedenti.
+
+====
++
+Il seguente comando crea un gruppo di criteri QoS adattivi `adpg-app1` con `-expected-iops` Impostato su 300 IOPS/TB, `-peak-iops` Impostato su 1,000 IOPS/TB, `-peak-iops-allocation` impostare su `used-space`, e. `-absolute-min-iops` Impostato su 50 IOPS:
+
++
+[listing]
+----
+cluster1::> qos adaptive-policy-group create -policy group adpg-app1 -vserver vs2 -expected-iops 300iops/tb -peak-iops 1000iops/TB -peak-iops-allocation used-space -absolute-min-iops 50iops
+----
+. Applicare un gruppo di criteri QoS adattivi a un volume:
++
+[source, cli]
+----
+volume create -vserver SVM -volume _volume_ -aggregate _aggregate_ -size _number_of_ TB|GB -qos-adaptive-policy-group _policy_group_
+----
++
+Ulteriori informazioni su `volume create` nella link:https://docs.netapp.com/us-en/ontap-cli/volume-create.html["Riferimento al comando ONTAP"^].
+
++
+Il seguente comando applica il gruppo di criteri QoS adattivi `adpg-app1` al volume `app1`:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs1 -volume app1 -aggregate aggr1 -size 2TB -qos-adaptive-policy-group adpg-app1
+----
++
+I seguenti comandi applicano il gruppo di criteri QoS adattivi predefinito `extreme` al nuovo volume `app4` e al volume esistente `app5`. Il limite di throughput definito per il gruppo di criteri si applica ai volumi `app4` e. `app5` singolarmente:
+
++
+[listing]
+----
+cluster1::> volume create -vserver vs4 -volume app4 -aggregate aggr4 -size 2TB -qos-adaptive-policy-group extreme
+----
++
+[listing]
+----
+cluster1::> volume modify -vserver vs5 -volume app5 -qos-adaptive-policy-group extreme
+----
+
+
 
 
 == Gruppi di policy QoS adattive predefinite
 
-Sono disponibili tre gruppi di criteri QoS adattivi predefiniti, come mostrato nella tabella seguente. È possibile applicare questi gruppi di criteri direttamente a un volume.
+Sono disponibili tre gruppi di policy QoS adattive predefiniti. È possibile applicare questi gruppi di policy direttamente a un volume.
 
 |===
 
@@ -92,109 +146,3 @@ Sono disponibili tre gruppi di criteri QoS adattivi predefiniti, come mostrato n
 75
 
 |===
-
-
-== Restrizioni di assegnazione del gruppo di criteri degli oggetti di archiviazione
-
-In alcuni casi non è possibile assegnare un oggetto di archiviazione a un gruppo di policy se l'oggetto che lo contiene o i suoi oggetti figlio appartengono a un gruppo di policy.
-
-A partire da ONTAP 9.18.1, è possibile utilizzare criteri QoS nidificati, che consentono di assegnare gruppi di criteri sia all'oggetto contenitore, ad esempio una SVM, sia al suo oggetto figlio, ad esempio un volume.  In un ambiente multi-tenant, i criteri QoS annidati consentono agli amministratori di suddividere i limiti QoS sulle SVM tra i volumi e i qtree all'interno della SVM e di fornire la possibilità di bilanciare le risorse di archiviazione tra gli ambienti di elaborazione, consentendo al contempo la definizione delle priorità dei carichi di lavoro critici per la missione.
-
-I criteri QoS annidati sono supportati per le seguenti coppie di oggetti:
-
-* SVM e volumi FlexVol o FlexGroup contenuti nell'SVM.
-* Volumi FlexVol o FlexGroup e qtree all'interno dei volumi.
-
-
-Per le policy QoS nidificate, viene utilizzata la policy applicabile più restrittiva.
-
-Nella tabella seguente sono elencate le restrizioni.
-
-|===
-| Se si assegna... | Quindi non è possibile assegnare a un gruppo di policy... 
-
-
- a| 
-SVM a un gruppo di criteri
- a| 
-Tutti gli oggetti di archiviazione contenuti nell'SVM.
-
-
-NOTE: Se si esegue ONTAP 9.18.1, i volumi FlexVol e FlexGroup contenuti nelle SVM _possono_ essere assegnati a un gruppo di policy.
-
-
-
- a| 
-Su un gruppo di criteri
- a| 
-L'SVM contenente il volume o eventuali LUN figlio.
-
-
-NOTE: Se si esegue ONTAP 9.18.1 e versioni successive, l'SVM contenente il volume _può_ essere assegnato a un gruppo di policy.  Inoltre, è possibile assegnare qtree nei volumi FlexVol o FlexGroup .
-
-
-
- a| 
-LUN a un gruppo di criteri
- a| 
-Il volume o SVM contenente i LUN
-
-
-
- a| 
-Su un gruppo di criteri
- a| 
-Il volume o SVM contenente il file
-
-|===
-.Fasi
-. Creare un gruppo di criteri QoS adattivi:
-+
-`qos adaptive-policy-group create -policy group _policy_group_ -vserver _SVM_ -expected-iops _number_of_iops_/TB|GB -peak-iops _number_of_iops_/TB|GB -expected-iops-allocation-space|used-space -peak-iops-allocation allocated-space|used-space -absolute-min-iops _number_of_iops_ -block-size 8K|16K|32K|64K|ANY`
-
-+
-Ulteriori informazioni su `qos adaptive-policy-group create` nella link:https://docs.netapp.com/us-en/ontap-cli/qos-adaptive-policy-group-create.html["Riferimento al comando ONTAP"^].
-
-+
-[NOTE]
-====
-`-expected-iops-allocation` e. `-block-size` È disponibile in ONTAP 9.5 e versioni successive. Queste opzioni non sono supportate in ONTAP 9.4 e versioni precedenti.
-
-====
-+
-Il seguente comando crea un gruppo di criteri QoS adattivi `adpg-app1` con `-expected-iops` Impostato su 300 IOPS/TB, `-peak-iops` Impostato su 1,000 IOPS/TB, `-peak-iops-allocation` impostare su `used-space`, e. `-absolute-min-iops` Impostato su 50 IOPS:
-
-+
-[listing]
-----
-cluster1::> qos adaptive-policy-group create -policy group adpg-app1 -vserver vs2 -expected-iops 300iops/tb -peak-iops 1000iops/TB -peak-iops-allocation used-space -absolute-min-iops 50iops
-----
-. Applicare un gruppo di criteri QoS adattivi a un volume:
-+
-`volume create -vserver SVM -volume _volume_ -aggregate _aggregate_ -size _number_of_ TB|GB -qos-adaptive-policy-group _policy_group_`
-
-+
-Ulteriori informazioni su `volume create` nella link:https://docs.netapp.com/us-en/ontap-cli/volume-create.html["Riferimento al comando ONTAP"^].
-
-+
-Il seguente comando applica il gruppo di criteri QoS adattivi `adpg-app1` al volume `app1`:
-
-+
-[listing]
-----
-cluster1::> volume create -vserver vs1 -volume app1 -aggregate aggr1 -size 2TB -qos-adaptive-policy-group adpg-app1
-----
-+
-I seguenti comandi applicano il gruppo di criteri QoS adattivi predefinito `extreme` al nuovo volume `app4` e al volume esistente `app5`. Il limite di throughput definito per il gruppo di criteri si applica ai volumi `app4` e. `app5` singolarmente:
-
-+
-[listing]
-----
-cluster1::> volume create -vserver vs4 -volume app4 -aggregate aggr4 -size 2TB -qos-adaptive-policy-group extreme
-----
-+
-[listing]
-----
-cluster1::> volume modify -vserver vs5 -volume app5 -qos-adaptive-policy-group extreme
-----
-
