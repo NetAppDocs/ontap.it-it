@@ -32,8 +32,12 @@ Arrestare o riavviare un nodo in un cluster a due nodi senza avviare il Takeover
 
 
 .Fasi
-. Verificare che entrambi i nodi siano integri:
-`cluster show`
+. Verifica che entrambi i nodi siano integri:
++
+[source, cli]
+----
+cluster show
+----
 +
 Per entrambi i nodi, `true` viene visualizzato in `Health` colonna.
 
@@ -49,15 +53,23 @@ node2        true     true
 +
 Ulteriori informazioni su `cluster show` nella link:https://docs.netapp.com/us-en/ontap-cli/cluster-show.html["Riferimento al comando ONTAP"^].
 
-. Migrare tutte le LIF dal nodo che si desidera arrestare o riavviare al nodo partner:
-`network interface migrate-all -node _node_name_`
+. Migra tutti i LIF dal nodo che si intende arrestare o riavviare al nodo partner:
++
+[source, cli]
+----
+network interface migrate-all -node <node_name>
+----
 +
 Ulteriori informazioni su `network interface migrate-all` nella link:https://docs.netapp.com/us-en/ontap-cli/network-interface-migrate-all.html["Riferimento al comando ONTAP"^].
 
-. Se sul nodo si arresta o si riavvia ci sono aggregati che si desidera mantenere in linea quando il nodo è inattivo, trasferirli sul nodo partner; in caso contrario, passare alla fase successiva.
+. Se sul nodo che si intende arrestare o riavviare sono presenti aggregati che si desidera mantenere online quando il nodo è inattivo, spostarli sul nodo partner.
 +
-.. Mostrare gli aggregati sul nodo che si desidera arrestare o riavviare:
-`storage aggregates show -node _node_name_`
+.. Mostra gli aggregati sul nodo che arresterai o riavvierai:
++
+[source, cli]
+----
+storage aggregates show -node <node_name>
+----
 +
 Ad esempio, node1 è il nodo che verrà arrestato o riavviato:
 
@@ -79,8 +91,12 @@ test2_aggr  2.18TB    2.18TB    0% online       7 node1    raid_dp,
                                                                 normal
 4 entries were displayed.
 ----
-.. Spostare gli aggregati nel nodo partner:
-`storage aggregate relocation start -node _node_name_ -destination _node_name_ -aggregate-list _aggregate_name_`
+.. Sposta gli aggregati sul nodo partner:
++
+[source, cli]
+----
+storage aggregate relocation start -node <node_name> -destination <node_name> -aggregate-list <aggregate_name>
+----
 +
 Ad esempio, gli aggregati aggr1, aggr2 e test2_aggr vengono spostati da node1 a node2:
 
@@ -89,39 +105,106 @@ Ad esempio, gli aggregati aggr1, aggr2 e test2_aggr vengono spostati da node1 a 
 
 
 
-. Disattiva cluster ha:
-`cluster ha modify -configured false`
+. Disabilitare l'HA del cluster:
 +
-L'output di ritorno conferma che ha è disattivato: `Notice: HA is disabled`
+[source, cli]
+----
+cluster ha modify -configured false
+----
++
+Quando l'HA del cluster è disabilitato, epsilon viene spostato automaticamente sul nodo 1. L'output di ritorno conferma che l'HA è disabilitato: `Notice: HA is disabled`
 
 +
 
 NOTE: Questa operazione non disattiva il failover dello storage.
 
-. Arrestare o riavviare e inibire il takeover del nodo di destinazione, utilizzando il comando appropriato:
+. Se il nodo da arrestare o riavviare è il nodo 1, spostare epsilon sul nodo 2:
 +
-** `system node halt -node _node_name_ -inhibit-takeover true`
-** `system node reboot -node _node_name_ -inhibit-takeover true`
+.. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+.. Verificare che il nodo 2 sia integro e idoneo per epsilon:
++
+[source, cli]
+----
+cluster show
+----
+.. Rimuovi epsilon dal nodo 1:
++
+[source, cli]
+----
+cluster modify -node <node1_name> -epsilon false
+----
+.. Assegna epsilon al nodo 2:
++
+[source, cli]
+----
+cluster modify -node <node2_name> -epsilon true
+----
+.. Verifica che epsilon sia sul nodo 2:
++
+[source, cli]
+----
+cluster show
+----
+
+
+. Arresta o riavvia e impedisci il takeover del nodo di destinazione:
++
+[cols="1h,1h"]
+|===
+
+
+ a| 
+Arresta il nodo senza avviare takeover:
+ a| 
+[source, cli]
+----
+system node halt -node _node_name_ -inhibit-takeover true
+----
+
+
+ a| 
+Riavvia il nodo senza avviare takeover:
+ a| 
+[source, cli]
+----
+system node reboot -node _node_name_ -inhibit-takeover true
+----
+|===
 +
 
 NOTE: Nell'output del comando, viene visualizzato un avviso che chiede se si desidera procedere, digitare `y`.
 
-
-
-. Verificare che il nodo ancora in linea sia in buono stato (mentre il partner non è attivo):
-`cluster show`
+. Verifica che il nodo ancora online sia in uno stato integro (mentre il partner è down):
++
+[source, cli]
+----
+cluster show
+----
 +
 Per il nodo online, `true` viene visualizzato in `Health` colonna.
 
 +
 
-NOTE: Nell'output del comando, viene visualizzato un avviso che indica che il cluster ha non è configurato. È possibile ignorare l'avviso in questo momento.
+NOTE: Nell'output del comando, verrà visualizzato un avviso che cluster HA non è configurato. È possibile ignorare l'avviso.
 
 . Eseguire le azioni necessarie per arrestare o riavviare il nodo.
-. Avviare il nodo non allineato dal prompt DEL CARICATORE:
-`boot_ontap`
-. Verificare che entrambi i nodi siano integri:
-`cluster show`
+. Avvia il nodo offline dal prompt LOADER:
++
+[source, cli]
+----
+boot_ontap
+----
+. Verifica che entrambi i nodi siano integri:
++
+[source, cli]
+----
+cluster show
+----
 +
 Per entrambi i nodi, `true` viene visualizzato in `Health` colonna.
 
@@ -129,23 +212,43 @@ Per entrambi i nodi, `true` viene visualizzato in `Health` colonna.
 
 NOTE: Nell'output del comando, viene visualizzato un avviso che indica che il cluster ha non è configurato. È possibile ignorare l'avviso in questo momento.
 
-. Riabilitare il cluster ha:
-`cluster ha modify -configured true`
-. Se prima di questa procedura sono state spostate le aggregazioni nel nodo partner, spostarle di nuovo nel nodo principale; in caso contrario, passare alla fase successiva:
-`storage aggregate relocation start -node _node_name_ -destination _node_name_ -aggregate-list _aggregate_name_`
+. Riabilita HA del cluster:
++
+[source, cli]
+----
+cluster ha modify -configured true
+----
+. Se in precedenza in questa procedura hai spostato gli aggregati sul nodo partner, riportali al loro nodo di origine.
++
+[source, cli]
+----
+storage aggregate relocation start -node <node_name> -destination <node_name> -aggregate-list <aggregate_name>
+----
 +
 Ad esempio, gli aggregati aggr1, aggr2 e test2_aggr vengono spostati dal nodo node2 al nodo node1:
 `storage aggregate relocation start -node _node2_ -destination _node1_ -aggregate-list _aggr1_,_aggr2_,_test2_aggr_`
 
 . Ripristinare le LIF alle porte home:
 +
-.. Visualizza le LIF che non sono a casa:
-`network interface show -is-home false`
+.. Visualizza i LIF che non sono a casa:
++
+[source, cli]
+----
+network interface show -is-home false
+----
 +
 Ulteriori informazioni su `network interface show` nella link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["Riferimento al comando ONTAP"^].
 
 .. Se esistono LIF non domestiche che non sono state migrate dal nodo DOWN, verificare che sia sicuro spostarle prima di eseguire il ripristino.
-.. In caso di sicurezza, ripristinare tutte le LIF a casa.  `network interface revert *` + ulteriori informazioni su `network interface revert` nella link:https://docs.netapp.com/us-en/ontap-cli/network-interface-revert.html["Riferimento al comando ONTAP"^].
+.. Se è sicuro farlo, riporta tutti i LIF alla posizione home.
++
+[source, cli]
+----
+ network interface revert *
+----
++
+Ulteriori informazioni su `network interface revert` nella link:https://docs.netapp.com/us-en/ontap-cli/network-interface-revert.html["Riferimento al comando ONTAP"^].
+
 
 
 

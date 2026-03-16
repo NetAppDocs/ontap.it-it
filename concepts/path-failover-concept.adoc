@@ -4,7 +4,7 @@ sidebar: sidebar
 keywords: path failover 
 summary: 'Esistono importanti differenze nel modo in cui ONTAP gestisce il failover del percorso nelle topologie NAS e SAN. Una LIF NAS esegue automaticamente la migrazione a una porta di rete diversa dopo un errore di collegamento. Un LIF SAN non esegue la migrazione (a meno che non venga spostato manualmente dopo l"errore). Invece, la tecnologia multipathing sull"host devia il traffico verso una LIF diversa, sulla stessa SVM, ma accedendo a una porta di rete diversa.' 
 ---
-= Panoramica del failover del percorso
+= Scopri la gestione del failover del percorso in ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
@@ -12,3 +12,50 @@ summary: 'Esistono importanti differenze nel modo in cui ONTAP gestisce il failo
 
 [role="lead"]
 Esistono importanti differenze nel modo in cui ONTAP gestisce il failover del percorso nelle topologie NAS e SAN. Una LIF NAS esegue automaticamente la migrazione a una porta di rete diversa dopo un errore di collegamento. Un LIF SAN non esegue la migrazione (a meno che non venga spostato manualmente dopo l'errore). Invece, la tecnologia multipathing sull'host devia il traffico verso una LIF diversa, sulla stessa SVM, ma accede a una porta di rete diversa.
+
+
+
+== Failover del percorso NAS
+
+Un LIF NAS esegue automaticamente la migrazione a una porta di rete esistente dopo un errore di collegamento sulla porta corrente. La porta alla quale LIF migra deve essere membro del _gruppo di failover_ per LIF. La _policy di gruppo di failover_ restringe le destinazioni di failover per un LIF di dati alle porte sul nodo che possiede i dati e il suo partner ha.
+
+Per comodità amministrativa, ONTAP crea un gruppo di failover per ogni _dominio di trasmissione_ nell'architettura di rete. I domini di broadcast raggruppano le porte appartenenti alla stessa rete Layer 2. Se, ad esempio, si utilizzano VLAN per separare il traffico in base al reparto (Engineering, Marketing, Finance e così via), ogni VLAN definisce un dominio di trasmissione separato. Il gruppo di failover associato al dominio di trasmissione viene aggiornato automaticamente ogni volta che si aggiunge o rimuove una porta del dominio di trasmissione.
+
+È quasi sempre consigliabile utilizzare un dominio di broadcast per definire un gruppo di failover per garantire che il gruppo di failover rimanga aggiornato. Talvolta, tuttavia, è possibile definire un gruppo di failover non associato a un dominio di trasmissione. Ad esempio, è possibile che si desideri eseguire il failover delle LIF solo sulle porte di un sottoinsieme delle porte definite nel dominio di trasmissione.
+
+image:nas-lif-migration.gif["Diagramma della migrazione LIF dopo un errore di collegamento su una porta."]
+
+|===
+
+
+ a| 
+*_subnet_*
+
+Una _subnet_ riserva un blocco di indirizzi IP in un dominio di trasmissione. Questi indirizzi appartengono alla stessa rete Layer 3 e vengono allocati alle porte nel dominio di trasmissione quando si crea una LIF. In genere, quando si definisce un indirizzo LIF, è più semplice e meno soggetto a errori specificare un nome di subnet che specificare un indirizzo IP e una maschera di rete.
+
+|===
+
+
+== Failover del percorso SAN
+
+Un host SAN utilizza ALUA (Asymmetric Logical Unit Access) e MPIO (Multipath i/o) per reindirizzare il traffico a una LIF sopravvissuta dopo un errore di collegamento. I percorsi predefiniti determinano i possibili percorsi verso il LUN serviti da SVM.
+
+In un ambiente SAN, gli host sono considerati _iniziatori_ di richieste a LUN _targets._ MPIO consente percorsi multipli dagli iniziatori alle destinazioni. ALUA identifica i percorsi più diretti, denominati _percorsi ottimizzati._
+
+In genere, si configurano più percorsi ottimizzati per le LIF sul nodo proprietario del LUN e più percorsi non ottimizzati per le LIF sul partner ha. In caso di guasto di una porta sul nodo proprietario, l'host instrada il traffico verso le porte sopravvissute. Se tutte le porte si guastano, l'host instrada il traffico sui percorsi non ottimizzati.
+
+Per impostazione predefinita, la mappa LUN selettiva (SLM) di ONTAP limita il numero di percorsi dall'host a un LUN. Un LUN appena creato è accessibile solo attraverso i percorsi verso il nodo proprietario del LUN o del suo partner ha. È inoltre possibile limitare l'accesso a un LUN configurando i LIF in un _set di porte_ per l'iniziatore.
+
+image:san-host-rerouting.gif["esempio di failover del percorso san"]
+
+|===
+
+
+ a| 
+*_spostamento di volumi in ambienti SAN_*
+
+Per impostazione predefinita, ONTAP _Selective LUN Map (SLM)_ limita il numero di percorsi a un LUN da un host SAN. Un LUN appena creato è accessibile solo attraverso i percorsi al nodo proprietario del LUN o del suo partner ha, i _nodi di reporting_ per il LUN.
+
+Ciò significa che quando si sposta un volume in un nodo di un'altra coppia ha, è necessario aggiungere nodi di reporting per la coppia ha di destinazione alla mappatura LUN. È quindi possibile specificare i nuovi percorsi nella configurazione di MPIO. Una volta completato lo spostamento del volume, è possibile eliminare i nodi di reporting per la coppia ha di origine dalla mappatura.
+
+|===
