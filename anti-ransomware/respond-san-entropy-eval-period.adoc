@@ -1,21 +1,63 @@
 ---
 sidebar: sidebar 
 permalink: anti-ransomware/respond-san-entropy-eval-period.html 
-keywords: ransomware, arp, san, mode, switch, active, learning, entropy, autonomous ransomware protection 
+keywords: ransomware, arp, block, san, nas, mode, switch, active, learning, entropy, autonomous ransomware protection 
 summary: A partire da ONTAP 9.17.1, ARP richiede un periodo di valutazione per determinare se i livelli di entropia del volume SAN sono adatti alla protezione dal ransomware. 
 ---
-= Scopri di più sul periodo di valutazione ONTAP ARP per i volumi SAN
+= Scopri il periodo di valutazione di ONTAP ARP/AI per i carichi di lavoro su dispositivi a blocchi
 :allow-uri-read: 
 
 
 [role="lead"]
-A partire da ONTAP 9.17.1, ARP richiede un periodo di valutazione per determinare se i livelli di entropia per i carichi di lavoro dei volumi SAN siano idonei alla protezione da ransomware. Dopo aver abilitato ARP su un volume SAN, ARP/AI monitora e protegge attivamente il volume durante il periodo di valutazione, determinando contemporaneamente una soglia di crittografia ottimale.  Durante il periodo di valutazione è possibile effettuare rilevamenti e avvisi utilizzando una soglia conservativa, mentre vengono stabilite le soglie di base. ARP distingue tra carichi di lavoro idonei e non idonei nel volume SAN valutato e, se i carichi di lavoro vengono ritenuti idonei per la protezione, imposta automaticamente una soglia di crittografia in base alle statistiche del periodo di valutazione.
+A partire da ONTAP 9.17.1, ARP/AI richiede un periodo di valutazione per determinare se i livelli di entropia per i carichi di lavoro dei dispositivi a blocchi siano adatti alla protezione dai ransomware. Questi carichi di lavoro includono LUN SAN e dischi virtuali hypervisor (ad esempio, dischi virtuali VMware in datastore NFS e, a partire da ONTAP 9.17.1P5, dischi virtuali Hyper-V, KVM e OpenStack) archiviati nei volumi ONTAP. Dopo che ARP è stato abilitato su un volume idoneo, ARP/AI monitora e protegge attivamente il volume durante il periodo di valutazione, determinando contemporaneamente una soglia di crittografia ottimale. Il rilevamento e gli avvisi possono verificarsi durante il periodo di valutazione utilizzando una soglia conservativa mentre le soglie di base vengono definite nel corso di diversi giorni. ARP distingue tra carichi di lavoro idonei e non idonei nel volume valutato e, se i carichi di lavoro vengono ritenuti idonei alla protezione, imposta automaticamente una soglia di crittografia in base alle statistiche del periodo di valutazione.
+
+
+
+== Carichi di lavoro supportati e applicabilità della valutazione
+
+Il periodo di valutazione dei dispositivi a blocchi si applica nei seguenti scenari:
+
+* *Volumi SAN*
++
+** Carichi di lavoro basati su LUN presentati come dispositivi a blocco agli host o agli hypervisor.
+
+
+* *Volumi NAS che contengono dischi virtuali dell'hypervisor rilevati automaticamente da ONTAP*
++
+** Gli hypervisor supportati includono VMware, Hyper-V, KVM e OpenStack virtual disks archiviati in datastore NFS o SMB.
+
+
+
+
+All'interno di questi volumi:
+
+* Il periodo di valutazione _è_ applicabile agli attacchi rilevati in base alle variazioni di entropia all'interno del file system guest del disco virtuale (ad esempio, ransomware che opera sui file all'interno del guest OS mappato su una LUN o un disco virtuale).
+* Il periodo di valutazione _non_ si applica agli attacchi rilevati in base all'entropia e alle modifiche delle estensioni dei file apportate direttamente ai file del disco virtuale dall'host hypervisor (ad esempio, ransomware che opera direttamente sui file  `.vmdk` da un mount point di datastore NFS di ESXi). Questi attacchi diretti al disco utilizzano un percorso di rilevamento diverso che non si basa sul periodo di valutazione del dispositivo a blocchi.
+
+
+
+
+== Supporto delle versioni per il rilevamento di block-device e hypervisor
+
+* *ONTAP 9.17.1*
++
+** Introduce il periodo di valutazione del dispositivo a blocchi per i volumi SAN.
+** Consente il rilevamento degli attacchi ARP/AI all'interno delle LUN SAN e all'interno dei dischi virtuali VMware archiviati nei datastore NFS di ONTAP.
+
+
+* *ONTAP 9.17.1P5 e versioni successive*
++
+** Estende il rilevamento dei dispositivi a blocchi ARP/AI ai dischi virtuali dell'hypervisor come Hyper-V, KVM e OpenStack.
+** Applica la stessa logica di valutazione dei dispositivi a blocchi e le stesse soglie a questi carichi di lavoro aggiuntivi dell'hypervisor quando vengono rilevati da ONTAP.
+
+
+
 
 
 
 == Comprendere la valutazione dell'entropia
 
-Il sistema raccoglie statistiche di crittografia continua a intervalli di 10 minuti. Durante la valutazione, vengono creati anche snapshot periodici ARP ogni quattro ore.  Se la percentuale di crittografia all'interno di un intervallo supera la soglia di crittografia ottimale identificata per questo volume, viene attivato un avviso, un `Anti_ransomware_attack_backup` viene creato uno snapshot e il tempo di conservazione dello snapshot viene aumentato su qualsiasi snapshot ARP periodico.
+Durante il periodo di valutazione, il sistema raccoglie statistiche di crittografia continue a intervalli di 10 minuti dai carichi di lavoro supportati su dispositivi a blocchi e hypervisor. Anche gli snapshot periodici ARP vengono creati continuamente ogni quattro ore. Se la percentuale di crittografia all'interno di un intervallo supera la soglia di crittografia ottimale identificata per questo volume, viene attivato un avviso, viene creato uno snapshot  `Anti_ransomware_attack_backup`, e il tempo di conservazione degli snapshot viene aumentato su qualsiasi snapshot periodico ARP.
 
 .Conferma che il periodo di valutazione è attivo
 Si può confermare che la valutazione è attiva eseguendo il seguente comando e confermando lo stato di `evaluation_period`. Se un volume non è idoneo alla valutazione, lo stato della valutazione non verrà visualizzato.
@@ -77,7 +119,7 @@ vs0         lun1              96-100%         0               0
 
 == Carichi di lavoro adeguati e soglie adattive
 
-La valutazione termina con uno dei seguenti risultati:
+La valutazione si conclude con uno dei seguenti risultati sia per i carichi di lavoro SAN LUN che per i dischi virtuali dell'hypervisor valutati tramite il rilevamento dei dispositivi a blocchi:
 
 * *Il carico di lavoro è idoneo per ARP*. ARP imposta automaticamente la soglia adattiva a un valore superiore al 10% della percentuale di crittografia massima rilevata durante il periodo di valutazione. ARP continua inoltre a raccogliere statistiche e crea snapshot ARP periodici.
 * *Il carico di lavoro non è idoneo per ARP*. ARP imposta automaticamente la soglia adattiva alla massima percentuale di crittografia rilevata durante il periodo di valutazione. ARP continua inoltre a raccogliere statistiche e crea snapshot ARP periodici, ma il sistema consiglia di disabilitare ARP sul volume.

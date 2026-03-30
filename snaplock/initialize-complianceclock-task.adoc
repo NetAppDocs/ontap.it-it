@@ -13,14 +13,14 @@ summary: Il SnapLock ComplianceClock garantisce la protezione da manomissioni ch
 [role="lead"]
 SnapLock utilizza _Volume Compliance Clock_ per evitare manomissioni che potrebbero alterare il periodo di conservazione dei file WORM. È necessario prima inizializzare il _system ComplianceClock_ su ogni nodo che ospita un aggregato SnapLock.
 
-A partire da ONTAP 9.14.1, è possibile inizializzare o reinizializzare l'orologio di conformità del sistema quando non ci sono volumi SnapLock o nessun volume con blocco snapshot attivato. La possibilità di reinizializzare consente agli amministratori di sistema di reimpostare l'orologio di conformità del sistema nei casi in cui potrebbe essere stato inizializzato in modo errato o di correggere la deriva dell'orologio sul sistema. In ONTAP 9.13.1 e nelle versioni precedenti, una volta inizializzato il Compliance Clock su un nodo, non è possibile inizializzarlo nuovamente.
+A partire da ONTAP 9.14.1, è possibile inizializzare o reinizializzare l'orologio di conformità del sistema quando non sono presenti SnapLock volumi o non sono presenti volumi con il blocco snapshot abilitato. La possibilità di reinizializzare consente agli amministratori di sistema di reimpostare l'orologio di conformità del sistema nei casi in cui potrebbe essere stato inizializzato in modo errato o per correggere la deriva dell'orologio sul sistema. In ONTAP 9.13.1 e versioni precedenti, dopo aver inizializzato l'orologio di conformità su un nodo, non è possibile inizializzarlo nuovamente.
 
 .Prima di iniziare
 Per reinizializzare il Compliance Clock:
 
 * Tutti i nodi nel cluster devono essere in stato integro.
 * Tutti i volumi devono essere online.
-* La coda di ripristino non può contenere volumi.
+* Non possono essere presenti volumi nella coda di ripristino.
 * Non può essere presente alcun volume SnapLock.
 * Non può essere presente alcun volume con blocco snapshot attivato.
 
@@ -36,7 +36,7 @@ L'ora del Compliance Clock del sistema viene ereditata dal _Volume Compliance Cl
 
 [NOTE]
 ====
-L'impostazione iniziale dell'orologio di conformità del sistema si basa sull'orologio di sistema hardware corrente. Per questo motivo, è necessario verificare che l'ora e il fuso orario del sistema siano corretti prima di inizializzare l'orologio di conformità del sistema su ciascun nodo. Una volta inizializzato il clock di conformità del sistema su un nodo, non è possibile inizializzarlo nuovamente quando sono presenti volumi SnapLock o volumi con blocco abilitato.
+L'impostazione iniziale dell'orologio di conformità del sistema si basa sull'orologio di sistema hardware corrente. Per questo motivo, è necessario verificare che l'ora e il fuso orario del sistema siano corretti prima di inizializzare l'orologio di conformità del sistema su ciascun nodo. Dopo aver inizializzato l'orologio di conformità del sistema su un nodo, non sarà possibile inizializzarlo nuovamente quando sono presenti volumi SnapLock o volumi con blocco abilitato.
 
 ====
 .Fasi
@@ -47,8 +47,8 @@ L'impostazione iniziale dell'orologio di conformità del sistema si basa sull'or
 .System Manager
 --
 . Accedere a *Cluster > Panoramica*.
-. Nella sezione *nodi*, fare clic su *Inizializza clock di conformità SnapLock*.
-. Per visualizzare la colonna *Orologio conformità* e verificare che l'Orologio conformità sia inizializzato, nella sezione *Cluster > Panoramica > nodi*, fare clic su *Mostra/Nascondi* e selezionare *Orologio conformità SnapLock*.
+. Nella sezione *Nodi*, selezionare *Inizializza SnapLock Compliance Clock*.
+. Per visualizzare la colonna *Compliance Clock* e per verificare che la Compliance Clock sia inizializzata, nella sezione *Cluster > Panoramica > Nodi*, selezionare *Mostra/Nascondi* e selezionare *SnapLock Compliance Clock*.
 
 
 --
@@ -101,9 +101,9 @@ Do you want to continue? (y|n): y
 
 
 .A proposito di questa attività
-Quando il daemon di clock sicuro SnapLock rileva un'inclinazione oltre la soglia, ONTAP utilizza l'ora di sistema per reimpostare sia il sistema che i blocchi di conformità del volume. Come soglia di disallineamento viene impostato un periodo di 24 ore. Ciò significa che l'orologio di conformità del sistema è sincronizzato con l'orologio di sistema solo se l'inclinazione è più vecchia di un giorno.
+Quando il demone dell'orologio sicuro SnapLock rileva una differenza di orario superiore alla soglia, ONTAP utilizza l'ora di sistema per reimpostare sia l'orologio di conformità di sistema che quello del volume. Un periodo di 24 ore è impostato come soglia per la differenza di orario. L'orologio di conformità di sistema si sincronizza con l'orologio di sistema solo se la differenza di orario supera un giorno.
 
-Il daemon dell'orologio sicuro SnapLock rileva un'inclinazione e modifica l'orologio di conformità all'ora del sistema. Qualsiasi tentativo di modifica dell'ora di sistema per forzare la sincronizzazione dell'orologio di conformità con l'ora di sistema non riesce, poiché l'orologio di conformità si sincronizza con l'ora di sistema solo se l'ora di sistema è sincronizzata con l'ora NTP.
+Il demone dell'orologio sicuro SnapLock rileva una discrepanza e cambia l'orologio di conformità sull'ora di sistema. Qualsiasi tentativo di modificare l'ora di sistema per forzare l'orologio di conformità a sincronizzarsi con l'ora di sistema fallisce, perché l'orologio di conformità si sincronizza con l'ora di sistema solo se quest'ultima è sincronizzata con l'ora NTP.
 
 .Fasi
 . Abilitare la funzionalità di sincronizzazione dell'orologio SnapLock Compliance quando è configurato un server NTP:
