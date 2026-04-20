@@ -271,7 +271,18 @@ In questa attività, Node_A_1 e Node_B_1 vengono aggiornati.
 
 Se il software ONTAP è stato aggiornato sul primo gruppo DR e ora si sta aggiornando il secondo gruppo DR in una configurazione MetroCluster A otto nodi, in questa attività si aggiornerà Node_A_3 e Node_B_3.
 
-. Se il software MetroCluster Tiebreaker è attivato, lo disattiva.
+. Eseguire la migrazione di tutti i file LIF dei dati lontano dal nodo:
++
+[source, cli]
+----
+network interface migrate-all -node node_A_1
+----
++
+[source, cli]
+----
+network interface migrate-all -node node_B_1
+----
+. Se il software MetroCluster Tiebreaker è abilitato, disattivalo.
 . Per ciascun nodo della coppia ha, disattivare il giveback automatico:
 +
 [source, cli]
@@ -331,7 +342,7 @@ L'esempio seguente mostra che il rilevamento è riuscito. Node_A_1 si trova nell
 +
 [listing]
 ----
- cluster1::> storage failover show
+ cluster_A::> storage failover show
                                Takeover
  Node           Partner        Possible State Description
  -------------- -------------- -------- -------------------------------------
@@ -371,7 +382,7 @@ L'esempio seguente mostra che il rilevamento è riuscito. Node_B_1 è nello stat
 +
 [listing]
 ----
- cluster1::> storage failover show
+ cluster_B::> storage failover show
                                Takeover
  Node           Partner        Possible State Description
  -------------- -------------- -------- -------------------------------------
@@ -456,7 +467,7 @@ Il prompt avanzato (`*>`).
 system image show
 ----
 +
-L'esempio seguente mostra che l'immagine di sistema 2 deve essere la versione predefinita e corrente su Node_A_1:
+L'esempio seguente mostra che l'immagine di sistema2 (target ONTAP image) è la versione predefinita e corrente sul nodo_A_1:
 
 +
 [listing]
@@ -482,12 +493,12 @@ L'esempio seguente mostra che l'immagine di sistema 2 deve essere la versione pr
 system image show
 ----
 +
-L'esempio seguente mostra che l'immagine di sistema 2 (ONTAP 9.0.0) è la versione predefinita e corrente sul nodo_A_1:
+L'esempio seguente mostra che l'immagine di sistema2 (immagine ONTAP di destinazione) è la versione predefinita e corrente sul nodo_B_1:
 
 +
 [listing]
 ----
- cluster_A::*> system image show
+ cluster_B::*> system image show
                   Is      Is               Install
  Node     Image   Default Current Version  Date
  -------- ------- ------- ------- -------- -------------------
@@ -499,7 +510,7 @@ L'esempio seguente mostra che l'immagine di sistema 2 (ONTAP 9.0.0) è la versio
           image2  true    false    Y.Y.Y   MM/DD/YYYY TIME
  4 entries were displayed.
 
- cluster_A::>
+ cluster_B::>
 ----
 
 
@@ -519,7 +530,12 @@ Se il software ONTAP è stato aggiornato sul primo gruppo DR e ora si sta aggior
 +
 [source, cli]
 ----
-network interface migrate-all -node nodenameA
+network interface migrate-all -node node_A_2
+----
++
+[source, cli]
+----
+network interface migrate-all -node node_B_2
 ----
 . Avviare un Takeover del nodo di destinazione su cluster_A:
 +
@@ -554,7 +570,7 @@ L'esempio seguente mostra che il rilevamento è riuscito. Node_A_2 è nello stat
 +
 [listing]
 ----
-cluster1::> storage failover show
+cluster_A::> storage failover show
                               Takeover
 Node           Partner        Possible State Description
 -------------- -------------- -------- -------------------------------------
@@ -615,7 +631,7 @@ L'esempio seguente mostra che il rilevamento è riuscito. Node_B_2 è nello stat
 +
 [listing]
 ----
-cluster1::> storage failover show
+cluster_B::> storage failover show
                               Takeover
 Node           Partner        Possible State Description
 -------------- -------------- -------- -------------------------------------
@@ -700,12 +716,12 @@ Il prompt avanzato (`*>`).
 system image show
 ----
 +
-L'esempio seguente mostra che l'immagine di sistema 2 (immagine ONTAP di destinazione) è la versione predefinita e corrente sul nodo_A_2:
+L'esempio seguente mostra che l'immagine di sistema2 (immagine ONTAP di destinazione) è la versione predefinita e corrente sul nodo_A_2:
 
 +
 [listing]
 ----
-cluster_B::*> system image show
+cluster_A::*> system image show
                  Is      Is                 Install
 Node     Image   Default Current Version    Date
 -------- ------- ------- ------- ---------- -------------------
@@ -726,7 +742,7 @@ cluster_A::>
 system image show
 ----
 +
-L'esempio seguente mostra che l'immagine di sistema 2 (immagine ONTAP di destinazione) è la versione predefinita e corrente sul nodo_B_2:
+L'esempio seguente mostra che l'immagine di sistema2 (immagine ONTAP di destinazione) è la versione predefinita e corrente sul nodo_B_2:
 
 +
 [listing]
@@ -743,7 +759,7 @@ node_B_2
          image2  true    true     Y.Y.Y     MM/DD/YYYY TIME
 4 entries were displayed.
 
-cluster_A::>
+cluster_B::>
 ----
 . Per ciascun nodo della coppia ha, attivare il giveback automatico:
 +
