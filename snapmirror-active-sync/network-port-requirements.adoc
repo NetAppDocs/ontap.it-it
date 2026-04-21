@@ -1,0 +1,63 @@
+---
+sidebar: sidebar 
+permalink: snapmirror-active-sync/network-port-requirements.html 
+keywords: SM-BC, SMBC, SM-AS, restrictions, firewall, network ports, snapmirror active sync 
+summary: Requisiti della porta di rete per la sincronizzazione attiva di ONTAP SnapMirror 
+---
+= Requisiti della porta di rete
+:allow-uri-read: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+SnapMirror active sync replication ha diversi requisiti per le porte di rete.
+
+Ad esempio, ogni nodo coinvolto nella replica deve monitorare lo stato di salute dei nodi partner, controllare l'attività di replica e i dati stessi devono essere replicati. Inoltre, ONTAP Mediator o ONTAP Cloud Mediator devono comunicare con tutti i nodi per fornire servizi di quorum e supportare il failover. Tutte queste funzioni hanno requisiti diversi per quanto riguarda endpoint e porte.
+
+Nella maggior parte dei casi, la replica sincrona attiva di SnapMirror opererà su una rete interna senza restrizioni basate su porte o destinazioni. Se il traffico IP è limitato da firewall, router, topologia di rete o altri meccanismi, è necessario verificare i seguenti requisiti di connettività.
+
+
+
+== Comunicazione tra nodi tramite collegamenti intercluster/peer
+
+|===
+| Porta | Origine | Direzione | Destinazione | Scopo 
+
+
+| 3260/tcp | LIF intercluster | Entrambi | LIF intercluster | Consenso LUN 
+
+
+ a| 
+11104/tcp + 11105/tcp
+| LIF intercluster | Entrambi | LIF intercluster  a| 
+Comunicazione intercluster
+
+Trasferimento dati SnapMirror
+
+
+
+| 443/tcp (HTTPS) | LIF intercluster | Entrambi | LIF intercluster | Gestione intercluster 
+
+
+| 10000/tcp  a| 
+LIF di gestione cluster + LIF di gestione nodi
+| Entrambi | opzionale | Comunicazione con Active IQ Unified Manager 
+|===
+
+
+== Comunicazione tra il mediatore e i nodi del cluster
+
+|===
+| Porta | Origine | Direzione | Destinazione | Scopo 
+
+
+| 22/tcp (SSH) | Host di gestione | In entrata | Mediatore ONTAP | Gestione del mediatore ONTAP 
+
+
+| 31784/tcp (HTTPS) | LIF di gestione del cluster | In entrata | Server web di ONTAP Mediator | API REST 
+
+
+| 31784/tcp | LIF di gestione dei nodi | In entrata | Server web di ONTAP Mediator | Servizio del quorum 
+|===
