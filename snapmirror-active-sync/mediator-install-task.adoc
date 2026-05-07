@@ -155,113 +155,63 @@ image:successful-mediator-installation.png["aggiunta mediatore riuscita"].
 
 È possibile inizializzare ONTAP Mediator dal cluster primario o secondario utilizzando l'ONTAP CLI. Quando si emette il comando  `mediator add` comando su un cluster, ONTAP Mediator viene aggiunto automaticamente sull'altro cluster.
 
-Quando si utilizza ONTAP Mediator per monitorare una relazione di sincronizzazione attiva SnapMirror, ONTAP Mediator non può essere inizializzato in ONTAP senza un certificato autofirmato o di un'autorità di certificazione (CA) valido. Si aggiunge un certificato valido all'archivio certificati per i cluster peer.
+Quando si utilizza ONTAP Mediator per monitorare una SnapMirror active sync relationship, ONTAP Mediator non può essere inizializzato in ONTAP senza un certificato autofirmato o di un'autorità di certificazione (CA) valido. Si aggiunge un certificato valido all'archivio certificati per i cluster peered. Quando si utilizza ONTAP Mediator per monitorare i sistemi IP MetroCluster, HTTPS non viene utilizzato dopo la configurazione iniziale; pertanto, i certificati non sono richiesti.
 
 [role="tabbed-block"]
 ====
 .ONTAP Mediator 1,9 e versioni successive
 --
-. Individuare i certificati CA di ONTAP Mediator dalla posizione di installazione del software ONTAP Mediator sulla macchina virtuale/host Linux:
+. Individuare il certificato CA ONTAP Mediator nel percorso di installazione del software ONTAP Mediator Linux VM/host `cd /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config`.
+. Aggiungere un'autorità di certificazione valida all'archivio certificati nel cluster in cui è stato eseguito il peering.
 +
-`[root@ontap-mediator ~] cd /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config`
-
-+
-Dovresti vedere un output simile al seguente esempio:
-
-+
-[listing]
-----
-1-ontap-mediator.rules  intermediate.crt   make_self_signed_certs.sh      ontap_mediator_server_chain.crt  ontap_mediator.user_config.yaml  root_ca.crt
-config_migration        intermediate.key   netapp_sudoers                 ontap_mediator_server.crt        openssl_ca.cnf                   root_ca.key
-config.pyc              intermediate.srl   ontap_mediator.config.yaml     ontap_mediator_server.csr        openssl_intermediate.cnf
-__init__.pyc            logging.conf.yaml  ontap_mediator.constants.yaml  ontap_mediator_server.key        openssl_server.cnf
-----
-. Visualizza il contenuto del certificato CA radice:
-+
-`[root@ontap-mediator ~] cat root_ca.crt`
+Esempio:
 
 +
 [listing]
 ----
+[root@ontap-mediator_config]# cat intermediate.crt
 -----BEGIN CERTIFICATE-----
 <certificate_value>
 -----END CERTIFICATE-----
 ----
-. Visualizza il contenuto del certificato CA intermedio:
-+
-`[root@ontap-mediator ~] cat intermediate.crt`
-
-+
-[listing]
-----
------BEGIN CERTIFICATE-----
-<certificate_value>
------END CERTIFICATE-----
-----
-. Installare i certificati CA radice e intermedi sul cluster primario o secondario:
-+
-.. Installa il certificato CA radice:
+. Aggiungere il certificato CA di ONTAP Mediator a un cluster ONTAP. Quando richiesto, inserire il certificato CA ottenuto da ONTAP Mediator. Ripetere i passaggi su tutti i cluster peer:
 +
 `security certificate install -type server-ca -vserver <vserver_name>`
 
 +
-Inserisci il  `root.crt` quando richiesto, come mostrato nell'esempio seguente:
+Esempio:
 
++
+[listing]
+----
+[root@ontap-mediator ~]# cd /opt/netapp/lib/ontap_mediator/ontap_mediator/server_config
+
+[root@ontap-mediator_config]# cat intermediate.crt
+-----BEGIN CERTIFICATE-----
+<certificate_value>
+-----END CERTIFICATE-----
+----
 +
 [listing]
 ----
 C1_test_cluster::*> security certificate install -type server-ca -vserver C1_test_cluster
 
-Enter certificate: Press <Enter> when done
+Please enter Certificate: Press when done
 -----BEGIN CERTIFICATE-----
 <certificate_value>
 -----END CERTIFICATE-----
 
-You should keep a copy of the CA-signed digital certificate for future
-reference.
+You should keep a copy of the CA-signed digital certificate for future reference.
 
 The installed certificate's CA and serial number for reference:
 CA: ONTAP Mediator CA
-serial: <serial_value>
+serial: D86D8E4E87142XXX
 
 The certificate's generated name for reference: ONTAPMediatorCA
 
 C1_test_cluster::*>
-
 ----
-
-
-. Installare il certificato CA intermedio:
-+
-`security certificate install -type server-ca -vserver <vserver_name>`
-
-+
-Inserisci il  `intermediate.crt` quando richiesto, come mostrato nell'esempio seguente:
-
-+
-[listing]
-----
-C1_test_cluster::*> security certificate install -type server-ca -vserver C1_test_cluster
-
-Enter certificate: Press <Enter> when done
------BEGIN CERTIFICATE-----
-<certificate_value>
------END CERTIFICATE-----
-
-You should keep a copy of the CA-signed digital certificate for future
-reference.
-
-The installed certificate's CA and serial number for reference:
-CA: ONTAP Mediator CA
-serial: <serial_value>
-
-The certificate's generated name for reference: ONTAPMediatorCA
-
-C1_test_cluster::*>
-
-----
-. Ripetere il passaggio precedente per installare i certificati CA radice e intermedi sul cluster peered.
-. Visualizza i certificati CA autofirmati installati utilizzando il nome generato del certificato:
+. Visualizzare il certificato CA autofirmato installato utilizzando il nome generato del certificato:
 +
 `security certificate show -common-name <common_name>`
 
@@ -272,17 +222,13 @@ Esempio:
 [listing]
 ----
 C1_test_cluster::*> security certificate show -common-name ONTAPMediatorCA
-Vserver         Serial Number   Certificate Name                       Type
-----------      --------------- -------------------------------------- ------------
-C1_test_cluster <serial_number> ONTAPMediatorCA                        server-ca
+Vserver    Serial Number   Certificate Name                       Type
+---------- --------------- -------------------------------------- ------------
+C1_test_cluster
+           6BFD17DXXXXX7A71BB1F44D0326D2DEEXXXXX
+                           ONTAPMediatorCA                        server-ca
     Certificate Authority: ONTAP Mediator CA
-          Expiration Date: Thu Nov 28 05:26:07 2030
-
-C1_test_cluster <serial_number> ONTAPMediatorCA                        server-ca
-    Certificate Authority: ONTAP Mediator CA
-          Expiration Date: Thu Nov 28 05:26:07 2030
-
-2 entries were displayed.
+          Expiration Date: Thu Feb 15 14:35:25 2029
 ----
 . Inizializza ONTAP Mediator su uno dei cluster. ONTAP Mediator viene aggiunto automaticamente per l'altro cluster:
 +
