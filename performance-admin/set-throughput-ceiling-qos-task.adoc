@@ -13,14 +13,40 @@ summary: Un limite massimo di QoS o un throughput ceiling garantisce che il thro
 [role="lead"]
 Un limite massimo di QoS o di throughput garantisce che il throughput di un carico di lavoro non superi un numero massimo di IOPS o MBps, o IOPS e MBps indipendentemente dai carichi di lavoro concorrenti. Imposta un limite di throughput per impedire che carichi di lavoro meno critici consumino risorse di prestazioni eccessive e degradino le prestazioni di carichi di lavoro più critici.
 
-È possibile utilizzare `max-throughput` Campo per un gruppo di criteri per definire un limite massimo di throughput per i carichi di lavoro degli oggetti di storage (QoS Max). È possibile applicare il gruppo di criteri quando si crea o si modifica l'oggetto di storage.
+È possibile specificare il throughput limite quando si crea un gruppo di policy QoS oppure attendere di monitorare i carichi di lavoro per specificarlo.
+
+link:guarantee-throughput-qos-task.html["Scopri di più sui limiti di throughput"].
 
 .Prima di iniziare
-* Devi essere un amministratore del cluster per creare un gruppo di policy e applicare un gruppo di policy a una SVM.
+* È necessario essere un amministratore del cluster per creare un gruppo di criteri e applicarlo a un SVM.
 
 
 .A proposito di questa attività
-* A partire da ONTAP 9.4, è possibile utilizzare un gruppo di policy di qualità del servizio _non-shared_ per specificare che il limite di throughput definito si applica a ogni singolo carico di lavoro membro. In caso contrario, il gruppo di criteri è _shared:_ il throughput totale per i carichi di lavoro assegnati al gruppo di criteri non può superare il limite massimo specificato.
+* I gruppi di criteri QoS adattivi e non adattivi vengono abilitati automaticamente per aumentare temporaneamente il throughput massimo di un carico di lavoro del 50% per una durata di 1 secondo, al fine di rispondere alle richieste a breve termine di prestazioni superiori per impostazione predefinita. A partire da ONTAP 9.19.1, è possibile modificare queste impostazioni predefinite. In ONTAP 9.18.1 e versioni precedenti queste impostazioni non possono essere modificate.
++
+Utilizzare le seguenti opzioni per modificare le impostazioni predefinite:
+
++
+[cols="3"]
+|===
+| Opzione | Descrizione | Impostazione predefinita 
+
+
+ a| 
+`burst-percent`
+| Aumento del throughput in percentuale | 50% 
+
+
+ a| 
+`burst duration`
+| Durata dell'aumento del throughput in secondi | 1 secondo 
+
+
+ a| 
+`burst-iops`
+| Numero massimo di IOPS al di sopra del throughput limite per la durata del burst specificata | 0 
+|===
+* È possibile utilizzare un gruppo di policy QoS non condiviso per specificare che il throughput limite definito si applichi individualmente a ciascun carico di lavoro membro. In caso contrario, il gruppo di policy è condiviso: il throughput totale per i carichi di lavoro assegnati al gruppo di policy non può superare il limite specificato.
 +
 Impostare `-is-shared=false` per `qos policy-group create` per specificare un gruppo di criteri non condiviso.
 
@@ -82,9 +108,6 @@ Ulteriori informazioni su `qos policy-group modify` nella link:https://docs.neta
 ----
 vserver create -vserver <SVM> -qos-policy-group <policy_group>
 ----
-+
-È possibile utilizzare il comando  `vserver modify` per applicare un gruppo di policy diverso all'oggetto di archiviazione.
-
 +
 L'esempio seguente applica il gruppo di policy  `pg-vs1` a SVM  `vs1`:
 
@@ -163,9 +186,40 @@ _USERSPACE_APPS     14       55        10.92KB/s   236.00us
 _Scan_Backgro..   5688       20            0KB/s        0ms
 ----
 +
+Di seguito è riportato un esempio di output per un carico di lavoro con max-throughput impostato a 2000 IOPS e burst-percent impostato a 25 per una durata di burst di 5 secondi.
+
++
+[listing]
+----
+cluster1::> qos statistics workload performance show -workload test_vol_nfs_pct25-wid54260
+
+Workload	                ID	    IOPS
+--------------------------- -----   ----
+test_vol_nfs_pct25-wid54260	54260	2564
+-total-	-	                        3704
+test_vol_nfs_pct25-wid54260	54260	2527
+-total-	-	                        3105
+test_vol_nfs_pct25-wid54260	54260	2550
+-total-	-	                        3445
+test_vol_nfs_pct25-wid54260	54260	2476
+-total-	-	                        3460
+test_vol_nfs_pct25-wid54260	54260	2479
+-total-	-	                        3511
+test_vol_nfs_pct25-wid54260	54260	1996
+-total-	-	                        2197
+test_vol_nfs_pct25-wid54260	54260	2068
+-total-	-	                        2057
+test_vol_nfs_pct25-wid54260	54260	2087
+-total-	-	                        3119
+
+----
++
 Ulteriori informazioni su `qos statistics workload performance show` nella link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-performance-show.html["Riferimento al comando ONTAP"^].
 
 +
-Puoi utilizzare `qos statistics workload latency show` il comando per visualizzare statistiche dettagliate sulla latenza per i workload di qualità del servizio. Ulteriori informazioni su `qos statistics workload latency show` nella link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-latency-show.html["Riferimento al comando ONTAP"^].
+È possibile utilizzare il  `qos statistics workload latency show` comando per visualizzare statistiche dettagliate sulla latenza per i carichi di lavoro QoS.
+
++
+Scopri di più su  `qos statistics workload latency show` nella link:https://docs.netapp.com/us-en/ontap-cli/qos-statistics-workload-latency-show.html["Riferimento al comando ONTAP"^].
 
 

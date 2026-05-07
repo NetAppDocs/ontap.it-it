@@ -2,7 +2,7 @@
 permalink: san-config/configure-fc-nvme-hosts-ha-pairs-reference.html 
 sidebar: sidebar 
 keywords: ways to, configure, fc, fc-nvme, san hosts with ha pairs 
-summary: È possibile configurare gli host FC e FC-NVMe SAN per la connessione alle coppie ha tramite uno o più fabric. Non è possibile collegare direttamente host FC o FC-NVMe SAN a coppie ha senza utilizzare uno switch. 
+summary: È possibile configurare gli host SAN FC e FC-NVMe per connettersi alle coppie HA tramite una o più fabric oppure, a seconda della versione di ONTAP, è possibile collegare direttamente gli host SAN FC o FC-NVMe alle coppie HA senza utilizzare uno switch. 
 ---
 = Configurare i fabric FC o FC-NVME con i sistemi ONTAP
 :allow-uri-read: 
@@ -11,17 +11,21 @@ summary: È possibile configurare gli host FC e FC-NVMe SAN per la connessione a
 
 
 [role="lead"]
-Si consiglia di configurare gli host SAN FC e FC-NVMe utilizzando coppie ha e un minimo di due switch.  Questo garantisce ridondanza a livello di fabric e di sistema storage per supportare la tolleranza agli errori e le operazioni senza interruzioni. Non è possibile collegare direttamente host FC o FC-NVMe SAN a coppie ha senza utilizzare uno switch.
+Per FC e FC/NVMe la topologia di rete tra la soluzione storage e gli host viene definita fabric. Per creare ridondanza, che protegge dalla perdita di accesso ai dati, si consiglia di configurare la SAN con coppie HA utilizzando due o più switch in una configurazione multi-fabric. Le configurazioni a singola fabric, che utilizzano un solo switch tra gli host e lo storage, non sono completamente ridondanti.
 
-Cascade, Partial Mesh, full mesh, core-edge e director fabric sono tutti metodi standard di settore per collegare switch FC a un fabric e sono tutti supportati.  L'utilizzo di fabric switch FC eterogenei non è supportato, tranne nel caso di switch blade integrati.  Le eccezioni specifiche sono elencate nella link:https://imt.netapp.com/matrix/["Tool di matrice di interoperabilità"^].  Un fabric può essere costituito da uno o più switch e i controller di storage possono essere collegati a più switch.
+A partire da ONTAP 9.19.1, è possibile collegare direttamente host SAN FC o FC-NVMe alle coppie HA senza utilizzare uno switch. Le configurazioni con collegamento diretto possono essere particolarmente utili in siti remoti e ambienti ibridi dove la semplicità è fondamentale.
 
-Più host, utilizzando sistemi operativi diversi, come Windows, Linux o UNIX, possono accedere contemporaneamente ai controller di storage.  Gli host richiedono l'installazione e la configurazione di una soluzione multipathing supportata. È possibile verificare i sistemi operativi e le soluzioni multipathing supportate tramite Interoperability Matrix Tool.
+Le architetture a cascata, a maglia parziale, a maglia completa, core-edge e director sono tutti metodi standard del settore per connettere gli switch FC a un fabric e sono tutti supportati. L'utilizzo di fabric di switch FC eterogenei non è supportato, ad eccezione degli switch blade integrati. Le eccezioni specifiche sono elencate su link:https://imt.netapp.com/matrix/["Tool di matrice di interoperabilità"^]. Un fabric può essere costituito da uno o più switch e i controller di storage possono essere connessi a più switch.
+
+Più host, che utilizzano sistemi operativi differenti come Windows, Linux o UNIX, possono accedere contemporaneamente ai controller di storage. Gli host devono disporre di una soluzione di multipathing supportata, che deve essere installata e configurata. I sistemi operativi e le soluzioni di multipathing supportati possono essere verificati tramite l'Interoperability Matrix Tool.
 
 
 
 == Configurazioni FC e FC-NVMe multi-fabric
 
-Nelle configurazioni ha Pair multi-fabric, sono presenti due o più switch che collegano coppie ha a uno o più host. Per semplicità, la seguente figura di coppia ha multi-fabric mostra solo due fabric, ma puoi avere due o più fabric in qualsiasi configurazione multi-fabric.
+Si raccomanda di configurare gli host SAN FC e FC-NVMe utilizzando coppie HA e un minimo di due switch. [EH5.1][FD5.2][EH5.3] Ciò garantisce ridondanza a livello di fabric e di sistema storage per supportare la tolleranza ai guasti e le operazioni senza interruzioni.
+
+In una configurazione di coppia HA multifabric, due o più switch collegano la coppia HA a uno o più host. Ogni switch crea una fabric separata, costituita dai percorsi tra gli host e la coppia HA che passano attraverso lo switch. L'aggiunta di uno switch crea una fabric aggiuntiva. Una configurazione multifabric può includere due o più switch e le rispettive fabric. Per semplicità, la figura seguente mostra solo due switch, che rappresentano due fabric separate.
 
 I numeri delle porte di destinazione FC (0C, 0d, 1a, 1b) nelle illustrazioni sono esempi. I numeri di porta effettivi variano a seconda del modello del nodo di storage e dell'utilizzo di adattatori di espansione.
 
@@ -31,7 +35,7 @@ image:scrn_en_drw_fc-32xx-multi-HA.png["Diagramma di coppia ha multifabbric"]
 
 == Configurazioni FC e FC-NVMe single-fabric
 
-Nelle configurazioni a coppia ha a fabric singolo, esiste un fabric che collega entrambi i controller della coppia ha a uno o più host. Poiché gli host e i controller sono connessi tramite un singolo switch, le configurazioni ha Pair single-fabric non sono completamente ridondanti.
+Nelle configurazioni di coppia HA a singola fabric, un singolo switch collega la coppia HA a uno o più host. Il singolo switch crea una singola fabric composta da tutti i percorsi tra gli host e la coppia HA. Poiché non vi è ridondanza, un guasto dello switch può causare interruzioni del servizio.
 
 I numeri delle porte di destinazione FC (0A, 0C) nelle illustrazioni sono esempi. I numeri di porta effettivi variano a seconda del modello del nodo di storage e dell'utilizzo di adattatori di espansione.
 
@@ -39,12 +43,16 @@ Tutte le piattaforme che supportano le configurazioni FC supportano le configura
 
 image:scrn_en_drw_fc-62xx-single-HA.png["Diagramma di coppia ha fabric a switch singolo"]
 
-[NOTE]
-====
-link:../system-admin/single-node-clusters.html["Configurazioni a nodo singolo"] sono sconsigliati perché non forniscono la ridondanza necessaria per supportare la tolleranza agli errori e le operazioni senza interruzioni.
 
-====
+
+== Configurazioni FC e FC-NVMe ad accesso diretto
+
+A partire da ONTAP 9.19.1, sono disponibili configurazioni FC e FC-NVMe a connessione diretta per i sistemi AFF, ASA, ASA r2 e FAS. In una configurazione a connessione diretta, uno o più host sono collegati direttamente alle coppie HA senza la presenza di uno switch. Questa configurazione può risultare particolarmente utile in siti remoti e ambienti ibridi, dove la semplicità è fondamentale.
+
+image:scrn_en_drw_fc-302020-direct-sing-on.png["Configurazione a collegamento diretto"]
+
 .Informazioni correlate
+* link:configure-fc-ports-direct-attachment.html["Configurare le porte FC di ONTAP per il collegamento diretto agli host FC e FC-NVMe"].
 * Scopri come link:../san-admin/selective-lun-map-concept.html#determine-whether-slm-is-enabled-on-a-lun-map["Mappatura selettiva delle LUN (SLM)"] limitare i percorsi utilizzati per accedere alle LUN di proprietà di una coppia ha.
 * Scopri di più link:../san-admin/manage-lifs-all-san-protocols-concept.html["LIF SAN"].
 

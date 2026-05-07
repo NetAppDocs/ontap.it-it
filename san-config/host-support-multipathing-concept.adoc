@@ -15,7 +15,9 @@ ONTAP utilizza il software ALUA (Asymmetric Logical Unit Access) per il multipat
 
 A partire da ONTAP 9,5, il failover/giveback della coppia ha (Multipath High Availability) è supportato per gli host NVMe utilizzando l'accesso asincrono al namespace (ANA). In ONTAP 9,4, NVMe supporta solo un percorso dall'host alla destinazione, pertanto l'host dell'applicazione deve gestire il failover del percorso al partner ha.
 
-Il software multipathing è necessario sull'host SAN se può accedere a un namespace LUN o NVMe tramite più percorsi. Presenta un singolo disco al sistema operativo per tutti i percorsi a un LUN o namespace NVMe. Senza di esso, il sistema operativo potrebbe trattare ciascun percorso come un disco separato, causando la corruzione dei dati.
+Per informazioni su quali configurazioni host specifiche supportano ALUA o ANA, consultare https://mysupport.netapp.com/matrix["Tool di matrice di interoperabilità NetApp"^] e. https://docs.netapp.com/us-en/ontap-sanhost/index.html["Configurazione host SAN ONTAP"] per il sistema operativo host.
+
+Il software di multipathing, noto anche come MPIO (multipath I/O), è consigliato nelle configurazioni HA. Il software di multipathing è necessario sull'host SAN per consentire l'accesso a una LUN o a uno spazio dei nomi NVMe tramite più percorsi. Presenta al sistema operativo un singolo disco per tutti i percorsi verso una LUN o uno spazio dei nomi NVMe. Senza di esso, il sistema operativo potrebbe trattare ciascun percorso come un disco separato, con conseguente danneggiamento dei dati.
 
 La soluzione è considerata avere più percorsi se si dispone di uno dei seguenti elementi:
 
@@ -24,9 +26,10 @@ La soluzione è considerata avere più percorsi se si dispone di uno dei seguent
 * Più porte initiator collegate a più LIF SAN nella SVM
 
 
-Il software multipathing, noto anche come software MPIO (multipath i/o), è consigliato nelle configurazioni ha. In aggiunta alla mappatura selettiva delle LUN, si consiglia di utilizzare lo zoning a switch FC o i set di porte per limitare i percorsi utilizzati per accedere ai LUN.
+È consigliabile utilizzare Selective LUN Map, FC switch zoning o portsets per limitare i percorsi utilizzati per accedere a LUN e namespace.
 
-Per informazioni su quali configurazioni host specifiche supportano ALUA o ANA, consultare https://mysupport.netapp.com/matrix["Tool di matrice di interoperabilità NetApp"^] e. https://docs.netapp.com/us-en/ontap-sanhost/index.html["Configurazione host SAN ONTAP"] per il sistema operativo host.
+.Informazioni correlate
+Scopri di più su link:../san-admin/multipath-automatic-lif-failover-support.html["Configurazioni SAN multipath supportate da ONTAP"].
 
 
 
@@ -34,15 +37,22 @@ Per informazioni su quali configurazioni host specifiche supportano ALUA o ANA, 
 
 Non superare più di otto percorsi dall'host a ciascun nodo del cluster. Non superare il numero totale di percorsi supportati per il sistema operativo host e il multipathing utilizzato sull'host.
 
-È necessario disporre di almeno due percorsi per LUN che si collegano a ciascun nodo di reporting mediante l'link:../san-admin/selective-lun-map-concept.html["Mappa LUN selettiva (SLM)"]utilizzo della Storage Virtual Machine (SVM) del cluster. In questo modo si eliminano i singoli punti di errore e si consente al sistema di sopravvivere ai guasti dei componenti.
-
 Se nel cluster sono presenti quattro o più nodi o più di quattro porte di destinazione utilizzate dalle SVM in uno dei nodi, È possibile utilizzare i seguenti metodi per limitare il numero di percorsi che è possibile utilizzare per accedere alle LUN sui nodi in modo da non superare il numero massimo consigliato di otto percorsi.
 
-* SLM
+* link:selective-lun-map-concept.html["Mappa LUN selettiva (SLM)"]
 +
-SLM riduce il numero di percorsi dall'host al LUN solo nei percorsi sul nodo proprietario del LUN e del partner ha del nodo proprietario. SLM è attivato per impostazione predefinita.
+SLM riduce il numero di percorsi dall'host alla LUN ai soli percorsi presenti sul nodo proprietario della LUN e sul nodo partner HA del proprietario. SLM è abilitato per impostazione predefinita. È necessario disporre di almeno due percorsi per ogni LUN che si connettono a ciascun nodo di reporting tramite SLM utilizzato dalla storage virtual machine (SVM) nel cluster. Ciò elimina i singoli punti di guasto e consente al sistema di sopravvivere a eventuali guasti dei componenti.
 
-* link:../san-admin/limit-lun-access-portsets-igroups-concept.html["Portset per iSCSI"]
-* Mappature FC igroup dall'host
-* Zoning dello switch FC
+* link:../san-admin/limit-lun-access-portsets-igroups-concept.html["Portset"]
++
+I portset possono essere utilizzati con SLM per limitare ulteriormente l'accesso di determinate destinazioni a determinati iniziatori. Quando si utilizza SLM con i portset, i LUN saranno accessibili sull'insieme di LIF nel portset sul nodo che possiede il LUN e sul partner ha di quel nodo.
+
+* Mappature del gruppo initiator (igroup) dal tuo host
++
+È possibile definire gli igroup e mapparli alle LUN per controllare quali initiator hanno accesso alle LUN.
+
+* link:../san-config/fc-fcoe-recommended-zoning-configuration.html["Zoning dello switch FC"]
++
+È necessario creare una configurazione dello zoning se l'host non dispone di una soluzione di multipath I/O installata, se quattro o più host sono connessi alla SAN o se SLM non è implementato sui nodi del cluster.
+
 

@@ -1,0 +1,233 @@
+---
+sidebar: sidebar 
+permalink: san-admin/multipath-automatic-lif-failover-support.html 
+keywords: netapp, ontap, san, multipath, automatic lif failover, supported configurations, active-active, local-active, active-active-scsi-only, multipathing, 
+summary: È possibile aggiornare senza interruzioni la versione di ONTAP nel cluster. 
+---
+= Scopri le funzionalità SAN multipath e il supporto automatico per il failover LIF nei sistemi ONTAP
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+Nelle configurazioni multipath, vengono configurati più percorsi di rete tra l'host e il sistema storage in modo che, se un percorso diventa non disponibile, l'I/O possa essere reindirizzato a un percorso alternativo per evitare interruzioni del servizio. Il failover automatico LIF consente a un'interfaccia logica (LIF) di migrare automaticamente a una porta diversa se la sua porta home diventa non funzionante o si verifica un failover dello storage. Il multipathing con failover automatico LIF reindirizza senza soluzione di continuità l'I/O al percorso disponibile più ottimizzato, senza la necessità di una transizione di percorso di failover.
+
+
+
+== Configurazioni multipath supportate da SAN
+
+Per gli ambienti SAN sono supportate le seguenti configurazioni multipath.
+
+locale-attivo:: I percorsi sul nodo proprietario del LUN o del namespace sono attivi e ottimizzati. I percorsi sul partner HA sono attivi ma non ottimizzati.
+attivo-attivo:: Tutti i percorsi nella coppia HA proprietaria del LUN o del namespace sono attivi e ottimizzati.
+solo SCSI active-active:: I percorsi sul nodo proprietario del LUN o del namespace sono attivi e ottimizzati. I percorsi sulla coppia HA possono essere attivi-ottimizzati o attivi-non ottimizzati a seconda del protocollo SAN. La configurazione active-active-scsi-only è supportata solo sui sistemi ASA.
+
+
+Il supporto per le configurazioni SAN multipath varia in base al sistema storage e alla versione di ONTAP.
+
+[cols="1,1,1,1"]
+|===
+| Sistema | Versione di ONTAP | Configurazioni multipath supportate | Configurazione predefinita del multipath 
+
+
+| FAS | 9.0 e versioni successive | locale-attivo | locale-attivo 
+
+
+.2+| AFF | 9.19.1 e versioni successive  a| 
+* attivo-attivo
+* locale-attivo
+
+| locale-attivo 
+
+
+| 9.18.1 e precedenti | locale-attivo | locale-attivo 
+
+
+.2+| ASA | 9.19.1 e versioni successive  a| 
+* attivo-attivo
+* solo SCSI active-active
+
+| attivo-attivo 
+
+
+| 9.18.1 e precedenti  a| 
+* attivo-attivo
+* solo SCSI active-active
+
+| solo SCSI active-active 
+
+
+| ASA r2 | 9.16.1 e versioni successive | attivo-attivo | attivo-attivo 
+|===
+
+
+== Comportamento di failover LIF predefinito in base alla configurazione
+
+A seconda della configurazione multipath, i percorsi tra l'host e il sistema storage possono essere attivi-ottimizzati o attivi-non-ottimizzati. Quando si verifica un failover dello storage con percorsi attivi-ottimizzati, l'host non deve attendere la transizione ALUA o ANA dei percorsi di failover per riprendere l'I/O. Per i percorsi attivi-non-ottimizzati, ALUA o ANA devono trasferire l'I/O dai percorsi guasti al partner HA prima che l'I/O possa essere ripreso. Ulteriori informazioni su link:../san-config/host-support-multipathing-concept.html["ALUA e ANA"].
+
+[cols="1,1,1,1,1"]
+|===
+| Configurazione multipath | Protocollo | Criterio di failover LIF predefinito | Percorsi dei nodi proprietari | Percorsi partner HA 
+
+
+| locale-attivo  a| 
+* ISCSI
+* NVMe/TCP
+* NVMe/FC
+
+| solo locale | attivo-ottimizzato | attivo-non-ottimizzato 
+
+
+.2+| attivo-attivo  a| 
+* ISCSI
+* NVMe/TCP
+
+| sfo-partner-only | attivo-ottimizzato | attivo-ottimizzato 
+
+
+ a| 
+* FCP
+* NVMe/FC
+
+| N/D Le porte persistenti vengono utilizzate per il failover | attivo-ottimizzato | attivo-ottimizzato 
+
+
+.4+| active-active-scsi-only (Disponibile solo su piattaforme ASA) | ISCSI | sfo-partner-only | attivo-ottimizzato | attivo-ottimizzato 
+
+
+| NVMe/TCP | solo locale | attivo-ottimizzato | attivo-non-ottimizzato 
+
+
+| FC | N/D Le porte persistenti vengono utilizzate per il failover | attivo-ottimizzato | attivo-ottimizzato 
+
+
+| NVMe/FC | N/D Le porte persistenti vengono utilizzate per il failover | attivo-ottimizzato | attivo-non-ottimizzato 
+|===
+
+
+== Supporto per il failover automatico di LIF
+
+Il failover automatico delle LIF è supportato con configurazioni multipath attivo-attivo che eseguono i protocolli iSCSI e NVMe/TCP e con configurazioni multipath attivo-attivo-solo-scsi che eseguono il protocollo iSCSI. Le LIF sono configurate per utilizzare la policy di failover sfo-partner-only creata dal sistema per impostazione predefinita. La policy predefinita sfo-partner-only può essere modificata.
+
+Il failover LIF automatico non è supportato con configurazioni multipath local-active. La policy predefinita solo locale non può essere modificata.
+
+Le configurazioni multipath attivo-attivo che utilizzano il protocollo FC o NVMe-FC si avvalgono di porte persistenti per il failover. Le porte persistenti sono supportate a partire da ONTAP 9.8 e non utilizzano criteri di failover. Scopri di più su link:../san-config/asa-support-limitations.html["supporto per porte persistenti"].
+
+Il supporto per il failover automatico LIF dipende dal sistema storage, dalla versione di ONTAP e dal protocollo SAN.
+
+[cols="1,1,1,1"]
+|===
+| Sistema | Versione di ONTAP | Protocollo SAN | Supporto di failover LIF 
+
+
+| FAS | 9.0 e versioni successive | Tutto | Non supportato 
+
+
+.4+| AFF .3+| 9.19.1 e versioni successive | ISCSI | Failover LIF automatico con configurazione multipathing attivo-attivo o attivo-attivo-solo-scsi 
+
+
+| NVMe/TCP | Failover LIF automatico con configurazione multipathing attivo-attivo 
+
+
+ a| 
+* FC
+* NVMe/FC
+
+| Failover con porte persistenti 
+
+
+| 9.18.1 e precedenti | Tutto | Non supportato 
+
+
+.9+| ASA .3+| 9.19.1 e versioni successive | ISCSI | Failover LIF automatico con configurazione multipathing attivo-attivo o attivo-attivo-solo-scsi 
+
+
+| NVMe/TCP | Failover LIF automatico con configurazione multipathing attivo-attivo 
+
+
+ a| 
+* FC
+* NVMe/FC
+
+| Failover con porte persistenti 
+
+
+.3+| 9.11.1 a 9.18.1 | ISCSI | Failover automatico LIF 
+
+
+| FC | Failover con porte persistenti 
+
+
+ a| 
+* NVMe/FC
+* NVMe/TCP
+
+| Non supportato 
+
+
+.2+| 9.8 to 9.10.1 | FC | Failover con porte persistenti 
+
+
+ a| 
+* ISCSI
+* NVMe/FC
+* NVMe/TCP
+
+| Non supportato 
+
+
+| 9.7 | Tutto | Non supportato 
+
+
+.2+| ASA r2 .2+| 9.19.1 e versioni successive  a| 
+* ISCSI
+* NVMe/TCP
+
+| Failover LIF automatico con configurazione multipathing attivo-attivo 
+
+
+ a| 
+* FC
+* NVMe/FC
+
+| Failover con porte persistenti 
+|===
+
+
+== Limitazioni di configurazione del multipathing
+
+Esistono limitazioni di configurazione del multipathing SAN per le macchine virtuali di storage (SVM) in una relazione di sincronizzazione attiva SnapMirror e per le configurazioni MetroCluster.
+
+* *SnapMirror Active Sync*
++
+Se le SVM sono in una relazione di sincronizzazione attiva SnapMirror, la configurazione multipath sulla SVM di origine e sulla SVM di destinazione deve essere la stessa. Configurazioni multipath diverse per la SVM di origine e la SVM di destinazione non sono supportate.
+
+* *Configurazioni MetroCluster*
++
+Il tipo di sistema storage nei siti primario e secondario deve essere lo stesso.
+
+
+
+
+
+== Multipathing attivo-attivo sui sistemi AFF
+
+A partire da ONTAP 9.19.1, i sistemi AFF supportano il multipathing attivo-attivo con failover LIF automatico a livello SVM negli ambienti SAN. Ciò riduce i tempi di failover, consentendo ai clienti SAN di eseguire carichi di lavoro mission-critical sui sistemi AFF con la stessa resilienza del percorso senza interruzioni e bilanciamento del carico precedentemente disponibili solo sui sistemi ASA. Il supporto del multipathing attivo-attivo e il failover LIF automatico sui sistemi AFF consentono di consolidare i domini di gestione, ottimizzare l'ingombro dello storage, sfruttare gli investimenti NAS esistenti e standardizzare su un unico sistema storage per tutte le esigenze di protocollo, pur rispettando rigorosi SLA di disponibilità e prestazioni.
+
+Sui sistemi AFF, è possibile configurare il multipathing attivo-attivo solo quando si crea un nuovo SVM in ONTAP 9.19.1 e versioni successive. Un SVM non può essere convertito da una configurazione locale-attiva a una configurazione attivo-attiva.
+
+È possibile spostare LUN e namespace esistenti da SVM configurati per il multipathing locale-attivo a SVM configurati per il multipathing attivo-attivo. Se si sposta un LUN o un namespace in un nuovo SVM, è necessario rimappare l'host al nuovo SVM prima di iniziare a servire i dati.
+
+
+NOTE: Se il cluster utilizza ONTAP 9.19.1 o versioni successive e include sia sistemi FAS che AFF, è necessario utilizzare la configurazione multipath locale-attiva per tutti i sistemi. L'utilizzo di una configurazione locale-attiva per i sistemi FAS e di una configurazione attivo-attivo per i sistemi AFF nello stesso cluster non è raccomandato.
+
+.Informazioni correlate
+* Ulteriori informazioni su link:asa-iscsi-lif-fo-task.html:["failover automatico LIF iSCSI sui sistemi ASA"].
+* Ulteriori informazioni su link:https://docs.netapp.com/us-en/asa-r2/administer/manage-client-vm-access.html#create-a-lif-network-interface["failover automatico LIF iSCSI sui sistemi ASA r2"^].
+

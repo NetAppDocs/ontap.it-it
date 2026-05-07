@@ -23,6 +23,8 @@ Prima di concedere le autorizzazioni, è necessario aver già creato utenti o gr
 
 Le autorizzazioni per utenti e gruppi possono essere concesse al momento della creazione del bucket o in seguito in base alle necessità. È inoltre possibile modificare la capacità del bucket e l'assegnazione del gruppo di policy QoS.
 
+A partire da ONTAP 9.19.1, è possibile utilizzare le condizioni per imporre scritture condizionali per il caricamento di oggetti ed eliminazioni condizionali per l'eliminazione di oggetti. Le scritture e le eliminazioni condizionali consentono di prevenire sovrascritture o eliminazioni involontarie di oggetti.
+
 A partire da ONTAP 9,9.1, se si prevede di supportare la funzionalità di tagging degli oggetti client AWS con il server ONTAP S3, le azioni `GetObjectTagging`, `PutObjectTagging`, e. `DeleteObjectTagging` devono essere consentite utilizzando le policy di gruppo o bucket.
 
 La procedura da seguire dipende dall'interfaccia in uso - System Manager o CLI:
@@ -115,6 +117,12 @@ Nell'esempio seguente viene creata un'istruzione dei criteri del bucket server d
 [listing]
 ----
 cluster1::> vserver object-store-server bucket policy statement create -vserver svm1.example.com -bucket bucket1 -effect allow -action GetObject,PutObject,DeleteObject,ListBucket -principal group/group1 -resource bucket1/* -sid "fullAccessForGroup1"
+----
+A partire da ONTAP 9.19.1, è possibile utilizzare le condizioni per imporre scritture condizionali per il caricamento di oggetti ed eliminazioni condizionali per l'eliminazione di oggetti. L'esempio seguente crea una condizione per l'istruzione di policy del bucket per imporre scritture condizionali per bucket1:
+
+[listing]
+----
+cluster::> vserver object-store-server bucket policy-statement-condition create -vserver vs0 -bucket buck1 -index 1 -operator Null -s3-if-match true
 ----
 A partire da ONTAP 9.14.1, è possibile specificare le variabili per un criterio bucket. Nell'esempio seguente viene creata un'istruzione del criterio bucket server per la VM di storage `svm1` e. `bucket1`, e specifica `${aws:username}` come variabile per una risorsa di criterio. Quando il criterio viene valutato, la variabile di criterio viene sostituita con il nome utente del contesto della richiesta e l'azione del criterio può essere eseguita come configurato per quell'utente. Ad esempio, quando viene valutata la seguente istruzione di criterio, `${aws:username}` Viene sostituito con l'utente che esegue l'operazione S3. Se un utente `user1` esegue l'operazione, a cui l'utente può accedere `bucket1` come `bucket1/user1/*`.
 

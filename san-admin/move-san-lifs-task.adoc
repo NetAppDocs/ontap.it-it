@@ -2,16 +2,25 @@
 permalink: san-admin/move-san-lifs-task.html 
 sidebar: sidebar 
 keywords: move, san, lifs 
-summary: Se un nodo deve essere messo offline, è possibile spostare un SAN LIF per preservarne le informazioni di configurazione, come il suo WWPN, ed evitare di riconfigurare la switch fabric. Poiché un SAN LIF deve essere messo offline prima di essere spostato, il traffico host deve utilizzare un software di multipathing host per garantire un accesso continuo al LUN. È possibile spostare i SAN LIF su qualsiasi nodo di un cluster, ma non è possibile spostare i SAN LIF tra storage virtual machine. 
+summary: Se un nodo deve essere messo offline, è possibile spostare un SAN LIF per preservarne le informazioni di configurazione, come il suo WWPN, ed evitare di riconfigurare la switch fabric. 
 ---
-= Spostare UNA LIF SAN
+= Spostare un ONTAP SAN LIF
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-Se un nodo deve essere portato offline, è possibile spostare un LIF SAN per conservare le informazioni di configurazione, ad esempio WWPN, ed evitare di eseguire il zoning dello switch fabric. Poiché un LIF SAN deve essere portato offline prima di essere spostato, il traffico host deve fare affidamento sul software di multipathing host per fornire un accesso senza interruzioni al LUN. È possibile spostare LE LIF SAN in qualsiasi nodo di un cluster, ma non è possibile spostare LE LIF SAN tra le macchine virtuali di storage (SVM).
+Se un nodo deve essere messo offline, è possibile spostare una LIF SAN per preservarne le informazioni di configurazione, come il suo WWPN. Lo spostamento di una LIF non richiede la riconfigurazione della fabric FC né la creazione di nuove sessioni iSCSI tra gli host del cluster e l'interfaccia di destinazione. È possibile spostare le LIF SAN su qualsiasi nodo del cluster, ma non tra storage virtual machine (SVM).
+
+È possibile spostare un LIF per eseguire le seguenti operazioni senza interrompere il funzionamento:
+
+* Sostituire una coppia HA di un cluster con una coppia HA aggiornata in modo trasparente per gli host che accedono ai dati LUN o namespace
+* Aggiornare una scheda di interfaccia di destinazione
+* Spostare le risorse di una macchina virtuale di storage (SVM) da un set di nodi in un cluster a un altro set di nodi nel cluster
+
+
+Non è possibile spostare un SAN LIF utilizzando il  `network interface move` comando. Per spostare un SAN LIF, è necessario metterlo offline, spostarlo su un nuovo nodo o porta home, e quindi riportarlo online. Poiché un SAN LIF deve essere messo offline prima di essere spostato, il traffico host deve fare affidamento sul software di multipathing host per fornire un accesso senza interruzioni al LUN, in modo che non vi siano interruzioni di I/O.
 
 .Prima di iniziare
 Se la LIF è membro di un set di porte, la LIF deve essere stata rimossa dalla porta impostata prima di poter spostare la LIF in un nodo diverso.
@@ -22,31 +31,38 @@ Il nodo di destinazione e la porta fisica di un LIF che si desidera spostare dev
 .Fasi
 . Visualizzare lo stato amministrativo e operativo della LIF:
 +
-`network interface show -vserver _vserver_name_`
-
+[source, cli]
+----
+network interface show -vserver <SVM_name>
+----
 +
 Ulteriori informazioni su `network interface show` nella link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["Riferimento al comando ONTAP"^].
 
 . Modificare lo stato del LIF in `down` (offline):
 +
-`network interface modify -vserver _vserver_name_ -lif _LIF_name_ -status-admin down`
-
+[source, cli]
+----
+network interface modify -vserver <SVM_name> -lif <LIF_name> -status-admin down
+----
 +
 Ulteriori informazioni su `network interface modify` nella link:https://docs.netapp.com/us-en/ontap-cli/network-interface-modify.html["Riferimento al comando ONTAP"^].
 
 . Assegnare alla LIF un nuovo nodo e una nuova porta:
 +
-`network interface modify -vserver _vserver_name_ -lif _LIF_name_ -home-node _node_name_ -home-port _port_name_`
-
+[source, cli]
+----
+network interface modify -vserver <SVM_name> -lif <LIF_name> -home-node <node_name> -home-port <port_name>
+----
 . Modificare lo stato del LIF in `up` (online):
 +
-`network interface modify -vserver _vserver_name_ -lif _LIF_name_ -status-admin up`
-
-+
-Ulteriori informazioni su `up` nella link:https://docs.netapp.com/us-en/ontap-cli/up.html["Riferimento al comando ONTAP"^].
-
+[source, cli]
+----
+network interface modify -vserver <SVM_name> -lif <LIF_name> -status-admin up
+----
 . Verificare le modifiche:
 +
-`network interface show -vserver _vserver_name_`
-
+[source, cli]
+----
+network interface show -vserver <SVM_name>
+----
 

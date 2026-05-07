@@ -2,7 +2,7 @@
 permalink: s3-config/regenerate-access-keys.html 
 sidebar: sidebar 
 keywords: regenerate, s3, access keys, secret keys 
-summary: È possibile rigenerare le chiavi di accesso ai client S3 e modificarne la validità. 
+summary: Le chiavi di accesso ai client S3 possono essere rigenerate, la loro validità modificata, oppure è possibile generare o rimuovere una seconda chiave di accesso. 
 ---
 = Rigenerare le chiavi ONTAP S3 e modificarne il periodo di conservazione
 :hardbreaks:
@@ -12,20 +12,25 @@ summary: È possibile rigenerare le chiavi di accesso ai client S3 e modificarne
 
 
 [role="lead"]
-Le chiavi di accesso e le chiavi segrete vengono generate automaticamente durante la creazione dell'utente per abilitare l'accesso client S3. È possibile rigenerare le chiavi di un utente se una chiave è scaduta o compromessa.
+Le chiavi di accesso e le chiavi segrete vengono generate automaticamente durante la creazione dell'utente per consentire l'accesso del client S3. È possibile rigenerare le chiavi per un utente se una chiave è scaduta o compromessa. A partire da ONTAP 9.19.1, è anche possibile generare o rimuovere una seconda chiave di accesso per un utente S3, in modo che possa accedere alle risorse S3 se la sua chiave di accesso originale scade.
 
 Per informazioni sulla generazione delle chiavi di accesso, vedere link:../s3-config/create-s3-user-task.html["Creare un utente S3"].
+
+
+
+== Rigenerare una chiave di accesso S3
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-. Fare clic su *Storage > Storage VM* (Storage VM), quindi selezionare la VM di storage.
-. Nella scheda *Impostazioni*, fare clic image:icon_pencil.gif["Icona Edit (Modifica)"] nel riquadro *S3*.
+. Selezionare *Storage > Storage VM*, quindi selezionare la VM di storage.
+. Nella scheda *Impostazioni*, seleziona image:icon_pencil.gif["Icona Edit (Modifica)"] nel riquadro *S3*.
 . Nella scheda *utenti*, verificare che non vi sia alcuna chiave di accesso o che la chiave sia scaduta per l'utente.
-. Se è necessario rigenerare la chiave, fare clic su image:icon_kabob.gif["Icona delle opzioni di menu"] accanto all'utente, quindi fare clic su *Rigenera chiave*.
-. Per impostazione predefinita, le chiavi generate sono valide per un periodo di tempo indefinito. A partire da 9.14.1, è possibile modificare il periodo di conservazione, dopo il quale le chiavi scadono automaticamente. Immettere il periodo di conservazione in giorni, ore, minuti o secondi.
-. Fare clic su *Save* (Salva). La chiave viene rigenerata. Qualsiasi modifica del periodo di conservazione della chiave ha effetto immediato.
+. Se devi rigenerare la chiave, seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] accanto all'utente, quindi seleziona *Rigenera chiave*.
+. Per impostazione predefinita, le chiavi generate hanno un valore di validità pari a 0 e non scadono mai. A partire da ONTAP 9.14.1, è possibile modificarne il periodo di conservazione, trascorso il quale le chiavi scadono automaticamente. Immettere il periodo di conservazione in giorni, ore, minuti o secondi.
+. A partire da ONTAP 9.19.1, gli utenti possono avere una seconda chiave di accesso. Se l'utente dispone di una seconda chiave di accesso, selezionare la chiave di accesso da rigenerare. È possibile selezionare entrambe le chiavi di accesso per la rigenerazione.
+. Seleziona *Archiviazione > Macchine virtuali di archiviazione* e quindi seleziona la macchina virtuale di archiviazione. *Salva*. La chiave viene rigenerata. Qualsiasi modifica al periodo di conservazione della chiave ha effetto immediato.
 . Scaricare o salvare la chiave di accesso e la chiave segreta. Saranno richiesti per l'accesso da S3 client.
 
 
@@ -33,14 +38,125 @@ Per informazioni sulla generazione delle chiavi di accesso, vedere link:../s3-co
 .CLI
 --
 . Rigenerare le chiavi di accesso e segrete di un utente eseguendo `vserver object-store-server user regenerate-keys` comando.
-. Per impostazione predefinita, le chiavi generate sono valide a tempo indeterminato. A partire da 9.14.1, è possibile modificare il periodo di conservazione, dopo il quale le chiavi scadono automaticamente. È possibile aggiungere il periodo di conservazione in questo formato: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W`
-Ad esempio, se si desidera immettere un periodo di conservazione di un giorno, due ore, tre minuti e quattro secondi, immettere il valore come `P1DT2H3M4S`.
+. Per impostazione predefinita, le chiavi generate sono valide a tempo indeterminato. A partire da ONTAP 9.14.1, è possibile modificarne il periodo di conservazione, trascorso il quale le chiavi scadono automaticamente. È possibile aggiungere il periodo di conservazione in questo formato: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W` Ad esempio, se si desidera inserire un periodo di conservazione di un giorno, due ore, tre minuti e quattro secondi, immettere il valore come `P1DT2H3M4S`.
+. A partire da ONTAP 9.19.1, se l'utente dispone di più di una chiave di accesso, è possibile scegliere quale chiave rigenerare. La chiave va specificata nel seguente formato: `[-key-id {1..2}]`
++
+** Se non è necessario specificare alcun key-id, la chiave 1 viene rigenerata.
+** Per specificare la chiave 1, immettere il valore come `-key-id 1`.
+** Per specificare la chiave 2, immettere il valore come  `-key-id 2`.
+** Per specificare le chiavi 1 e 2, inserire il valore come  `-key-id 1 2`. Ad esempio, per rigenerare la chiave 1:
 +
 [listing]
 ----
-vserver object-store-server user regenerate-keys -vserver svm_name -user user -key-time-to-live 0
+vserver object-store-server user regenerate-keys -vserver svm_name -user user -key-id 1 -key-time-to-live 0
+----
+
+
+. Salvare le chiavi di accesso e le chiavi segrete. Saranno richiesti per l'accesso da S3 client.
+
+
+--
+====
+
+
+== Genera una seconda chiave di accesso S3
+
+A partire da ONTAP 9.19.1, è possibile generare una seconda chiave di accesso per un utente.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *Storage > Storage VM*, quindi selezionare la VM di storage.
+. Seleziona *Archiviazione > Macchine virtuali di archiviazione* e quindi seleziona la macchina virtuale di archiviazione. *Archiviazione > Macchine virtuali di archiviazione* e quindi seleziona la macchina virtuale di archiviazione.
+. Nella scheda *Impostazioni*, seleziona image:icon_pencil.gif["Icona Edit (Modifica)"] nel riquadro *S3*.
+. Nella scheda *Utenti*, seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] accanto all'utente, quindi seleziona *Aggiungi un'altra chiave*.
+. Per impostazione predefinita, le chiavi generate hanno un valore di validità pari a 0 e non scadono mai. A partire da ONTAP 9.14.1, è possibile modificarne il periodo di conservazione, trascorso il quale le chiavi scadono automaticamente. Immettere il periodo di conservazione in giorni, ore, minuti o secondi.
+. Selezionare *Archiviazione > VM di archiviazione* e quindi selezionare la VM di archiviazione. *Aggiungi*. Viene generata la seconda chiave. Il periodo di conservazione della chiave specificato ha effetto immediato.
+. Scaricare o salvare la chiave di accesso e la chiave segreta. Saranno richiesti per l'accesso da S3 client.
+
+
+--
+.CLI
+--
+. Genera una seconda chiave di accesso e una chiave segreta per un utente eseguendo il comando  `vserver object-store-server user regenerate-keys`.
+. Per impostazione predefinita, le chiavi generate sono valide a tempo indeterminato. A partire da ONTAP 9.14.1, è possibile modificarne il periodo di conservazione, trascorso il quale le chiavi scadono automaticamente. È possibile aggiungere il periodo di conservazione in questo formato: `P[<integer>D]T[<integer>H][<integer>M][<integer>S] | P<integer>W` Ad esempio, se si desidera inserire un periodo di conservazione di un giorno, due ore, tre minuti e quattro secondi, immettere il valore come `P1DT2H3M4S`.
+. A partire da ONTAP 9.19.1, è possibile generare una seconda chiave di accesso in questo formato: `[-key-id 2]`
++
+Ad esempio:
+
++
+[listing]
+----
+vserver object-store-server user regenerate-keys -vserver svm_name -user user -key-id 2 -key-time-to-live 0
 ----
 . Salvare le chiavi di accesso e le chiavi segrete. Saranno richiesti per l'accesso da S3 client.
+
+
+--
+====
+
+
+== Mostra le chiavi di accesso S3
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *Storage > Storage VM*, quindi selezionare la VM di storage.
+. Nella scheda *Impostazioni*, seleziona image:icon_pencil.gif["Icona Edit (Modifica)"] nel riquadro *S3*.
+. Nella scheda *Utenti*, verificare che non siano presenti seconde chiavi di accesso per gli utenti S3.
+
+
+--
+.CLI
+--
+Visualizza le chiavi di accesso e segrete di un utente eseguendo il comando  `vserver object-store-server user show`.
+
+Ad esempio:
+
+[listing]
+----
+vserver object-store-server user show -vserver svm_name -user user
+----
+--
+====
+
+
+== Rimuovere una chiave di accesso S3
+
+A partire da ONTAP 9.19.1, è possibile rimuovere una delle chiavi di accesso per un utente. Per eliminare entrambe le chiavi per un utente, l'utente deve essere eliminato.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *Storage > Storage VM*, quindi selezionare la VM di storage.
+. Nella scheda *Impostazioni*, seleziona image:icon_pencil.gif["Icona Edit (Modifica)"] nel riquadro *S3*.
+. Nella scheda *Utenti*, seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] accanto all'utente, quindi seleziona *Aggiungi un'altra chiave*.
+. Seleziona *Remove key 1* o *Remove key 2*.
+. Seleziona *Salva*. La chiave selezionata viene rimossa.
+. Scaricare o salvare la chiave di accesso e la chiave segreta. Saranno richiesti per l'accesso da S3 client.
+
+
+--
+.CLI
+--
+. Rimuovere le chiavi di accesso e segrete per un utente eseguendo il comando  `vserver object-store-server user delete-keys`.
+. È possibile scegliere quale chiave rimuovere specificandola in questo formato: `[-key-id {1..2}]`
++
+** Se l'utente possiede una sola chiave, non è necessario specificare alcun key-id.
+** Per specificare la chiave 1, immettere il valore come `-key-id 1`.
+** Per specificare la chiave 2, immettere il valore come  `-key-id 2`.
+** Se non viene specificato alcun key id, il comando predefinito elimina la chiave 2.
+** Per eliminare entrambe le chiavi, elimina l'utente. Ad esempio:
++
+[listing]
+----
+vserver object-store-server user delete-keys -vserver svm_name -user user -key-id 2
+----
+
+
 
 
 --

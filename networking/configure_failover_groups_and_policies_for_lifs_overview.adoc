@@ -16,9 +16,16 @@ summary: Il failover LIF è la migrazione automatica di un LIF a una porta di re
 [role="lead"]
 Il failover LIF si riferisce alla migrazione automatica di una LIF a una porta di rete diversa in risposta a un errore di collegamento sulla porta corrente della LIF. Si tratta di un componente chiave per fornire alta disponibilità per le connessioni alle SVM. La configurazione del failover LIF comporta la creazione di un gruppo di failover, la modifica della LIF per l'utilizzo del gruppo di failover e la specifica di una policy di failover.
 
-Un gruppo di failover contiene un set di porte di rete (porte fisiche, VLAN e gruppi di interfacce) da uno o più nodi in un cluster. Le porte di rete presenti nel gruppo di failover definiscono le destinazioni di failover disponibili per LIF. A un gruppo di failover possono essere assegnate le LIF di gestione del cluster, dei nodi, dell'intercluster e dei dati NAS.
+Il failover LIF tramite gruppi di failover non è supportato per i LIF con protocollo SAN. Scopri di più su link:../san-admin/multipath-automatic-lif-failover-support.html["Supporto per percorsi SAN multipli e failover automatico LIF"].
+
+Un gruppo di failover contiene un insieme di porte di rete (porte fisiche, VLAN e gruppi di interfacce) provenienti da uno o più nodi in un cluster ONTAP. Le porte di rete presenti nel gruppo di failover definiscono le destinazioni di failover disponibili per il LIF. A un gruppo di failover possono essere assegnati LIF di gestione del cluster, LIF di gestione dei nodi, LIF intercluster e LIF dati NAS.
 
 
 IMPORTANT: Quando una LIF viene configurata senza una destinazione di failover valida, si verifica un'interruzione quando la LIF tenta di eseguire il failover. È possibile utilizzare il `network interface show -failover` comando per verificare la configurazione di failover. Ulteriori informazioni su `network interface show` nella link:https://docs.netapp.com/us-en/ontap-cli/network-interface-show.html["Riferimento al comando ONTAP"^].
 
 Quando si crea un dominio di broadcast, viene creato automaticamente un gruppo di failover con lo stesso nome che contiene le stesse porte di rete. Questo gruppo di failover viene gestito automaticamente dal sistema, il che significa che quando le porte vengono aggiunte o rimosse dal dominio di broadcast, vengono automaticamente aggiunte o rimosse da questo gruppo di failover. Questo è un'efficienza per gli amministratori che non desiderano gestire i propri gruppi di failover.
+
+A partire da ONTAP 9.19.1, il criterio di gruppo di failover definito dal sistema ONTAP espande dinamicamente le destinazioni di failover per i LIF dati NAS, includendo potenzialmente tutte le porte disponibili nel dominio broadcast su qualsiasi nodo disponibile nel cluster. È possibile applicare il criterio definito dal sistema a qualsiasi gruppo di failover. Prima di ONTAP 9.19.1, i LIF con questo criterio potevano eseguire il failover solo su un altro nodo del cluster; se tale nodo non era in quorum, il LIF non eseguiva il failover, anche se erano disponibili altri nodi.
+
+.Informazioni correlate
+Scopri di più su link:https://docs.netapp.com/us-en/asa-r2/administer/manage-client-vm-access.html#create-a-lif-network-interface["Failover LIF automatico sui sistemi ASA r2"^].

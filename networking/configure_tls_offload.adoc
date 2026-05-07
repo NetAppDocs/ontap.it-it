@@ -1,0 +1,110 @@
+---
+sidebar: sidebar 
+permalink: networking/configure-tls-offload.html 
+keywords: TLS offload, TLS, performance 
+summary: Configura le impostazioni di offload TLS 
+---
+= Configurare l'offload hardware TLS di ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.19.1, è possibile configurare l'offload TLS per migliorare le prestazioni TLS post-handshake sfruttando le risorse sulle schede Ethernet supportate. Questa funzionalità esegue l'offload della crittografia e decrittografia, riducendo il sovraccarico della CPU e migliorando le prestazioni.
+
+.A proposito di questa attività
+* L'offload TLS è disabilitato per impostazione predefinita.
+* Vengono scaricate solo le suite di cifratura AES-GCM (TLSv1.2/TLSv1.3, 128/256-bit).
+* La fase di stretta di mano TLS non viene scaricata. Solo la fase di dati successiva alla stretta di mano viene scaricata.
+* La migrazione dell'interfaccia logica di rete (LIF) verso porte non compatibili con l'offload provoca un fallback software automatico.
++
+Per le connessioni con offload TLS, le operazioni crittografiche TLS in genere bypassano il software e vengono gestite da una NIC con funzionalità di offload. Se la LIF associata a questa connessione migra su una porta di rete priva di funzionalità di offload TLS, le operazioni crittografiche ricadono sul software e vengono gestite dal kernel di sistema.
+
+* Le interfacce di gestione (HTTPS, REST API) non sono influenzate da questa impostazione.
+* L'impostazione di offload hardware TLS è valida per l'intero cluster.
+
+
+L'offload hardware TLS richiede una scheda di rete supportata. Sono supportate le seguenti schede di rete:
+
+* CX7 10/25 GbE a 4 porte
+* CX6-Dx 40/100 GbE a 2 porte
+* CX7 40/100 GbE a 2 porte
+* CX7 a 2 porte 40/100/200
+
+
+Le schede CX7 10/25 GbE a 4 porte, CX6-Dx 40/100 GbE a 2 porte e CX7 40/100 GbE a 2 porte sono supportate sulle seguenti piattaforme AFF:
+
+* AFF A20
+* AFF A30
+* AFF A50
+* AFF C30
+* AFF C60
+
+
+Le schede CX6-Dx 40/100 GbE a 4 porte, CX7 40/100 GbE a 2 porte e CX7 40/100/200 GbE a 2 porte sono supportate sulle seguenti piattaforme AFF e FAS:
+
+* AFF A70-90
+* AFF C80
+* FAS70
+* FAS90
+* AFF A1K
+
+
+.Prima di iniziare
+* Devi essere un amministratore ONTAP presso `admin` livello di privilegio per eseguire le seguenti attività.
+* Tutti i nodi devono eseguire ONTAP 9.19.1 o versioni successive.
+
+
+
+
+== Abilita o disabilita l'offload TLS
+
+.Fasi
+. Visualizza lo stato attuale dell'offload TLS:
++
+[source, cli]
+----
+security config show
+----
++
+Questo comando visualizza l'impostazione di offload TLS a livello di cluster:
+
++
+[listing]
+----
+cluster1::*> security config show
+Cluster    Supported Offload
+FIPS Mode  Protocols Enabled Supported Cipher Suites
+---------- --------- ------- --------------------------------------------------
+false      TLSv1.3,  false   TLS_RSA_WITH_AES_128_CCM,
+           TLSv1.2           TLS_RSA_WITH_AES_128_CCM_8,
+                             TLS_RSA_WITH_AES_128_GCM_SHA256,
+                             TLS_RSA_WITH_AES_128_CBC_SHA,
+                             TLS_RSA_WITH_AES_128_CBC_SHA256,
+                             TLS_RSA_WITH_AES_256_CCM,
+[...]
+----
+. Abilita o disabilita l'offload TLS:
++
+[source, cli]
+----
+security config modify -is-offload-enabled {true|false}
+----
++
+Questo comando abilita o disabilita l'offload hardware per la fase dati TLS sulle nuove connessioni. Le connessioni esistenti create prima dell'abilitazione della funzione di offload TLS non vengono sottoposte a offload finché non vengono rimosse e ricreate.
+
++
+Quando si abilita l'offload TLS, è necessario specificare l'interfaccia:
+
++
+[source, cli]
+----
+security config modify -is-offload-enabled true -interface SSL
+----
+
+
+.Informazioni correlate
+* link:https://docs.netapp.com/us-en/ontap-cli/security-config-show.html["security config show"^]
+* link:https://docs.netapp.com/us-en/ontap-cli/security-config-modify.html["security config modify"^]
+

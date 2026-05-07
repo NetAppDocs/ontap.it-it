@@ -1,0 +1,106 @@
+---
+permalink: san-config/configure-fc-ports-direct-attachment.html 
+sidebar: sidebar 
+keywords:  
+summary:  
+---
+= Configurare le porte FC di ONTAP per il collegamento diretto agli host FC e FC-NVMe
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.19.1, non è necessario uno switch FC per stabilire connessioni tra host FC e FC-NVMe e storage ONTAP. Gli host possono essere collegati direttamente alle porte dell'adattatore FC su sistemi AFF, ASA, ASA r2 e FAS. La possibilità di collegamento diretto può essere particolarmente utile in siti remoti e ambienti ibridi dove la semplicità è fondamentale. È necessario mettere la porta FC offline e modificarne la topologia prima di poterla collegare direttamente a un host.
+
+Le porte FC utilizzate nelle configurazioni a collegamento diretto presentano le seguenti limitazioni:
+
+* La porta può essere assegnata a una sola storage VM (SVM).
+* Dopo la configurazione per il collegamento diretto, alla porta può essere assegnata una sola interfaccia di rete (LIF).
+* La porta può supportare il protocollo FC o il protocollo FC-NVMe, ma non entrambi.
+
+
+.Prima di iniziare
+Devi essere un amministratore del cluster.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. In System Manager, selezionare *Rete > Porte FC*.
+. Seleziona image:icon_kabob.gif["icona di selezione"] accanto alla porta che desideri configurare per la connessione diretta e poi seleziona *Modifica topologia*.
+. Nella sezione *Topologia*, seleziona *Diretto* e poi seleziona *Voglio modificare la topologia e mettere la porta offline*.
+. Seleziona *Salva.*
+. Collegare il cavo della porta di destinazione direttamente all'initiator host.
+. Se disponi di un sistema ASA r2, segui link:https://docs.netapp.com/us-en/asa-r2/administer/manage-client-vm-access.html#create-a-lif-network-interface["questa procedura di System Manager"^] per creare un LIF. Se disponi di un sistema AFF, ASA o FAS, segui questi passaggi per creare un LIF:
++
+.. Seleziona *Rete > Interfacce* e poi seleziona image:icon_add.gif["aggiungi icona"].
+.. Selezionare il protocollo FC o NVMe/FC.
+.. Assegna un nome alla LIF oppure accetta il nome generato da ONTAP.
+.. Se è configurata almeno una sottorete, è possibile selezionare una sottorete per la LIF.
+.. Se non si seleziona una sottorete, è possibile specificare l'indirizzo IP e la maschera di sottorete per il dominio di broadcast.
+.. Selezionare la porta home dal dominio di broadcast.
++
+Il controllo della porta home viene visualizzato in base alla selezione del dominio di broadcast o della sottorete
+
+.. Selezionare *Salva*.
++
+La porta viene attivata automaticamente al momento della creazione del LIF.
+
+
+
+
+
+.Quali sono le prossime novità?
+In System Manager, selezionare *Network > FC ports* e quindi verificare che la *Topology* venga visualizzata come *Direct*.
+
+--
+.CLI
+--
+. Visualizza lo stato amministrativo e operativo del LIF utilizzato per la porta dell'adattatore:
++
+[source, cli]
+----
+network interface show -vserver <SVM_name>
+----
+. Portare l'adattatore offline:
++
+[source, cli]
+----
+network fcp adapter modify -node <node_name> -adapter <adapter_port> -status-admin down
+----
+. Rimuovere tutti i LIF dalla porta dell'adattatore:
++
+[source, cli]
+----
+network interface delete -vserver <SVM_name> -lif <lif_name>,<lif_name>
+----
+. Modifica la topologia della porta dell'adattatore in direct:
++
+[source, cli]
+----
+network fcp adapter modify -node <node_name> -adapter <adapter_port> -topology direct
+----
+. Collegare il cavo della porta di destinazione direttamente all'initiator host.
+. Creare una singola interfaccia LIF:
++
+[source, cli]
+----
+network interface create -vserver <SVM_name> -lif <lif_name> -data protocol fcp|fcp-nvme -home-node <node_name> -home-port <port_name>
+----
++
+La porta viene abilitata automaticamente dopo la creazione del LIF.
+
+. Verificare che la porta sia configurata per il collegamento diretto:
++
+[source, cli]
+----
+network fcp adapter show -fields topologies-supported
+----
++
+La topologia deve essere visualizzata come diretta.
+
+
+
+--
+====

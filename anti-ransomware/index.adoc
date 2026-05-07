@@ -16,9 +16,13 @@ summary: 'La protezione autonoma dal ransomware utilizza l"analisi del carico di
 
 
 [role="lead"]
-A partire da ONTAP 9.10.1, gli amministratori di ONTAP possono abilitare Autonomous Ransomware Protection (ARP) per eseguire l'analisi del carico di lavoro negli ambienti NAS (NFS e SMB) al fine di rilevare e segnalare in modo proattivo attività anomale che potrebbero indicare un attacco ransomware. A partire da ONTAP 9.17.1, ARP supporta anche i volumi a blocchi, inclusi i volumi SAN contenenti LUN o namespace NVMe, o i volumi NAS contenenti dischi virtuali di hypervisor come VMware. A partire da ONTAP 9.17.1P5, Hyper-V, KVM e OpenStack hypervisor sono anch'essi supportati, e ARP aggiunge una modalità di valutazione per i dischi virtuali contenuti nei volumi NAS (vedere <<Ambienti NAS e tipi di modalità>>). ARP è integrato direttamente in ONTAP, garantendo controllo e coordinamento integrati con le altre funzionalità di ONTAP. ARP opera in real-time, elaborando i dati man mano che vengono scritti o letti dal file system e rilevando e rispondendo rapidamente a potenziali attacchi ransomware.
+A partire da ONTAP 9.10.1, gli amministratori di ONTAP possono abilitare Autonomous Ransomware Protection (ARP) per eseguire l'analisi del carico di lavoro negli ambienti NAS (NFS e SMB) al fine di rilevare e segnalare in modo proattivo attività anomale che potrebbero indicare un attacco ransomware. ARP è integrato direttamente in ONTAP, garantendo controllo e coordinamento integrati con le altre funzionalità di ONTAP. ARP opera in real-time, elaborando i dati man mano che vengono scritti o letti dal file system e rilevando e rispondendo rapidamente a potenziali attacchi ransomware.
 
-ARP crea snapshot bloccati a intervalli regolari, oltre a quelli programmati, per una maggiore protezione. Gestisce in modo intelligente la durata di conservazione degli snapshot. Se non viene rilevata alcuna attività insolita, gli snapshot vengono rapidamente riciclati. Tuttavia, se viene rilevato un attacco, uno snapshot creato prima dell'inizio dell'attacco viene conservato per un periodo di tempo prolungato. Per ulteriori informazioni, comprese le modifiche aggiunte dalla versione ONTAP , vedere <<Snapshot ARP>>.
+ARP crea snapshot bloccati a intervalli regolari, oltre agli snapshot programmati. La conservazione degli snapshot viene regolata dinamicamente: gli snapshot vengono eliminati rapidamente quando non viene rilevata alcuna attività insolita, mentre gli snapshot acquisiti prima di un attacco rilevato vengono conservati più a lungo per consentire l'analisi e il ripristino.
+
+Per informazioni sul supporto del protocollo, l'idoneità del carico di lavoro e i requisiti specifici della versione, consultare link:use-cases-restrictions-concept.html["Casi d'uso e considerazioni relative ad ARP"].
+
+Per ulteriori informazioni sugli snapshot generati da ARP, comprese le modifiche aggiunte dalla versione di ONTAP, vedere <<Snapshot ARP>>.
 
 
 
@@ -227,9 +231,21 @@ La minaccia passa a moderata dopo che ONTAP esegue un report analitico per deter
 
 ARP crea un'istantanea quando vengono rilevati i primi segnali di un attacco. Viene quindi condotta un'analisi dettagliata per confermare o respingere il potenziale attacco.  Poiché gli snapshot ARP vengono creati in modo proattivo, ancor prima che un attacco sia completamente confermato, potrebbero anche essere generati a intervalli regolari per determinate applicazioni legittime. La presenza di questi snapshot non deve essere considerata un'anomalia.  Se un attacco viene confermato, la probabilità di attacco aumenta a `Moderate` e viene generata una notifica di attacco.
 
-A partire da ONTAP 9.17.1, gli snapshot ARP vengono generati a intervalli regolari sia per i volumi NAS che SAN, nonché in risposta ad anomalie rilevate. ONTAP antepone un nome allo snapshot ARP per renderlo facilmente identificabile.
+.Differenze tra le snapshot ARP in base alla versione
+* *Modifica le impostazioni di conservazione*: A partire da ONTAP 9.11.1, è possibile link:modify-automatic-snapshot-options-task.html["modificare le impostazioni di conservazione per gli snapshot"].
+* *Intervalli e risposta alle anomalie*: A partire da ONTAP 9.17.1, gli snapshot ARP vengono generati a intervalli regolari sia per i volumi NAS che SAN, nonché in risposta alle anomalie rilevate, che è sempre stata la risposta standard. ONTAP antepone un nome allo snapshot ARP per renderlo facilmente identificabile.
+* *SnapMirror sincronizzazione sincrona e attiva*: A partire da ONTAP 9.19.1 RC, gli snapshot ARP creati per i volumi che partecipano a SnapMirror sincronizzazione sincrona o SnapMirror active sync relazioni seguono queste regole aggiuntive:
++
+** Gli snapshot ARP vengono creati e conservati sul volume primario.
+** Gli snapshot ARP non vengono replicati sul volume secondario come parte della SnapMirror sincronizzazione sincrona o SnapMirror active sync. È necessario link:enable-task.html["riattivare ARP"] sul volume di ripristino dopo il failover.
 
-A partire da ONTAP 9.11.1, è possibile modificare le impostazioni di conservazione. Per ulteriori informazioni, consultare link:modify-automatic-shapshot-options-task.html["Modificare le opzioni per le istantanee"] .
+
+
+
+
+NOTE: Il ripristino a livello di volume (`volume snapshot restore` su SnapMirror synchronous o SnapMirror active sync volumi SAN potrebbe richiedere che tu sospenda temporaneamente o interrompa la relazione di SnapMirror synchronous o SnapMirror active sync. In molti casi, puoi evitare di interrompere SnapMirror synchronous o SnapMirror active sync utilizzando FlexClone o operazioni di ripristino a livello di file da ARP o altri snapshot sul volume primario.
+
+link:use-cases-restrictions-concept.html#snapmirror["Scopri di più sul supporto per SnapMirror sincrono e SnapMirror active sync"].
 
 La tabella seguente riassume le differenze degli snapshot ARP in base alla versione.
 

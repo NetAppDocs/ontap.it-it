@@ -25,9 +25,20 @@ Per ripristinare da uno snapshot diverso da  `Anti_ransomware` snapshot dopo che
 
 Se non viene segnalato alcun attacco al sistema, è necessario prima ripristinare dal  `Anti_ransomware` snapshot, quindi completa un successivo ripristino del volume dallo snapshot scelto.
 
+.Maggiori informazioni sulle relazioni SnapMirror e sugli snapshot ARP
+[%collapsible]
+====
+Se il volume protetto da ARP fa parte di una relazione SnapMirror , sarà necessario aggiornare manualmente tutte le copie mirror del volume dopo averlo ripristinato da uno snapshot. Se si salta questo passaggio, le copie mirror potrebbero diventare inutilizzabili e dover essere eliminate e ricreate.
 
-NOTE: Se il volume protetto da ARP fa parte di una relazione SnapMirror , sarà necessario aggiornare manualmente tutte le copie mirror del volume dopo averlo ripristinato da uno snapshot. Se si salta questo passaggio, le copie mirror potrebbero diventare inutilizzabili e dover essere eliminate e ricreate.
+Se il volume protetto da ARP fa parte di una relazione di sincronizzazione sincrona SnapMirror o di sincronizzazione attiva SnapMirror in ONTAP 9.19.1 RC, si applicano ulteriori considerazioni relative al ripristino:
 
+* Gli snapshot ARP vengono creati e conservati solo sul volume primario. Non vengono replicati sul volume secondario come parte di SnapMirror sincrono o SnapMirror active sync.
+* Lo stato di abilitazione ARP non viene replicato durante il failover. È necessario link:enable-task.html["riattivare ARP"] sul volume di ripristino dopo il failover.
+* Il ripristino a livello di volume (`volume snapshot restore` su volumi SnapMirror sincroni o SnapMirror active sync potrebbe richiedere che tu sospenda temporaneamente o interrompa la relazione SnapMirror sincrona o SnapMirror active sync.
+* In molti casi, è possibile evitare di interrompere la sincronizzazione sincrona di SnapMirror o la sincronizzazione attiva di SnapMirror utilizzando FlexClone o operazioni di ripristino a livello di file da ARP o da altre snapshot sul volume primario.
+
+
+====
 .Prima di iniziare
 link:respond-abnormal-task.html["Devi contrassegnare l'attacco come potenziale attacco ransomware"] prima di ripristinare i dati da uno snapshot.
 
@@ -52,6 +63,9 @@ Per ripristinare i dati, è possibile utilizzare Gestione di sistema o l'interfa
 Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot Copies*.
 
 . Selezionare image:icon_kabob.gif["Icona delle opzioni di menu"] accanto allo snapshot che si desidera ripristinare, quindi *Restore*.
++
+Se il volume fa parte di una relazione SAN SnapMirror sincrona o SnapMirror active sync in ONTAP 9.19.1 RC e si prevede di eseguire un ripristino a livello di volume, seguire la documentazione di SnapMirror synchronous o SnapMirror active sync per mettere in quiescenza o link:../data-protection/make-destination-volume-writeable-task.html["rompere la relazione di protezione"] prima di avviare il ripristino, quindi ristabilire la protezione al termine del ripristino.
+
 
 
 .Ripristinare se non è stato identificato un attacco di sistema
@@ -71,7 +85,7 @@ Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot C
 Per eseguire il ripristino dallo snapshot ARP, passare direttamente al punto 2. Per ripristinare i dati dalle istantanee precedenti, è necessario rilasciare il blocco sullo snapshot ARP.
 
 
-NOTE: È necessario rilasciare il SnapLock anti-ransomware prima del ripristino da snapshot precedenti, se si utilizza il `volume snapshot restore` comando come descritto di seguito. Se i dati vengono ripristinati utilizzando FlexClone, Ripristino snap file singolo o altri metodi, ciò non è necessario.
+NOTE: È necessario rilasciare l'anti-ransomware SnapLock prima di ripristinare da snapshot precedenti solo se si utilizza il  `volume snapshot restore` comando come descritto di seguito. Se si ripristinano i dati utilizzando FlexClone, single-file SnapRestore o altri metodi, ciò non è necessario.
 
 . Contrassegna l'attacco come potenziale attacco ransomware (`-false-positive false` ) e cancellare i file sospetti (`clear-suspect` ):
 +
@@ -88,6 +102,7 @@ Utilizzare uno dei seguenti parametri per identificare le estensioni:
 ** `[-start-time _date_time_ -end-time _date_time_]` : Ora di inizio e di fine dell'intervallo di file da cancellare, nel formato "MM/GG/AAAA HH:MM:SS".
 
 
+. Se il volume fa parte di una relazione SAN SnapMirror sincrona o SnapMirror active sync in ONTAP 9.19.1 RC e si intende eseguire un ripristino a livello di volume con  `volume snapshot restore`, mettere in quiescenza o link:../data-protection/make-destination-volume-writeable-task.html["interrompere la relazione di sincronizzazione SnapMirror sincrona o di sincronizzazione attiva SnapMirror"] secondo la documentazione SnapMirror synchronous o SnapMirror active sync prima di eseguire l'operazione di ripristino.
 . Elencare gli snapshot in un volume:
 +
 [source, cli]
