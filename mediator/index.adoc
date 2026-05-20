@@ -14,20 +14,21 @@ summary: 'Per installare ONTAP Mediator, è necessario assicurarsi che tutti i p
 Per installare o aggiornare ONTAP Mediator, è necessario soddisfare tutti i prerequisiti, scaricare il pacchetto di installazione ed eseguire il programma di installazione sull'host.
 
 * A partire da ONTAP 9,8, è possibile utilizzare qualsiasi versione di ONTAP Mediator per monitorare una relazione di sincronizzazione attiva di SnapMirror.
-* È possibile utilizzare qualsiasi versione di ONTAP Mediator per monitorare una configurazione IP MetroCluster.
+* Quando si configura ONTAP Mediator con il protocollo iSCSI, è possibile utilizzare qualsiasi versione di ONTAP Mediator per monitorare una configurazione IP MetroCluster.
+* A partire da ONTAP 9.19.1 e ONTAP Mediator 1.12, è possibile configurare un ONTAP Mediator che utilizza HTTPS per la comunicazione per monitorare la configurazione IP MetroCluster.
 
 
 
 
 == Considerazioni sull'installazione e l'aggiornamento
 
-Esaminate questi punti prima di aggiornare o installare ONTAP Mediator.
+Esaminare le seguenti informazioni prima di aggiornare o installare ONTAP Mediator.
 
 
 NOTE: ONTAP Mediator 1.8 e versioni precedenti non sono compatibili con la modalità FIPS di Red Hat Enterprise Linux (RHEL) e ne impediscono l'installazione corretta.  È possibile verificare se la modalità FIPS è abilitata utilizzando `fips-mode-setup --check` comando.  È possibile disattivare la modalità FIPS utilizzando `fips-modesetup --disable` comando. Riavviare dopo aver disabilitato la modalità FIPS per installare correttamente ONTAP Mediator 1.8 o versioni precedenti.
 
 * Dovresti aggiornare ONTAP Mediator all'ultima versione.  Le versioni precedenti funzionano ancora con tutte le release ONTAP , ma le versioni più recenti includono patch di sicurezza per componenti di terze parti.
-* Quando si esegue l'aggiornamento a una nuova versione di ONTAP Mediator, il programma di installazione esegue automaticamente l'aggiornamento alla versione SCST consigliata, a meno che non sia disponibile una versione superiore. Per istruzioni sull'installazione manuale di una versione SCST superiore, consultare link:manage-task.html["Gestione di ONTAP Mediator"]. Per le versioni supportate, consultare il link:whats-new-concept.html#scst-support-matrix["Matrice di supporto SCST"].
+* Quando si esegue l'aggiornamento a una nuova versione di ONTAP Mediator che include il pacchetto SCST, il programma di installazione esegue automaticamente l'aggiornamento alla versione SCST consigliata, a meno che non sia disponibile una versione superiore. Per istruzioni sull'installazione manuale di una versione SCST superiore, consultare link:manage-task.html["Gestione di ONTAP Mediator"]. Per le versioni supportate, consultare il link:whats-new-concept.html#scst-support-matrix["Matrice di supporto SCST"].
 
 
 [NOTE]
@@ -43,7 +44,36 @@ NOTE: ONTAP Mediator 1.8 e versioni precedenti non sono compatibili con la modal
 
 
 
-=== Requisiti dell'host
+=== Opzioni di installazione HTTPS e iSCSI per ONTAP Mediator
+
+* In ONTAP Mediator, il pacchetto SCST viene utilizzato per fornire iSCSI per la comunicazione in configurazioni IP MetroCluster. Il pacchetto SCST è un modulo del kernel che viene compilato durante l'installazione. A partire da ONTAP Mediator 1.12, è possibile configurare un ONTAP Mediator che utilizza HTTPS anziché iSCSI per monitorare una configurazione IP MetroCluster.
+
+
+[CAUTION]
+====
+* Quando ONTAP Mediator è configurato con il protocollo HTTPS nelle configurazioni IP di MetroCluster, una singola istanza di ONTAP Mediator può monitorare una sola configurazione IP di MetroCluster. Il monitoraggio simultaneo di più configurazioni IP MetroCluster non è supportato.
+* Se è necessario configurare ONTAP Mediator con HTTPS per monitorare più configurazioni IP di MetroCluster, è necessario configurare istanze separate di ONTAP Mediator per ciascuna configurazione IP di MetroCluster. È necessario valutare attentamente i requisiti per il proprio ambiente IP di MetroCluster prima di scegliere di configurare ONTAP Mediator con HTTPS per MetroCluster IP.
+
+
+====
+* Quando si installa o si aggiorna a ONTAP Mediator 1.12 o versioni successive, si ha la possibilità di installare ONTAP Mediator con supporto iSCSI e HTTPS, oppure con supporto solo per HTTPS. Se si sceglie di installare ONTAP Mediator con supporto solo per HTTPS, il pacchetto SCST non viene installato.
+* Se si esegue l'aggiornamento da ONTAP Mediator 1.11 o versioni precedenti con SCST installato e si sceglie l'opzione solo HTTPS durante l'aggiornamento, il pacchetto SCST viene disinstallato e la nuova versione di ONTAP Mediator non contiene il pacchetto SCST.
+* L'installazione di ONTAP Mediator con supporto solo per HTTPS è supportata nei seguenti casi d'uso:
++
+** Hai intenzione di utilizzare ONTAP Mediator esclusivamente per monitorare i tuoi SnapMirror cluster di sincronizzazione attivi.
+** Si prevede di configurare ONTAP Mediator con HTTPS per monitorare una singola configurazione IP di MetroCluster per ogni istanza di ONTAP Mediator.
+
+
+* ONTAP Mediator deve essere installato con il supporto per iSCSI e HTTPS nel seguente scenario:
++
+** Si prevede di configurare ONTAP Mediator con iSCSI per monitorare una o più configurazioni IP MetroCluster.
+
+
+
+
+
+
+== Requisiti dell'host
 
 Attenersi a questi requisiti durante l'installazione di RHEL o Rocky Linux e la configurazione dei repository associati.
 
@@ -64,9 +94,36 @@ Per ulteriori informazioni, consultate la documentazione di Red Hat Subscription
 ====
 
 
-.Requisiti di rete
-Assicurarsi che le seguenti porte siano disponibili e non utilizzate per ONTAP Mediator:
 
+
+== Requisiti di firewall e networking
+
+ONTAP Mediator utilizza diverse porte per comunicare con servizi specifici.
+
+* Se si utilizza un firewall di terze parti:
++
+** L'accesso HTTPS deve essere abilitato.
+** Deve essere configurato per consentire l'accesso sulle porte 31784 e 3260.
++
+Quando si utilizza il firewall predefinito di Red Hat o CentOS, il firewall viene configurato automaticamente durante l'installazione di Mediator.
+
+
+
+* Per gli host Linux senza accesso a Internet, assicurarsi che i pacchetti richiesti siano disponibili in un repository locale.
++
+Se si utilizza il protocollo LACP (link Aggregation Control Protocol) in ambiente Linux, configurare il kernel e impostare `sysctl net.ipv4.conf.all.arp_ignore` su `2`.
+
+
+
+La tabella seguente elenca le porte che è necessario consentire nel firewall:
+
+[NOTE]
+====
+* La porta iSCSI è necessaria solo in una configurazione IP MetroCluster.
+* La porta 22/tcp non è necessaria per il normale funzionamento, ma è possibile abilitarla temporaneamente per la manutenzione e disabilitarla quando la sessione di manutenzione è terminata.
+
+
+====
 |===
 
 
@@ -111,16 +168,13 @@ Target iSCSI del mediatore ONTAP
 (Necessario per le configurazioni IP MetroCluster ) Connessione dati iSCSI per le cassette postali
 
 |===
-Per i clienti SMBC, ONTAP non richiede che la porta 3260 sia abilitata o connessa.
 
-* Se si utilizza un firewall di terze parti, vedere link:https://docs.netapp.com/us-en/ontap-metrocluster/install-ip/concept_mediator_requirements.html#firewall-requirements-for-ontap-mediator["Requisiti del firewall per ONTAP Mediator"^].
-* Per gli host Linux senza accesso a Internet, assicurarsi che i pacchetti richiesti siano disponibili in un repository locale.
-+
-Se si utilizza il protocollo LACP (link Aggregation Control Protocol) in ambiente Linux, configurare il kernel e impostare `sysctl net.ipv4.conf.all.arp_ignore` su `2`.
+NOTE: Per un SnapMirror active sync o MetroCluster IP ONTAP Mediator che utilizza HTTPS per la comunicazione, ONTAP non richiede che la porta 3260 sia abilitata o connessa.
 
 
 
-.Requisiti del sistema operativo
+== Requisiti del sistema operativo
+
 Il sistema operativo deve soddisfare i seguenti requisiti:
 
 * installazione fisica a 64 bit o macchina virtuale
@@ -136,6 +190,21 @@ La tabella seguente mostra i sistemi operativi supportati per ciascuna versione 
 
 
 | Versione del mediatore ONTAP | Versioni Linux supportate 
+
+
+ a| 
+1,12
+ a| 
+* Red Hat Enterprise Linux
++
+** Compatibile: 10.1 e 9.7 ^1^
+** Consigliato: 10.2, 10.0, 9.8, 9.6, 9.4 e 8.10
+
+
+* Rocky Linux 10.2, 9.8 e 8.10
+* Oracle Linux 10.1 e 9.7
+
+
 
 
  a| 
@@ -331,7 +400,12 @@ Si consiglia un certificato SSL valido.
 
 
 
-=== Considerazioni sull'aggiornamento del sistema operativo e sulla compatibilità del kernel
+=== Requisiti di aggiornamento del sistema operativo e di compatibilità del kernel
+
+I seguenti requisiti si applicano quando il pacchetto SCST viene installato con ONTAP Mediator.
+
+
+NOTE: Se hai installato ONTAP Mediator 1.12 o versioni successive con supporto solo per HTTPS, il pacchetto SCST non è installato, quindi i requisiti di compatibilità del kernel non si applicano.
 
 * È possibile aggiornare tutti i pacchetti di librerie, ad eccezione del kernel, ma potrebbe essere necessario riavviare il sistema per applicare le modifiche in ONTAP Mediator.  Pianificare un periodo di inattività se è necessario riavviare.
 * Dovresti mantenere aggiornato il kernel del sistema operativo.  Aggiorna il kernel core a una versione supportata elencata inlink:whats-new-concept.html#scst-support-matrix["Matrice della versione di ONTAP Mediator"] .  È necessario riavviare il sistema, quindi pianificare una finestra di manutenzione per l'interruzione.
@@ -345,7 +419,7 @@ Si consiglia un certificato SSL valido.
 [NOTE]
 ====
 * La versione del kernel deve corrispondere alla versione del sistema operativo.
-* Non aggiornare il kernel oltre la versione del sistema operativo supportata per la tua release di ONTAP Mediator, poiché il modulo SCST testato probabilmente non funzionerà.
+* Non aggiornare il kernel oltre la versione del sistema operativo supportata per la tua release di ONTAP Mediator, poiché il modulo SCST testato potrebbe non funzionare.
 
 
 ====
@@ -356,7 +430,9 @@ Si consiglia un certificato SSL valido.
 ONTAP Mediator può essere installato su un sistema con o senza UEFI Secure Boot abilitato.
 
 .A proposito di questa attività
-È possibile scegliere di disattivare l'avvio protetto UEFI prima di installare ONTAP Mediator se non è necessario o se si stanno risolvendo i problemi di installazione di ONTAP Mediator. Disattivare l'opzione UEFI Secure Boot dalle impostazioni del computer.
+* È possibile scegliere di disattivare l'avvio protetto UEFI prima di installare ONTAP Mediator se non è necessario o se si stanno risolvendo i problemi di installazione di ONTAP Mediator. Disattivare l'opzione UEFI Secure Boot dalle impostazioni del computer.
+* Se hai installato ONTAP Mediator 1.12 o versioni successive con supporto solo per HTTPS, il pacchetto SCST non è installato e puoi saltare questo passaggio.
+
 
 [NOTE]
 ====
