@@ -11,15 +11,23 @@ summary: Scopri le notifiche ARP in ONTAP e determina se si sta verificando un a
 
 
 [role="lead"]
-Quando la protezione ransomware autonoma (ARP) rileva attività anomale in un volume protetto, emette un avviso. È necessario valutare la notifica per determinare se l'attività è accettabile (falso positivo) o se un attacco sembra dannoso. Dopo aver categorizzato l'attacco, è possibile eliminare l'avviso e gli avvisi relativi ai file sospetti.
+Quando Autonomous Ransomware Protection (ARP) rileva attività anomale in un volume protetto, emette un avviso. È necessario valutare la notifica per determinare se l'attività è accettabile (falso positivo) o se si tratta di un attacco potenzialmente dannoso. Dopo aver classificato l'attacco, è possibile eliminare l'avviso e le notifiche relative ad attività anomale.
 
-Quando si categorizza un attacco, gli snapshot ARP vengono conservati per un periodo di tempo abbreviato avviato dall'operazione di categorizzazione (ONTAP 9.16.1 e versioni successive) oppure eliminati immediatamente (ONTAP 9.15.1 e versioni precedenti).
+Quando si categorizza un attacco, gli snapshot ARP vengono conservati per un periodo abbreviato avviato dall'operazione di categorizzazione (ONTAP 9.16.1 e versioni successive), oppure eliminati immediatamente quando si cancella l'evento sospetto (ONTAP 9.15.1 e versioni precedenti).
 
 
 NOTE: A partire da ONTAP 9.11.1, è possibile modificare link:modify-automatic-snapshot-options-task.html["impostazioni di conservazione"] per snapshot ARP.
 
 .A proposito di questa attività
-ARP visualizza un elenco di file sospetti quando rileva una qualsiasi combinazione di elevata entropia dei dati, attività anomala del volume con crittografia dei dati ed estensioni di file insolite. A partire da ONTAP 9.17.1, sia per gli ambienti NAS che SAN, i dettagli sui picchi di entropia vengono riportati anche nella pagina Anti-ransomware di System Manager.
+Per i volumi NAS, ARP visualizza un elenco di file sospetti quando rileva una qualsiasi combinazione di elevata entropia dei dati, attività anomala del volume con crittografia dei dati ed estensioni di file insolite.
+
+A partire da ONTAP 9.17.1:
+
+* *Per i volumi NAS*: ARP continua a fornire file e tipi di file sospetti.
+* *Per i volumi SAN* (volumi che contengono LUN o namespace NVMe): ARP valuta l'entropia solo a livello di volume. ONTAP non visualizza i singoli file all'interno del LUN o del namespace, pertanto gli elenchi di file sospetti e i tipi di file *non* sono disponibili. Invece, ARP segnala i picchi a livello di volume nella percentuale di crittografia (picchi di entropia).
+
+
+I dettagli relativi ai picchi di entropia per i volumi NAS e SAN sono riportati nella pagina Anti-ransomware di System Manager.
 
 Quando viene emessa una notifica di avviso ARP, rispondere designando l'attività in uno dei due modi:
 
@@ -35,89 +43,51 @@ Il tipo di file identificato o il picco di entropia sono inattesi nel tuo carico
 
 Il monitoraggio normale riprende dopo aver aggiornato la tua decisione e aver cancellato le notifiche ARP. ARP registra la tua valutazione nel profilo di valutazione delle minacce, utilizzando la tua scelta per monitorare le attività successive sui file.
 
-In caso di attacco sospetto, è necessario determinare se si tratta di un attacco, rispondere al caso in cui si tratti e ripristinare i dati protetti prima di cancellare le notifiche. link:index.html#how-to-recover-data-in-ontap-after-a-ransomware-attack["Scopri di più su come eseguire il ripristino da un attacco ransomware"].
-
-
-NOTE: Se si ripristina un intero volume, non vi sono avvisi da cancellare.
+In caso di sospetto attacco, è necessario stabilire se si tratta effettivamente di un attacco, rispondere in caso affermativo e quindi eliminare le notifiche e ripristinare i dati nell'ordine richiesto dal metodo di recovery e dalla versione di ONTAP. link:index.html#how-to-recover-data-in-ontap-after-a-ransomware-attack["Scopri di più su come eseguire il ripristino da un attacco ransomware"].
 
 .Prima di iniziare
 ARP deve proteggere attivamente un volume e non essere in modalità di apprendimento o valutazione.
 
 .Fasi
-È possibile utilizzare System Manager o l'interfaccia CLI di ONTAP per rispondere a attività anomale.
+Segui questi passaggi quando devi classificare un'attività anomala:
+
+. <<Esaminare i dettagli dell'attività anomala,Esaminare i dettagli dell'attività anomala>>
+. <<Comprendi il comportamento e le approvazioni delle Snapshot quando si cancella un evento sospetto,Comprendi il comportamento e le approvazioni delle Snapshot quando si cancella un evento sospetto>>
+. Effettuare una delle seguenti operazioni:
++
+** <<Classificare come falso positivo e riprendere il monitoraggio,Classificare come falso positivo e riprendere il monitoraggio>>
+** <<Classificare come potenziale attacco ransomware e recuperare i dati,Classificare come potenziale attacco ransomware, recuperare i dati e finalizzare>>
+
+
+
+
+Se devi ripristinare i dati, segui i passaggi descritti in link:recover-data-task.html["Ripristina i dati dagli snapshot ONTAP ARP dopo un attacco ransomware"].
+
+
+
+== Esaminare i dettagli dell'attività anomala
+
+È possibile utilizzare System Manager o la CLI di ONTAP per esaminare i dettagli degli avvisi ARP prima di scegliere un flusso di risposta.
 
 [role="tabbed-block"]
 ====
 .System Manager
 --
-. Quando ricevi una notifica di "attività anomala", segui il link. In alternativa, accedi alla scheda *Sicurezza* della panoramica *Volumi*.
+. Quando ricevi una notifica di "attività anomala", segui il link. In alternativa, vai su *Archiviazione > Volumi*, individua un volume interessato e seleziona la scheda *Sicurezza*.
 +
-Gli avvisi vengono visualizzati nel riquadro *Panoramica* del menu *Eventi*.
+Gli avvisi vengono visualizzati nel riquadro *Panoramica* del menu *Eventi* della dashboard di System Manager.
 
-. Nella scheda *Sicurezza*, esaminare il report sui tipi di file sospetti o sui picchi di entropia.
+. Nella scheda *Sicurezza*, esamina i dettagli dell'attività anomala:
 +
-** Per i file sospetti, esaminare ogni tipo di file nella finestra di dialogo *Tipi di file sospetti* e contrassegnare ciascuno di essi singolarmente.
-** Per i picchi di entropia, esaminare il report sull'entropia.
+** Per i volumi NAS, consultare il report *Tipi di file sospetti*. La finestra di dialogo *Tipi di file sospetti* mostra le estensioni dei file e il numero di file che ARP ha identificato.
+** Per entrambi i volumi NAS e SAN, esaminare il report dei picchi di entropia, che mostra l'intervallo di tempo, la durata, la quantità di dati scritti e i valori di entropia.
 
 
-. Registra la tua risposta:
-+
-[cols="25,75"]
-|===
-
-
-| Se selezioni questo valore... | Eseguire questa azione... 
-
-
- a| 
-Falso positivo
- a| 
-.. Effettuare una delle seguenti operazioni:
-+
-*** Per gli avvisi relativi al tipo di file, selezionare *Aggiorna e cancella i tipi di file sospetti*.
-*** Per i picchi di entropia, seleziona *Segnala come falso positivo*.
-+
-Queste azioni cancellano gli avvisi relativi a file o attività sospette. ARP riprende quindi il normale monitoraggio del volume. Per ARP/AI in ONTAP 9.16.1 e versioni successive, gli snapshot ARP vengono eliminati automaticamente dopo un periodo di conservazione abbreviato attivato dall'operazione di categorizzazione. Per ONTAP 9.15.1 e versioni precedenti, gli snapshot ARP correlati vengono eliminati automaticamente dopo la cancellazione dei tipi di file sospetti.
-
-+
-
-NOTE: A partire da ONTAP 9.13.1, se si utilizza MAV per proteggere le impostazioni ARP, l'operazione clear-suspect richiede di ottenere l'approvazione di uno o più amministratori aggiuntivi. link:../multi-admin-verify/request-operation-task.html["L'approvazione deve essere ricevuta da tutti gli amministratori"] associato al gruppo di approvazione MAV, altrimenti l'operazione non riuscirà.
-
-
-
-
-
-
-
- a| 
-Potenziale attacco ransomware
- a| 
-.. Rispondere all'attacco:
-+
-*** Per gli avvisi sul tipo di file, contrassegna i file selezionati come *Potenziale attacco ransomware* e link:recover-data-task.html["ripristinare i dati protetti"] .
-*** Per i picchi di entropia che indicano un attacco, seleziona *Segna come potenziale attacco ransomware* e link:recover-data-task.html["ripristinare i dati protetti"] .
-
-
-.. Una volta completato il ripristino dei dati, registra la tua decisione e riprendi il normale monitoraggio ARP:
-+
-*** Per gli avvisi relativi al tipo di file, selezionare *Aggiorna e cancella i tipi di file sospetti*.
-*** Per i picchi di entropia, seleziona *Segnala come potenziale attacco ransomware* e seleziona *Salva e ignora*.
-
-
-
-
-
-NOTE: Se hai ripristinato un intero volume, non ci sono avvisi sui tipi di file sospetti da cancellare.
-
-La registrazione della decisione cancella il report di attacco. Per ARP/AI in ONTAP 9.16.1 e versioni successive, gli snapshot ARP vengono eliminati automaticamente dopo un periodo di conservazione abbreviato attivato dall'operazione di categorizzazione. Per ONTAP 9.15.1 e versioni precedenti, dopo il ripristino di un volume, gli snapshot ARP vengono eliminati automaticamente.
-
-|===
 
 
 --
 .CLI
 --
-.Verificare l'attacco
 . Quando ricevi una notifica di un attacco ransomware sospetto, verifica l'ora e la gravità dell'attacco:
 +
 [source, cli]
@@ -145,7 +115,159 @@ Attack Detected By: encryption_percentage_analysis
 ----
 event log show -message-name callhome.arw.activity.seen
 ----
-. Genera un report di attacco e specifica dove salvarlo:
+. (Opzionale, NAS e SAN) Visualizza i picchi di entropia rilevati di recente sul volume:
++
+[source, cli]
+----
+security anti-ransomware volume entropy-stat show-recent-high-encryption-stat -vserver <svm_name> -volume <vol_name>
+----
++
+Questo comando riassume gli intervalli di tempo in cui ONTAP ha rilevato un'elevata percentuale di crittografia (picco di entropia). Si applica sia ai volumi NAS che SAN.
+
+. (Facoltativo) Visualizza un istogramma della percentuale di crittografia nel tempo:
++
+[source, cli]
+----
+security anti-ransomware volume entropy-stat show-encryption-percentage-histogram -vserver <svm_name> -volume <vol_name>
+----
+
+
+--
+====
+
+
+== Comprendi il comportamento e le approvazioni delle Snapshot quando si cancella un evento sospetto
+
+* Per `volume snapshot restore` ONTAP 9.16.1 e versioni successive, elimina prima l'evento sospetto e poi esegui il ripristino. Dopo aver eliminato i file sospetti, gli snapshot ARP vengono conservati in base a come categorizzi l'attività: 7 giorni (impostazione predefinita) se contrassegni l'attività come potenziale attacco ransomware, oppure 24 ore se la contrassegni come falso positivo. L'eliminazione preliminare non rimuove il target di ripristino. Inoltre, l'opzione clear-suspect non è più disponibile dopo un ripristino del volume, quindi è necessario eliminare prima di ripristinare.
+* Per `volume snapshot restore` le versioni di ONTAP 9.15.1 e precedenti, eseguire prima il ripristino e poi cancellare l'evento sospetto. Gli snapshot ARP vengono eliminati immediatamente quando si cancellano i file sospetti, quindi è necessario completare il ripristino prima della cancellazione per evitare di perdere lo snapshot prima che l'operazione di ripristino possa essere eseguita.
+* Per i metodi di recovery diversi da  `volume snapshot restore` (ad esempio, FlexClone o SnapRestore a file singolo), eseguire prima il recovery di dati e poi cancellare l'evento sospetto. Questi metodi non influiscono sulla disponibilità dell'opzione clear-suspect.
+* A partire da ONTAP 9.13.1, se si utilizza MAV per proteggere le impostazioni ARP, l' `clear-suspect`operazione può richiedere approvazioni aggiuntive. link:../multi-admin-verify/request-operation-task.html["L'approvazione deve essere ricevuta da tutti gli amministratori"]associate al gruppo di approvazione MAV o l'operazione non riuscirà.
+
+
+
+
+== Classificare come falso positivo e riprendere il monitoraggio
+
+Utilizzare questo flusso quando il tipo di file identificato o il picco di entropia sono _previsti_ per il carico di lavoro.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Registra la tua risposta:
++
+** Per gli avvisi relativi ai tipi di file NAS, selezionare i file interessati, scegliere *Segna come falso positivo* e quindi scegliere *Aggiorna e cancella i tipi di file sospetti*.
+** Per i picchi di entropia (NAS e SAN), selezionare *Segna come falso positivo* e quindi selezionare *Salva e ignora*.
+
+
+
+
+Queste azioni eliminano gli avvisi relativi a file sospetti (NAS) o attività anomale (NAS e SAN). ARP riprende quindi il normale monitoraggio del volume.
+
+--
+.CLI
+--
+. Esegui uno dei seguenti comandi per registrare la tua decisione e riprendere il normale monitoraggio di Autonomous Ransomware Protection:
++
+** Per le estensioni di file NAS:
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension_identifiers>] -false-positive true
+----
++
+Utilizzare il seguente parametro facoltativo per identificare come falsi positivi solo estensioni specifiche: `[-extension <text>, ... ]`
+
+** Per i picchi di entropia (NAS e SAN):
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive true
+----
++
+Per i volumi SAN, questo è l'unico metodo supportato per classificare le attività anomale; non sono disponibili elenchi di file sospetti o estensioni di file.
+
+
+
+. A partire da ONTAP 9.18.1, è possibile determinare lo stato dell'operazione  `clear-suspect`:
++
+[source, cli]
+----
+security anti-ransomware volume show -clear-suspect-status -volume <vol_name> -vserver <svm_name>
+----
+
+
+--
+====
+
+
+== Classificare come potenziale attacco ransomware e recuperare i dati
+
+Utilizzare questo flusso quando il tipo di file identificato o il picco di entropia sono _inaspettati_ per il carico di lavoro.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Classifica l'attività:
++
+** Per gli avvisi relativi ai tipi di file NAS, contrassegna i file selezionati come *Potenziale attacco ransomware*.
+** Per i picchi di entropia (NAS e SAN), selezionare *Segna come potenziale attacco ransomware*.
+
+
+. Prima di recuperare i dati, dovresti considerare il tuo link:recover-data-task.html#choose-a-recovery-method["opzioni del metodo di recupero"]. Quindi esegui una delle seguenti operazioni:
++
+** *Se si prevede di ripristinare un volume con ONTAP 9.16.1 e versioni successive*: cancellare gli avvisi, quindi ripristinare il volume:
++
+... [[arp-snapshot-decision-sm-pre-restore]]Avvisi chiari per il potenziale attacco:
++
+**** Per gli avvisi relativi ai tipi di file NAS, selezionare *Aggiorna e cancella i tipi di file sospetti*.
+**** Per i picchi di entropia (NAS e SAN), selezionare *Salva e chiudi*.
++
+
+NOTE: Dopo aver eliminato i file sospetti, lo snapshot ARP viene conservato per 7 giorni (per impostazione predefinita). Se è necessario più tempo per recovery di dati, link:modify-automatic-snapshot-options-task.html["regolare le impostazioni dello snapshot ARP"] per aumentare il periodo di conservazione dello snapshot al valore desiderato. Dopo che il recovery di dati è stato completato, è possibile ridurre il periodo di conservazione.
+
+
+
+... Recupera i dati utilizzando link:recover-data-task.html["l'istantanea ARP più recente o un'istantanea precedente"].
+
+
+** *Se si prevede di ripristinare un volume con ONTAP 9.15.1 e versioni precedenti*: Ripristinare il volume, quindi cancellare gli avvisi:
++
+... Recupera i dati utilizzando link:recover-data-task.html["l'istantanea ARP più recente o un'istantanea precedente"].
+... [[arp-snapshot-decision-sm-post-restore]]Finalizza la categorizzazione dopo il ripristino dei dati per riprendere il normale monitoraggio ARP:
++
+**** Per gli avvisi relativi ai tipi di file NAS, selezionare *Aggiorna e cancella i tipi di file sospetti*.
+**** Per i picchi di entropia (NAS e SAN), selezionare *Salva e chiudi*.
+
+
+
+
+** *Se si intende utilizzare un altro metodo di ripristino*: ripristinare prima i dati, quindi eliminare gli avvisi:
++
+... link:recover-data-task.html["Recupera i dati utilizzando FlexClone o SnapRestore per singolo file"].
+... Completare la categorizzazione dopo il ripristino dei dati per riprendere il normale monitoraggio ARP:
++
+**** Per gli avvisi relativi ai tipi di file NAS, selezionare *Aggiorna e cancella i tipi di file sospetti*.
+**** Per i picchi di entropia (NAS e SAN), selezionare *Salva e chiudi*.
++
+
+NOTE: Registrando la tua decisione, la segnalazione di attacco viene cancellata.
+
+
+
+
+
+
+
+
+
+--
+.CLI
+--
+. (Solo volumi NAS) Crea una segnalazione di attacco:
++
+.. Genera un rapporto di attacco e specifica dove salvarlo.
 +
 [source, cli]
 ----
@@ -163,79 +285,111 @@ security anti-ransomware volume attack generate-report -vserver vs0 -volume vol1
 Output di esempio:
 
 +
-[listing]
-----
+....
 Report "report_file_vs0_vol1_14-09-2021_01-21-08" available at path "vs0:vol1/"
-----
-. Visualizzare il report su un sistema client di amministrazione. Ad esempio:
+....
+.. Visualizzare il report su un sistema client di amministrazione. Ad esempio:
 +
 [listing]
 ----
 cat report_file_vs0_vol1_14-09-2021_01-21-08
 ----
++
+
+NOTE: Questo comando *non è supportato* sui volumi che contengono LUN o namespace NVMe (carichi di lavoro SAN).
 
 
-.Agire
-. In base alla valutazione delle estensioni dei file o dei picchi di entropia, esegui una delle seguenti azioni:
-+
-** Falso positivo
-+
-Esegui uno dei seguenti comandi per registrare la tua decisione e riprendere il normale monitoraggio di Autonomous Ransomware Protection:
 
+. Scegli un'opzione link:recover-data-task.html["metodo di recupero"]. Quindi esegui una delle seguenti operazioni:
 +
-*** Per le estensioni dei file:
+** *Se si intende utilizzare `volume snapshot restore`*: Seguire la sequenza specifica della versione:
 +
-[source, cli]
-----
-anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension_identifiers>] -false-positive true
-----
+*** *ONTAP 9.16.1 e versioni successive*: Elimina prima l'attacco, poi esegui  `volume snapshot restore`:
 +
-Utilizzare il seguente parametro opzionale per identificare solo estensioni specifiche come falsi positivi:
-
+.... [[arp-snapshot-decision-cli-pre-restore]]Esegui uno dei seguenti comandi per eliminare i file sospetti:
 +
-**** `[-extension <text>, … ]`: Estensioni di file
-
-
-*** Per i picchi di entropia:
+***** Per le estensioni di file NAS:
 +
 [source, cli]
 ----
-security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive true
-----
-
-
-** Potenziale attacco ransomware
-+
-Rispondere all'attacco e link:../anti-ransomware/recover-data-task.html["Recuperare i dati dallo snapshot di backup creato da ARP"]. esegui uno dei seguenti comandi per registrare la tua decisione e riprendere il normale monitoraggio ARP:
-
-+
-*** Per le estensioni dei file:
-+
-[source, cli]
-----
-anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension identifiers>] -false-positive false
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension identifiers>] -false-positive false
 ----
 +
-Utilizza il seguente parametro opzionale per identificare solo estensioni specifiche come potenziale ransomware:
+Utilizzare il seguente parametro facoltativo per identificare solo estensioni specifiche come potenziali ransomware: `[-extension <text>, ... ]`
 
-+
-**** `[-extension <text>, … ]`: Estensione file
-
-
-*** Per i picchi di entropia:
+***** Per i picchi di entropia (NAS e SAN):
 +
 [source, cli]
 ----
 security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive false
 ----
-
-
-
-
 +
-Questo  `clear-suspect` L'operazione cancella il report di attacco. Non ci sono avvisi di tipo di file sospetto da cancellare se è stato ripristinato un intero volume. Per ARP/AI in ONTAP 9.16.1 e versioni successive, gli snapshot ARP vengono eliminati automaticamente dopo un periodo di conservazione abbreviato attivato dall'operazione di categorizzazione. Per ONTAP 9.15.1 e versioni precedenti, gli snapshot ARP vengono eliminati automaticamente dopo il ripristino di un volume o la cancellazione di un evento sospetto.
+Per i volumi SAN, utilizzare questo comando per confermare l'attacco prima del ripristino. Questo aggiorna la valutazione delle minacce ARP per il carico di lavoro SAN.
 
-. A partire dalla versione 9.18.1, è possibile determinare lo stato del `clear-suspect` operazione:
+
+
+.... Recupera i dati utilizzando link:recover-data-task.html["uno snapshot ARP recente o uno snapshot precedente"].
+
+
+*** *ONTAP 9.15.1 e versioni precedenti*: Eseguire  `volume snapshot restore` prima, poi neutralizzare l'attacco:
++
+.... Recupera i dati utilizzando link:recover-data-task.html["uno snapshot ARP recente o uno snapshot precedente"].
+.... [[arp-snapshot-decision-cli-post-restore]][[arp-snapshot-decision-cli]]Esegui uno dei seguenti comandi per eliminare i file sospetti:
++
+***** Per le estensioni di file NAS:
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension identifiers>] -false-positive false
+----
++
+Utilizzare il seguente parametro facoltativo per identificare solo estensioni specifiche come potenziali ransomware: `[-extension <text>, ... ]`
+
+***** Per i picchi di entropia (NAS e SAN):
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive false
+----
++
+Per i volumi SAN, utilizzare questo comando per confermare l'attacco dopo il ripristino. Questo aggiorna la valutazione delle minacce ARP per il carico di lavoro SAN.
+
+
+
+
+
+
+
+** *Se si intende utilizzare altri metodi di ripristino*: ripristinare prima i dati, quindi eliminare l'attacco:
++
+... Recupera i dati utilizzando link:recover-data-task.html["FlexClone o SnapRestore per file singolo"].
+... Eseguire uno dei seguenti comandi per eliminare i file sospetti:
++
+**** Per le estensioni di file NAS:
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension identifiers>] -false-positive false
+----
++
+Utilizzare il seguente parametro facoltativo per identificare solo estensioni specifiche come potenziali ransomware: `[-extension <text>, ... ]`
+
+**** Per i picchi di entropia (NAS e SAN):
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> -start-time <MM/DD/YYYY HH:MM:SS> -end-time <MM/DD/YYYY HH:MM:SS> -false-positive false
+----
++
+Per i volumi SAN, utilizzare questo comando per confermare l'attacco dopo il ripristino. Questo aggiorna la valutazione delle minacce ARP per il carico di lavoro SAN.
+
+
+
+
+
+
+
+. A partire da ONTAP 9.18.1, è possibile determinare lo stato dell'operazione  `clear-suspect`:
 +
 [source, cli]
 ----
@@ -243,16 +397,21 @@ security anti-ransomware volume show -clear-suspect-status -volume <vol_name> -v
 ----
 
 
-.Opzioni MAV
-. Se si sta utilizzando MAV e un previsto `clear-suspect` L'operazione richiede ulteriori approvazioni, ogni responsabile dell'approvazione del gruppo MAV deve:
-+
-.. Mostra la richiesta:
+--
+====
+
+
+== Opzioni di verifica multi-amministratore
+
+Se si utilizza la verifica multi-amministratore (MAV) e un'operazione prevista  `clear-suspect` richiede approvazioni aggiuntive, ogni approvatore del gruppo MAV deve:
+
+. Mostra la richiesta:
 +
 [source, cli]
 ----
 security multi-admin-verify request show
 ----
-.. Approvare la richiesta di riprendere il normale monitoraggio anti-ransomware:
+. Approvare la richiesta di riprendere il normale monitoraggio anti-ransomware:
 +
 [source, cli]
 ----
@@ -263,16 +422,12 @@ La risposta dell'ultimo responsabile dell'approvazione del gruppo indica che il 
 
 
 
-. Se si utilizza MAV e si è un responsabile dell'approvazione del gruppo MAV, è anche possibile rifiutare una richiesta con un sospetto chiaro:
-+
+Se si utilizza MAV e si è un responsabile dell'approvazione del gruppo MAV, è anche possibile rifiutare una richiesta con un sospetto chiaro:
+
 [source, cli]
 ----
 security multi-admin-verify request veto -index[<number returned from show request>]
 ----
-
-
---
-====
 .Informazioni correlate
 * link:https://kb.netapp.com/onprem%2Fontap%2Fda%2FNAS%2FUnderstanding_Autonomous_Ransomware_Protection_attacks_and_the_Autonomous_Ransomware_Protection_snapshot#["Knowledge Base NetApp : comprendere gli attacchi di protezione ransomware autonoma e lo snapshot di protezione ransomware autonoma"^]
 * link:modify-automatic-snapshot-options-task.html["Modificare le opzioni delle istantanee automatiche"]
