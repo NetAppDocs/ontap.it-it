@@ -1,0 +1,213 @@
+---
+permalink: smb-admin/manage-local-privileges.html 
+sidebar: sidebar 
+keywords: manage, right, user, local, domain, add, privilege, override, default, object, enhance, customize, user, group, add privileges to local or domain users or groups 
+summary: È possibile gestire i diritti utente per utenti o gruppi locali o di dominio aggiungendo privilegi. I privilegi aggiunti sovrascrivono i privilegi predefiniti assegnati a uno di questi oggetti. In questo modo è possibile migliorare la sicurezza, consentendo di personalizzare i privilegi di un utente o di un gruppo. 
+---
+= Gestisci i privilegi per utenti o gruppi locali o di dominio ONTAP SMB
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+
+
+== Aggiungere privilegi agli utenti o ai gruppi locali o di dominio ONTAP SMB
+
+È possibile gestire i diritti utente per utenti o gruppi locali o di dominio aggiungendo privilegi. I privilegi aggiunti sovrascrivono i privilegi predefiniti assegnati a uno di questi oggetti. In questo modo è possibile migliorare la sicurezza, consentendo di personalizzare i privilegi di un utente o di un gruppo.
+
+.Prima di iniziare
+L'utente o il gruppo locale o di dominio a cui verranno aggiunti i privilegi deve già esistere.
+
+.A proposito di questa attività
+L'aggiunta di un privilegio a un oggetto sovrascrive i privilegi predefiniti per quell'utente o gruppo. L'aggiunta di un privilegio non rimuove i privilegi aggiunti in precedenza.
+
+Quando si aggiungono privilegi a utenti o gruppi locali o di dominio, è necessario tenere presente quanto segue:
+
+* È possibile aggiungere uno o più privilegi.
+* Quando si aggiungono privilegi a un utente o a un gruppo di dominio, ONTAP può validare l'utente o il gruppo di dominio contattando il controller di dominio.
++
+Il comando potrebbe non riuscire se ONTAP non riesce a contattare il controller di dominio.
+
+
+
+.Fasi
+. Aggiungere uno o più privilegi a un utente o gruppo locale o di dominio:
++
+[source, cli]
+----
+vserver cifs users-and-groups privilege add-privilege -vserver <SVM_name> -user-or-group-name <name> -privileges <privilege>[,...]
+----
+. Verificare che all'oggetto siano applicati i privilegi desiderati:
++
+[source, cli]
+----
+vserver cifs users-and-groups privilege show -vserver <SVM_name> -user-or-group-name <name>
+----
+
+
+.Esempio
+Nell'esempio seguente vengono aggiunti i privilegi "`SeTcbPrivilege`" e "`SeTakeOwnershipPrivilege`" all'utente "`CIFS_SERVER` sue" sulla macchina virtuale di storage (SVM, precedentemente nota come Vserver) vs1:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege add-privilege -vserver vs1 -user-or-group-name CIFS_SERVER\sue -privileges SeTcbPrivilege,SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- ---------------
+vs1       CIFS_SERVER\sue       SeTcbPrivilege
+                                SeTakeOwnershipPrivilege
+----
+
+
+== Rimuovere i privilegi dagli utenti o dai gruppi locali o di dominio ONTAP SMB
+
+È possibile gestire i diritti utente per utenti o gruppi locali o di dominio rimuovendo i privilegi. In questo modo è possibile migliorare la sicurezza, consentendo di personalizzare i privilegi massimi di utenti e gruppi.
+
+.Prima di iniziare
+L'utente o il gruppo locale o di dominio da cui verranno rimossi i privilegi deve già esistere.
+
+.A proposito di questa attività
+Quando si rimuovono privilegi da utenti o gruppi locali o di dominio, è necessario tenere presente quanto segue:
+
+* È possibile rimuovere uno o più privilegi.
+* Quando si rimuovono i privilegi da un utente o gruppo di dominio, ONTAP può validare l'utente o il gruppo di dominio contattando il controller di dominio.
++
+Il comando potrebbe non riuscire se ONTAP non riesce a contattare il controller di dominio.
+
+
+
+.Fasi
+. Rimuovere uno o più privilegi da un utente o gruppo locale o di dominio:
++
+[source, cli]
+----
+vserver cifs users-and-groups privilege remove-privilege -vserver <SVM_name> -user-or-group-name <name> -privileges <privilege>[,...]
+----
+. Verificare che i privilegi desiderati siano stati rimossi dall'oggetto:
++
+[source, cli]
+----
+vserver cifs users-and-groups privilege show -vserver <SVM_name> -user-or-group-name <name>
+----
+
+
+.Esempio
+Nell'esempio seguente vengono rimossi i privilegi "`SeTcbPrivilege`" e "`SeTakeOwnershipPrivilege`" dall'utente "`CIFS_SERVER` sue" sulla macchina virtuale di storage (SVM, precedentemente nota come Vserver) vs1:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- ---------------
+vs1       CIFS_SERVER\sue       SeTcbPrivilege
+                                SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege remove-privilege -vserver vs1 -user-or-group-name CIFS_SERVER\sue -privileges SeTcbPrivilege,SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver   User or Group Name    Privileges
+--------- --------------------- -------------------
+vs1       CIFS_SERVER\sue       -
+----
+
+
+== Reimposta i privilegi per gli utenti e i gruppi locali o di dominio ONTAP SMB
+
+È possibile reimpostare i privilegi per utenti e gruppi locali o di dominio. Ciò può risultare utile quando si apportano modifiche ai privilegi di un utente o di un gruppo locale o di dominio e tali modifiche non sono più richieste o necessarie.
+
+.A proposito di questa attività
+La reimpostazione dei privilegi per un utente o un gruppo locale o di dominio rimuove eventuali voci di privilegio per tale oggetto.
+
+.Fasi
+. Reimposta i privilegi di un utente o gruppo locale o di dominio:
++
+[source, cli]
+----
+vserver cifs users-and-groups privilege reset-privilege -vserver <SVM_name> -user-or-group-name <name>
+----
+. Verificare che i privilegi siano stati reimpostati sull'oggetto:
++
+[source, cli]
+----
+vserver cifs users-and-groups privilege show -vserver <SVM_name> -user-or-group-name <name>
+----
+
+
+.Esempi
+Nell'esempio seguente vengono ripristinati i privilegi dell'utente "`CIFS_SERVER` sue" sulla macchina virtuale di storage (SVM, precedentemente nota come Vserver) vs1. Per impostazione predefinita, gli utenti normali non dispongono di privilegi associati ai propri account:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show
+Vserver   User or Group Name    Privileges
+--------- --------------------- ---------------
+vs1       CIFS_SERVER\sue       SeTcbPrivilege
+                                SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege reset-privilege -vserver vs1 -user-or-group-name CIFS_SERVER\sue
+
+cluster1::> vserver cifs users-and-groups privilege show
+This table is currently empty.
+----
+Nell'esempio riportato di seguito vengono ripristinati i privilegi per il gruppo "`BUILTIN` Administrators", rimuovendo in modo efficace la voce di privilegio:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show
+Vserver   User or Group Name       Privileges
+--------- ------------------------ -------------------
+vs1       BUILTIN\Administrators   SeRestorePrivilege
+                                   SeSecurityPrivilege
+                                   SeTakeOwnershipPrivilege
+
+cluster1::> vserver cifs users-and-groups privilege reset-privilege -vserver vs1 -user-or-group-name BUILTIN\Administrators
+
+cluster1::> vserver cifs users-and-groups privilege show
+This table is currently empty.
+----
+
+
+== Visualizza informazioni sugli override dei privilegi SMB di ONTAP
+
+È possibile visualizzare informazioni sui privilegi personalizzati assegnati agli account o ai gruppi di utenti locali o di dominio. Queste informazioni consentono di determinare se vengono applicati i diritti utente desiderati.
+
+.Fase
+. Eseguire una delle seguenti operazioni:
++
+|===
+| Se si desidera visualizzare informazioni su... | Immettere questo comando... 
+
+
+ a| 
+Privilegi personalizzati per tutti gli utenti e i gruppi locali e di dominio sulla macchina virtuale di storage (SVM)
+ a| 
+`vserver cifs users-and-groups privilege show -vserver <SVM_name>`
+
+
+
+ a| 
+Privilegi personalizzati per un dominio o un utente e gruppo locale specifico sulla SVM
+ a| 
+`vserver cifs users-and-groups privilege show -vserver <SVM_name> -user-or-group-name <name>`
+
+|===
++
+Quando si esegue questo comando, è possibile scegliere altri parametri opzionali. Ulteriori informazioni su `vserver cifs users-and-groups privilege show` nella link:https://docs.netapp.com/us-en/ontap-cli/vserver-cifs-users-and-groups-privilege-show.html["Riferimento al comando ONTAP"^].
+
+
+
+.Esempio
+Il seguente comando visualizza tutti i privilegi esplicitamente associati agli utenti e ai gruppi locali o di dominio per SVM vs1:
+
+[listing]
+----
+cluster1::> vserver cifs users-and-groups privilege show -vserver vs1
+Vserver    User or Group Name     Privileges
+--------- ---------------------   ---------------
+vs1       BUILTIN\Administrators  SeTakeOwnershipPrivilege
+                                  SeRestorePrivilege
+vs1       CIFS_SERVER\sue         SeTcbPrivilege
+                                  SeTakeOwnershipPrivilege
+----

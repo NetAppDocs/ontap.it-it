@@ -1,0 +1,140 @@
+---
+permalink: smb-admin/enable-disable-local-users-groups-authentication.html 
+sidebar: sidebar 
+keywords: local, user, group, access, control, ntfs, security-style, data, enable, authentication, disable, enable or disable local users and groups functionality 
+summary: 'Prima di poter utilizzare utenti e gruppi locali per il controllo dell"accesso ai dati di sicurezza NTFS, è necessario attivare la funzionalità locale di utenti e gruppi. Inoltre, se si desidera utilizzare gli utenti locali per l"autenticazione SMB, è necessario attivare la funzionalità di autenticazione dell"utente locale.' 
+---
+= Abilitare o disabilitare la funzionalità utenti e gruppi SMB locali ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Prima di poter utilizzare utenti e gruppi locali per il controllo dell'accesso ai dati di sicurezza NTFS, è necessario attivare la funzionalità locale di utenti e gruppi. Inoltre, se si desidera utilizzare gli utenti locali per l'autenticazione SMB, è necessario attivare la funzionalità di autenticazione dell'utente locale.
+
+Per impostazione predefinita, le funzionalità degli utenti e dei gruppi locali e l'autenticazione dell'utente locale sono attivate. Se non sono abilitati, è necessario abilitarli prima di poter configurare e utilizzare utenti e gruppi locali. È possibile disattivare la funzionalità di utenti e gruppi locali in qualsiasi momento.
+
+Oltre a disattivare esplicitamente le funzionalità di utenti e gruppi locali, ONTAP disattiva le funzionalità di utenti e gruppi locali se un nodo del cluster viene reimmesso in una release di ONTAP che non supporta tale funzionalità. La funzionalità utente e gruppo locale non viene attivata finché tutti i nodi del cluster non eseguono una versione di ONTAP che la supporta.
+
+.Informazioni correlate
+* xref:manage-local-user-accounts.html[Modificare gli account utente locali]
+* xref:manage-local-groups.html[Modificare i gruppi locali]
+* xref:manage-local-privileges.html[Aggiungere privilegi a utenti o gruppi locali o di dominio]
+
+
+
+
+== Abilitare o disabilitare utenti e gruppi locali sui server ONTAP SMB
+
+È possibile attivare o disattivare utenti e gruppi locali per l'accesso SMB sulle macchine virtuali di storage (SVM). La funzionalità utenti e gruppi locali è attivata per impostazione predefinita.
+
+.A proposito di questa attività
+È possibile utilizzare utenti e gruppi locali durante la configurazione delle autorizzazioni di condivisione SMB e file NTFS e, facoltativamente, utilizzare utenti locali per l'autenticazione quando si crea una connessione SMB. Per utilizzare gli utenti locali per l'autenticazione, è necessario attivare anche l'opzione di autenticazione degli utenti e dei gruppi locali.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Abilitare o disabilitare utenti e gruppi locali:
++
+** Abilita utenti e gruppi locali:
++
+[source, cli]
+----
+vserver cifs options modify -vserver <SVM_name> -is-local-users-and-groups-enabled true
+----
+** Disabilita utenti e gruppi locali:
++
+[source, cli]
+----
+vserver cifs options modify -vserver <SVM_name> -is-local-users-and-groups-enabled false
+----
+
+
+. Tornare al livello di privilegio admin:
++
+[source, cli]
+----
+set -privilege admin
+----
+
+
+.Esempio
+L'esempio seguente abilita le funzionalità di utenti e gruppi locali su SVM vs1:
+
+[listing]
+----
+cluster1::> set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use them
+only when directed to do so by technical support personnel.
+Do you wish to continue? (y or n): y
+
+cluster1::*> vserver cifs options modify -vserver vs1 -is-local-users-and-groups-enabled true
+
+cluster1::*> set -privilege admin
+----
+.Informazioni correlate
+* xref:manage-local-user-accounts.adoc[Gestire gli account utente locali] == Abilitare o disabilitare l'autenticazione utente locale sui server SMB ONTAP
+
+
+È possibile attivare o disattivare l'autenticazione utente locale per l'accesso SMB sulle macchine virtuali di storage (SVM). L'impostazione predefinita prevede l'autenticazione dell'utente locale, utile quando SVM non è in grado di contattare un controller di dominio o se si sceglie di non utilizzare i controlli di accesso a livello di dominio.
+
+.Prima di iniziare
+La funzionalità di utenti e gruppi locali deve essere attivata sul server CIFS.
+
+.A proposito di questa attività
+È possibile attivare o disattivare l'autenticazione utente locale in qualsiasi momento. Se si desidera utilizzare utenti locali per l'autenticazione durante la creazione di una connessione SMB, è necessario attivare anche l'opzione utenti e gruppi locali del server CIFS.
+
+.Fasi
+. Impostare il livello di privilegio su Advanced (avanzato):
++
+[source, cli]
+----
+set -privilege advanced
+----
+. Abilitare o disabilitare l'autenticazione utente locale:
++
+** Abilita l'autenticazione utente locale:
++
+[source, cli]
+----
+vserver cifs options modify -vserver <SVM_name> -is-local-auth-enabled true
+----
+** Disabilita l'autenticazione utente locale:
++
+[source, cli]
+----
+vserver cifs options modify -vserver <SVM_name> -is-local-auth-enabled false
+----
+
+
+. Tornare al livello di privilegio admin:
++
+[source, cli]
+----
+set -privilege admin
+----
+
+
+.Esempio
+L'esempio seguente abilita l'autenticazione dell'utente locale su SVM vs1:
+
+[listing]
+----
+cluster1::>set -privilege advanced
+Warning: These advanced commands are potentially dangerous; use them
+only when directed to do so by technical support personnel.
+Do you wish to continue? (y or n): y
+
+cluster1::*> vserver cifs options modify -vserver vs1 -is-local-auth-enabled true
+
+cluster1::*> set -privilege admin
+----
+.Informazioni correlate
+* xref:local-user-authentication-concept.adoc[Scopri di più sull'autenticazione degli utenti locali]
+* xref:enable-disable-local-users-groups-authentication.html[Abilitare o disabilitare utenti e gruppi locali sui server]
+

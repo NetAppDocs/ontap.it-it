@@ -11,14 +11,94 @@ summary: 'È possibile personalizzare una condivisione SMB esistente aggiungendo
 
 
 [role="lead"]
-È possibile personalizzare una condivisione SMB esistente aggiungendo o rimuovendo le proprietà della condivisione. Questo può essere utile se si desidera modificare la configurazione della condivisione per soddisfare i requisiti in continuo cambiamento nell'ambiente.
+È possibile personalizzare una condivisione SMB esistente aggiungendo o rimuovendo proprietà di condivisione.
+
+Le proprietà di condivisione disponibili sono le seguenti:
+
+[cols="2,4"]
+|===
+| Condividere le proprietà | Descrizione 
+
+
+ a| 
+`oplocks`
+ a| 
+Questa proprietà specifica che la condivisione utilizza blocchi opportunistici, noti anche come caching lato client.
+
+
+
+ a| 
+`browsable`
+ a| 
+Questa proprietà consente ai client Windows di esplorare la condivisione.
+
+
+
+ a| 
+`showsnapshot`
+ a| 
+Questa proprietà specifica che gli snapshot possono essere visualizzati e attraversati dai client.
+
+
+
+ a| 
+`changenotify`
+ a| 
+Questa proprietà specifica che la condivisione supporta le richieste di notifica delle modifiche. Per le condivisioni su una SVM, si tratta di una proprietà iniziale predefinita.
+
+
+
+ a| 
+`attributecache`
+ a| 
+Questa proprietà abilita il caching degli attributi del file nella condivisione SMB per fornire un accesso più rapido agli attributi. L'impostazione predefinita prevede la disattivazione del caching degli attributi. Questa proprietà deve essere attivata solo se ci sono client che si connettono alle condivisioni su SMB 1.0. Questa proprietà di condivisione non è applicabile se i client si connettono alle condivisioni tramite SMB 2.x o SMB 3.0.
+
+
+
+ a| 
+`continuously-available`
+ a| 
+Questa proprietà consente ai client SMB che lo supportano di aprire i file in modo persistente. I file aperti in questo modo sono protetti da eventi di interruzione, come failover e giveback.
+
+
+
+ a| 
+`branchcache`
+ a| 
+Questa proprietà specifica che la condivisione consente ai client di richiedere gli hash BranchCache sui file all'interno di questa condivisione. Questa opzione è utile solo se si specifica "`per-share`" come modalità operativa nella configurazione CIFS BranchCache.
+
+
+
+ a| 
+`access-based-enumeration`
+ a| 
+Questa proprietà specifica che l'opzione _Access Based Enumeration_ (ABE) è attivata per questa condivisione. Le cartelle condivise con filtro ABE sono visibili a un utente in base ai diritti di accesso del singolo utente, impedendo la visualizzazione di cartelle o altre risorse condivise a cui l'utente non dispone dei diritti di accesso.
+
+
+
+ a| 
+`namespace-caching`
+ a| 
+Questa proprietà specifica che i client SMB che si connettono a questa condivisione possono memorizzare nella cache i risultati dell'enumerazione delle directory restituiti dai server CIFS, in modo da ottenere performance migliori. Per impostazione predefinita, i client SMB 1 non memorizzano nella cache i risultati dell'enumerazione delle directory. Poiché i client SMB 2 e SMB 3 memorizzano nella cache i risultati dell'enumerazione delle directory per impostazione predefinita, la specifica di questa proprietà di condivisione offre vantaggi in termini di prestazioni solo per le connessioni client SMB 1.
+
+
+
+ a| 
+`encrypt-data`
+ a| 
+Questa proprietà specifica che la crittografia SMB deve essere utilizzata quando si accede a questa condivisione. I client SMB che non supportano la crittografia durante l'accesso ai dati SMB non potranno accedere a questa condivisione.
+
+|===
+
+
+== Aggiungere proprietà di condivisione alle condivisioni SMB ONTAP esistenti
+
+È possibile personalizzare una condivisione SMB esistente aggiungendo proprietà di condivisione. Ciò può essere utile se si desidera modificare la configurazione della condivisione per soddisfare requisiti in continua evoluzione nel proprio ambiente.
 
 .Prima di iniziare
 La condivisione di cui si desidera modificare le proprietà deve esistere.
 
 .A proposito di questa attività
-Linee guida per l'aggiunta di proprietà di condivisione:
-
 * È possibile aggiungere una o più proprietà di condivisione utilizzando un elenco delimitato da virgole.
 * Tutte le proprietà di condivisione precedentemente specificate rimangono attive.
 +
@@ -31,36 +111,22 @@ Le nuove proprietà aggiunte vengono aggiunte all'elenco esistente di proprietà
 
 
 
-Linee guida per la rimozione delle proprietà di condivisione:
-
-* È possibile rimuovere una o più proprietà di condivisione utilizzando un elenco delimitato da virgole.
-* Tutte le proprietà di condivisione precedentemente specificate ma non rimosse rimangono attive.
-
-
 .Fasi
-. Immettere il comando appropriato:
+. Aggiungi le proprietà di condivisione:
 +
-|===
-| Se si desidera... | Immettere il comando... 
+[source, cli]
+----
+vserver cifs share properties add -vserver <SVM_name> -share-name <share_name> -share-properties <properties>,...
+----
+. Verifica le impostazioni delle proprietà di condivisione:
++
+[source, cli]
+----
+vserver cifs share show -vserver vserver_name -share-name share_name
+----
 
 
- a| 
-Aggiungere proprietà di condivisione
- a| 
-`+vserver cifs share properties add -vserver _vserver_name_ -share-name _share_name_ -share-properties _properties_,...+`
-
-
-
- a| 
-Rimuovere le proprietà di condivisione
- a| 
-`+vserver cifs share properties remove -vserver _vserver_name_ -share-name _share_name_ -share-properties _properties_,...+`
-
-|===
-. Verificare le impostazioni della proprietà di condivisione: `vserver cifs share show -vserver vserver_name -share-name share_name`
-
-
-.Esempi
+.Esempio
 Il seguente comando aggiunge `showsnapshot` Condividere la proprietà con una condivisione denominata "`share1`" su SVM vs1:
 
 [listing]
@@ -75,6 +141,33 @@ vs1        share1  /share1   oplocks      -          Everyone / Full Control
                              changenotify
                              showsnapshot
 ----
+
+
+== Rimuovere le proprietà di condivisione dalle condivisioni SMB ONTAP esistenti
+
+È possibile personalizzare una condivisione SMB esistente rimuovendo le proprietà di condivisione. Ciò può essere utile se si desidera modificare la configurazione della condivisione per soddisfare requisiti in evoluzione nel proprio ambiente.
+
+.A proposito di questa attività
+* È possibile rimuovere una o più proprietà di condivisione utilizzando un elenco delimitato da virgole.
+* Tutte le proprietà di condivisione precedentemente specificate ma non rimosse rimangono attive.
+
+
+.Fasi
+. Rimuovi le proprietà di condivisione:
++
+[source, cli]
+----
+vserver cifs share properties remove -vserver <SVM_name> -share-name <share_name> -share-properties <properties>,...
+----
+. Verifica le impostazioni delle proprietà di condivisione:
++
+[source, cli]
+----
+vserver cifs share show -vserver <SVM_name> -share-name <share_name>
+----
+
+
+.Esempio
 Il seguente comando rimuove `browsable` Condividere la proprietà da una condivisione denominata "`share2`" su SVM vs1:
 
 [listing]

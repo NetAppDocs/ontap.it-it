@@ -17,36 +17,43 @@ Esistono quattro diversi stili di sicurezza: UNIX, NTFS, misto e unificato. Ogni
 
 Ad esempio, se un volume utilizza lo stile di sicurezza UNIX, i client SMB possono comunque accedere ai dati (purché autenticino e autorizzino correttamente) a causa della natura multiprotocollo di ONTAP. Tuttavia, ONTAP utilizza autorizzazioni UNIX che solo i client UNIX possono modificare utilizzando strumenti nativi.
 
-[cols="5*"]
+[cols="5"]
 |===
 | Stile di sicurezza | Client in grado di modificare le autorizzazioni | Autorizzazioni che i client possono utilizzare | Risultato di uno stile di sicurezza efficace | Client che possono accedere ai file 
 
 
-.2+| UNIX .2+| NFS | Bit di modalità NFSv3 .2+| UNIX .9+| NFS e SMB 
+| UNIX | NFS  a| 
+* Bit di modalità NFSv3
+* ACL NFSv4.x
+
+| UNIX | NFS e SMB 
 
 
-| ACL NFSv4.x 
+| NTFS | PMI | ACL NTFS | NTFS | NFS e SMB 
 
 
-| NTFS | PMI | ACL NTFS | NTFS 
+| Misto | NFS o SMB  a| 
+* Bit di modalità NFSv3
+* ACL NFSv4.x
+* ACL NTFS
+
+ a| 
+* UNIX (per i bit di modalità NFSv3 e gli ACL NFSv4.x)
+* NTFS (per gli ACL NTFS)
+
+| NFS e SMB 
 
 
-.3+| Misto .3+| NFS o SMB | Bit di modalità NFSv3 .2+| UNIX 
+| Unificato (solo per volumi infiniti, in ONTAP 9.4 e versioni precedenti). | NFS o SMB  a| 
+* Bit di modalità NFSv3
+* ACL NFSv4.1
+* ACL NTFS
 
+ a| 
+* UNIX (per i bit di modalità NFSv3 e gli ACL NFSv4.1)
+* NTFS (per gli ACL NTFS)
 
-| NFSv4.ACL 
-
-
-| ACL NTFS | NTFS 
-
-
-.3+| Unificato (solo per volumi infiniti, in ONTAP 9.4 e versioni precedenti). .3+| NFS o SMB | Bit di modalità NFSv3 .2+| UNIX 
-
-
-| ACL NFSv4.1 
-
-
-| ACL NTFS | NTFS 
+| NFS e SMB 
 |===
 I volumi FlexVol supportano UNIX, NTFS e stili di sicurezza misti. Quando lo stile di sicurezza è misto o unificato, le autorizzazioni effettive dipendono dal tipo di client che ha modificato le autorizzazioni per ultima, perché gli utenti impostano lo stile di sicurezza su base individuale. Se l'ultimo client che ha modificato le autorizzazioni era un client NFSv3, le autorizzazioni sono bit di modalità UNIX NFSv3. Se l'ultimo client era un client NFSv4, le autorizzazioni sono ACL NFSv4. Se l'ultimo client era un client SMB, le autorizzazioni sono ACL NTFS di Windows.
 
@@ -61,4 +68,55 @@ ONTAP imposta inizialmente alcune autorizzazioni predefinite per i file. Per imp
 ====
 .Informazioni correlate
 * link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^]
+
+
+
+NOTE: Gli stili di sicurezza possono essere impostati sui volumi FlexVol (sia root che dati) e sui qtree. Gli stili di sicurezza possono essere impostati manualmente al momento della creazione, ereditati automaticamente o modificati in un secondo momento. == Decidere quali stili di sicurezza SMB utilizzare sugli SVM ONTAP
+
+Per aiutarti a decidere quale stile di sicurezza utilizzare su un volume, devi considerare due fattori. Il fattore principale è il tipo di amministratore che gestisce il file system. Il fattore secondario è il tipo di utente o servizio che accede ai dati sul volume.
+
+Quando si configura lo stile di protezione su un volume, è necessario considerare le esigenze dell'ambiente per assicurarsi di selezionare lo stile di protezione migliore ed evitare problemi con la gestione delle autorizzazioni. Le seguenti considerazioni possono aiutarti a decidere:
+
+[cols="2,4"]
+|===
+| Stile di sicurezza | Scegliere se... 
+
+
+ a| 
+UNIX
+ a| 
+* Il file system è gestito da un amministratore UNIX.
+* La maggior parte degli utenti sono client NFS.
+* Un'applicazione che accede ai dati utilizza un utente UNIX come account del servizio.
+
+
+
+
+ a| 
+NTFS
+ a| 
+* Il file system è gestito da un amministratore di Windows.
+* La maggior parte degli utenti è costituita da client SMB.
+* Un'applicazione che accede ai dati utilizza un utente Windows come account del servizio.
+
+
+
+
+ a| 
+Misto
+ a| 
+Il file system è gestito dagli amministratori UNIX e Windows e gli utenti sono costituiti da client NFS e SMB.
+
+|===
+
+
+== Informazioni sull'ereditarietà dello stile di protezione SMB di ONTAP
+
+Se non si specifica lo stile di protezione durante la creazione di un nuovo volume FlexVol o di un qtree, questo eredita il proprio stile di protezione in modi diversi.
+
+Gli stili di sicurezza vengono ereditati nel modo seguente:
+
+* Un volume FlexVol eredita lo stile di sicurezza del volume root del volume SVM contenente.
+* Un qtree eredita lo stile di protezione del volume FlexVol contenente.
+* Un file o una directory eredita lo stile di protezione del volume o qtree FlexVol contenente.
 

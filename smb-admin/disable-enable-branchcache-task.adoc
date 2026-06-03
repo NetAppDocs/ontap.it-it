@@ -1,18 +1,36 @@
 ---
 permalink: smb-admin/disable-enable-branchcache-task.html 
 sidebar: sidebar 
-keywords: disable, branchcache, storage, virtual, machine, svm, changing, change, operating, mode, disable, operate, per-share, automatic, disable or enable branchcache 
+keywords: disable, enable, branchcache, storage, virtual, machine, svm, changing, change, operating, mode, operate, per-share, automatic, branch, office, client, cache 
 summary: È possibile disabilitare BranchCache sulla macchina virtuale di archiviazione modificando la modalità operativa di BranchCache su disabilitato. È possibile abilitare BranchCache in qualsiasi momento modificando la modalità operativa per offrire i servizi BranchCache per singola condivisione o automaticamente per tutte le condivisioni. 
 ---
-= Disabilitare o abilitare BranchCache sulle condivisioni SMB ONTAP
+= Disabilitare o abilitare BranchCache su un SVM ONTAP
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-È possibile disattivare BranchCache sulla macchina virtuale di storage (SVM) modificando la modalità operativa BranchCache su `disabled`. Puoi abilitare BranchCache in qualsiasi momento modificando la modalità operativa per offrire servizi BranchCache per share o automaticamente per tutte le condivisioni.
+Se in precedenza hai configurato BranchCache ma non desideri che i client delle filiali utilizzino il contenuto memorizzato nella cache, puoi disabilitare la cache sul server CIFS. Devi essere consapevole di cosa succede quando disabiliti BranchCache. Puoi disabilitare BranchCache sulla macchina virtuale di storage modificando la modalità operativa di BranchCache su disabilitato. Puoi abilitare BranchCache in qualsiasi momento modificando la modalità operativa su offerta dei servizi BranchCache per singola condivisione o automaticamente per tutte le condivisioni.
 
+Quando disattivi BranchCache, ONTAP non calcola più gli hash o invia i metadati al client richiedente. Tuttavia, non si verifica alcuna interruzione nell'accesso ai file. In seguito, quando i client abilitati a BranchCache richiedono informazioni sui metadati per il contenuto a cui desiderano accedere, ONTAP risponde con un errore definito da Microsoft, che fa in modo che il client invii una seconda richiesta, richiedendo il contenuto effettivo. In risposta alla richiesta di contenuto, il server CIFS invia il contenuto effettivo memorizzato sulla macchina virtuale di storage (SVM).
+
+Una volta disattivato BranchCache sul server CIFS, le condivisioni SMB non pubblicizzano le funzionalità di BranchCache. Per accedere ai dati sulle nuove connessioni SMB, i client eseguono le normali richieste SMB in lettura.
+
+Puoi riabilitare BranchCache sul server CIFS in qualsiasi momento.
+
+* Poiché l'archivio hash non viene cancellato quando disattivi BranchCache, ONTAP può utilizzare gli hash memorizzati quando risponde alle richieste hash dopo la riabilitazione di BranchCache, a condizione che l'hash richiesto sia ancora valido.
+* Tutti i client che hanno effettuato connessioni SMB alle condivisioni abilitate a BranchCache durante il periodo in cui BranchCache è stato disattivato non ottengono il supporto BranchCache se BranchCache viene successivamente riabilitato.
++
+Questo perché ONTAP pubblicizza il supporto di BranchCache per una condivisione al momento della configurazione della sessione SMB. I client che hanno stabilito sessioni per le condivisioni abilitate a BranchCache mentre BranchCache è stato disattivato devono disconnettersi e riconnettersi per utilizzare il contenuto memorizzato nella cache per questa condivisione.
+
+
+
+[NOTE]
+====
+Se non si desidera salvare l'archivio hash dopo la disattivazione di BranchCache su un server CIFS, è possibile eliminarlo manualmente. Se riabiliti BranchCache, devi assicurarti che la directory dell'archivio hash esista. Una volta riabilitato BranchCache, le condivisioni abilitate a BranchCache pubblicizzano le funzionalità di BranchCache. ONTAP crea nuovi hash man mano che le nuove richieste vengono effettuate dai client abilitati a BranchCache.
+
+====
 .Fasi
 . Eseguire il comando appropriato:
 +

@@ -4,17 +4,30 @@ sidebar: sidebar
 keywords: offer, caching, service, certain, share, offer, cache, disable, branchcache, exist, smb, disable branchcache on a single smb share 
 summary: Se non si desidera offrire servizi di caching su determinate condivisioni che in precedenza offrivano contenuti memorizzati nella cache, è possibile disattivare BranchCache su una condivisione SMB esistente. 
 ---
-= Disabilita BranchCache su una singola condivisione SMB ONTAP
+= Disattiva BranchCache sulle condivisioni SMB
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
+Se non si desidera fornire servizi di caching BranchCache su determinate condivisioni SMB, ma si desidera fornire servizi di caching su tali condivisioni in un secondo momento, è possibile disattivare BranchCache in base alla condivisione. Se BranchCache è configurato per offrire il caching su tutte le condivisioni, ma si desidera disattivare temporaneamente tutti i servizi di caching, è possibile modificare la configurazione di BranchCache per interrompere il caching automatico su tutte le condivisioni.
+
+Se BranchCache su una condivisione SMB viene successivamente disattivato dopo la prima attivazione, ONTAP interrompe l'invio dei metadati al client richiedente. Un client che necessita di dati lo recupera direttamente dal server di contenuti (server CIFS sulla macchina virtuale di storage (SVM)).
+
+
+
+== Disabilita BranchCache su una singola condivisione SMB ONTAP
+
 Se non si desidera offrire servizi di caching su determinate condivisioni che in precedenza offrivano contenuti memorizzati nella cache, è possibile disattivare BranchCache su una condivisione SMB esistente.
 
 .Fase
-. Immettere il seguente comando: `vserver cifs share properties remove -vserver vserver_name -share-name share_name -share-properties branchcache`
+. Immettere il seguente comando:
++
+[source, cli]
+----
+vserver cifs share properties remove -vserver <SVM_name> -share-name <share_name> -share-properties branchcache
+----
 +
 La proprietà di condivisione BranchCache viene rimossa. Le altre proprietà di condivisione applicate rimangono attive.
 
@@ -68,3 +81,45 @@ File Attribute Cache Lifetime: 10s
                 Offline Files: manual
 Vscan File-Operations Profile: standard
 ----
+
+
+== Arresta la memorizzazione automatica nella cache su tutte le condivisioni SMB ONTAP
+
+Se la configurazione di BranchCache abilita automaticamente il caching su tutte le condivisioni SMB su ciascuna macchina virtuale di storage (SVM), puoi modificare la configurazione di BranchCache per interrompere automaticamente il caching del contenuto per tutte le condivisioni SMB.
+
+.A proposito di questa attività
+Per interrompere il caching automatico su tutte le condivisioni SMB, si cambia la modalità operativa BranchCache in caching per-share.
+
+.Fasi
+. Configurare BranchCache per interrompere la memorizzazione automatica nella cache su tutte le condivisioni SMB:
++
+[source, cli]
+----
+vserver cifs branchcache modify -vserver <SVM_name> -operating-mode per-share
+----
+. Verifica che la configurazione di BranchCache sia corretta:
++
+[source, cli]
+----
+vserver cifs branchcache show -vserver <SVM_name>
+----
+
+
+.Esempio
+Il seguente comando modifica la configurazione di BranchCache su storage virtual machine (SVM, precedentemente noto come Vserver) vs1 per interrompere il caching automatico su tutte le condivisioni SMB:
+
+[listing]
+----
+cluster1::> vserver cifs branchcache modify -vserver vs1 -operating-mode per-share
+
+cluster1::> vserver cifs branchcache show -vserver vs1
+
+                                 Vserver: vs1
+          Supported BranchCache Versions: enable_all
+                      Path to Hash Store: /hash_data
+          Maximum Size of the Hash Store: 20GB
+Encryption Key Used to Secure the Hashes: -
+        CIFS BranchCache Operating Modes: per_share
+----
+.Informazioni correlate
+xref:configure-branchcache-enabled-shares-concept.adoc[Scopri come configurare le condivisioni abilitate per BranchCache]
