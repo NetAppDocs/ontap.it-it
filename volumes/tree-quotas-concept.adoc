@@ -21,3 +21,99 @@ Quando si applica una quota a un qtree, il risultato è simile a una partizione 
 La dimensione della quota non garantisce una quantità specifica di spazio disponibile. La dimensione della quota può essere superiore alla quantità di spazio libero disponibile per il qtree. È possibile utilizzare `volume quota report` per determinare la quantità effettiva di spazio disponibile nel qtree.
 
 Ulteriori informazioni su `volume quota report` nella link:https://docs.netapp.com/us-en/ontap-cli/volume-quota-report.html["Riferimento al comando ONTAP"^].
+
+
+
+== Scopri come funzionano le quote utente e di gruppo di ONTAP con i qtree
+
+Le quote della struttura limitano le dimensioni complessive del qtree. Per impedire a singoli utenti o gruppi di utilizzare l'intero qtree, specificare una quota utente o di gruppo per tale qtree.
+
+.Esempio di quota utente in un qtree
+[%collapsible]
+====
+Si supponga di disporre delle seguenti regole di quota:
+
+[listing]
+----
+cluster1::> volume quota policy rule show -vserver vs0 -volume vol1
+
+Vserver: vs0               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+user   ""        ""      off          50MB        -       -        -       45MB
+user   jsmith    ""      off          80MB        -       -        -       75MB
+----
+Si noti che un determinato utente, kjones, occupa troppo spazio in un qtree critico, proj1, che risiede nel vol1. È possibile limitare lo spazio di questo utente aggiungendo la seguente regola di quota:
+
+[listing]
+----
+cluster1::> volume quota policy rule create -vserver vs0 -volume vol1 -policy-name default -type user -target "kjones" -qtree "proj1" -disk-limit 20m -threshold 15m
+
+cluster1::> volume quota policy rule show -vserver vs0 -volume vol1
+
+Vserver: vs0               Policy: default           Volume: vol1
+                                               Soft             Soft
+                         User         Disk     Disk   Files    Files
+Type   Target    Qtree   Mapping     Limit    Limit   Limit    Limit  Threshold
+-----  --------  ------- -------  --------  -------  ------  -------  ---------
+user   ""        ""      off          50MB        -       -        -       45MB
+user   jsmith    ""      off          80MB        -       -        -       75MB
+user   kjones    proj1   off          20MB        -       -        -       15MB
+----
+====
+
+
+== Scopri come le quote ad albero predefinite su un ONTAP FlexVol volume creano quote ad albero derivate
+
+Quando si crea una quota tree predefinita su un volume FlexVol, le quote tree derivate corrispondenti vengono create automaticamente per ogni qtree di quel volume.
+
+Queste quote derivate hanno gli stessi limiti della quota ad albero predefinita. Se non esistono quote aggiuntive, i limiti hanno i seguenti effetti:
+
+* Gli utenti possono utilizzare lo spazio in un qtree pari a quello assegnato per l'intero volume (a condizione che non superino il limite per il volume utilizzando lo spazio nella root o in un altro qtree).
+* Ciascuno dei qtree può crescere per consumare l'intero volume.
+
+
+L'esistenza di una quota ad albero predefinita su un volume continua a influire su tutti i nuovi qtree aggiunti al volume. Ogni volta che viene creato un nuovo qtree, viene creata anche una quota di albero derivata.
+
+Come tutte le quote derivate, le quote derivate dell'albero presentano i seguenti comportamenti:
+
+* Vengono creati solo se la destinazione non dispone già di una quota esplicita.
+* Vengono visualizzati nei rapporti di quota ma non vengono visualizzati quando si visualizzano le regole di quota con il `volume quota policy rule show` comando. Ulteriori informazioni su `volume quota policy rule show` nella link:https://docs.netapp.com/us-en/ontap-cli/volume-quota-policy-rule-show.html["Riferimento al comando ONTAP"^].
+
+
+.Esempio di quote di albero derivate
+[%collapsible]
+====
+Si dispone di un volume con tre qtree (proj1, proj2 e proj3) e l'unica quota ad albero è una quota esplicita sul qtree proj1 che limita le sue dimensioni del disco a 10 GB. Se si crea una quota ad albero predefinita sul volume e si reinizializzano le quote sul volume, il report delle quote ora contiene quattro quote ad albero:
+
+[listing]
+----
+                                    ----Disk----  ----Files-----   Quota
+Volume   Tree      Type    ID        Used  Limit    Used   Limit   Specifier
+-------  --------  ------  -------  -----  -----  ------  ------   ---------
+vol1     proj1     tree    1           0B   10GB       1       -   proj1
+vol1               tree    *           0B   20GB       0       -   *
+vol1     proj2     tree    2           0B   20GB       1       -   proj2
+vol1     proj3     tree    3           0B   20GB       1       -   proj3
+...
+----
+La prima riga mostra la quota esplicita originale sul qtree proj1. Tale quota rimane invariata.
+
+La seconda riga mostra la nuova quota ad albero predefinita sul volume. L'asterisco (*) specifier di quota indica che si tratta di una quota predefinita. Questa quota è il risultato della regola di quota creata.
+
+Le ultime due righe mostrano le nuove quote di albero derivate per i qtree proj2 e proj3. ONTAP ha creato automaticamente queste quote come risultato della quota ad albero predefinita sul volume. Queste quote derivate della struttura hanno lo stesso limite di 20 GB di disco della quota predefinita della struttura nel volume. ONTAP non ha creato una quota tree derivata per il qtree proj1 perché il qtree proj1 aveva già una quota esplicita.
+
+====
+
+
+== Scopri come le quote utente predefinite su un ONTAP FlexVol volume influiscono sulle quote per i qtree
+
+Se viene definita una quota utente predefinita per un volume FlexVol, viene creata automaticamente una quota utente predefinita per ogni qtree contenuto in quel volume per il quale esiste una quota ad albero esplicita o derivata.
+
+Se esiste già una quota utente predefinita sul qtree, questa rimane inalterata quando viene creata la quota utente predefinita sul volume.
+
+Le quote utente predefinite create automaticamente sui qtree hanno gli stessi limiti della quota utente predefinita creata per il volume.
+
+Una quota utente esplicita per un qtree sovrascrive (sostituisce i limiti applicati da) la quota utente predefinita creata automaticamente, così come sovrascrive una quota utente predefinita su quel qtree creata da un amministratore.

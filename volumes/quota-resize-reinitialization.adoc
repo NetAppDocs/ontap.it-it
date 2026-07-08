@@ -1,0 +1,99 @@
+---
+permalink: volumes/quota-resize-reinitialization.html 
+sidebar: sidebar 
+keywords: when to, use, resizing 
+summary: 'Il ridimensionamento delle quote è più veloce dell"inizializzazione delle quote, ma presenta delle restrizioni.' 
+---
+= Scopri il ridimensionamento e la reinizializzazione delle quote ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Ridimensionare una quota è più veloce della reinizializzazione, tuttavia, se apporti determinate modifiche alle tue quote, devi eseguire una reinizializzazione completa delle quote
+
+
+
+== Ridimensionamento delle quote ONTAP
+
+Puoi ridimensionare le quote quando apporti i seguenti tipi di modifiche alle regole di quota:
+
+* Modifica di una quota esistente.
++
+Ad esempio, la modifica dei limiti di una quota esistente.
+
+* Aggiunta di una quota per una destinazione di quota per la quale esiste una quota predefinita o una quota di rilevamento predefinita.
+* Eliminazione di una quota per la quale è specificata una quota predefinita o una quota di tracciamento predefinita.
+* Combinazione di quote utente separate in un'unica quota multiutente.
+
+
+[NOTE]
+====
+Dopo aver apportato modifiche estese alle quote, è necessario eseguire una reinizializzazione completa per garantire che tutte le modifiche abbiano effetto.
+
+====
+[NOTE]
+====
+Se si tenta di ridimensionare e non tutte le modifiche delle quote possono essere incorporate utilizzando un'operazione di ridimensionamento, ONTAP emette un avviso. Dal report delle quote è possibile determinare se il sistema storage sta monitorando l'utilizzo del disco per un determinato utente, gruppo o qtree. Se viene visualizzata una quota nel report delle quote, significa che il sistema di storage sta monitorando lo spazio su disco e il numero di file di proprietà della destinazione della quota.
+
+====
+.Esempi di modifiche alle quote che puoi rendere effettive tramite ridimensionamento
+Alcune modifiche delle regole di quota possono essere rese effettive ridimensionando. Prendere in considerazione le seguenti quote:
+
+[listing]
+----
+
+#Quota Target type             disk  files thold sdisk sfile
+#------------ ----             ----  ----- ----- ----- -----
+*             user@/vol/vol2    50M   15K
+*             group@/vol/vol2  750M   85K
+*             tree@/vol/vol2      -     -
+jdoe          user@/vol/vol2/  100M   75K
+kbuck         user@/vol/vol2/  100M   75K
+----
+Si supponga di apportare le seguenti modifiche:
+
+* Aumentare il numero di file per la destinazione utente predefinita.
+* Aggiungere una nuova quota utente per un nuovo utente, boris, che richiede un limite di dischi superiore alla quota utente predefinita.
+* Eliminare la voce di quota esplicita dell'utente kbuck; il nuovo utente ora necessita solo dei limiti di quota predefiniti.
+
+
+Tali modifiche comportano le seguenti quote:
+
+[listing]
+----
+
+#Quota Target type             disk  files thold sdisk sfile
+#------------ ----             ----  ----- ----- ----- -----
+*             user@/vol/vol2    50M   25K
+*             group@/vol/vol2  750M   85K
+*             tree@/vol/vol2      -     -
+jdoe          user@/vol/vol2/  100M   75K
+boris         user@/vol/vol2/  100M   75K
+----
+Il ridimensionamento attiva tutte queste modifiche; non è necessaria una reinizializzazione della quota completa.
+
+
+
+== Reinizializzazione della quota ONTAP
+
+Sebbene il ridimensionamento delle quote sia più rapido, è necessario eseguire una reinizializzazione completa delle quote se si apportano modifiche di piccole o grandi dimensioni alle quote.
+
+È necessario eseguire una reinizializzazione della quota completa nei seguenti casi:
+
+* Si crea una quota per una destinazione che non ha in precedenza una quota (né una quota esplicita né una derivata da una quota predefinita).
+* Lo stile di sicurezza di un qtree viene modificato da UNIX a misto o NTFS.
+* Lo stile di protezione di un qtree viene modificato da misto o NTFS a UNIX.
+* Gli utenti vengono rimossi da una destinazione di quota con più utenti o aggiunti a una destinazione che ha già più utenti.
+* Le quote vengono modificate in modo esteso.
+
+
+.Esempio di modifiche delle quote che richiedono l'inizializzazione
+Supponiamo di avere un volume che contiene tre qtree e che le uniche quote nel volume siano tre quote ad albero esplicite. Si decide di apportare le seguenti modifiche:
+
+* Aggiungere un nuovo qtree e creare una nuova quota ad albero.
+* Aggiungere una quota utente predefinita per il volume.
+
+
+Entrambe le modifiche richiedono un'inizializzazione della quota completa. Il ridimensionamento non rende effettive le quote.
