@@ -15,12 +15,14 @@ I seguenti concetti illustrano il funzionamento della funzione di write-back di 
 
 
 
+[[delegations]]
 == Delegazioni
 
 Il blocco delle deleghe e delle deleghe dei dati consente a FlexCache di mantenere i dati nella cache write-back e write-around coerenti, coerenti e aggiornati. L'origine coordina entrambe le delegazioni.
 
 
 
+[[lock-delegations]]
 === Bloccare le delegazioni
 
 Una delega di blocco è un'autorità di blocco a livello di protocollo che l'origine concede a una cache in base al file per emettere blocchi di protocollo ai client in base alle necessità. Questi includono xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Deleghe di bloccaggio esclusive (XLD)] e xref:flexcache-write-back-overview.html#flexcache-write-back-terminology[Deleghe di blocco condivise (SLD)].
@@ -47,6 +49,7 @@ NOTE: Esiste un limite di 170 XLD per componente di origine.
 
 
 
+[[data-delegations]]
 === Delegazioni di dati
 
 Una delega di dati è una garanzia per file assegnata a una cache dall'origine in cui i dati memorizzati nella cache per quel file sono aggiornati. Finché la cache dispone di una delega di dati per un file, può fornire i dati memorizzati nella cache per quel file al client senza dover contattare l'origine. Se la cache non dispone di una delega di dati per il file, deve contattare l'origine per ricevere i dati richiesti dal client.
@@ -57,6 +60,7 @@ Le letture in una cache abilitata alla riscrittura funzionano generalmente come 
 
 
 
+[[tracking-dirty-data]]
 == Monitoraggio dei dati sporchi
 
 La riscrittura dalla cache all'origine avviene in modo asincrono. Ciò significa che i dati sporchi non vengono immediatamente riscritti nell'origine. ONTAP utilizza un sistema di registrazione dei dati "sporchi" per tenere traccia dei dati "sporchi" per ogni file. Ogni record di dati sporchi (DDR) rappresenta circa 20MB MB di dati sporchi per un particolare file. Quando un file è in fase di scrittura, ONTAP inizia a cancellare nuovamente i dati sporchi dopo che sono stati riempiti due DDR e il terzo DDR è in fase di scrittura. Ciò comporta circa 40MB GB di dati sporchi che rimangono in una cache durante le operazioni di scrittura. Per i protocolli stateful (NFSv4.x, SMB), i restanti 40MB GB di dati verranno riportati all'origine quando il file viene chiuso. Per i protocolli stateless (NFSv3), i 40MB GB di dati vengono eliminati quando viene richiesto l'accesso al file in una cache diversa o dopo che il file è inattivo per due o più minuti, fino a un massimo di cinque minuti. Per ulteriori informazioni sul lavaggio dei dati sporchi con timer o con trigger di spazio, vedere <<Scrubber della cache>>.
@@ -78,6 +82,7 @@ Oltre ai DDR e agli scrubber, alcune operazioni NAS front-end attivano anche il 
 
 
 
+[[disconnected-mode]]
 == Modalità disconnessa
 
 Quando un XLD per un file è contenuto in una cache write-around e tale cache viene disconnessa dall'origine, le letture per quel file sono ancora consentite nelle altre cache e origine. Questo comportamento differisce quando un XLD è tenuto da una cache abilitata alla scrittura. In questo caso, se la cache è disconnessa, le letture del file si bloccheranno ovunque. Ciò contribuisce a garantire il mantenimento della coerenza, della valuta e della coerenza al 100%. Le letture sono consentite in modalità write-around perché all'origine viene garantita la disponibilità di tutti i dati che sono stati confermati in scrittura al client. In modalità write-back durante una disconnessione, l'origine non può garantire che tutti i dati scritti e riconosciuti dalla cache abilitata per la riscrittura siano stati inseriti nell'origine prima della disconnessione.
@@ -89,6 +94,7 @@ WARNING: La revoca manuale di XLD comporta la perdita di dati sporchi per il fil
 
 
 
+[[cache-scrubbers]]
 == Scrubber della cache
 
 In ONTAP sono presenti scrubber che vengono eseguiti in risposta a eventi specifici, come la scadenza di un timer o la violazione delle soglie di spazio. Gli scrubbers prendono un blocco esclusivo sul file che viene sottoposto a scrubbing, bloccando efficacemente l'io in quel file fino al completamento dello scrubbing.
@@ -104,18 +110,23 @@ Le lavapavimenti includono:
 
 
 
+[[sequence-diagrams]]
 == Schemi di sequenza
 
 Questi diagrammi di sequenza illustrano la differenza nelle conferme di scrittura tra la modalità write-around e write-back.
 
 
 
+[[write-around-sequence-diagram]]
+[[write-around]]
 === Write-around
 
 image:flexcache-write-around-sequence-diagram.png["Diagramma della sequenza write-around di FlexCache"]
 
 
 
+[[write-back-sequence-diagram]]
+[[write-back]]
 === Riscrittura
 
 image:flexcache-write-back-sequence-diagram.png["Diagramma della sequenza di riscrittura FlexCache"]

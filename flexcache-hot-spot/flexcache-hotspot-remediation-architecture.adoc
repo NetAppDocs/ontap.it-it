@@ -15,28 +15,33 @@ Per risolvere i problemi di hot-spotting, esplora le cause alla base dei colli d
 
 
 
+[[understanding-the-bottleneck]]
 == Comprendere il collo di bottiglia
 
 Di seguito <<Figure-1,immagine>> viene illustrato un tipico scenario di hotspotting a file singolo. Il volume è un FlexGroup con un singolo componente per nodo e il file risiede nel nodo 1.
 
 Se si distribuiscono tutte le connessioni di rete dei client NAS su diversi nodi nel cluster, si continuano a creare colli di bottiglia sulla CPU che gestisce l'affinità del volume in cui risiede il file hot. Inoltre, viene introdotto il traffico di rete cluster (traffico est-ovest) alle chiamate provenienti da client connessi a nodi diversi da dove risiede il file. L'overhead del traffico est-ovest è generalmente piccolo, ma per i carichi di lavoro di calcolo dalle performance elevate ogni bit conta.
 
+[[Figure-1]]
 .Figura 1: Scenario hotspot FlexGroup a file singolo
 image:flexcache-hotspot-hdfa-flexgroup.png["Figura 1: Scenario hotspot FlexGroup a file singolo"]
 
 
 
+[[why-an-auto-provisioned-flexcache-isnt-the-answer]]
 == Perché un FlexCache con provisioning automatico non è la risposta
 
 Per rimediare agli hotspot, eliminare il collo di bottiglia della CPU e preferibilmente anche il traffico est-ovest. FlexCache può aiutare se impostato correttamente.
 
 Nell'esempio seguente, FlexCache viene automaticamente fornito con System Manager, NetApp Console o argomenti CLI predefiniti. <<Figure-1,Figura 1>> E<<Figure-2,figura 2>> a prima vista sembrano uguali: entrambi sono contenitori NAS a quattro nodi e un solo componente.  L'unica differenza è che il contenitore NAS della figura 1 è un FlexGroup, mentre il contenitore NAS della figura 2 è un FlexCache.  Ogni figura descrive lo stesso collo di bottiglia: la CPU del nodo 1 per l'accesso al file attivo tramite l'affinità del volume e il traffico est-ovest che contribuisce alla latenza.  Un FlexCache con provisioning automatico non ha eliminato il collo di bottiglia.
 
+[[Figure-2]]
 .Figura 2: Scenario FlexCache con provisioning automatico
 image:flexcache-hotspot-hdfa-1x4x1.png["Figura 2: Scenario FlexCache con provisioning automatico"]
 
 
 
+[[anatomy-of-a-flexcache]]
 == Anatomia di un FlexCache
 
 Per progettare in modo efficace un FlexCache per la correzione degli hotspot, è necessario conoscere alcuni dettagli tecnici su FlexCache.
@@ -51,6 +56,7 @@ La soluzione è un array di Flexcache ad alta densità.
 
 
 
+[[anatomy-of-a-high-density-flexcache]]
 == Anatomia di un FlexCache ad alta densità
 
 Un HDF (High-Density FlexCache) presenta componenti su un numero di nodi pari a quello consentito dai requisiti di capacità per i dati memorizzati nella cache. L'obiettivo è attivare la cache su un singolo nodo. Se i requisiti di capacità rendono impossibile l'operazione, è possibile collocare dei componenti solo su pochi nodi.
