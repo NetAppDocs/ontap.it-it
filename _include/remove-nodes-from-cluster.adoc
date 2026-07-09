@@ -44,35 +44,35 @@ cluster modify -node <node_name> -epsilon true
 ----
 
 
-. Identificare il nodo master corrente:
+. Identifica il nodo primario corrente:
 +
 [source, cli]
 ----
 cluster ring show
 ----
 +
-Il nodo master è il nodo che contiene processi quali `mgmt` , `vldb`, , `vifmgr` `bcomd` e `crs`.
+Il nodo primario è il nodo che contiene processi come `mgmt`, `vldb`, `vifmgr`, `bcomd` e `crs`.
 
-. Se il nodo che stai rimuovendo è il nodo master corrente, abilita un altro nodo nel cluster affinché venga eletto come nodo master:
+. Se il nodo che stai rimuovendo è il nodo primario corrente, abilita un altro nodo del cluster perché venga eletto come nodo primario:
 +
-.. Rendere il nodo master corrente non idoneo a partecipare al cluster:
+.. Rendi il nodo primario corrente non idoneo a partecipare al cluster:
 +
 [source, cli]
 ----
 cluster modify -node <node_name> -eligibility false
 ----
 +
-Il nodo viene contrassegnato come non funzionante finché non ne viene ripristinata l'idoneità. Quando il nodo master diventa non idoneo, uno dei nodi rimanenti viene eletto dal quorum del cluster come nuovo master.
+Il nodo viene contrassegnato come non integro finché non viene ripristinata l'idoneità. Quando il nodo primario diventa non idoneo, uno dei nodi rimanenti viene eletto dal quorum del cluster come nuovo primario.
 
 +
 [NOTE]
 ====
 Se si esegue questo passaggio sul primo nodo di una coppia HA, è necessario contrassegnare solo quel nodo come non idoneo. Non modificare lo stato del partner HA.
 
-Se il nodo partner viene selezionato come nuovo master, è necessario verificare se detiene epsilon prima di renderlo non idoneo. Se il nodo partner detiene epsilon, è necessario spostare epsilon su un nodo diverso che rimane nel cluster prima di renderlo non idoneo. Si esegue questa operazione quando si ripetono questi passaggi per rimuovere il nodo partner.
+Se il nodo partner viene selezionato come nuovo primario, devi verificare se possiede epsilon prima di renderlo non idoneo. Se il nodo partner possiede epsilon, devi spostare epsilon su un altro nodo rimanente nel cluster prima di renderlo non idoneo. Devi fare questa operazione quando ripeti questi passaggi per rimuovere il nodo partner.
 
 ====
-.. Rendere il nodo master precedente idoneo a partecipare nuovamente al cluster:
+.. Rendi nuovamente idoneo a partecipare al cluster il nodo primario precedente:
 +
 [source, cli]
 ----
@@ -125,7 +125,7 @@ Il sistema informa l'utente di quanto segue:
 Viene generato un messaggio di errore se si verificano condizioni che è necessario risolvere prima di rimuovere il nodo. Ad esempio, il messaggio potrebbe indicare che il nodo dispone di risorse condivise che è necessario rimuovere o che si trova in una configurazione ha del cluster o in una configurazione di failover dello storage che è necessario disattivare.
 
 +
-Se il nodo è il master del quorum, il cluster perderà brevemente e tornerà al quorum. Questa perdita di quorum è temporanea e non influisce sulle operazioni dei dati.
+Se il nodo è il primario di quorum, il cluster perderà brevemente il quorum per poi ripristinarlo. Questa perdita di quorum è temporanea e non influisce sulle operazioni sui dati.
 
 
 
