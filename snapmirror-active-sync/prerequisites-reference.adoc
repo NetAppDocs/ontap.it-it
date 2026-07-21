@@ -21,6 +21,7 @@ Durante il planning della distribuzione SnapMirror Active Sync, assicurati di av
 [[hardware]]
 == Hardware
 
+.Supporto SAN
 Nella tabella seguente sono illustrate le configurazioni cluster NetApp supportate.
 
 [cols="25,25,25,25"]
@@ -35,10 +36,10 @@ AFF
  a| 
 A-Series e C-Series
  a| 
-Automated Failover Duplex (simmetrico attivo/attivo), Automated Failover (asimmetrico attivo/passivo)
+Failover automatico duplex (attivo/attivo asimmetrico), Failover automatico (attivo/passivo asimmetrico)
  a| 
 * 2 (ONTAP 9.9.1 o successivo)
-* 4 (ONTAP 9.16.1 con configurazioni simmetriche attive/attive)
+* 4 (ONTAP 9.16.1 con configurazioni simmetriche attivo/attivo)
 
 
 
@@ -48,10 +49,10 @@ ASA
  a| 
 A-Series e C-Series
  a| 
-Automated Failover Duplex (simmetrico attivo/attivo), Automated Failover (asimmetrico attivo/passivo)
+Failover automatico duplex (simmetrico attivo/attivo), failover automatico (asimmetrico attivo/passivo)
  a| 
 * 2 (ONTAP 9.9.1 o successivo
-* 4 (ONTAP 9.16.1 con configurazioni simmetriche attive/attive)
+* 4 (ONTAP 9.16.1 con configurazioni simmetriche attivo/attivo)
 
 
 
@@ -61,13 +62,43 @@ ASA r2
  a| 
 Tutto
  a| 
-Failover duplex automatizzato (simmetrico attivo/attivo)
+Failover automatico duplex (simmetrico attivo/attivo)
  a| 
 * 2 (ONTAP 9.17.1 o precedente)
 * 4 (ONTAP 9.18.1 o successivo)
 
 
 |===
+.Supporto NAS
+Nella tabella seguente sono illustrate le configurazioni cluster NetApp supportate.
+
+[cols="25,25,25,25"]
+|===
+| Tipo di cluster | Modelli supportati | Funzionalità supportate | Numero massimo di nodi cluster supportati 
+
+
+ a| 
+AFF
+ a| 
+A-Series e C-Series
+ a| 
+Attivo/passivo asimmetrico (failover automatico)
+ a| 
+2 (ONTAP 9.19.1 o versioni successive)
+
+
+
+ a| 
+AFX
+ a| 
+Tutto
+ a| 
+Attivo/passivo asimmetrico (failover automatico)
+ a| 
+4 (ONTAP 9.19.1 o versioni successive)
+
+|===
+.Replica multipiattaforma
 La tabella riportata di seguito illustra le funzionalità di replica tra i tipi di cluster.
 
 [cols="33,33,33"]
@@ -83,6 +114,15 @@ Serie A AFF
 AFF C-Series
  a| 
 Sì
+
+
+
+ a| 
+AFF
+ a| 
+AFX
+ a| 
+No
 
 
 
@@ -111,15 +151,6 @@ ASA r2
  a| 
 No
 
-
-
- a| 
-ASA r2
- a| 
-ASA r2
- a| 
-Sì
-
 |===
 
 
@@ -136,6 +167,21 @@ Sì
 
 
 | Versione del mediatore ONTAP | Versioni Linux supportate 
+
+
+ a| 
+1.12.1
+ a| 
+* Red Hat Enterprise Linux
++
+** Compatibile: 10.1 e 9.7 ^1^
+** Consigliato: 10.2, 10.0, 9.8, 9.6, 9.4 e 8.10
+
+
+* Rocky Linux 10.2, 9.8 e 8.10
+* Oracle Linux 10.1 e 9.7
+
+
 
 
  a| 
@@ -320,7 +366,7 @@ NOTE: Se i sistemi di storage ONTAP sono stati acquistati prima di giugno 2019, 
 [[supported-protocols]]
 == Protocolli supportati
 
-SnapMirror ActiveSync supporta i protocolli SAN.
+SnapMirror active sync supporta i seguenti protocolli SAN.
 
 * I protocolli FC e iSCSI sono supportati a partire da ONTAP 9.9.1.
 * Il protocollo NVMe è supportato con i carichi di lavoro VMware a partire da ONTAP 9.17.1.
@@ -339,6 +385,23 @@ Non è possibile espandere o ridurre un gruppo di coerenza in modo non distrutti
 
 
 
+A partire da ONTAP 9.19.1, la sincronizzazione attiva di SnapMirror supporta i seguenti protocolli NAS.
+
+* NFSv3 e versioni successive
++
+Il failover non interruttivo è supportato per NFSv3 e versioni successive.
+
+* PMI
++
+** Il failover senza interruzione è supportato per le condivisioni CA di SMB 3.
+** Il failover con interruzione (ma senza mantenimento dell'RPO) è supportato per le condivisioni non CA di SMB2 e SMB3.
+** SMB1 non è supportato.
+
+
+
+
+I cluster NAS richiedono lo stesso indirizzo IP e la stessa configurazione di protocollo sia sul cluster primario che su quello secondario per abilitare il failover senza interruzioni. Poiché le SVM possono essere configurate con lo stesso indirizzo IP e gli stessi protocolli, SnapMirror active sync supporta le configurazioni NAS a livello di SVM; tuttavia, la SVM secondaria rimane inattiva (non in esecuzione) perché i LIF devono rimanere giù fino a quando non si verifica un failover, per evitare collisioni IP con la SVM primaria.
+
 
 
 [[ipspace]]
@@ -346,12 +409,14 @@ Non è possibile espandere o ridurre un gruppo di coerenza in modo non distrutti
 
 Lo spazio IP predefinito è richiesto da SnapMirror ActiveSync per le relazioni tra peer del cluster. Gli spazi IP personalizzati non sono supportati.
 
+Con SnapMirror active sync per NAS, le SVM primarie e secondarie possono trovarsi in IPspaces diversi.
+
 
 
 [[ntfs-security-style]]
 == Sicurezza NTFS
 
-Lo stile di protezione NTFS non è * supportato sui volumi di sincronizzazione attivi di SnapMirror.
+Lo stile di sicurezza NTFS *non* è supportato sui volumi SnapMirror active sync per SAN. Lo stile di sicurezza NTFS è supportato con SnapMirror active sync per NAS.
 
 
 
@@ -370,7 +435,7 @@ Lo stile di protezione NTFS non è * supportato sui volumi di sincronizzazione a
 [[other-prerequisites]]
 == Altri prerequisiti
 
-* Nelle release precedenti a ONTAP 9.15.1, le relazioni di SnapMirror active sync non sono supportate sui volumi di destinazione in lettura-scrittura (volumi convertiti in lettura-scrittura da DP in un attivo-passivo asimmetrico). Prima di poter utilizzare un volume in lettura-scrittura, è necessario convertirlo in un volume DP creando una relazione di SnapMirror a livello di volume (asincrona o sincrona) e poi eliminando la relazione. Per dettagli, vedere link:convert-active-sync-task.html["Converti relazioni di SnapMirror esistenti in sincronizzazione attiva SnapMirror"].
+* Nelle versioni precedenti a ONTAP 9.15.1, le relazioni di sincronizzazione attiva di SnapMirror non sono supportate sui volumi di destinazione di lettura/scrittura (volumi convertiti da DP a lettura/scrittura in una configurazione asimmetrica attivo-passivo). Prima di poter utilizzare un volume di lettura/scrittura, devi convertirlo in un volume DP creando una relazione di SnapMirror a livello di volume (asincrona o sincrona) e poi eliminando la relazione. Per dettagli, vedi link:convert-active-sync-task.html["Converti relazioni di SnapMirror esistenti in sincronizzazione attiva SnapMirror"].
 * Le VM di archiviazione che utilizzano SnapMirror ActiveSync non possono essere aggiunte ad Active Directory come computer client.
 
 

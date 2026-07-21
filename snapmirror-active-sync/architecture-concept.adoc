@@ -16,16 +16,16 @@ summary: 'Comprendere l"architettura di SnapMirror Active Sync per garantire la 
 [role="lead"]
 L'architettura di sincronizzazione attiva SnapMirror consente carichi di lavoro attivi su entrambi i cluster, dove i carichi di lavoro primari possono essere serviti simultaneamente da entrambi i cluster. Le normative per gli istituti finanziari di alcuni Paesi impongono alle aziende di essere periodicamente accessibili anche dai loro data center secondari, tramite distribuzioni chiamate "Tick-Tock", abilitate dalla sincronizzazione attiva SnapMirror .
 
-La relazione di protezione dei dati per la continuità operativa viene creata tra il sistema di storage di origine e quello di destinazione, aggiungendo al gruppo di coerenza le LUN o gli spazi dei nomi NVMe specifici dell'applicazione, provenienti da volumi diversi all'interno di una macchina virtuale di storage (SVM). In condizioni operative normali, l'applicazione aziendale scrive sul gruppo di coerenza primario, che replica in modo sincrono questo I/O sul gruppo di coerenza mirror.
+In una configurazione SAN, la relazione di protezione dei dati per garantire la continuità operativa viene creata tra il sistema storage di origine e il sistema storage di destinazione, aggiungendo al gruppo di coerenza le LUN specifiche dell'applicazione o i namespace NVMe provenienti da volumi diversi all'interno di una storage virtual machine (SVM). In condizioni operative normali, l'applicazione aziendale scrive nel gruppo di coerenza primario, che replica in modo sincrono questa operazione di I/O nel gruppo di coerenza mirror.
 
 image:snapmirror-active-sync-architecture.png["Architettura di SnapMirror attiva"]
 
-Sebbene esistano due copie separate dei dati nella relazione di protezione dei dati, poiché SnapMirror Active Sync mantiene la stessa identità del LUN o dello spazio dei nomi NVMe, l'host dell'applicazione la considera un dispositivo virtuale condiviso con più percorsi, mentre viene scritta solo una copia del LUN o dello spazio dei nomi NVMe alla volta. Quando un errore rende offline il sistema di storage primario, ONTAP rileva l'errore e utilizza il Mediator per una nuova conferma; se né ONTAP né il Mediator sono in grado di effettuare il ping del sito primario, ONTAP esegue l'operazione di failover automatico. Questo processo consente di eseguire il failover solo di un'applicazione specifica, senza la necessità di interventi manuali o di scripting, che in precedenza erano necessari per il failover.
+Anche se nella relazione di protezione dei dati esistono due copie separate dei dati, poiché SnapMirror active sync mantiene la stessa identità di LUN o namespace NVMe in una configurazione SAN e gli stessi volumi in un SVM per una configurazione NAS, l'host dell'applicazione vede questo come un dispositivo virtuale condiviso con più percorsi, mentre solo una copia di LUN, namespace NVMe o volume viene scritta alla volta. Quando un errore rende il sistema di storage primario offline, ONTAP rileva questo errore e utilizza il Mediator per la riconferma; se né ONTAP né il Mediator riescono a pingare il sito primario, ONTAP esegue l'operazione di failover automatico. Questo processo permette di eseguire il failover solo di una specifica applicazione senza bisogno di interventi manuali o script, che prima erano necessari per il failover.
 
 Altri punti da considerare:
 
 * Sono supportati i volumi senza mirror che esistono al di fuori della protezione per la business continuity.
-* È supportata un'unica altra relazione asincrona di SnapMirror per i volumi protetti per la business continuity.
+* È supportata una singola relazione di fan-out asincrona SnapMirror per i volumi protetti per la business continuity. Nelle configurazioni NAS, è supportata solo una relazione asincrona basata su volume. Le relazioni asincrone SVM o di consistency group non sono supportate.
 * Le topologie a cascata non sono supportate con protezione per la business continuity.
 
 
@@ -43,8 +43,17 @@ Inoltre, consente ai cluster di ottenere queste informazioni come parte del proc
 .Mediatore ONTAP
 ONTAP Mediator è installato in un terzo dominio di errore, distinto dai due cluster ONTAP che monitora. Questa configurazione include tre componenti chiave:
 
+Configurazioni SAN
+
 * Cluster ONTAP primario che ospita il gruppo di coerenza primario di sincronizzazione attiva SnapMirror
 * Cluster ONTAP secondario che ospita il gruppo di coerenza del mirroring
+* Mediatore ONTAP
+
+
+Configurazioni NAS
+
+* Cluster ONTAP primario che ospita la SVM primaria di sincronizzazione attiva SnapMirror
+* Cluster ONTAP secondario che ospita la SVM mirror
 * Mediatore ONTAP
 
 
@@ -56,10 +65,9 @@ ONTAP Mediator viene utilizzato per i seguenti scopi:
 
 
 
-NOTE: ONTAP Mediator 1.7 può gestire dieci coppie di cluster per garantire la continuità aziendale.
-
-
 NOTE: Quando ONTAP Mediator non è disponibile, non è possibile eseguire failover pianificati o automatici.  I dati dell'applicazione continuano a replicarsi in modo sincrono, senza alcuna interruzione, senza alcuna perdita di dati.
+
+Consulta la documentazione link:mediator-install-task.html["Mediatore ONTAP"] per maggiori informazioni.
 
 .Mediatore cloud ONTAP
 A partire da ONTAP 9.17.1, ONTAP Cloud Mediator è disponibile come servizio basato su cloud nella console NetApp per l'utilizzo con SnapMirror ActiveSync. Analogamente a ONTAP Mediator, ONTAP Cloud Mediator offre le seguenti funzionalità in una relazione SnapMirror ActiveSync:
@@ -73,10 +81,10 @@ ONTAP Cloud Mediator semplifica l'implementazione della sincronizzazione attiva 
 
 
 
-[[snapmirror-active-sync-operation-workflow]]
-== Flusso di lavoro dell'operazione di sincronizzazione attiva SnapMirror
+[[snapmirror-active-sync-operation-workflow-for-san-configurations]]
+== SnapMirror workflow dell'operazione di sincronizzazione attiva per configurazioni SAN
 
-La figura seguente illustra il design della sincronizzazione attiva di SnapMirror a un livello elevato.
+La figura seguente illustra a grandi linee la progettazione di SnapMirror active sync in una configurazione SAN.
 
 image:workflow_san_snapmirror_business_continuity.png["Progettazione della sincronizzazione attiva SnapMirror ad alto livello"]
 
@@ -89,7 +97,7 @@ In caso di disastro nel data center primario, ONTAP indirizza il data center sec
 [[symmetric-activeactive]]
 == Attivo/attivo simmetrico
 
-SnapMirror Active Sync offre soluzioni asimmetriche e simmetriche.
+SnapMirror active sync offre soluzioni asimmetriche e simmetriche per le configurazioni SAN.
 
 Nelle configurazioni asimmetriche, la copia di storage primaria espone un percorso attivo-ottimizzato e gestisce attivamente l'I/O del client. Il sito secondario utilizza un percorso remoto per l'I/O. I percorsi di storage per il sito secondario sono considerati attivi-non-ottimizzati. L'accesso alla LUN di scrittura è gestito tramite proxy dal sito secondario. Il protocollo NVMe non è supportato nelle configurazioni asimmetriche.
 
@@ -98,3 +106,14 @@ Nelle configurazioni _attive/attive simmetriche_, i percorsi ottimizzati per l'a
 image:snapmirror-active-sync-symmetric.png["Configurazione attiva simmetrica"]
 
 Active/Active simmetrico è destinato ad applicazioni in cluster, tra cui VMware Metro Storage Cluster, Oracle RAC e Windows failover Clustering con SQL.
+
+
+
+[[snapmirror-active-sync-operation-workflow-for-nas-configurations]]
+== SnapMirror workflow dell'operazione di sincronizzazione attiva per le configurazioni NAS
+
+A partire da ONTAP 9.19.1, SnapMirror active sync offre protezione ai carichi di lavoro NAS a livello di SVM. In una configurazione NAS, la SVM di destinazione (secondaria) rimane in uno stato di inattività fino al verificarsi di un evento di failover. Per abilitare il failover senza interruzioni, le configurazioni di identità di rete e di protocollo, inclusi gli indirizzi IP, devono essere identiche sia sulla SVM primaria che su quella secondaria. Queste configurazioni vengono replicate automaticamente nel cluster secondario, garantendo la coerenza degli indirizzi IP e delle impostazioni di protocollo in entrambi i cluster. La figura seguente illustra la progettazione di SnapMirror active sync in una configurazione NAS a grandi linee.
+
+image:snapmirror-active-sync-nas-config.png["Configurazione NAS di SnapMirror active sync"]
+
+In ONTAP 9.19.1, sono supportati solo i volumi FlexVol. I gruppi di coerenza non sono supportati. Con il solo supporto FlexVol, il cluster secondario non garantisce la coerenza dell'ordine di scrittura tra i volumi. Nella figura, i dati e le informazioni di configurazione vengono replicati dall'SVM A1 sul cluster di origine all'SVM inattivo, SVM A1', sul cluster di destinazione.

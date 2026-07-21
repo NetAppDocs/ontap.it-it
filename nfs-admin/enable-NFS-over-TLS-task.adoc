@@ -1,0 +1,311 @@
+---
+permalink: nfs-admin/enable-nfs-over-tls-task.html 
+sidebar: sidebar 
+keywords: nfs over tls, encryption, nfs traffic, mutual tls 
+summary: 'A partire da ONTAP 9.19.1, puoi crittografare il traffico NFS in transito con TLS 1.3 per gli SVM abilitati per NFS. NFS su TLS supporta la configurazione TLS per singola LIF e include l"autenticazione host mutua TLS (mTLS) opzionale e controlli delle policy di esportazione che possono negare l"accesso TCP non TLS ai client corrispondenti.' 
+---
+= Abilita NFS su TLS per crittografare il traffico NFS in transito
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.19.1, puoi crittografare il traffico NFS in transito con TLS 1.3 per gli SVM abilitati per NFS. NFS su TLS supporta la configurazione TLS per singola LIF e include l'autenticazione host mutua TLS (mTLS) opzionale e controlli delle policy di esportazione che possono negare l'accesso TCP non TLS ai client corrispondenti.
+
+NFS su TLS è supportato in ONTAP 9.19.1 e versioni successive per le piattaforme ONTAP on-premises. Non è disponibile per le piattaforme cloud. NFS su TLS è supportato solo su TCP. TLS su RDMA non è supportato in ONTAP 9.19.1.
+
+.A proposito di questa attività
+NFS over TLS funziona con l'infrastruttura NFS ONTAP esistente, quindi le applicazioni continuano a usare NFS normalmente mentre TLS cripta il traffico NFS in transito. Gli amministratori usano certificati X.509 per autenticare il sistema storage e stabilire sessioni crittografate. Puoi abilitare mTLS su singole LIF dati per richiedere, in modo opzionale, la convalida del certificato client. NFS over TLS supporta un massimo di 10.000 connessioni NFS over TLS qualificate in ONTAP 9.19.1. Se hai bisogno di un limite di connessioni superiore, contatta il supporto NetApp per assistenza.
+
+.Prima di iniziare
+* Devi avere un certificato server X.509 per ogni LIF dati NFS abilitato per TLS. Il certificato può essere generato in ONTAP, installato da una CA esterna oppure selezionato tra i certificati già installati che soddisfano i controlli di identità richiesti per la LIF.
++
+[NOTE]
+====
+Il Subject Alternate Name (SAN) deve avere  `ipaddr` impostato sull'indirizzo IP LIF oppure  `dns` name impostato sul FQDN LIF.
+
+====
+* I client devono supportare RPC-with-TLS su TCP, devono essere configurati per richiedere TLS durante il montaggio e devono considerare attendibile l'autorità di certificazione che ha firmato il certificato del server NFS. I passaggi di configurazione lato client non sono documentati qui perché variano a seconda del client.
+
+
+
+
+[[configure-nfs-over-tls-on-your-ontap-system-to-encrypt-in-transit-data]]
+== Configura NFS su TLS sul tuo sistema ONTAP per crittografare i dati in transito
+
+Puoi configurare gradualmente NFS su TLS sulle LIF dati NFS SVM nel tempo, oppure puoi configurarlo solo dove è richiesto l'accesso TLS.
+
+Per impostazione predefinita, un LIF abilitato per TLS può accettare anche NFS su TCP da client che non richiedono TLS, a meno che tu non configuri l'applicazione della regola export-policy con allow-nfs-tls-only. Usa questa impostazione quando devi negare l'accesso non TLS ai client corrispondenti.
+
+
+
+[[step-1-prepare-to-enable-nfs-over-tls]]
+== Passaggio 1: Preparati ad abilitare NFS su TLS
+
+Prepara il tuo sistema ONTAP per NFS su TLS verificando che siano soddisfatti i seguenti requisiti.
+
+.Fasi
+. Conferma che NFS sia configurato sull'SVM:
++
+[source, cli]
+----
+vserver nfs show -vserver <vserver_name>
+----
+. Conferma che esista una LIF dati NFS:
++
+[source, cli]
+----
+network interface show -role data -instance -data-protocol nfs -vserver <vserver_name>
+----
+
+
+
+
+[[step-2-verify-or-install-a-valid-x-509-server-certificate-for-each-tls-enabled-nfs-data-lif]]
+== Passaggio 2: Verifica o installa un certificato server X.509 valido per ogni LIF dati NFS abilitato per TLS
+
+Assicurati che sia disponibile un certificato server X.509 valido per ogni LIF dati NFS abilitato per TLS. Se non disponi di un certificato valido, generane e installane uno.
+
+.Fasi
+. Visualizza i certificati server installati:
++
+[source, cli]
+----
+security certificate show -type server -vserver <vserver_name>
+----
++
+Verifica che il certificato sia associato a un LIF abilitato per TLS:
+
++
+[source, cli]
+----
+vserver nfs tls interface show -fields certificate-name -vserver <vserver_name> -lif <lif_name>
+----
++
+Se non hai un certificato valido, segui le istruzioni per generare e installare un certificato: link:https://docs.netapp.com/us-en/ontap/authentication/install-server-certificate-cluster-svm-ssl-server-task.html["Installare un certificato server firmato dalla CA"].
+
+. Conferma che i client NFS supportano RPC-with-TLS su TCP e si fidano dell'autorità di certificazione che ha firmato il certificato del server.
+
+
+
+
+[[step-3-enable-nfs-over-tls]]
+== Passaggio 3: Abilita NFS su TLS
+
+Utilizza ONTAP System Manager o la ONTAP CLI per abilitare NFS su TLS sulle LIF dati NFS SVM.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+Usa System Manager di ONTAP per configurare TLS su una o più LIF dati NFS per la SVM che gestisce il traffico NFS.
+
+.Fasi
+. In System Manager, seleziona *Cluster > Storage VM*, seleziona una storage VM abilitata per NFS, seleziona *Impostazioni* e poi seleziona l'opzione delle impostazioni NFS over TLS sulla scheda NFS.
+. Seleziona uno o più LIF di dati con stato TLS disabilitato, quindi seleziona *Abilita TLS*. Seleziona un certificato installato, crea un nuovo certificato oppure fornisci un certificato firmato da un'autorità di certificazione esterna e la relativa chiave privata.
+. Modifica o disabilita TLS. Per le interfacce con stato TLS abilitato, seleziona *Modifica TLS* per rivedere o modificare il certificato e l'impostazione di autenticazione host, oppure seleziona *Disabilita TLS* per disattivare TLS per una o più interfacce.
+. Opzionale: puoi anche selezionare *Applica autenticazione host (mTLS)*. L'opzione di convalida *Ignora nome alternativo del soggetto* è disponibile nel workflow di abilitazione ed è deselezionata per impostazione predefinita. Usa questa opzione solo quando il Subject Alternative Name del certificato non corrisponde all'interfaccia.
+. Opzionale: applica TLS nelle regole della policy di esportazione. Nei workflow di configurazione dell'esportazione NFS per NFSv3 e NFSv4, seleziona l'opzione per applicare TLS per NFS quando vuoi che ai client corrispondenti venga negato l'accesso TCP non TLS.
+
+
+--
+.CLI
+--
+Usa la CLI di ONTAP per configurare TLS su una o più LIF dati NFS per la SVM che gestisce il traffico NFS.
+
+.Fasi
+. Verifica i LIF abilitati per TLS. Puoi utilizzare SVM o LIF come chiave per filtrare le voci.
++
+[source, cli]
+----
+vserver nfs tls interface show -status enabled
+----
+. Abilita TLS sulla LIF dati e associa il certificato.
++
+[source, cli]
+----
+ vserver nfs tls interface enable -vserver <vserver_name> -lif <lif_name> -certificate-name <certificate_name>
+----
++
+Questo esempio mostra come abilitare TLS sul LIF dati e associare il certificato:
+
++
+[listing]
+----
+vserver nfs tls interface enable -vserver vs1 -lif data1 -certificate-name tls_server_cert
+----
+. Opzionale: Abilita l'autenticazione host TLS reciproca (mTLS) per NFS su TLS. Per impostazione predefinita, NFS su TLS utilizza l'autenticazione host solo server. Per ottenere un livello di sicurezza più elevato, puoi imporre l'autenticazione host TLS reciproca (mTLS). Configuri l'applicazione dell'autenticazione host reciproca per ogni LIF. È disabilitata per impostazione predefinita. Assicurati che il client NFS abbia un certificato firmato valido installato e poi usa uno dei due metodi seguenti per installare il certificato client sul cluster ONTAP:
++
+.. Installa il certificato client direttamente quando vuoi considerare attendibile uno specifico certificato client:
++
+[source, cli]
+----
+security certificate install -type client
+----
+.. Installa l'autorità di certificazione (CA) client quando vuoi considerare attendibili tutti i certificati client firmati da una specifica CA:
++
+[source, cli]
+----
+security certificate install -type client-ca
+----
++
+*** Applica la convalida del certificato client durante la stretta di mano TLS sul LIF desiderato:
++
+[source, cli]
+----
+vserver nfs tls interface modify
+----
++
+Questo esempio mostra come imporre la convalida del certificato client durante la stretta di mano TLS sul LIF desiderato:
+
++
+[listing]
+----
+vserver nfs tls interface modify -vserver <vserver_name> -lif <lif_name> -enforce-host-auth true
+----
+
+
+
+
+. Opzionale: Consenti solo l'accesso tramite TLS per i client corrispondenti.
++
+** Nega l'accesso TCP non TLS ai client corrispondenti.
++
+[source, cli]
+----
+allow-nfs-tls-only
+----
+** Dopo aver aggiornato la regola, verifica l'impostazione:
++
+[source, cli]
+----
+vserver export-policy rule show -fields allow-nfs-tls-only,clientmatch
+----
++
+Questa limitazione si applica solo alle connessioni TCP. Le connessioni basate su RDMA non sono soggette a questa restrizione.
+
++
+Questo esempio mostra come imporre l'accesso solo tramite TLS per i client corrispondenti:
+
++
+[listing]
+----
+vserver export-policy rule modify -vserver vs1 -policyname default -ruleindex 10 -allow-nfs-tls-only true
+vserver export-policy rule show -vserver vs1 -policyname default -fields clientmatch,allow-nfs-tls-only
+----
+
+
+
+
+--
+====
+
+
+[[step-4-verify-the-configuration]]
+== Passaggio 4: Verifica la configurazione
+
+Dopo aver configurato NFS su TLS, verifica le impostazioni.
+
+.Fasi
+. Verifica le interfacce abilitate per TLS:
++
+[source, cli]
+----
+vserver nfs tls interface show -status enabled
+----
+. Facoltativamente, verifica che l'autenticazione reciproca tra host sia abilitata sul LIF:
++
+[source, cli]
+----
+vserver nfs tls interface show -vserver <vserver_name> -lif <lif_name> -instance
+----
+. Facoltativamente, verifica l'applicazione della policy di esportazione TLS:
++
+[source, cli]
+----
+vserver export-policy rule show -fields allow-nfs-tls-only,clientmatch
+----
+
+
+Usa i seguenti esempi per interpretare i comandi di verifica.
+
+Esempio: vserver nfs tls interface show
+
+[listing]
+----
+cluster1::> vserver nfs tls interface show
+
+         Logical                                                   Enforce Host
+Vserver  Interface  Address      TLS Status  TLS Certificate Name  Authentication
+-------- ---------- ------------ ---------- --------------------- --------------
+vs1      data1      192.0.2.10   enabled     tls_server_cert       false
+vs1      data2      192.0.2.11   disabled    -                     false
+
+2 entries were displayed.
+----
+Esempio: vserver nfs tls interface show -instance
+
+[listing]
+----
+cluster1::> vserver nfs tls interface show -vserver vs1 -lif data1 -instance
+Vserver: vs1
+Logical Interface: data1
+IP Address: 192.0.2.10
+TLS Status: enabled
+TLS Certificate Name: tls_server_cert
+TLS Certificate UUID: 11111111-2222-3333-4444-555555555555
+Enforce Host Authentication : true
+----
+Esempio: vserver export-policy rule show -fields clientmatch,allow-nfs-tls-only
+
+[listing]
+----
+
+cluster1::> vserver export-policy rule show -vserver vs1 -policyname default -fields clientmatch,allow-nfs-tls-only
+
+vserver  policyname  ruleindex  clientmatch     allow-nfs-tls-only
+-------  ----------  ---------  --------------  ------------------
+vs1      default     1          0.0.0.0/0       false
+vs1      default     10         192.0.2.0/24    true
+
+2 entries were displayed.
+----
+Utilizza la matrice del comportamento dei client TLS e mTLS per capire come si comportano i client quando TLS e mTLS sono configurati sull'SVM:
+
+[cols="4*"]
+|===
+| Comportamento del client | Solo TLS obbligatorio | mTLS applicato | Risultato atteso 
+
+
+| Il client richiede TLS | No | No | Mount riuscito su TLS 
+
+
+| Il client non richiede TLS | No | No | Il mount riesce tramite TCP non-TLS 
+
+
+| Il client non richiede TLS | Sì | No | L'accesso è negato dalla policy di esportazione 
+
+
+| Il client richiede TLS ma non presenta un certificato client valido | No o Sì | Sì | La negoziazione TLS fallisce 
+
+
+| Il client richiede TLS ma non si fida del certificato del server | No o Sì | No o Sì | Il montaggio non riesce perché la convalida del certificato sul client non riesce 
+|===
+
+
+[[whats-next]]
+== Cosa succederà
+
+* Convalida il comportamento del client: assicurati che i client Linux richiedano TLS e si fidino dell'autorità di certificazione utilizzata da ONTAP.
+* Rivedi EMS e statistiche: usa i messaggi EMS e gli oggetti statistici relativi a TLS, come  `nfs_tls` e  `nfs_tls_config_cache` per indagare su problemi di stretta di mano o di configurazione.
+
+
+
+
+[[related-information]]
+== Informazioni correlate
+
+* link:https://hwu.netapp.com["NetApp Hardware Universe"]
+* link:https://docs.netapp.com/us-en/ontap/authentication/install-server-certificate-cluster-svm-ssl-server-task.html["Installare un certificato server firmato dalla CA"]
+

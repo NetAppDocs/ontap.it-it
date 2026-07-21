@@ -18,10 +18,10 @@ Se non hai più bisogno di una protezione sincrona di SnapMirror RTO pari a zero
 
 
 
-[[remove-an-asymmetric-configuration]]
-== Rimuovere una configurazione asimmetrica
+[[remove-an-asymmetric-san-configuration]]
+== Rimuovi una configurazione SAN asimmetrica
 
-* Prima di eliminare la relazione di sincronizzazione attiva di SnapMirror, è necessario annullare la mappatura di tutte le LUN del cluster di destinazione.
+* Prima di eliminare la relazione di sincronizzazione attiva SAN di SnapMirror, tutte le LUN nel cluster di destinazione devono essere smappate.
 * Una volta che i LUN sono stati dismappati e l'host è stato nuovamente scansionato, la destinazione SCSI notifica agli host che l'inventario LUN è stato modificato. Le LUN esistenti sui volumi secondari RTO zero cambiano per riflettere una nuova identità dopo l'eliminazione della relazione RTO zero. Gli host rilevano le LUN del volume secondario come nuove LUN che non hanno alcuna relazione con le LUN del volume di origine.
 * I volumi secondari rimangono volumi DP dopo l'eliminazione della relazione. È possibile eseguire il `snapmirror break` comando per convertirli in lettura/scrittura.
 * L'eliminazione della relazione non è consentita nello stato di failover quando la relazione non viene invertita.
@@ -148,6 +148,7 @@ SiteB::> igroup delete -vserver <svm_name> -igroup <igroup_name>`
 .Fasi
 . Nel cluster di origine, passare a *Protezione > Replica*.
 . Individua la relazione che desideri rimuovere, seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] e seleziona *Elimina*.
+. Nella finestra *Elimina configurazione di replica*, seleziona *Rilascia gli snapshot di base del volume di origine.* e seleziona *Elimina*.
 
 
 --
@@ -179,6 +180,56 @@ Esempio:
 [listing]
 ----
 SRC::> snapmirror release -destination-path vs1:/cg/cg_dst_1
+----
+. Riscoprire i percorsi per verificare che solo il percorso locale sia disponibile per l'host.
+
+
+--
+====
+
+
+[[remove-a-nas-configuration]]
+== Rimuovi una configurazione NAS
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+.Fasi
+. Nel cluster di origine, passare a *Protezione > Replica*.
+. Individua la relazione che desideri rimuovere, seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] e seleziona *Elimina*.
+. Nella finestra *Elimina configurazione di replica*, seleziona *Rilascia gli snapshot di base della storage VM di origine* e seleziona *Elimina*.
+
+
+--
+.CLI
+--
+. Dal cluster di destinazione, eliminare la relazione di sincronizzazione attiva SnapMirror .
++
+`snapmirror delete -destination-path <destination_path>`
+
++
+Esempio:
+
++
+[listing]
+----
+DST::> snapmirror delete -destination-path vs_b:
+----
++
+L'SVM e i relativi volumi vengono rimossi dal cluster secondario.
+
+. Dal cluster di origine, rilasciare la relazione di sincronizzazione attiva SnapMirror dal sito primario.
++
+`snapmirror release -destination-path <destination_path>`
+
++
+Esempio:
+
++
+[listing]
+----
+SRC::> snapmirror release -destination-path vs_b:
 ----
 . Riscoprire i percorsi per verificare che solo il percorso locale sia disponibile per l'host.
 
