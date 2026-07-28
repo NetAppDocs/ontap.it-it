@@ -19,48 +19,81 @@ A partire da ONTAP 9.19.1, è possibile configurare l'offload TLS per migliorare
 * La fase di stretta di mano TLS non viene scaricata. Solo la fase di dati successiva alla stretta di mano viene scaricata.
 * La migrazione dell'interfaccia logica di rete (LIF) verso porte non compatibili con l'offload provoca un fallback software automatico.
 +
-Per le connessioni con offload TLS, le operazioni crittografiche TLS in genere bypassano il software e vengono gestite da una NIC con funzionalità di offload. Se la LIF associata a questa connessione migra su una porta di rete priva di funzionalità di offload TLS, le operazioni crittografiche ricadono sul software e vengono gestite dal kernel di sistema.
+Per le connessioni con offload TLS, le operazioni crittografiche TLS in genere bypassano il software e vengono gestite da una scheda di rete con funzionalità di offload. Se la LIF associata a questa connessione migra su una porta di rete senza funzionalità di offload TLS, le operazioni crittografiche tornano a essere gestite via software dal kernel di sistema.
 
 * Le interfacce di gestione (HTTPS, REST API) non sono influenzate da questa impostazione.
 * L'impostazione di offload hardware TLS è valida per l'intero cluster.
 
 
 .Schede di rete e piattaforme supportate
-L'offload hardware TLS richiede una scheda di rete supportata. Sono supportate le seguenti schede di rete:
+L'offload hardware TLS richiede una scheda di rete supportata. La tabella seguente elenca le schede di rete supportate per piattaforma.
 
+[cols="1,2,3a"]
+|===
+| Famiglia di piattaforme | Piattaforme | Schede di rete supportate 
+
+
+| AFF e FAS | AFF A20, AFF A30, AFF A50, AFF C30, AFF C60, FAS50  a| 
 * CX7 10/25 GbE a 4 porte
-* CX6-Dx 40/100 GbE a 2 porte
+* CX6-DX 40/100 GbE a 2 porte
 * CX7 40/100 GbE a 2 porte
-* CX7 a 2 porte 40/100/200
 
 
-Le schede CX7 10/25 GbE a 4 porte, CX6-Dx 40/100 GbE a 2 porte e CX7 40/100 GbE a 2 porte sono supportate sulle seguenti piattaforme AFF:
-
-* AFF A20
-* AFF A30
-* AFF A50
-* AFF C30
-* AFF C60
 
 
-Le schede CX6-Dx 40/100 GbE a 4 porte, CX7 40/100 GbE a 2 porte e CX7 40/100/200 GbE a 2 porte sono supportate sulle seguenti piattaforme AFF e FAS:
-
-* AFF A70-90
-* AFF C80
-* FAS70
-* FAS90
-* AFF A1K
+| AFF e FAS | AFF A70, AFF A90, AFF C80, FAS70, FAS90, AFF A1K  a| 
+* CX6-DX 40/100 GbE a 2 porte
+* CX7 40/100 GbE a 2 porte
+* CX7 a 2 porte 40/100/200/400 GbE
 
 
+
+
+| ASA | ASA A20, ASA A30, ASA A50, ASA C30  a| 
+* CX7 10/25 GbE a 4 porte
+* CX6-DX 40/100 GbE a 2 porte
+* CX7 40/100 GbE a 2 porte
+
+
+
+
+| ASA | ASA A70, ASA A90, ASA A1K  a| 
+* CX6-DX 40/100 GbE a 2 porte
+* CX7 40/100 GbE a 2 porte
+* CX7 a 2 porte 40/100/200/400 GbE
+
+
+
+
+| AFX | AFX 1K  a| 
+* CX6-DX 40/100 GbE a 2 porte
+* CX7 40/100 GbE a 2 porte
+* CX7 a 2 porte 40/100/200/400 GbE
+
+
+
+
+| AFX | AFX 2K  a| 
+* CX7 a 2 porte 40/100/200/400 GbE
+
+
+|===
 .Tipi di traffico supportati
 L'offload hardware TLS supporta i seguenti tipi di traffico:
 
+* NFS
 * NVMe/TCP
 * crittografia del peering del cluster
 * FabricPool
 * S3
 * NFS
 
+
+
+NOTE: Sui sistemi ASA, l'offload hardware TLS si applica solo al traffico NVMe/TCP. NFS su TLS, FabricPool e S3 non sono supportati sulle piattaforme ASA.
+
+
+NOTE: Sulle piattaforme AFX, l'offload hardware TLS supporta i tipi di traffico front-end NFS e S3. NVMe/TCP non è supportato sulle piattaforme AFX perché AFX non supporta i protocolli SAN/a blocchi.
 
 .Prima di iniziare
 * Devi essere un amministratore ONTAP presso `admin` livello di privilegio per eseguire le seguenti attività.
@@ -101,19 +134,11 @@ false      TLSv1.3,  false   TLS_RSA_WITH_AES_128_CCM,
 +
 [source, cli]
 ----
-security config modify -is-offload-enabled {true|false}
+security config modify * -is-offload-enabled {true|false}
 ----
 +
 Questo comando abilita o disabilita l'offload hardware per la fase dati TLS sulle nuove connessioni. Le connessioni esistenti create prima dell'abilitazione della funzione di offload TLS non vengono sottoposte a offload finché non vengono rimosse e ricreate.
 
-+
-Quando si abilita l'offload TLS, è necessario specificare l'interfaccia:
-
-+
-[source, cli]
-----
-security config modify -is-offload-enabled true -interface SSL
-----
 
 
 .Informazioni correlate
