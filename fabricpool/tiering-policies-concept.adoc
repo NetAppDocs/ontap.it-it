@@ -204,17 +204,17 @@ Quando si clonano i volumi, tenere presenti le seguenti Best practice:
 
 
 
-[[how-tiering-policies-work-with-cloud-migration]]
-== Come funzionano le policy di tiering con la migrazione del cloud
+[[how-cloud-retrieval-policies-work-with-tiering-policies]]
+== Come funzionano le policy di recupero cloud con le policy di tiering
 
-Il recupero dei dati nel cloud di FabricPool è controllato da policy di tiering che determinano il recupero dei dati dal Tier cloud al Tier di performance in base al modello di lettura. I modelli di lettura possono essere sequenziali o casuali.
+FabricPool cloud data retrieval è controllato da politiche di recupero che determinano quando i dati vengono scritti di nuovo sul tier locale. I modelli di lettura possono essere sequenziali o casuali.
 
-La tabella seguente elenca le policy di tiering e le regole di recupero dei dati cloud per ogni policy.
+La tabella seguente elenca le policy di tiering dei volumi e il comportamento di recupero predefinito per ciascuna policy.
 
 |===
 
 
-| Policy di tiering | Comportamento di recupero 
+| Policy di tiering | Comportamento di recupero predefinito 
 
 
  a| 
@@ -257,30 +257,44 @@ La seguente tabella elenca le policy di recupero cloud supportate e il loro comp
  a| 
 predefinito
  a| 
-La policy di tiering decide quali dati devono essere ritirati, quindi non vi è alcuna modifica al recupero dei dati nel cloud con "`default,`" `cloud-retrieval-policy`. Questo criterio è il valore predefinito per qualsiasi volume, indipendentemente dal tipo di aggregato ospitato.
+Quando leggi blocchi cold in un volume, viene utilizzato il comportamento predefinito della policy di tiering del volume. Questa policy è il valore predefinito per qualsiasi volume, indipendentemente dal tipo di aggregato ospitato.
 
 
 
  a| 
 a lettura
  a| 
-Tutti i dati letti dal client vengono estratti dal Tier cloud al Tier di performance.
+Quando i blocchi "freddi" in un volume con una policy di recupero cloud impostata su "On-Read" vengono letti, in modo casuale o sequenziale, diventano "caldi" e vengono scritti nel livello locale.
+
+Le applicazioni che utilizzano letture sequenziali attivano la scrittura sul livello locale impostando la policy di recupero del volume cloud su "`On-Read`". Questo può essere utile per le applicazioni che hanno bisogno di prestazioni del livello locale da dati precedentemente inattivi che ora vengono letti da carichi di lavoro attivi
 
 
 
  a| 
 mai
  a| 
-Nessun dato client-driven viene estratto dal Tier cloud al Tier di performance
+Quando i blocchi freddi in un volume con una policy di recupero cloud impostata su "Never" vengono letti, rimangono freddi e restano sul livello cloud. Non vengono scritti di nuovo sul livello locale.
+
+Impostare la policy di recupero cloud su "Never" è simile alla policy All tiering perché non permette ai dati di tornare al livello locale, ma si differenzia dalla policy All tiering perché continua a usare l'impostazione tiering-minimum-cooling-days del volume invece di essere spostata di livello il prima possibile.
+
+Ad esempio, un volume che utilizza l'impostazione predefinita della policy di tiering automatico non contrassegnerebbe i dati come cold fino a dopo 31 giorni di inattività. Dopo 31 giorni, i dati inattivi verrebbero spostati su storage a oggetti e non tornerebbero indietro quando letti perché la policy di recupero cloud del volume era stata impostata su "Never".
 
 
 
  a| 
 promuovi
  a| 
-* Per la policy di tiering "`none`", tutti i dati cloud vengono estratti dal Tier cloud al Tier di performance
-* Per la policy di tiering "`snapshot-only,`" vengono estratti i dati AFS.
+* Per la policy di tiering "none", tutti i dati suddivisi in livelli vengono riscritti nel livello locale.
+* Per la policy di tiering "snapshot-only", i dati a livelli, non snapshot, vengono scritti di nuovo nel livello locale.
 
 
 |===
-Per ulteriori informazioni sui comandi descritti in questa procedura, consultare la link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^].
+.Esempio di modifica dei criteri di recupero nel cloud
+L'esempio seguente modifica la politica di tiering del volume in  `none` e la politica di recupero in  `promote`:
+
+[listing]
+----
+set -privilege advanced
+
+volume modify -vserver vs1 -volume myvol -tiering-policy none -cloud-retrieval-policy promote
+----
