@@ -1,0 +1,112 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/enable-default-arpai.html 
+keywords: ARP AI, arpai, enable by default, autonomous ransomware protection AI, default volume state, ONTAP 9.18.1, automatic enablement, SVM default, cluster default, machine learning ransomware 
+summary: 'A partire da ONTAP 9.16.1, configura un SVM in modo che i nuovi volumi siano abilitati per impostazione predefinita con ARP/AI. A partire da ONTAP 9.18.1, l"abilitazione automatica a livello di cluster è disponibile sui sistemi supportati.' 
+---
+= Abilita ONTAP ARP/AI per impostazione predefinita nei nuovi volumi
+:hardbreaks:
+:toclevels: 1
+:allow-uri-read: 
+:toclevels: 1
+:nofooter: 
+:icons: font
+:linkattrs: 
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.16.1, puoi configurare le macchine virtuali di storage (SVM) in modo che i nuovi volumi siano abilitati per impostazione predefinita con Autonomous Ransomware Protection with AI (ARP/AI). A partire da ONTAP 9.18.1, ARP/AI viene abilitato automaticamente a livello di cluster link:support-arpai.html["sistemi supportati"] dopo un grace period di 12 ore. Usa questa procedura quando vuoi abilitare ARP/AI per impostazione predefinita per i nuovi volumi a livello di SVM invece che a livello di cluster.
+
+Per ONTAP 9.17.1 e versioni precedenti, la configurazione a livello SVM è l'unico modo per abilitare ARP per impostazione predefinita sui nuovi volumi.
+
+
+NOTE: Se usi ONTAP 9.15.1 o versioni precedenti, vedi link:enable-default-arp.html["Abilita ARP per impostazione predefinita nei nuovi volumi"].
+
+
+NOTE: Per ONTAP dalla versione 9.13.1 alla 9.17.1, i volumi FlexGroup utilizzano il modello ARP precedente e richiedono un periodo di apprendimento. Vedi link:enable-default-arp.html["Abilita ARP per impostazione predefinita nei nuovi volumi"].
+
+.A proposito di questa attività
+Nei sistemi in cui ARP/AI non è abilitato automaticamente a livello di cluster, i nuovi volumi vengono creati con la funzionalità ARP/AI disabilitata per impostazione predefinita. Devi abilitare ARP/AI e configurarlo in modo che sia attivo per impostazione predefinita per i nuovi volumi creati nella SVM.
+
+I volumi esistenti senza ARP/AI abilitato non modificheranno automaticamente lo stato di abilitazione di ARP/AI quando cambi l'impostazione predefinita della SVM. L'impostazione della SVM descritta in questa procedura influisce solo sui nuovi volumi. Scopri come link:enable-arpai.html["abilita ARP/AI per i volumi esistenti"].
+
+[[arp-enablement-default-behavior-table]]
+Dopo aver attivato la protezione autonoma contro i ransomware, potrebbe iniziare un periodo di transizione a seconda dell'ambiente e della versione di ONTAP:
+
+[cols="25,25,50"]
+|===
+| Tipo di volume | Versione di ONTAP | Comportamento dopo l'abilitazione 
+
+
+.2+| NAS FlexGroup | ONTAP 9.18.1 e versioni successive | ARP/AI è attivo immediatamente senza periodo di apprendimento 
+
+
+| ONTAP 9.13.1 a 9.17.1 | ARP inizia in modalità di apprendimento per 30 giorni 
+
+
+.2+| NAS FlexVol | ONTAP 9.16.1 e versioni successive | ARP/AI è attivo immediatamente senza periodo di apprendimento 
+
+
+| ONTAP 9.10.1 a 9.15.1 | ARP inizia in modalità di apprendimento per 30 giorni 
+
+
+| Volumi SAN | ONTAP 9.17.1 e versioni successive | ARP/AI si attiva immediatamente, avviando un periodo di valutazione per stabilire una soglia di allerta adeguata prima di passare da una soglia conservativa iniziale. 
+|===
+.Prima di iniziare
+Prima di abilitare ARP/AI per impostazione predefinita, assicurati che il tuo ambiente abbia quanto segue:
+
+.Requisiti specifici NAS
+* Una VM di archiviazione (SVM) con protocollo NFS o SMB (o entrambi) abilitato.
+* Un attivolink:../concepts/namespaces-junction-points-concept.html["percorso di giunzione"] per il volume.
+
+
+.Requisiti specifici SAN
+* Una VM di archiviazione (SVM) con protocollo iSCSI, FC o NVMe abilitato.
+
+
+.Requisiti generali
+* Il link:index.html#licenses-for-autonomous-ransomware-protection["licenza corretta"] per la tua versione di ONTAP.
+* (Consigliato) Verifica multi-amministratore (MAV) abilitata (ONTAP 9.13.1 e versioni successive). Vederelink:../multi-admin-verify/enable-disable-task.html["Attiva la verifica multi-admin"] .
+
+
+.Fasi
+Puoi usare System Manager o la ONTAP CLI per abilitare ARP/AI per impostazione predefinita per i nuovi volumi a livello di SVM.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Seleziona *Storage* o *Cluster* (a seconda del tuo ambiente), seleziona *Storage VMs* e seleziona la storage VM che conterrà i volumi che vuoi proteggere con ARP/AI.
+. Vai alla scheda *Impostazioni*. In *Sicurezza*, individua il riquadro *Anti-ransomware*, quindi seleziona image:icon_pencil.gif["Icona Edit (Modifica)"] .
+. Seleziona la casella per abilitare la protezione anti-ransomware (ARP/AI). Seleziona anche la casella aggiuntiva per abilitare ARP/AI su tutti i volumi idonei nella storage VM.
++
+
+NOTE: ARP/AI entra in modalità attiva immediatamente; non è richiesto alcun periodo di apprendimento.
+
+
+
+--
+.CLI
+--
+.Modifica un SVM esistente per abilitare ARP/AI per impostazione predefinita nei nuovi volumi
+[source, cli]
+----
+vserver modify -vserver <svm_name> -anti-ransomware-default-volume-state enabled
+----
+.Crea un nuovo SVM con ARP/AI abilitato per impostazione predefinita per i nuovi volumi
+[source, cli]
+----
+vserver create -vserver <svm_name> -anti-ransomware-default-volume-state enabled
+----
+.Verifica lo stato ARP/AI
+[source, cli]
+----
+security anti-ransomware volume show
+----
+--
+====
+.Informazioni correlate
+* link:default-enable-change-arpai.html["Disattiva l'attivazione automatica di ARP/AI"]
+* link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-show.html["mostra volume sicurezza anti-ransomware"^]
+

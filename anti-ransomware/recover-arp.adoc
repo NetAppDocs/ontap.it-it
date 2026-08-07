@@ -1,0 +1,250 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/recover-arp.html 
+keywords: ARP, recover data, ransomware attack, ARP snapshot, restore, restore first, ONTAP 9.10.1, Anti_ransomware_backup, snapshot deleted on clear, legacy ARP recovery, ONTAP 9.15.1 or earlier 
+summary: 'Utilizza gli snapshot ARP per ripristinare i dati o un altro snapshot a tua scelta dopo aver confermato un attacco ransomware su un volume NAS. Gli snapshot ARP vengono eliminati immediatamente quando cancelli l"evento sospetto in ONTAP 9.15.1 e versioni precedenti.' 
+---
+= Recupera i dati dopo un attacco ransomware con ONTAP ARP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Autonomous Ransomware Protection (ARP) crea snapshot per proteggere i volumi NAS dalle minacce ransomware. Puoi usare gli snapshot ARP o un altro snapshot del tuo volume per ripristinare i dati.
+
+
+NOTE: Se usi ONTAP 9.16.1 o versioni successive, vedi link:recover-arpai.html["Recupera i dati dopo un attacco ransomware con ARP/AI"].
+
+.A proposito di questa attività
+A seconda della potenziale situazione di attacco, ripristinerai i dati in uno dei seguenti modi:
+
+* *<<restore-from-arp-snapshot,Ripristina dall'istantanea ARP più recente>>*: Usa l'istantanea ARP più recente disponibile quando hai fiducia nella sua integrità.
+* *<<restore-from-earlier-snapshot,Ripristina da un'istantanea precedente>>*: Rilascia il blocco sull'istantanea ARP più recente e poi ripristina da un'istantanea precedente.
+* *<<restore-without-attack,Ripristina quando non viene segnalato alcun attacco>>*: Innanzitutto ripristina dall'istantanea ARP più recente, poi completa un ripristino successivo dall'istantanea che scegli.
+
+
+ARP crea snapshot con il nome preceduto da  `Anti_ransomware_backup`. Ad esempio,  `Anti_ransomware_backup.2022-12-20_1248`.
+
+.Prima di iniziare
+* Se stai rispondendo a un avviso di attività anomala, link:respond-arp.html#classify-as-potential-ransomware-attack-and-recover-data["devi classificarlo come un potenziale attacco ransomware"] prima di procedere con il ripristino dei dati.
+* Scegli un'opzione <<choose-a-recovery-method,metodo di ripristino>> e rivedila <<recovery-constraints-and-considerations,vincoli di recupero>> prima di completare una procedura di ripristino.
+
+
+
+
+[[choose-a-recovery-method]]
+== Scegli un metodo di recovery
+
+A seconda dell'entità del danneggiamento dei dati e delle esigenze operative, è possibile scegliere uno o una combinazione di questi metodi di recovery.
+
+* *Ripristino snapshot del volume*: Ripristina l'intero volume a uno snapshot selezionato (ARP o pianificato). Questo è il metodo più veloce ma elimina tutti gli snapshot creati dopo il punto di ripristino.
++
+
+IMPORTANT: Per ONTAP 9.15.1 e versioni precedenti: gli snapshot ARP vengono *eliminati immediatamente* quando esegui  `clear-suspect`. Devi completare il ripristino dello snapshot del volume *prima* di cancellare. Vedi link:respond-arp.html#understand-snapshot-behavior-when-clearing-a-suspected-event["Comprendi il comportamento degli snapshot quando cancelli un evento sospetto"].
+
+* *FlexClone da uno snapshot pulito*: crea un volume clone dallo snapshot selezionato, preservando il volume originale e tutti i suoi snapshot per analisi forensi o recovery aggiuntivo. Si consiglia di separare il clone dal volume d'origine per isolare il volume padre infetto dal clone pulito.
++
+Scopri di più su link:../volumes/create-flexclone-task.html["creazione di un FlexClone volume da una Snapshot"] e link:../volumes/split-flexclone-from-parent-task.html["separazione di un FlexClone dal suo volume d'origine"].
+
+* *Single-file SnapRestore*: Ripristina singoli file da snapshot. Ogni file può provenire da uno snapshot diverso. Questa soluzione è pratica quando il numero di file interessati è relativamente ridotto.
++
+Scopri di più su link:../data-protection/restore-single-file-snapshot-task.html["ripristino di un singolo file da una Snapshot"].
+
+* *Copia dei dati dalla  `.snapshot` directory*: Copia i dati dal punto di montaggio dello snapshot a un nuovo volume utilizzando le operazioni standard di copia dei file. Questo metodo preserva il volume e gli snapshot originali per l'analisi.
+* *Approccio ibrido*: Il volume viene prima ripristinato allo snapshot pulito più vicino utilizzando SnapRestore, quindi i file danneggiati rimanenti vengono ripristinati singolarmente da un altro snapshot o da backup esterno.
+
+
+
+
+[[recovery-constraints-and-considerations]]
+== Vincoli e considerazioni per il recovery
+
+* In ONTAP 9.15.1 e versioni precedenti, gli snapshot ARP vengono eliminati *immediatamente* quando esegui  `clear-suspect`. Questo vale indipendentemente dal fatto che tu contrassegni l'attività come falso positivo o come attacco reale. Se prevedi di utilizzare  `volume snapshot restore`, devi completare il ripristino *prima* di cancellare gli eventi sospetti.
+* Il rilascio del blocco snapshot ARP è necessario solo quando usi  `volume snapshot restore` per ripristinare da uno snapshot precedente. Non è necessario per FlexClone, SnapRestore su singolo file, operazioni di copia dei dati o metodi simili.
+* Se ripristini un volume protetto da ARP da uno snapshot mentre partecipa a una relazione asincrona SnapMirror, aggiorna manualmente tutte le copie mirror dopo il ripristino. Altrimenti, le copie mirror possono diventare inutilizzabili e potresti doverle eliminare e ricreare.
+* ARP (da 9.10.1 a 9.15.1) non supporta SnapMirror synchronous o SnapMirror active sync. Queste sono funzionalità esclusive di ARP/AI (ONTAP 9.19.1 e versioni successive).
+
+
+
+
+[[restore-after-a-system-attack]]
+[[restore-after-system-attack]]
+== Ripristino dopo un attacco di sistema
+
+Per il ripristino degli snapshot di volume, scegli uno di questi flussi a seconda dell'origine dello snapshot e della situazione:
+
+* <<restore-from-arp-snapshot,Ripristina dall'istantanea ARP più recente>>
+* <<restore-from-earlier-snapshot,Ripristina da un'istantanea precedente>>
+* <<restore-without-attack,Ripristina quando non viene rilevato alcun attacco>>
+
+
+
+
+[[restore-from-the-most-recent-arp-snapshot]]
+[[restore-from-arp-snapshot]]
+=== Ripristina dall'istantanea ARP più recente
+
+Scegli questo flusso quando puoi ripristinare con sicurezza dallo snapshot ARP più recente, ovvero lo snapshot più aggiornato disponibile per il recovery.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot Copies*.
+. Seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] accanto all'istantanea ARP più recente (`Anti_ransomware_backup` che desideri ripristinare, quindi seleziona *Ripristina*.
+. Al termine del ripristino, link:respond-arp.html#classify-as-potential-ransomware-attack-and-recover-data["torna al flusso di risposta"] per eliminare i file sospetti.
+
+
+--
+.CLI
+--
+. Elencare gli snapshot in un volume:
++
+[source, cli]
+----
+volume snapshot show -vserver <svm> -volume <volume>
+----
+. Ripristinare il contenuto di un volume da uno snapshot:
++
+[source, cli]
+----
+volume snapshot restore -vserver <svm> -volume <volume> -snapshot <snapshot>
+----
+. Al termine del ripristino, link:respond-arp.html#classify-as-potential-ransomware-attack-and-recover-data["torna al flusso di risposta"] per eliminare i file sospetti.
+
+
+--
+====
+
+
+[[restore-from-an-earlier-snapshot]]
+[[restore-from-earlier-snapshot]]
+=== Ripristina da un'istantanea precedente
+
+Scegli questo flusso quando desideri ripristinare da uno snapshot precedente. Rilascia il blocco sullo snapshot ARP più recente prima di ripristinare dallo snapshot precedente.
+
+[IMPORTANT]
+====
+In ONTAP 9.15.1 e versioni precedenti, la cancellazione dell'evento sospetto *elimina immediatamente gli snapshot ARP*. In questo flusso, stai intenzionalmente ripristinando da uno snapshot precedente (non dallo snapshot ARP), quindi prima devi cancellare per rilasciare il blocco. Se ti servono i dati dallo snapshot ARP, usa il flusso <<restore-from-arp-snapshot,Ripristina dall'istantanea ARP più recente>> invece.
+
+====
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Rilascia il blocco sull'istantanea ARP più recente:
++
+.. Selezionare *Storage > Volumes* (Storage > volumi).
+.. Selezionare *sicurezza*, quindi *Visualizza tipi di file sospetti*.
+.. Contrassegna i file come "potenziale attacco ransomware".
+.. Seleziona *Aggiorna e cancella i tipi di file sospetti*.
+
+
+. Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot Copies*.
+. Seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] accanto all'istantanea precedente che desideri ripristinare, quindi seleziona *Ripristina*.
+
+
+--
+.CLI
+--
+. Contrassegna l'attacco come potenziale ransomware (`-false-positive false` e libera i file sospetti per rimuovere il blocco:
++
+
+IMPORTANT: Questo elimina immediatamente gli snapshot ARP in ONTAP 9.15.1 e versioni precedenti. Esegui questo comando solo quando vuoi ripristinare da uno snapshot precedente (non ARP) e non ti serve lo snapshot ARP.
+
++
+[source, cli]
+----
+security anti-ransomware volume attack clear-suspect -vserver <svm_name> -volume <vol_name> [<extension identifiers>] -false-positive false
+----
+. Elencare gli snapshot in un volume:
++
+[source, cli]
+----
+volume snapshot show -vserver <svm> -volume <volume>
+----
++
+L'esempio seguente mostra l'istantanea in `vol1`:
+
++
+[listing]
+----
+
+clus1::> volume snapshot show -vserver vs1 -volume vol1
+
+Vserver Volume Snapshot                State    Size  Total% Used%
+------- ------ ---------- ----------- ------   -----  ------ -----
+vs1	    vol1   hourly.2013-01-25_0005  valid   224KB     0%    0%
+               daily.2013-01-25_0010   valid   92KB      0%    0%
+               hourly.2013-01-25_0105  valid   228KB     0%    0%
+               hourly.2013-01-25_0205  valid   236KB     0%    0%
+               hourly.2013-01-25_0305  valid   244KB     0%    0%
+               hourly.2013-01-25_0405  valid   244KB     0%    0%
+               hourly.2013-01-25_0505  valid   244KB     0%    0%
+
+7 entries were displayed.
+----
+. Ripristinare il contenuto di un volume da uno snapshot:
++
+[source, cli]
+----
+volume snapshot restore -vserver <svm> -volume <volume> -snapshot <snapshot>
+----
++
+Nell'esempio riportato di seguito viene ripristinato il contenuto di `vol1`:
+
++
+[listing]
+----
+cluster1::> volume snapshot restore -vserver vs0 -volume vol1 -snapshot daily.2013-01-25_0010
+----
+
+
+--
+====
+
+
+[[restore-when-no-attack-is-identified]]
+[[restore-without-attack]]
+== Ripristina quando non viene rilevato alcun attacco
+
+Quando non viene identificato alcun attacco, ripristina prima dallo snapshot ARP più recente e poi da uno snapshot precedente.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *archiviazione > volumi*, quindi selezionare il volume e *Snapshot Copies*.
+. Seleziona image:icon_kabob.gif["Icona delle opzioni di menu"] quindi scegli l' `Anti_ransomware_backup`istantanea più recente.
+. Selezionare *Restore* (Ripristina).
+. Torna al menu *Copie Snapshot*, quindi scegli lo snapshot precedente che desideri utilizzare.
+. Selezionare *Restore* (Ripristina).
+
+
+--
+.CLI
+--
+. Ripristina prima dall'istantanea ARP più recente:
++
+.. Elencare gli snapshot in un volume:
++
+[source, cli]
+----
+volume snapshot show -vserver <svm> -volume <volume>
+----
+.. Ripristinare il contenuto di un volume da uno snapshot:
++
+[source, cli]
+----
+volume snapshot restore -vserver <svm> -volume <volume> -snapshot <snapshot>
+----
+
+
+. Seleziona l'istantanea precedente che desideri utilizzare e ripeti il ripristino.
+
+
+Ulteriori informazioni su `volume snapshot` nella link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=volume+snapshot["Riferimento al comando ONTAP"^].
+
+--
+====

@@ -1,0 +1,113 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/entropy-eval-period-arpai.html 
+keywords: ARP AI, arpai, SAN, entropy evaluation, block device, ransomware detection, ONTAP 9.17.1, evaluation period, hypervisor, VMware, Hyper-V, KVM, OpenStack, machine learning ransomware 
+summary: A partire da ONTAP 9.17.1, ARP/AI richiede un periodo di valutazione per determinare se i livelli di entropia dei dispositivi a blocchi sono adatti alla protezione contro i ransomware. 
+---
+= Scopri il periodo di valutazione dell'entropia ARP/AI di ONTAP per i carichi di lavoro dei dispositivi a blocchi
+:allow-uri-read: 
+
+
+[role="lead"]
+A partire da ONTAP 9.17.1, ARP/AI richiede un periodo di valutazione per determinare se i livelli di entropia per i carichi di lavoro dei dispositivi a blocchi siano adatti alla protezione dai ransomware. Questi carichi di lavoro includono LUN SAN e dischi virtuali hypervisor (ad esempio, dischi virtuali VMware in datastore NFS e, a partire da ONTAP 9.17.1P5, dischi virtuali Hyper-V, KVM e OpenStack) archiviati nei volumi ONTAP. Dopo che ARP/AI è stato attivato su un volume idoneo, monitora e protegge attivamente il volume durante il periodo di valutazione, determinando contemporaneamente una soglia di crittografia ottimale.
+
+
+NOTE: Questa pagina si applica ad ARP/AI (ONTAP 9.17.1 e versioni successive). ARP non supporta i volumi SAN nelle versioni precedenti di ONTAP.
+
+
+
+[[supported-workloads-and-evaluation-applicability]]
+== Carichi di lavoro supportati e applicabilità della valutazione
+
+Il periodo di valutazione dei dispositivi a blocchi si applica nei seguenti scenari:
+
+* *Volumi SAN*: carichi di lavoro basati su LUN presentati come dispositivi a blocchi agli host o agli hypervisor.
+* *Volumi NAS che contengono dischi virtuali hypervisor rilevati automaticamente da ONTAP*: Gli hypervisor supportati includono VMware, Hyper-V, KVM e dischi virtuali OpenStack archiviati in datastore NFS o SMB.
+
+
+All'interno di questi volumi:
+
+* Il periodo di valutazione _è_ applicabile agli attacchi rilevati in base alle variazioni di entropia all'interno del file system guest del disco virtuale (ad esempio, ransomware che opera sui file all'interno del guest OS mappato su una LUN o un disco virtuale).
+* Il periodo di valutazione _non_ si applica agli attacchi rilevati in base all'entropia e alle modifiche dell'estensione dei file apportate direttamente ai file del disco virtuale dall'host hypervisor (ad esempio, ransomware che opera direttamente sui file .vmdk da un punto di montaggio del datastore NFS di ESXi). Questi attacchi diretti al disco utilizzano un percorso di rilevamento diverso.
+
+
+
+
+[[understand-entropy-evaluation]]
+== Comprendere la valutazione dell'entropia
+
+Il periodo di valutazione dura un minimo di due settimane e un massimo di quattro settimane. Se durante le prime due settimane vengono scritti più di 10 GB di dati, la valutazione si conclude al termine di quelle due settimane. Se la soglia dei 10 GB non viene raggiunta entro due settimane, la valutazione prosegue fino a quando sono stati scritti 10 GB di dati, fino a un massimo di quattro settimane.
+
+Durante il periodo di valutazione, il sistema raccoglie statistiche di crittografia continue a intervalli di 10 minuti dai carichi di lavoro supportati su dispositivi a blocchi e hypervisor. Vengono inoltre creati continuamente snapshot periodici ARP/AI ogni quattro ore. Se la percentuale di crittografia all'interno di un intervallo supera la soglia di crittografia ottimale identificata per questo volume, viene attivato un avviso, viene creato uno snapshot `Anti_ransomware_attack_backup` e il tempo di conservazione degli snapshot viene aumentato per tutti gli snapshot periodici ARP/AI.
+
+.Conferma che il periodo di valutazione è attivo
+Puoi confermare che la valutazione è attiva eseguendo il seguente comando e controllando che lo stato sia  `evaluation_period`. Se un volume non è idoneo per la valutazione, lo stato della valutazione non viene visualizzato.
+
+[source, cli]
+----
+security anti-ransomware volume show -vserver <svm_name> -volume <volume_name>
+----
+Esempio di risposta:
+
+[listing, subs="+quotes"]
+----
+Vserver Name                                : vs1
+Volume Name                                 : v1
+State                                       : enabled
+Attack Probability                          : none
+Attack Timeline                             : -
+Number of Attacks                           : -
+Attack Detected By                          : -
+*Block device detection status               : Evaluation_period*
+----
+.Monitoraggio della raccolta dati del periodo di valutazione
+Puoi monitorare il rilevamento della crittografia in tempo reale. Questo comando restituisce un istogramma che mostra la quantità di dati in ciascun intervallo di percentuale di crittografia. L'istogramma viene aggiornato ogni 10 minuti.
+
+[source, cli]
+----
+security anti-ransomware volume entropy-stat show-encryption-percentage-histogram -vserver <svm_name> -volume <vol_name> -duration real_time
+----
+
+
+[[suitable-workloads-and-adaptive-thresholds]]
+== Carichi di lavoro adeguati e soglie adattive
+
+La valutazione si conclude con uno dei seguenti risultati:
+
+* *Il carico di lavoro è adatto ad ARP/AI*. ARP/AI imposta automaticamente la soglia adattiva a un valore superiore al 10% della percentuale massima di crittografia rilevata durante il periodo di valutazione. ARP/AI continua anche la raccolta delle statistiche e crea snapshot ARP/AI periodici.
+* *Il carico di lavoro non è adatto per ARP/AI*. ARP/AI imposta automaticamente la soglia adattiva alla percentuale di crittografia massima rilevata durante il periodo di valutazione. ARP/AI continua anche la raccolta di statistiche e crea snapshot ARP/AI periodici, ma il sistema alla fine consiglia di disabilitare ARP/AI sul volume.
+
+
+.Determinare i risultati della valutazione
+Al termine del periodo di valutazione, ARP/AI imposta automaticamente la soglia adattiva in base ai risultati della valutazione. Puoi determinare i risultati della valutazione eseguendo il seguente comando. L'idoneità del volume è indicata nel campo  `Block device detection status`:
+
+[source, cli]
+----
+security anti-ransomware volume show -vserver <svm_name> -volume <volume_name>
+----
+Esempio di risposta:
+
+[listing, subs="+quotes"]
+----
+Vserver Name                               : vs1
+Volume Name                                : v1
+State                                      : enabled
+Attack Probability                         : none
+Attack Timeline                            : -
+Number of Attacks                          : -
+Attack Detected By                         : -
+*Block device detection status              : Active_suitable_workload*
+
+Block device evaluation start time :  5/16/2025 01:49:01
+----
+È possibile visualizzare anche la soglia di valore adottata a seguito della valutazione:
+
+[source, cli]
+----
+security anti-ransomware volume attack-detection-parameters show -vserver <svm_name> -volume <volume_name>
+----
+.Informazioni correlate
+* link:modify-snapshot-options-arpai.html["Modifica le opzioni di snapshot per ARP/AI"]
+* link:manage-parameters-arpai.html["Gestisci i parametri di rilevamento degli attacchi ARP/AI"]
+* link:respond-arpai.html["Rispondi all'attività anomala rilevata da ARP/AI"]
+

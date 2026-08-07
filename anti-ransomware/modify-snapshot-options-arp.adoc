@@ -1,0 +1,109 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/modify-snapshot-options-arp.html 
+keywords: ARP, snapshot settings, retention, arw snap, autonomous ransomware protection, ONTAP 9.11.1, NAS, deprecated settings, learning mode, legacy ARP snapshot settings, ONTAP 9.15.1 or earlier 
+summary: 'Regola le impostazioni di creazione e conservazione degli snapshot ARP generati automaticamente in risposta a potenziali minacce ransomware sui volumi NAS (ONTAP 9.11.1 fino alla 9.15.1).' 
+---
+= Regola le impostazioni per gli snapshot ARP ONTAP generati automaticamente
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.11,1, puoi utilizzare la CLI per controllare le impostazioni di conservazione per gli snapshot di protezione autonoma dal ransomware (ARP), che sono generate automaticamente in risposta a sospettati attacchi ransomware.
+
+
+NOTE: Se usi ONTAP 9.16.1 o versioni successive, vedi link:modify-snapshot-options-arpai.html["Regola le impostazioni per gli snapshot ARP/AI generati automaticamente"].
+
+.Prima di iniziare
+Puoi modificare le opzioni di snapshot ARP solo su un link:../system-admin/types-svms-concept.html["nodo SVM"] e non sugli altri tipi di SVM.
+
+
+NOTE: Le impostazioni elencate in questa sezione si applicano a ONTAP 9.11.1 fino a 9.15.1. Se hai eseguito l'aggiornamento a ONTAP 9.16.1 o versioni successive, usa il link:modify-snapshot-options-arpai.html["Impostazioni snapshot ARP/AI"].
+
+.Fasi
+. Mostra tutte le impostazioni correnti dell'istantanea ARP:
++
+[source, cli]
+----
+options -option-name arw*
+----
+. Mostra impostazioni snapshot ARP correnti selezionate:
++
+[source, cli]
+----
+options -option-name <arw_setting_name>
+----
+. Modificare le impostazioni dell'istantanea ARP:
++
+[source, cli]
+----
+options -option-name <arw_setting_name> -option-value <arw_setting_value>
+----
++
+Puoi modificare le seguenti impostazioni (ONTAP 9.11.1 fino a 9.15.1):
+
++
+[cols="1,3,1"]
+|===
+| Impostazione | Descrizione | Versioni supportate con ARP 
+
+
+| `arw.snap.max.count`  a| 
+Specifica il numero massimo di snapshot ARP che possono esistere in un volume in un dato momento. Le copie più vecchie vengono eliminate per garantire che il numero totale di snapshot ARP rimanga entro questo limite.
+ a| 
+ONTAP 9.11.1 a 9.15.1
+
+
+
+| `arw.snap.create.interval.hours`  a| 
+Specifica l'intervallo _in ore_ tra gli snapshot ARP. Viene creato un nuovo snapshot ARP quando si sospetta un attacco basato sull'entropia dei dati e lo snapshot creato più di recente è precedente all'intervallo specificato.
+ a| 
+ONTAP 9.11.1 a 9.15.1
+
+
+
+| `arw.snap.normal.retain.interval.hours`  a| 
+Specifica la durata in ore per cui viene conservato uno snapshot ARP. Quando uno snapshot ARP raggiunge la soglia di conservazione, viene eliminato.
+ a| 
+ONTAP 9.11.1 a 9.15.1 (deprecato in 9.17.1 e versioni successive)
+
+
+
+| `arw.snap.max.retain.interval.days`  a| 
+Specifica la durata massima _in giorni_ per la quale è possibile conservare uno snapshot ARP. Qualsiasi snapshot ARP precedente a questa durata viene eliminato quando non viene riportato alcun attacco sul volume.
+
+
+NOTE: L'intervallo massimo di conservazione viene ignorato se viene rilevata una minaccia di moderata entità. Lo snapshot ARP creato in risposta alla minaccia viene conservato finché non rispondi alla minaccia. Quando contrassegni una minaccia come falso positivo, ONTAP elimina gli snapshot ARP per il volume.
+ a| 
+ONTAP 9.11.1 a 9.15.1 (deprecato in 9.17.1 e versioni successive)
+
+
+
+| `arw.snap.create.interval.hours.post.max.count`  a| 
+Specifica l'intervallo _in ore_ tra gli snapshot ARP quando il volume contiene già il numero massimo di snapshot ARP. Quando si raggiunge il numero massimo, uno snapshot ARP viene eliminato per fare spazio a una nuova copia. Usa questa opzione per ridurre la velocità di creazione e conservare le copie più vecchie.
+ a| 
+ONTAP 9.11.1 a 9.15.1 (deprecato in 9.17.1 e versioni successive)
+
+
+
+| `arw.snap.new.extns.interval.hours`  a| 
+Specifica l'intervallo _in ore_ tra gli snapshot ARP creati quando viene rilevata una nuova estensione di file. Viene creato un nuovo snapshot ARP quando viene rilevata una nuova estensione di file e il precedente snapshot di questo tipo è più vecchio dell'intervallo specificato. Questa opzione esiste indipendentemente da  `arw.snap.create.interval.hours`, che specifica l'intervallo per gli snapshot basati sull'entropia.
+ a| 
+ONTAP 9.11.1 a 9.15.1 (deprecato in 9.17.1 e versioni successive)
+
+
+
+| `arw.snap.surge.interval.days`  a| 
+Specifica l'intervallo _in giorni_ tra gli snapshot ARP creati in risposta a picchi di IO. Questa opzione specifica anche il periodo di conservazione _in giorni_ per uno snapshot di un picco ARP.
+ a| 
+ONTAP 9.11.1 a 9.15.1
+
+|===
+
+
+.Informazioni correlate
+* link:learn-about-arp.html#arp-snapshots["Valutazione delle minacce e istantanee ARP"]
+* link:modify-snapshot-options-arpai.html["Regola le impostazioni per gli snapshot ARP/AI (ONTAP 9.16.1 e versioni successive)"]
+

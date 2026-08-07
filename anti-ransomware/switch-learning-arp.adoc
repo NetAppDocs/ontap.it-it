@@ -1,0 +1,95 @@
+---
+sidebar: sidebar 
+permalink: anti-ransomware/switch-learning-arp.html 
+keywords: ARP, learning mode, active mode, switch, autonomous ransomware protection, ONTAP 9.10.1, dry-run, NAS, FlexGroup, legacy ARP learning mode, ONTAP 9.15.1 or earlier 
+summary: Dopo un minimo di 30 giorni in modalità di apprendimento, passa manualmente o automaticamente ARP dalla modalità di apprendimento alla modalità attiva per i volumi NAS ONTAP dalla versione 9.10.1 alla 9.15.1. 
+---
+= Passare alla modalità attiva in ONTAP ARP dopo un periodo di apprendimento
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Negli ambienti NAS, puoi commutare manualmente o automaticamente un volume abilitato ARP dalla modalità di apprendimento alla modalità attiva. Devi commutare le modalità se usi ARP con ONTAP 9.10.1-9.15.1 o se ARP è in esecuzione su volumi FlexGroup in ONTAP 9.13.1-9.17.1.
+
+
+NOTE: ARP/AI (ONTAP 9.16.1 e versioni successive) non richiede un periodo di apprendimento. La protezione ARP/AI si attiva immediatamente sui volumi FlexVol. Per i volumi FlexGroup, ARP/AI richiede ONTAP 9.18.1. Non esiste una procedura equivalente in modalità switch per ARP/AI. Se usi ONTAP 9.16.1 o versioni successive, vedi link:index.html["Scopri di più sulla protezione autonoma dal ransomware"].
+
+Dopo che ARP ha completato un periodo di apprendimento della durata minima consigliata di 30 giorni, puoi passare manualmente alla modalità attiva. A partire da ONTAP 9.13.1, ARP determina automaticamente l'intervallo ottimale per il periodo di apprendimento e automatizza il passaggio, che potrebbe avvenire anche prima dei 30 giorni.
+
+
+NOTE: Nei volumi esistenti, l'apprendimento e le modalità attive si applicano solo ai dati scritti di recente, non ai dati già esistenti nel volume. I dati esistenti non vengono sottoposti a scansione e analizzati, poiché le caratteristiche del traffico dati normale precedente vengono assunte in base ai nuovi dati dopo che il volume è stato abilitato per ARP.
+
+
+
+[[manually-switch-to-active-mode-after-a-learning-period]]
+== Passa manualmente alla modalità attiva dopo un periodo di apprendimento
+
+Per ONTAP 9.10.1-9.15.1 (e per i volumi FlexGroup in ONTAP 9.13.1-9.17.1), puoi passare manualmente dalla modalità di apprendimento ARP alla modalità attiva usando System Manager o la ONTAP CLI dopo il completamento del periodo di apprendimento.
+
+.Fasi
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Selezionare *Storage > Volumes* (archiviazione > volumi), quindi selezionare il volume pronto per la modalità attiva.
+. Nella scheda *sicurezza* della panoramica *volumi*, seleziona *passa alla modalità attiva* nella casella Anti-ransomware.
+. Verificare lo stato ARP del volume nella casella *Anti-ransomware*.
+
+
+--
+.CLI
+--
+. Passa il volume protetto alla modalità attiva:
++
+[source, cli]
+----
+security anti-ransomware volume enable -volume <vol_name> -vserver <svm_name>
+----
++
+Puoi anche passare alla modalità attiva con il comando  `volume modify`:
+
++
+[source, cli]
+----
+volume modify -volume <vol_name> -vserver <svm_name> -anti-ransomware-state enabled
+----
+. Verifica lo stato ARP del volume:
++
+[source, cli]
+----
+security anti-ransomware volume show
+----
+
+
+--
+====
+
+
+[[automatic-switching-from-learning-mode-to-active-mode]]
+== Passaggio automatico dalla modalità di apprendimento alla modalità attiva
+
+A partire da ONTAP 9.13.1, l'apprendimento adattivo è stato aggiunto all'analisi ARP e il passaggio dalla modalità di apprendimento alla modalità attiva avviene automaticamente. La decisione autonoma di ARP di passare automaticamente dalla modalità di apprendimento alla modalità attiva si basa sulle impostazioni di configurazione delle seguenti opzioni:
+
+[listing]
+----
+ -anti-ransomware-auto-switch-minimum-incoming-data-percent
+ -anti-ransomware-auto-switch-duration-without-new-file-extension
+ -anti-ransomware-auto-switch-minimum-learning-period
+ -anti-ransomware-auto-switch-minimum-file-count
+ -anti-ransomware-auto-switch-minimum-file-extension
+----
+Se il passaggio automatico è abilitato, il volume passerà automaticamente alla modalità attiva dopo un massimo di 30 giorni, anche se non vengono soddisfatte tutte le condizioni. Questo limite di 30 giorni è fisso e non può essere modificato.
+
+Puoi disabilitare il passaggio automatico dalla modalità di apprendimento alla modalità attiva per tutti i volumi in un SVM se preferisci controllare la transizione manualmente:
+
+[source, cli]
+----
+vserver modify <svm_name> -anti-ransomware-auto-switch-from-learning-to-enabled false
+----
+Per ulteriori informazioni sulle opzioni di configurazione ARP, compresi i valori predefiniti, consultare la link:https://docs.netapp.com/us-en/ontap-cli/security-anti-ransomware-volume-auto-switch-to-enable-mode-show.html["Riferimento al comando ONTAP"^].
+
+.Informazioni correlate
+* link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+anti-ransomware+volume["volume di sicurezza anti-ransomware"^]
+
