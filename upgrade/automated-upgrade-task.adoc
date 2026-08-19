@@ -4,7 +4,7 @@ permalink: upgrade/automated-upgrade-task.html
 keywords: netapp, ontap, automate, automatic, automated, digital advisor, upgrade, nondisruptive, nondisruptively, non-disruptive update, nondisruptive upgrade, upgrade a cluster, shift workload between clusters, hardware platform, configuration, software image, update, update ONTAP, update software, ndu 
 summary: È possibile aggiornare senza interruzioni la versione di ONTAP nel cluster. 
 ---
-= Installa l'immagine ONTAP con l'aggiornamento ONTAP automatico e senza interruzioni
+= Esegui un aggiornamento ONTAP automatizzato e senza interruzioni
 :hardbreaks:
 :toclevels: 1
 :allow-uri-read: 
@@ -16,21 +16,25 @@ summary: È possibile aggiornare senza interruzioni la versione di ONTAP nel clu
 
 
 [role="lead"]
-Quando esegui un upgrade automatico, ONTAP installa automaticamente l'immagine ONTAP di destinazione su ogni nodo, convalida la possibilità di aggiornare il cluster ed esegue quindi un xref:concept_upgrade_methods.html[batch o rolling upgrade] in background in base al numero di nodi nel cluster.
+Quando esegui un aggiornamento automatico non interruttivo (ANDU), ONTAP installa automaticamente l'immagine ONTAP di destinazione su ciascun nodo, verifica che il cluster possa essere aggiornato correttamente e poi esegue xref:concept_upgrade_methods.html[batch o rolling upgrade] in background in base al numero di nodi nel cluster.
 
 Se è supportato dalla configurazione, è necessario utilizzare System Manager per eseguire un aggiornamento automatico.  Se la configurazione in uso non supporta l'upgrade automatico con System Manager, puoi utilizzare l'interfaccia a riga di comando (CLI) di ONTAP per eseguire un upgrade automatico.
 
 
-NOTE: Se si esegue l'aggiornamento a ONTAP 9.15.1 o versione successiva tramite NetApp, seguire le istruzionilink:https://docs.netapp.com/us-en/console-software-updates/get-started/software-updates.html["procedura di aggiornamento nella documentazione della console NetApp"^] .
+NOTE: Se si esegue l'aggiornamento a ONTAP 9.15.1 o versione successiva tramite la console NetApp , seguire le istruzionilink:https://docs.netapp.com/us-en/console-software-updates/get-started/software-updates.html["procedura di aggiornamento nella documentazione della console NetApp"^] .
 
 
-IMPORTANT: La modifica dell'impostazione `storage failover modify-auto-giveback` dell'opzione di comando prima dell'inizio di un upgrade automatico senza interruzioni (ANDU) non ha alcun impatto sul processo di upgrade. Il processo ANDU ignora qualsiasi valore preimpostato di questa opzione durante il takeover/giveback richiesto per l'aggiornamento. Ad esempio, l'impostazione `-autogiveback` su false prima dell'inizio di ANDU non interrompe l'aggiornamento automatico prima del giveback. Ulteriori informazioni su `storage failover modify-auto-giveback` nella link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+failover+modify-auto-giveback["Riferimento al comando ONTAP"^].
+IMPORTANT: La modifica dell'impostazione della  `storage failover modify-auto-giveback` opzione di comando prima dell'inizio di un ANDU non ha alcun impatto sul processo di aggiornamento. Il processo ANDU ignora qualsiasi valore preimpostato per questa opzione durante il takeover/giveback richiesto per l'aggiornamento. Ad esempio, impostare  `-autogiveback` su false prima di iniziare ANDU non interrompe l'aggiornamento automatico prima del giveback. Scopri di più su  `storage failover modify-auto-giveback` nella link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=storage+failover+modify-auto-giveback["Riferimento al comando ONTAP"^].
 
 .Prima di iniziare
 * Dovresti link:prepare.html["prepararsi per l'aggiornamento"].
 * Dovresti link:download-software-image.html["Scaricare l'immagine del software ONTAP"] Per la versione ONTAP di destinazione.
 +
 Se si esegue un link:../upgrade/concept_upgrade_paths.html#types-of-upgrade-paths["upgrade diretto multi-hop"], è necessario scaricare entrambe le immagini ONTAP richieste per lo specifico link:../upgrade/concept_upgrade_paths.html#supported-upgrade-paths["percorso di upgrade"].
+
+* Opzionalmente, link:../update/pre-stage-system-firmware.html["Pre-configura il firmware di sistema per un aggiornamento con un solo riavvio"].
++
+A partire da ONTAP 9.17.1, se sul dispositivo di avvio di un nodo è già presente un firmware BIOS o LOADER più recente prima di eseguire un ANDU, il processo di aggiornamento conserva il firmware più recente invece di sovrascriverlo con la versione inclusa nell'immagine ONTAP. Questo ti permette di completare sia l'aggiornamento del software ONTAP che l'aggiornamento del firmware in un unico ciclo di riavvio.
 
 * Per ogni coppia ha, ogni nodo deve avere una o più porte sullo stesso dominio di trasmissione.
 +
@@ -373,6 +377,9 @@ metrocluster show
 
 --
 ====
+.Quali sono le prossime novità?
+Se hai preconfigurato il firmware, usa il comando  `system node firmware bootmedia show` per verificare che la versione del firmware prevista sia attiva su ciascun nodo.
+
 
 
 [[resume-ontap-software-upgrade-after-an-error-in-the-automated-upgrade-process]]
