@@ -11,7 +11,9 @@ summary: Configura le impostazioni di offload TLS
 
 
 [role="lead"]
-A partire da ONTAP 9.19.1, è possibile configurare l'offload TLS per migliorare le prestazioni TLS post-handshake sfruttando le risorse sulle schede Ethernet supportate. Questa funzionalità esegue l'offload della crittografia e decrittografia, riducendo il sovraccarico della CPU e migliorando le prestazioni.
+A partire da ONTAP 9.19.1, puoi configurare l'offload TLS per migliorare le prestazioni post-handshake TLS utilizzando le risorse sulle schede Ethernet supportate. Questa funzionalità scarica la crittografia e la decrittografia, riducendo il carico sulla CPU e migliorando le prestazioni.
+
+Puoi abilitare l'offload TLS solo per il traffico che utilizza KTLS. Questa impostazione non si applica a tutto il traffico abilitato per TLS. Il traffico di gestione, come HTTPS e il traffico REST API, non è influenzato da questa impostazione. Il traffico HA non è supportato.
 
 .A proposito di questa attività
 * L'offload TLS è disabilitato per impostazione predefinita.
@@ -22,7 +24,8 @@ A partire da ONTAP 9.19.1, è possibile configurare l'offload TLS per migliorare
 Per le connessioni con offload TLS, le operazioni crittografiche TLS in genere bypassano il software e vengono gestite da una scheda di rete con funzionalità di offload. Se la LIF associata a questa connessione migra su una porta di rete senza funzionalità di offload TLS, le operazioni crittografiche tornano a essere gestite via software dal kernel di sistema.
 
 * Le interfacce di gestione (HTTPS, REST API) non sono influenzate da questa impostazione.
-* L'impostazione di offload hardware TLS è valida per l'intero cluster.
+* L'offload hardware TLS è un'impostazione a livello di cluster.
+* Il traffico HA non è supportato per l'offload hardware TLS.
 
 
 .Schede di rete e piattaforme supportate
@@ -79,20 +82,44 @@ L'offload hardware TLS richiede una scheda di rete supportata. La tabella seguen
 
 |===
 .Tipi di traffico supportati
-L'offload hardware TLS supporta i seguenti tipi di traffico:
+La tabella seguente mostra se l'offload hardware TLS è supportato per ciascun tipo di traffico.
 
-* NVMe/TCP
-* crittografia del peering del cluster
-* FabricPool
-* S3
-* NFS
+[cols="1,1,2"]
+|===
+| tipo di traffico | Supportato | Note 
 
 
+| NVMe/TCP | Sì | Supportato su piattaforme e schede di rete che supportano l'offload TLS. 
+
+
+| crittografia del peering del cluster | Sì | Supportato per il traffico di rete del cluster. Non include il traffico HA. 
+
+
+| FabricPool | Sì | Supportato su piattaforme e schede di rete che supportano l'offload TLS. 
+
+
+| S3 | Sì | Supportato su piattaforme e schede di rete che supportano l'offload TLS. 
+
+
+| NFS su TLS | Sì, a partire da ONTAP 9.19.1 | Supportato per il traffico ONTAP NFS su TLS dove viene utilizzato KTLS. 
+
+
+| KMIP | No | Non supportato. 
+
+
+| System Manager | No | Le interfacce di gestione non sono influenzate da questa impostazione. 
+
+
+| API REST | No | Le interfacce di gestione non sono influenzate da questa impostazione. 
+
+
+| Traffico HA | No | L'offload hardware TLS non si applica al traffico HA. 
+|===
 
 NOTE: Sui sistemi ASA, l'offload hardware TLS si applica solo al traffico NVMe/TCP. NFS su TLS, FabricPool e S3 non sono supportati sulle piattaforme ASA.
 
 
-NOTE: Sulle piattaforme AFX, l'offload hardware TLS supporta i tipi di traffico front-end NFS e S3. NVMe/TCP non è supportato sulle piattaforme AFX perché AFX non supporta i protocolli SAN/a blocchi.
+NOTE: Sulle piattaforme AFX, l'offload hardware TLS supporta i tipi di traffico NFS su TLS e S3 front-end. NVMe/TCP non è supportato sulle piattaforme AFX perché AFX non supporta i protocolli SAN/a blocchi.
 
 .Prima di iniziare
 * Devi essere un amministratore ONTAP presso `admin` livello di privilegio per eseguire le seguenti attività.
