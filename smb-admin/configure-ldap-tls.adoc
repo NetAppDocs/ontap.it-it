@@ -20,8 +20,14 @@ Configurare LDAP su TLS per i server SMB ONTAP per proteggere la comunicazione t
 
 Per utilizzare LDAP su SSL/TLS per la protezione delle comunicazioni Active Directory, è necessario prima esportare una copia del certificato CA principale autofirmato di Active Directory Certificate Service in un file di certificato e convertirla in un file di testo ASCII. Questo file di testo viene utilizzato da ONTAP per installare il certificato sulla macchina virtuale di storage (SVM).
 
-Il servizio Certificati di Active Directory deve essere già installato e configurato per il dominio a cui appartiene il server CIFS. È possibile trovare informazioni sull'installazione e la configurazione del servizio Certificati di Active Directory consultando il  http://technet.microsoft.com/en-us/library/["Microsoft TechNet Library: technet.microsoft.com"] .Step
+Il servizio certificati di Active Directory deve essere già installato e configurato per il dominio a cui appartiene il server CIFS. Puoi trovare informazioni sull'installazione e sulla configurazione di Active Directory Certificate Services consultando la documentazione http://technet.microsoft.com/en-us/library/["Microsoft TechNet Library: technet.microsoft.com"]
 
+[NOTE]
+====
+A partire da ONTAP 9.13.1, se  `-use-start-tls-for-ad-ldap` o  `-use-ldaps-for-ad-ldap` è abilitato per il server SMB, assicurati che i certificati CA richiesti siano installati sia per i domini attendibili sia per il dominio principale. ONTAP deve essere in grado di stabilire connessioni TLS o LDAPS ai domain controller dei domini attendibili per determinarne le informazioni sul sito.
+
+====
+.Fase
 . Ottenere un certificato CA principale del controller di dominio presente in `.pem` formato del testo.
 +
 http://technet.microsoft.com/en-us/library/["Microsoft TechNet Library: technet.microsoft.com"]
@@ -93,6 +99,12 @@ Per ulteriori informazioni, consulta:
 ----
 vserver cifs security modify -vserver <SVM_name> -use-start-tls-for-ad-ldap true
 ----
++
+[NOTE]
+====
+A partire da ONTAP 9.13.1, quando la comunicazione LDAP sicura è abilitata per le connessioni di Active Directory, ONTAP utilizza tali connessioni sicure anche per contattare i domain controller dei domini attendibili. Se i certificati necessari non sono installati per i domain controller dei domini attendibili, ONTAP potrebbe non essere in grado di determinare le informazioni sul sito dei domini attendibili.
+
+====
 . Verificare che l'impostazione di sicurezza LDAP su TLS sia configurata su  `true`:
 +
 [source, cli]
