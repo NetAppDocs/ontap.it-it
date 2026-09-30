@@ -23,16 +23,20 @@ La crittografia SMB sulla SVM è controllata da due impostazioni:
 * Una proprietà di condivisione SMB che configura l'impostazione di crittografia SMB in base alla condivisione
 
 
-È possibile decidere se richiedere la crittografia per l'accesso a tutti i dati sulla SVM o se richiedere la crittografia SMB per accedere ai dati solo nelle condivisioni selezionate. Le impostazioni a livello di SVM sostituiscono quelle a livello di condivisione.
+Puoi decidere se richiedere la crittografia per l'accesso a tutti i dati sull'SVM o se richiedere la crittografia SMB per accedere ai dati solo nelle condivisioni selezionate. La `encrypt-data`proprietà di condivisione richiede la crittografia SMB per accedere a una condivisione. A partire da ONTAP 9.11.1, la `allow-unencrypted-access`proprietà di condivisione consente ai client SMB2 di accedere a una condivisione senza crittografia, mentre i client SMB3 continuano a usare la crittografia quando `encrypt-data` è abilitata.
+
+Le impostazioni a livello di SVM hanno la precedenza sulle impostazioni a livello di condivisione.
 
 La configurazione effettiva della crittografia SMB dipende dalla combinazione delle due impostazioni ed è descritta nella tabella seguente:
 
 |===
-| Crittografia SMB server abilitata | Share encoded data Setting Enabled (Condividi dati crittografati | Comportamento della crittografia lato server 
+| Crittografia SMB server abilitata | Share encoded data Setting Enabled (Condividi dati crittografati | Impostazione della condivisione per consentire l'accesso non crittografato abilitata | Comportamento della crittografia lato server 
 
 
  a| 
 Vero
+ a| 
+Falso
  a| 
 Falso
  a| 
@@ -45,6 +49,8 @@ Vero
  a| 
 Vero
  a| 
+Falso
+ a| 
 La crittografia a livello di server è attivata per tutte le condivisioni di SVM, indipendentemente dalla crittografia a livello di condivisione. Con questa configurazione, la crittografia viene eseguita per l'intera sessione SMB.
 
 
@@ -54,10 +60,14 @@ Falso
  a| 
 Vero
  a| 
-La crittografia a livello di condivisione è attivata per le condivisioni specifiche. Con questa configurazione, la crittografia viene eseguita dalla connessione ad albero.
+Falso
+ a| 
+La crittografia a livello di condivisione è abilitata per le condivisioni specifiche. I client SMB3 utilizzano la crittografia, ma i client SMB2 possono accedere alla condivisione senza crittografia perché la proprietà  `allow-unencrypted-access` è abilitata.
 
 
 
+ a| 
+Falso
  a| 
 Falso
  a| 
@@ -65,7 +75,24 @@ Falso
  a| 
 Nessuna crittografia abilitata.
 
+
+
+ a| 
+Falso
+ a| 
+Falso
+ a| 
+Vero
+ a| 
+Non è abilitata alcuna crittografia. La `allow-unencrypted-access` proprietà non ha effetto se `encrypt-data` non è abilitata.
+
 |===
 I client SMB che non supportano la crittografia non possono connettersi a un server SMB o a una condivisione che richiede la crittografia.
 
 Le modifiche alle impostazioni di crittografia sono valide per le nuove connessioni. Le connessioni esistenti non sono interessate.
+
+
+NOTE: La proprietà  `allow-unencrypted-access`è supportata a partire da ONTAP 9.11.1.
+
+
+NOTE: La crittografia SMB a livello di SVM ha la precedenza sulle impostazioni a livello di condivisione.
