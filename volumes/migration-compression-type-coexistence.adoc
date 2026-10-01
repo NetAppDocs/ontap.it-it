@@ -1,0 +1,41 @@
+---
+permalink: volumes/migration-compression-type-coexistence.html 
+sidebar: sidebar 
+keywords: access control lists, flexclone files, flexclone luns, inheritance, ACL, ACLs, acl, acls, flexclone 
+summary: I file FlexClone e le LUN FlexClone ereditano gli elenchi di controllo degli accessi dei file padre e delle LUN. 
+---
+= Supporto per la coesistenza dei tipi di compressione durante la migrazione dei volumi ONTAP
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando un volume viene migrato tra sistemi ONTAP, il volume di origine potrebbe utilizzare un tipo di compressione dei dati diverso rispetto al volume di destinazione.
+
+I tipi di compressione supportati includono la compressione secondaria, adattiva 8K e lo storage sensibile alla temperatura (TSSE). Durante la migrazione, questi tipi di compressione possono coesistere temporaneamente sul volume di destinazione come segue:
+
+[cols="4"]
+|===
+| Tipo di compressione di origine | Tipo di compressione di destinazione | Coesistenza supportata per la migrazione | Dimensione di lettura/scrittura I/O dell'applicazione 
+
+
+| Secondario | TSSE | Sì | Auto 
+
+
+| 8K adattivo | TSSE | Sì | Auto 
+
+
+| Secondario | 8K adattivo | No | Non supportato 
+|===
+.Migrazione dalla compressione secondaria e adattiva 8k alla compressione TSSE
+I volumi secondari e adattivi da 8k vengono progressivamente convertiti in TSSE tramite processi in background dopo la migrazione o man mano che i dati vengono riscritti nel volume di destinazione durante la migrazione.
+
+Dopo la migrazione di un volume dalla compressione secondaria o adattiva 8K alla compressione TSSE, il *tipo di compressione* visualizzato nell' `volume efficiency show`output del comando non cambia nemmeno dopo la conversione di tutti i blocchi esistenti. Il tipo di compressione rimane *secondario* per un volume secondario convertito e *adattivo* per un volume adattivo 8K convertito.
+
+I nuovi dati scritti sui volumi convertiti dalla compressione 8K secondaria o adattiva vengono compressi con TSSE.
+
+.Migrazione dalla compressione secondaria alla compressione adattiva 8k
+La coesistenza diretta della compressione 8K secondaria e adattiva sullo stesso volume non è supportata.
+
+Impara a link:move-between-secondary-adaptive-compression-task.html["passaggio tra compressione secondaria e compressione adattiva"].
