@@ -21,11 +21,49 @@ Se non hai più bisogno di una protezione sincrona di SnapMirror RTO pari a zero
 [[remove-an-asymmetric-san-configuration]]
 == Rimuovi una configurazione SAN asimmetrica
 
+
+
+[[unmap-luns-on-the-destination-cluster]]
+=== Annulla la mappatura delle LUN sul cluster di destinazione
+
+.A proposito di questa attività
 * Prima di eliminare la relazione di sincronizzazione attiva SAN di SnapMirror, tutte le LUN nel cluster di destinazione devono essere smappate.
 * Una volta che i LUN sono stati dismappati e l'host è stato nuovamente scansionato, la destinazione SCSI notifica agli host che l'inventario LUN è stato modificato. Le LUN esistenti sui volumi secondari RTO zero cambiano per riflettere una nuova identità dopo l'eliminazione della relazione RTO zero. Gli host rilevano le LUN del volume secondario come nuove LUN che non hanno alcuna relazione con le LUN del volume di origine.
 * I volumi secondari rimangono volumi DP dopo l'eliminazione della relazione. È possibile eseguire il `snapmirror break` comando per convertirli in lettura/scrittura.
 * L'eliminazione della relazione non è consentita nello stato di failover quando la relazione non viene invertita.
 
+
+.Fasi
+Prima di eliminare una relazione SAN di sincronizzazione attiva di SnapMirror, devi annullare la mappatura di tutte le LUN che fanno parte della relazione sul cluster di destinazione. Completa i passaggi seguenti prima di eliminare una configurazione SAN asimmetrica.
+
+. Se una LUN di destinazione è mappata tramite un igroup replicato, devi verificare e rimuovere la replica dell'igroup dal cluster di origine prima di poter eliminare la mappatura della LUN sul cluster di destinazione:
++
+`SiteB::> igroup show -igroup <igroup_name>  -vserver <vserver_name> -fields replication-peer`
+
+. Se l'igroup è replicato, rimuovi l'associazione replication-peer dal cluster di origine:
++
+`SiteA::> igroup modify -vserver <svm_name> -igroup <igroup_name> -replication-peer "-"`
+
+. Verifica che l'igroup non sia più replicato:
++
+`SiteB::> igroup show -igroup <igroup_name> -vserver <vserver_name> -fields replication-peer`
+
+. Elimina la mappatura LUN sul lato di destinazione:
++
+`SiteB::> lun mapping delete -vserver <svm_name> -igroup <igroup_name> -path <lun_path>`
+
+. Quando non ci sono LUN aggiuntivi mappati all'igroup, elimina l'igroup:
++
+`SiteB::> igroup delete -vserver <svm_name> -igroup <igroup_name>`
+
+
+
+
+
+[[delete-the-snapmirror-active-sync-san-relationship]]
+=== Elimina la relazione SAN active sync di SnapMirror
+
+Dopo aver rimosso la mappatura dalle LUN, elimina la relazione di sincronizzazione attiva di SnapMirror.
 
 .Fasi
 . Dal cluster secondario, rimuovere la relazione del gruppo di coerenza della sincronizzazione attiva SnapMirror tra l'endpoint di origine e quello di destinazione:
