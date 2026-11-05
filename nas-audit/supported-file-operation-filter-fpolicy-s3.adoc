@@ -1,0 +1,71 @@
+---
+permalink: nas-audit/supported-file-operation-filter-fpolicy-s3.html 
+sidebar: sidebar 
+keywords: ontap 9, supported file operation, filter combinations, fpolicy, monitor, s3 
+summary: 'Quando configuri l"evento FPolicy, devi tenere presente che solo determinate combinazioni di operazioni sui file e filtri sono supportate per il monitoraggio delle operazioni di accesso agli oggetti S3.' 
+---
+= Combinazioni supportate di operazioni sui file e filtri che ONTAP FPolicy monitora per S3
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Quando configuri l'evento FPolicy, devi tenere presente che solo determinate combinazioni di operazioni sui file e filtri sono supportate per il monitoraggio delle operazioni di accesso agli oggetti S3.
+
+A partire da ONTAP 9.20.1, FPolicy supporta le notifiche per gli eventi degli oggetti S3 sui bucket NAS. S3 FPolicy opera esclusivamente in modalità asincrona e non obbligatoria.
+
+La tabella seguente riporta l'elenco delle operazioni sui file e delle combinazioni di filtri supportate per il monitoraggio degli eventi di accesso agli oggetti S3 da parte di FPolicy:
+
+[cols="30,70"]
+|===
+
+
+| Operazioni di file supportate | Filtri supportati 
+
+
+ a| 
+creazione_oggetto
+ a| 
+object-create-with-put, object-create-with-copy, object-create-with-complete-mpu
+
+
+
+ a| 
+object_delete
+ a| 
+exclude-multi-delete
+
+
+
+ a| 
+tag_oggetto
+ a| 
+object-tag-put, object-tag-delete
+
+|===
+
+
+[[filter-descriptions]]
+== Descrizioni dei filtri
+
+Il seguente elenco descrive ciascun filtro S3 FPolicy:
+
+* object-create-with-put: Monitora le operazioni di creazione di oggetti eseguite tramite una richiesta PUT.
+* object-create-with-copy: Monitora le operazioni di creazione di oggetti eseguite tramite una richiesta COPY.
+* object-create-with-complete-mpu: Monitora le operazioni di creazione degli oggetti eseguite completando un caricamento multipart.
+* exclude-multi-delete: Escludi le notifiche per gli oggetti eliminati nell'ambito di una richiesta di eliminazione multipla. Quando questo filtro è impostato, FPolicy genera notifiche solo per le operazioni di eliminazione di singoli oggetti.
+* object-tag-put: Monitora le operazioni che aggiungono o modificano un tag di oggetto.
+* object-tag-delete: Monitora le operazioni che rimuovono un tag di un oggetto.
+
+
+
+
+[[additional-considerations-for-s3-fpolicy-events]]
+== Considerazioni aggiuntive per gli eventi S3 FPolicy
+
+* Solo le operazioni S3 eseguite correttamente dal client generano notifiche FPolicy. Le operazioni generate internamente (come la scadenza di un oggetto o il ripristino di uno snapshot) e le operazioni non riuscite non generano notifiche.
+* Le operazioni GET (read) non sono supportate per il monitoraggio FPolicy di S3.
+* Una richiesta di eliminazione multipla può eliminare fino a 1.000 oggetti. FPolicy genera una notifica per ogni oggetto eliminato correttamente. Ogni notifica all'interno della stessa richiesta di eliminazione multipla condivide lo stesso ID richiesta FPolicy e lo stesso ID richiesta S3 per la correlazione.
+* Le notifiche di accesso negato non sono supportate per gli eventi S3.
+

@@ -4,17 +4,118 @@ permalink: anti-ransomware/modify-snapshot-options-arpai.html
 keywords: ARP AI, arpai, snapshot settings, retention, arw snap, autonomous ransomware protection AI, ONTAP 9.17.1, SAN snapshot parameters, machine learning ransomware 
 summary: Regola le impostazioni di creazione e periodo di conservazione degli snapshot ARP/AI generati automaticamente in risposta a potenziali minacce ransomware. 
 ---
-= Regola le impostazioni per gli snapshot ONTAP ARP/AI generati automaticamente
+= Configurare le policy e le impostazioni di risposta delle snapshot ONTAP ARP/AI
 :allow-uri-read: 
 :icons: font
 :imagesdir: ../media/
 
 
 [role="lead"]
-A partire da ONTAP 9.16.1, puoi usare la CLI per controllare le impostazioni di conservazione per Autonomous Ransomware Protection with AI (ARP/AI) snapshot che vengono generati automaticamente in risposta a sospetti attacchi ransomware.
+A partire da ONTAP 9.16.1, puoi utilizzare la CLI per controllare le impostazioni di creazione e conservazione degli snapshot di Autonomous Ransomware Protection with AI (ARP/AI). A partire da ONTAP 9.20.1, puoi anche configurare il criterio di risposta degli snapshot periodici e di attacco per controllare se ARP/AI crea snapshot quando rileva attività anomale.
 
 
 NOTE: Se usi ONTAP 9.15.1 o versioni precedenti, vedi link:modify-snapshot-options-arp.html["Regola le impostazioni per gli snapshot ARP generati automaticamente"].
+
+
+
+[[configure-a-snapshot-response-policy]]
+== Configura una policy di risposta snapshot
+
+A partire da ONTAP 9.20.1, puoi configurare il criterio di risposta agli snapshot ARP/AI per gli snapshot periodici e di attacco, per controllare se ARP/AI crea snapshot quando rileva attività anomale. Puoi impostare il criterio a livello di SVM, dove tutti i volumi sulla SVM ereditano l'impostazione, oppure ignorarlo a livello di volume.
+
+Sono disponibili le seguenti policy di risposta agli snapshot:
+
+[cols="1,3"]
+|===
+| Policy | Comportamento 
+
+
+| `alert-with-proactive-and-periodic-snapshot` | (Predefinito) ARP/AI genera avvisi e registri degli eventi, crea snapshot a intervalli regolari e crea snapshot aggiuntivi quando rileva un attacco. 
+
+
+| `alert-with-proactive-snapshot` | ARP/AI genera avvisi e registri degli eventi e crea snapshot solo quando rileva un attacco. Non crea snapshot periodici. 
+
+
+| `alert-only` | ARP/AI genera solo avvisi e log degli eventi. ARP/AI non crea snapshot. 
+|===
+
+CAUTION: Se imposti la policy su `alert-only`, ARP/AI non crea snapshot. Se viene confermato un attacco ransomware, non sono disponibili snapshot ARP/AI per il recovery di dati, nemmeno durante un attacco attivo. Prima di utilizzare `alert-only`, assicurati di disporre di un'adeguata protezione dei dati esterna, come snapshot ONTAP pianificati, backup di SnapCenter o un'altra soluzione di backup.
+
+
+NOTE: Quando modifichi la policy di risposta agli snapshot, gli snapshot ARP/AI esistenti non vengono eliminati immediatamente. Vengono eliminati quando viene raggiunta l'ora di scadenza pianificata. Non aspettarti un recupero immediato della capacità storage dopo una modifica della policy.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+*Configura il criterio di risposta snapshot a livello di SVM:*
+
+. Seleziona *Cluster* > *Storage VMs* e seleziona la VM di storage.
+. Vai alla scheda *Impostazioni*. In *Sicurezza*, individua il riquadro *Anti-ransomware* e seleziona image:icon_pencil.gif["Icona Edit (Modifica)"].
+. In *Livello di protezione*, seleziona il tipo di protezione da applicare a tutti i volumi con ARP/AI abilitato sull'SVM.
+. Selezionare *Salva*.
+
+
+*Configura i criteri di risposta agli snapshot a livello di volume:*
+
+. Seleziona *Archiviazione* > *Volumi* e seleziona il volume.
+. Nella scheda *Sicurezza*, individua la sezione *Anti-ransomware* e seleziona image:icon_pencil.gif["Icona Edit (Modifica)"].
+. In *Livello di protezione*, seleziona la policy di risposta snapshot per sovrascrivere l'impostazione a livello di SVM per questo volume.
+. Selezionare *Salva*.
+
+
+--
+.CLI
+--
+. Mostra la policy di risposta dello snapshot ARP/AI corrente:
++
+A livello di SVM:
+
++
+[source, cli]
+----
+security anti-ransomware vserver snapshot-settings show -vserver <svm_name>
+----
++
+A livello di volume:
+
++
+[source, cli]
+----
+security anti-ransomware volume snapshot-settings show -vserver <svm_name> -volume <volume_name>
+----
+. Configura il criterio di risposta dello snapshot ARP/AI:
++
+A livello di SVM:
+
++
+[source, cli]
+----
+security anti-ransomware vserver snapshot-settings modify -vserver <svm_name> -anti-ransomware-snapshot-policy <policy>
+----
++
+
+NOTE: Questa impostazione si applica ai volumi su cui è abilitato ARP/AI. Non ha effetto retroattivo sui volumi su cui ARP/AI è già abilitato.
+
++
+A livello del volume (sovrascrive l'impostazione a livello di SVM):
+
++
+[source, cli]
+----
+security anti-ransomware volume snapshot-settings modify -vserver <svm_name> -volume <volume_name> -anti-ransomware-snapshot-policy <policy>
+----
+
+
+--
+====
+
+
+[[adjust-snapshot-creation-and-retention-settings]]
+== Regola le impostazioni di creazione e conservazione degli snapshot
+
+
+NOTE: A partire da ONTAP 9.20.1, le seguenti impostazioni si applicano solo quando la policy di risposta snapshot è `alert-with-proactive-snapshot` o `alert-with-proactive-and-periodic-snapshot`.
 
 .Prima di iniziare
 Puoi modificare le opzioni di snapshot ARP/AI solo su un link:../system-admin/types-svms-concept.html["nodo SVM"] e non sugli altri tipi di SVM.
@@ -49,6 +150,9 @@ Puoi modificare le seguenti impostazioni (ONTAP 9.16.1 e versioni successive):
 
 | `arw.snap.max.count`  a| 
 Specifica il numero massimo di snapshot ARP/AI che possono esistere in un volume in un dato momento. Le copie più vecchie vengono eliminate per garantire che il numero totale di snapshot ARP/AI rimanga entro questo limite.
+
+
+NOTE: A partire da ONTAP 9.20.1, questa impostazione si applica solo quando la policy di risposta snapshot è impostata su `alert-with-proactive-and-periodic-snapshot`. Quando la policy è impostata su `alert-with-proactive-snapshot` o `alert-only`, ONTAP ignora questa impostazione.
  a| 
 ONTAP 9.16.1 e versioni successive
 
@@ -200,4 +304,5 @@ ONTAP 9.17.1 e versioni successive
 .Informazioni correlate
 * link:learn-about-arpai.html#arp-ai-snapshots["Valutazione delle minacce e snapshot ARP/AI"]
 * link:entropy-eval-period-arpai.html["Periodo di valutazione dell'entropia ARP/AI per i volumi SAN"]
+* link:recover-arpai.html["Recupera i dati dopo un attacco ransomware con ARP/AI"]
 

@@ -13,6 +13,13 @@ A partire da ONTAP 9.10.1, puoi utilizzare link:https://docs.microsoft.com/en-us
 
 AWS KMS, AKV e Cloud KMS possono essere utilizzati per proteggere link:configure-netapp-volume-encryption-concept.html["Chiavi NetApp Volume Encryption (NVE)"] Solo per SVM di dati.
 
+[NOTE]
+====
+A partire da ONTAP 9.20.1, quando abiliti un gestore di chiavi cloud su una SVM dati che gestisce già volumi crittografati tramite il gestore di chiavi con ambito amministrativo, ONTAP migra automaticamente tali chiavi NVE al nuovo gestore di chiavi della SVM dati. In questo flusso di lavoro, non devi eseguire un comando  `security key-manager key migrate`separato.
+
+Questa migrazione automatica si applica agli SVM di dati. Se stai eseguendo la transizione dell'SVM di amministrazione dalla gestione delle chiavi integrata o dalla gestione delle chiavi esterne a livello di cluster a un gestore di chiavi cloud per SVM di dati, completa prima le attività di transizione appropriate nell'ambito di amministrazione.
+
+====
 .A proposito di questa attività
 La gestione delle chiavi con un provider cloud può essere abilitata con l'interfaccia CLI o l'API REST ONTAP.
 
@@ -30,7 +37,7 @@ Quando si utilizza un servizio di gestione delle chiavi di un provider cloud, è
 * I nodi del cluster ONTAP devono supportare NVE.
 * link:../encryption-at-rest/install-license-task.html["È necessario aver installato le licenze Volume Encryption (VE) e Encryption Key Management (MTEKM) multi-tenant"]. Queste licenze sono incluse in link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP uno"].
 * Devi essere un amministratore del cluster o di SVM.
-* I dati SVM non devono includere volumi crittografati né utilizzare un gestore delle chiavi. Se i dati SVM includono volumi crittografati, è necessario eseguirne la migrazione prima di configurare il KMS.
+* Per ONTAP 9.20.1 e versioni successive, un SVM di dati può includere volumi crittografati se le relative chiavi NVE sono gestite dal gestore delle chiavi con ambito amministrativo. ONTAP migra automaticamente tali chiavi durante l'operazione di abilitazione. Per le versioni precedenti, devi migrare le chiavi prima di configurare il gestore delle chiavi cloud.
 
 
 
@@ -51,7 +58,8 @@ L'attivazione della gestione esterna delle chiavi dipende dal gestore specifico 
 ** `Encrypt`
 ** `Decrypt`
 +
-Per ulteriori informazioni, consultare la documentazione AWS per link:https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#grant["sovvenzioni"^].
+Per ulteriori informazioni, consulta la documentazione AWS per link:https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#grant["sovvenzioni"^].
+
 
 
 
@@ -108,8 +116,12 @@ Ulteriori informazioni su `security key-manager external gcp` nella link:https:/
 
 --
 ====
-Se uno o più volumi crittografati sono già configurati per un SVM di dati e le chiavi NVE corrispondenti sono gestite dal gestore delle chiavi integrato SVM di amministrazione, tali chiavi devono essere migrate al servizio di gestione delle chiavi esterno. Per eseguire questa operazione con la CLI, eseguire il comando:
-`security key-manager key migrate -from-Vserver _admin_SVM_ -to-Vserver _data_SVM_`Non è possibile creare nuovi volumi crittografati per i dati SVM del tenant fino a quando tutte le chiavi NVE dei dati SVM non vengono migrate correttamente.
+A partire da ONTAP 9.20.1, se uno o più volumi crittografati sono già configurati per un SVM dati e le relative chiavi NVE sono gestite dal gestore delle chiavi con ambito amministrativo, ONTAP migra automaticamente tali chiavi durante l'operazione di abilitazione. Non devi eseguire un comando separato `security key-manager key migrate`.
+
+Per le versioni di ONTAP precedenti alla 9.20.1, devi migrare queste chiavi al Key Management Service esterno. Per farlo con la CLI, esegui il comando:
+`security key-manager key migrate -from-Vserver _admin_SVM_ -to-Vserver _data_SVM_`
+
+Non è possibile creare nuovi volumi crittografati per la SVM dati del tenant finché tutte le chiavi NVE della SVM dati non sono state migrate correttamente.
 
 .Informazioni correlate
 * link:https://docs.netapp.com/us-en/cloud-manager-cloud-volumes-ontap/task-encrypting-volumes.html["Crittografia dei volumi con le soluzioni di crittografia NetApp per Cloud Volumes ONTAP"^]

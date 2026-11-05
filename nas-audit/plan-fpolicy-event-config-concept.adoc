@@ -18,13 +18,13 @@ Prima di configurare gli eventi FPolicy, è necessario comprendere il significat
 [[what-it-means-to-create-an-fpolicy-event]]
 == Cosa significa creare un evento FPolicy
 
-La creazione dell'evento FPolicy implica la definizione delle informazioni necessarie al processo FPolicy per determinare quali operazioni di accesso ai file monitorare e per quali notifiche degli eventi monitorati devono essere inviate al server FPolicy esterno. La configurazione degli eventi FPolicy definisce le seguenti informazioni di configurazione:
+La creazione di un evento FPolicy consiste nel definire le informazioni necessarie al processo FPolicy per determinare quali operazioni di accesso ai file monitorare e quali notifiche relative agli eventi monitorati devono essere inviate al server FPolicy esterno. La configurazione dell'evento FPolicy definisce le seguenti informazioni di configurazione:
 
 * Nome SVM (Storage Virtual Machine)
 * Nome dell'evento
 * Quali protocolli monitorare
 +
-FPolicy può monitorare le operazioni di accesso ai file SMB, NFSv3, NFSv4 e, a cominciare da ONTAP 9.15.1, NFSv4,1.
+FPolicy può monitorare le operazioni di accesso ai file SMB, NFSv3, NFSv4, NFSv4.1 (a partire da ONTAP 9.15.1) e S3 (a partire da ONTAP 9.20.1).
 
 * Quali operazioni di file monitorare
 +
@@ -104,16 +104,13 @@ Specifica quale protocollo configurare per l'evento FPolicy. L'elenco per `-prot
 * `cifs`
 * `nfsv3`
 * `nfsv4`
+* `nfsv4.1` (a partire da ONTAP 9.15.1)
+* `s3`(a partire da ONTAP 9.20.1)
 
 
 [NOTE]
 ====
 Se si specifica `-protocol`, quindi specificare un valore valido in `-file-operations` parametro. Man mano che la versione del protocollo cambia, i valori validi potrebbero cambiare.
-
-====
-[NOTE]
-====
-A partire da ONTAP 9.15.1, NFSv4 è possibile acquisire eventi NFSv4,0 e NFSv4,1.
 
 ==== a| 
 `-protocol` `protocol`
@@ -135,6 +132,9 @@ L'evento controlla le operazioni specificate in questo elenco da tutte le richie
 * `getattr` per le operazioni get attribute
 * `link` per le operazioni di collegamento
 * `lookup` per le operazioni di ricerca
+* `object_create` per operazioni sui file S3
+* `object_delete` per operazioni sui file S3
+* `object_tag` per operazioni sui file S3
 * `open` per le operazioni di apertura dei file
 * `read` per le operazioni di lettura del file
 * `write` per le operazioni di scrittura del file
@@ -163,11 +163,17 @@ Specifica l'elenco dei filtri per una determinata operazione di file per il prot
 Se si specifica `-filters` quindi specificare valori validi per `-file-operations` e. `-protocol` parametri.
 
 ====
-* `monitor-ads` opzione per filtrare la richiesta del client per un flusso di dati alternativo.
 * `close-with-modification` opzione per filtrare la richiesta del client per la chiusura con modifica.
 * `close-without-modification` opzione per filtrare la richiesta del client per la chiusura senza modifiche.
 * `first-read` opzione per filtrare la richiesta del client per la prima lettura.
 * `first-write` opzione per filtrare la richiesta del client per la prima scrittura.
+* `monitor-ads` opzione per filtrare la richiesta del client per un flusso di dati alternativo.
+* `object-create-with-put` opzione per filtrare gli oggetti S3.
+* `object-create-with-copy` opzione per filtrare gli oggetti S3.
+* `object-create-with-complete-mpu` opzione per filtrare gli oggetti S3.
+* `exclude-multi-delete` opzione per filtrare gli oggetti S3.
+* `object-tag-put` opzione per filtrare gli oggetti S3.
+* `object-tag-delete` opzione per filtrare gli oggetti S3.
 * `offline-bit` opzione per filtrare la richiesta del client per il set di bit offline.
 +
 Impostando questo filtro, il server FPolicy riceve una notifica solo quando si accede ai file offline.

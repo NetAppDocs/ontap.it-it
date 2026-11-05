@@ -19,6 +19,9 @@ Le richieste di approvazione sono identificate con numeri di indice, inclusi nei
 
 NOTE: `multi-admin-verify`le richieste in stato terminale possono essere sovrascritte o rimosse automaticamente.  Utilizzare illink:../system-admin/audit-display-log-contents-task.html["registro di controllo"] per rivedere le richieste precedenti.
 
+
+NOTE: A partire da ONTAP 9.20.1, i membri di un gruppo di approvatori IdP, AD o LDAP configurato possono approvare o respingere le richieste senza essere elencati come approvatori designati. Le modifiche all'appartenenza di un utente a un gruppo nel provider di identità hanno effetto al successivo accesso riuscito dell'utente. Non è necessaria alcuna riconfigurazione MAV.
+
 È possibile visualizzare le seguenti informazioni dalla coda di richiesta:
 
 Operazione:: Operazione protetta per la quale viene creata la richiesta.
@@ -26,6 +29,7 @@ Query:: Oggetto (o oggetti) su cui l'utente desidera applicare l'operazione.
 Stato:: Lo stato corrente della richiesta: In sospeso, approvato, rifiutato, scaduto, eseguito. Se una richiesta viene respinta da un responsabile dell'approvazione, non sono possibili ulteriori azioni.
 Responsabili dell'approvazione richiesti:: Il numero di amministratori MAV necessari per approvare la richiesta. Un utente può impostare il parametro required-approvers per la regola dell'operazione. Se un utente non imposta i responsabili dell'approvazione richiesti sulla regola, vengono applicati i responsabili dell'approvazione richiesti dall'impostazione globale.
 Responsabili dell'approvazione in sospeso:: Il numero di amministratori MAV che sono ancora necessari per approvare la richiesta per essere contrassegnati come approvati.
+Potenziali gruppi di approvazione:: A partire da ONTAP 9.20.1, i gruppi IdP, AD o LDAP i cui membri sono autorizzati ad approvare o respingere la richiesta.
 Scadenza approvazione:: Periodo entro il quale un amministratore MAV deve rispondere a una richiesta di approvazione. Qualsiasi utente autorizzato può impostare la scadenza dell'approvazione per una regola dell'operazione. Se la regola non è impostata su approvazione-scadenza, viene applicata l'approvazione-scadenza dall'impostazione globale.
 Scadenza dell'esecuzione:: Il periodo entro il quale l'amministratore richiedente deve completare l'operazione. Qualsiasi utente autorizzato può impostare la scadenza dell'esecuzione per una regola dell'operazione. Se la regola non è impostata su execution-expiry, viene applicata l'impostazione di execution-execution-expiry dall'impostazione globale.
 Approvati dagli utenti:: Gli amministratori MAV che hanno approvato la richiesta.
@@ -42,9 +46,9 @@ Utenti consentiti:: L'elenco degli utenti autorizzati a eseguire l'operazione pr
 ====
 .System Manager
 --
-Gli amministratori MAV ricevono messaggi di posta elettronica con i dettagli della richiesta di approvazione, il periodo di scadenza della richiesta e un collegamento per approvare o rifiutare la richiesta.  Possono accedere a una finestra di dialogo di approvazione cliccando sul collegamento nell'e-mail oppure andando su *Eventi e lavori > Richieste* in Gestione sistema.
+Gli amministratori MAV ricevono messaggi email con i dettagli della richiesta di approvazione, il periodo di scadenza della richiesta e un link per approvarla o respingerla. Possono accedere a una finestra di dialogo di approvazione selezionando il link nell'email oppure passando a *Events & Jobs > Multi-Admin Requests* in System Manager.
 
-La finestra *Richieste* è disponibile quando è abilitata la verifica multi-amministratore e mostra le richieste in sospeso in base all'ID di accesso dell'utente e al ruolo MAV (approvatore o meno).
+La finestra *Richieste multi-amministratore* è disponibile quando è abilitata la verifica multi-amministratore e mostra le richieste in sospeso in base all'ID di accesso dell'utente e al ruolo MAV (approvatore o meno). Seleziona *Le mie approvazioni* per visualizzare solo le richieste su cui l'utente connesso può intervenire, incluse le richieste disponibili tramite l'appartenenza a un gruppo di approvatori IdP, AD o LDAP.
 
 * Operazione
 * Indice (numero)
@@ -56,7 +60,7 @@ Se una richiesta viene respinta da un responsabile dell'approvazione, non sono p
 * Utente richiedente
 * La richiesta scade il
 * (Numero di) approvatori in sospeso
-* (Numero di) potenziali responsabili dell'approvazione
+* Potenziali approvatori (a partire da ONTAP 9.20.1, ciò include gli utenti idonei come approvatori designati e tramite l'appartenenza a un gruppo di approvatori IdP, AD o LDAP idoneo)
 
 
 Gli amministratori MAV dispongono di controlli aggiuntivi in questa finestra; possono approvare, rifiutare o eliminare singole operazioni o gruppi di operazioni selezionati. Tuttavia, se l'amministratore MAV è l'utente richiedente, non può approvare, rifiutare o eliminare le proprie richieste.
@@ -64,7 +68,7 @@ Gli amministratori MAV dispongono di controlli aggiuntivi in questa finestra; po
 --
 .CLI
 --
-. Quando si riceve una notifica via e-mail delle richieste in sospeso, annotare il numero di indice della richiesta e il periodo di scadenza dell'approvazione.  Il numero di indice può essere visualizzato anche utilizzando le opzioni *show* o *show-pending* menzionate di seguito.
+. Quando ricevi una notifica via e-mail relativa a richieste in sospeso, annota il numero di indice della richiesta e il periodo di scadenza dell'approvazione. Il numero di indice può essere visualizzato anche utilizzando le opzioni *show* o *show-pending* nella tabella seguente.
 . Approvare o veto la richiesta.
 +
 [cols="50,50"]
@@ -126,17 +130,20 @@ cluster-1::> security multi-admin-verify request show 3
              State: approved
 Required Approvers: 2
  Pending Approvers: 0
+Potential Approver Groups: entra-group-mav-approvers
    Approval Expiry: 2/25/2022 14:32:03
   Execution Expiry: 2/25/2022 14:35:36
-         Approvals: mav-admin2
-       User Vetoed: -
-           Vserver: cluster-1
+        Approvals: mav-admin2
+      User Vetoed: -
+          Vserver: cluster-1
     User Requested: julia
-      Time Created: 2/25/2022 13:32:03
-     Time Approved: 2/25/2022 13:35:36
-           Comment: -
+     Time Created: 2/25/2022 13:32:03
+    Time Approved: 2/25/2022 13:35:36
+          Comment: -
    Users Permitted: -
 ----
+A partire da ONTAP 9.20.1, il `security multi-admin-verify request show` comando include un `Potential Approver Groups` campo che elenca tutti i gruppi IdP, AD o LDAP i cui membri sono autorizzati ad approvare o porre il veto alla richiesta.
+
 .Esempio:
 La seguente sequenza veto una richiesta dopo che l'amministratore MAV ha ricevuto l'email di richiesta con il numero di indice 3, che ha già un'approvazione.
 

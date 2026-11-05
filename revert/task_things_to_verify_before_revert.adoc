@@ -327,6 +327,40 @@ Job ID Name                 Vserver    Node           State
 ----
 
 
+
+
+[[verify-key-manager-state-before-reverting]]
+== Verifica lo stato del key manager prima del ripristino
+
+Prima di tornare da ONTAP 9.20.1 a una versione precedente di ONTAP, verifica che le configurazioni del key manager siano in uno stato valido per la release di destinazione.
+
+.Fasi
+. Visualizza lo stato del gestore delle chiavi:
++
+[source, cli]
+----
+security key-manager keystore show
+----
+. Se è presente una configurazione `inactive`, eliminala prima di procedere con il ripristino:
++
+[source, cli]
+----
+security key-manager keystore delete -vserver <svm_name>
+----
+. Verifica se un processo di key manager è ancora in esecuzione:
++
+[source, cli]
+----
+job show -name *keymanager*
+----
+. Se un'attività del gestore di chiavi è ancora in fase di inizializzazione, attendi che venga completata prima di avviare il ripristino.
+
+
+[NOTE]
+====
+Le configurazioni attive del keystore vengono gestite come parte del processo di revert standard. La principale criticità del revert riguarda le voci inattive del keystore o i job del key manager in corso introdotti dal workflow del key manager di ONTAP 9.20.1.
+
+====
 .Informazioni correlate
 * link:https://docs.netapp.com/us-en/ontap-cli/storage-disk-show.html["mostra disco di archiviazione"^]
 

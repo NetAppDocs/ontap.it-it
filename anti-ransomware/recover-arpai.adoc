@@ -34,6 +34,7 @@ ARP/AI crea snapshot con uno dei seguenti nomi anteposti:
 .Prima di iniziare
 * Se stai rispondendo a un avviso di attività anomala, link:respond-arpai.html#classify-as-potential-ransomware-attack-and-recover-data["devi prima classificarlo come un potenziale attacco ransomware"] prima di procedere con il ripristino dei dati.
 * Scegli un'opzione <<choose-a-recovery-method,metodo di ripristino>> e rivedila <<recovery-constraints-and-considerations,vincoli di recupero>> prima di completare una procedura di ripristino.
+* A partire da ONTAP 9.20.1, se la policy di risposta agli snapshot ARP/AI è impostata su `alert-only`, non si creano snapshot ARP/AI e il recovery degli snapshot ARP/AI non è disponibile. Per ripristinare i dati, usa uno snapshot ONTAP pianificato o la tua soluzione di backup.
 
 
 
@@ -64,6 +65,12 @@ Scopri di più su link:../data-protection/restore-single-file-snapshot-task.html
 * Per ONTAP 9.16.1 e versioni successive: cancella *prima* l'evento sospetto (in link:respond-arpai.html["Rispondere ad attività anomale"]) e poi esegui il ripristino. Dopo la cancellazione, gli snapshot ARP/AI vengono conservati in base a come categorizzi l'attività. A partire da ONTAP 9.17.1, i valori predefiniti sono 7 giorni (attacco reale) o 24 ore (falso positivo). In ONTAP 9.16.1, i valori predefiniti sono 5 giorni (attacco reale) o 48 ore (falso positivo). L'opzione clear-suspect non è più disponibile dopo un ripristino del volume, quindi devi cancellare prima di eseguire il ripristino.
 * Il rilascio del blocco snapshot ARP/AI è necessario solo quando usi  `volume snapshot restore` per ripristinare da uno snapshot precedente. Non è necessario per FlexClone, SnapRestore su singolo file, operazioni di copia dei dati o metodi simili.
 * Per i volumi SAN in cui l'attacco viene rilevato esclusivamente tramite analisi dell'entropia, solo lo snapshot creato immediatamente prima della timeline dell'attacco e lo snapshot dell'attacco stesso vengono conservati per un periodo prolungato (10 giorni per impostazione predefinita, configurabile). Gli altri snapshot periodici continuano a seguire le normali regole di conservazione. Questo differisce dai volumi NAS, dove tutti gli snapshot creati prima della timeline dell'attacco vengono conservati fino a quando l'amministratore non esegue un'azione di clear-suspect.
+* Per ONTAP 9.20.1 e versioni successive: il ripristino di uno snapshot del volume può riportare il criterio di risposta dello snapshot ARP/AI al criterio in vigore al momento dell'acquisizione dello snapshot. Dopo un ripristino del volume, verifica che il criterio di risposta dello snapshot sia ancora corretto:
++
+[source, cli]
+----
+security anti-ransomware volume snapshot-settings show -vserver <svm_name> -volume <volume_name>
+----
 
 
 .Considerazioni su SnapMirror

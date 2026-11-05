@@ -98,7 +98,7 @@ NOTE: Tutto `security multi-admin-verify rule` I comandi richiedono l'approvazio
 
 
 | Creare una regola  a| 
-`security multi-admin-verify rule create -operation _"protected_operation"_ [-query _operation_subset_] [_parameters_]`
+`security multi-admin-verify rule create -operation _"protected_operation"_ [-query _operation_subset_] [-approval-groups _group1_[,_group2_…]] [_parameters_]`
 
 
 
@@ -108,6 +108,8 @@ NOTE: Tutto `security multi-admin-verify rule` I comandi richiedono l'approvazio
 *Esempio*: La seguente regola richiede l'approvazione per eliminare il volume root.
 
 `security multi-admin-verify rule create  -operation "volume delete" -query "-vserver vs0"`
+
+Usa il `-approval-groups` parametro per specificare uno o più gruppi di approvazione MAV per questa regola, sovrascrivendo l'impostazione globale dei gruppi di approvazione solo per questa operazione.
 
 
 
@@ -124,7 +126,55 @@ NOTE: Tutto `security multi-admin-verify rule` I comandi richiedono l'approvazio
 | Mostra regole  a| 
 `security multi-admin-verify rule show`
 
+
+
+| Visualizza tutte le operazioni proteggibili con MAV  a| 
+`security multi-admin-verify registered-operations show`
+
 |===
+
+
+[[view-available-mav-protectable-operations]]
+== Visualizza le operazioni proteggibili da MAV
+
+A partire da ONTAP 9.20.1, puoi visualizzare tutte le operazioni che possono essere protette da MAV sul cluster corrente. Questo può aiutarti a creare una regola senza consultare la documentazione esterna per determinare i nomi validi delle operazioni.
+
+`security multi-admin-verify registered-operations show`
+
+*Esempio:*
+
+[listing]
+----
+cluster1::> security multi-admin-verify registered-operations show
+Operation
+-----------------------------------------
+cluster peer delete
+security login delete
+security login modify
+volume delete
+volume move start
+volume snapshot delete
+...
+----
+
+NOTE: L'elenco delle operazioni varia in base alla versione di ONTAP e alla personalità del cluster.
+
+Puoi filtrare l'output in base al nome dell'operazione utilizzando il `-operation` parametro, inclusa la corrispondenza con caratteri jolly.
+
+*Esempio:*
+
+[listing]
+----
+cluster1::> security multi-admin-verify registered-operations show -operation security*
+Operation
+----------------------------------
+security anti-ransomware volume attack clear-suspect
+security anti-ransomware volume disable
+security anti-ransomware volume event-log modify
+security audit modify
+security login delete
+...
+----
 .Informazioni correlate
 * link:https://docs.netapp.com/us-en/ontap-cli/search.html?q=security+multi-admin-verify+rule["regola di verifica multi-amministrazione di sicurezza"^]
 * link:https://docs.netapp.com/us-en/ontap-cli/security-login-modify.html["modifica dell'accesso di sicurezza"^]

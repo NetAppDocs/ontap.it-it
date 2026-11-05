@@ -1,0 +1,68 @@
+---
+permalink: s3-config/delete-recover-bucket-with-data-task.html 
+sidebar: sidebar 
+keywords: s3, bucket, system manager, cli, delete, restore, recover 
+summary: A partire da ONTAP 9.20.1, puoi pianificare operazioni di eliminazione dei bucket sui server di storage a oggetti per rimuovere i bucket senza prima svuotarli. 
+---
+= Elimina un bucket ONTAP S3 che contiene oggetti
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+A partire da ONTAP 9.20.1, puoi pianificare operazioni di eliminazione dei bucket sui server di archivi di oggetti per rimuovere i bucket senza prima svuotarli. Per farlo, utilizzi una finestra di ripristino configurabile basata sul periodo di conservazione, che consente il ripristino del bucket prima della scadenza del periodo di conservazione.
+
+La possibilità di eliminare i bucket non vuoti aiuta a semplificare la dismissione dei bucket evitando la pulizia manuale degli oggetti, uno per uno, prima di poter rimuovere un bucket, riduce l'arretrato delle scadenze e rende la capacità riutilizzabile prima.
+
+.Prima di iniziare
+* Devi essere un amministratore del cluster o un amministratore SVM.
+* È necessario essere al livello di privilegi avanzati.
+
+
+
+
+[[delete-a-bucket-that-contains-objects]]
+== Elimina un bucket che contiene oggetti
+
+Puoi programmare l'eliminazione di un bucket senza prima svuotarlo impostando un intervallo di conservazione. Per impostazione predefinita, l'intervallo di conservazione è impostato su 12 ore.
+
+.Fasi
+Questa attività può essere eseguita da System Manager o dalla CLI di ONTAP.
+
+[role="tabbed-block"]
+====
+.System Manager
+--
+. Vai a *Archiviazione > Bucket* e individua il bucket che vuoi eliminare.
+. Fai clic accanto al nome del bucket e seleziona *Elimina*.
+. Se il bucket non è vuoto, nella finestra *Elimina bucket*, seleziona l'opzione per eliminare i dati e svuotare il bucket, quindi seleziona *Elimina*.
+
+
+--
+.CLI
+--
+. Specifica il periodo di conservazione trascorso il quale il bucket verrà eliminato definitivamente:
++
+`object-store-server create -vserver <SVM name> -bucket-delete-retention-hours <integer>`
+
+. Avvia la pianificazione di eliminazione del bucket:
++
+`object-store-server bucket delete -bucket <bucket name> -delete-objects tru`e
+
+
+
+--
+====
+
+
+[[recover-a-deleted-bucket]]
+== Recuperare un bucket eliminato
+
+Se un bucket viene eliminato accidentalmente, puoi recuperarlo utilizzando la ONTAP CLI durante il periodo di conservazione che hai specificato.
+
+. Per recuperare un bucket eliminato, inserisci il seguente comando:
++
+`object-store-server bucket recover-deleted-bucket -bucket <bucket name>`
+
+

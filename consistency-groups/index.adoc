@@ -67,17 +67,30 @@ NOTE: In ONTAP 9.13.1, puoi recuperare le metriche storiche solo utilizzando l'O
 [[protect-consistency-groups]]
 == Proteggere i gruppi di coerenza
 
-I gruppi di coerenza offrono protezione coerente con l'applicazione, garantendo la coerenza dei tuoi dati su più volumi o LIF. Quando crei uno snapshot di un gruppo di coerenza, viene stabilita una "recinzione" sul gruppo di coerenza. La recinzione avvia una coda per l'I/O fino al completamento dell'operazione di snapshot, garantendo la coerenza point-in-time dei dati su tutte le entità del gruppo di coerenza. La recinzione può causare un picco transitorio di latenza durante la creazione dello snapshot, ad esempio con una policy di snapshot pianificata o creando uno snapshot con System Manager. Scopri di più sul contesto dell'ONTAP REST API e dell'ONTAP CLI nella link:https://kb.netapp.com/on-prem/ontap/DM/REST-API["Documentazione dell'API REST di ONTAP"^] e nella link:https://docs.netapp.com/us-en/ontap-cli/["Riferimento al comando ONTAP"^].
+I gruppi di coerenza offrono protezione coerente con l'applicazione, garantendo la coerenza dei tuoi dati su più volumi o LIF. Quando crei uno snapshot di un gruppo di coerenza, viene stabilita una "recinzione" sul gruppo di coerenza. La recinzione avvia una coda per l'I/O fino al completamento dell'operazione di snapshot, garantendo la coerenza point-in-time dei dati su tutte le entità del gruppo di coerenza. La recinzione può causare un picco transitorio di latenza durante la creazione dello snapshot, ad esempio con una policy di snapshot pianificata o creando uno snapshot con System Manager.
 
-I gruppi di coerenza offrono protezione attraverso:
+Il tipo di protezione dei dati disponibile per i gruppi di coerenza varia in base alla versione di ONTAP in uso.
 
+[cols="2"]
+|===
+| Disponibile a partire da ONTAP... | Protezione dei dati per i gruppi di coerenza 
+
+
+| 9.20.1 | link:protect-task.html#configure-snaplock-for-snapvault-replication-from-a-non-snaplock-source["SnapLock per SnapVault da volumi non-SnapLock"] 
+
+
+| 9.14.1 | link:../data-protection/snapmirror-svm-replication-concept.html["Disaster recovery SVM"] 
+
+
+| 9.13.1 | xref:../data-protection/snapmirror-disaster-recovery-concept.html[SnapMirror asincrono] 
+
+
+| 9.10.1  a| 
 * Policy di Snapshot
 * xref:../snapmirror-active-sync/index.html[Sincronizzazione attiva di SnapMirror]
-* <<mcc>> (A partire da ONTAP 9.11.1)
-* xref:../data-protection/snapmirror-disaster-recovery-concept.html[SnapMirror asincrono] (A partire da ONTAP 9.13.1)
-* link:../data-protection/snapmirror-svm-replication-concept.html["Disaster recovery SVM"] (A partire da ONTAP 9.14.1)
 
 
+|===
 La creazione di un gruppo di coerenza non attiva automaticamente la protezione. È possibile impostare policy di protezione locali e remote durante la creazione o dopo la creazione di un gruppo di coerenza.
 
 Per configurare la protezione su un gruppo di coerenza, vedere link:protect-task.html["Proteggere un gruppo di coerenza"].
@@ -125,9 +138,7 @@ NOTE: Per prestazioni di archiviazione e disponibilità ottimali, si consiglia d
 [[upgrade-considerations]]
 == Considerazioni sull'upgrade
 
-Quando si esegue l'aggiornamento a ONTAP 9.10,1 o versioni successive, i gruppi di coerenza creati con la sincronizzazione attiva di SnapMirror (precedentemente nota come continuità aziendale SnapMirror) in ONTAP 9.8 e 9.9.1 vengono automaticamente aggiornati e diventano gestibili in *archiviazione > gruppi di coerenza* in Gestione di sistema o nell'API REST di ONTAP per ulteriori informazioni sull'aggiornamento da ONTAP 9.8 o 9,9.1, vedere link:../snapmirror-active-sync/upgrade-revert-task.html["Considerazioni sull'aggiornamento e sull'indirizzamento della sincronizzazione attiva di SnapMirror"].
-
-Gli snapshot dei gruppi di coerenza creati tramite l'API REST di ONTAP possono essere gestiti tramite l'interfaccia dei gruppi di coerenza di System Manager e tramite gli endpoint dell'API REST di ONTAP relativi ai gruppi di coerenza. A partire da ONTAP 9.14.1, gli snapshot dei gruppi di coerenza possono essere gestiti anche tramite la CLI di ONTAP.
+Quando esegui l'aggiornamento a ONTAP 9.10.1 o versioni successive, i gruppi di coerenza creati con SnapMirror active sync (in precedenza noto come SnapMirror Business Continuity) in ONTAP 9.8 e 9.9.1 vengono aggiornati automaticamente e diventano gestibili in *Storage > Gruppi di coerenza* in System Manager o tramite l'API REST di ONTAP. Per ulteriori informazioni sull'aggiornamento da ONTAP 9.8 o 9.9.1, vedi link:../snapmirror-active-sync/upgrade-revert-task.html["Considerazioni sull'aggiornamento e sull'indirizzamento della sincronizzazione attiva di SnapMirror"].
 
 
 NOTE: Gli snapshot creati con i comandi ONTAPI `cg-start` `cg-commit` non vengono riconosciuti come snapshot del gruppo di coerenza e non possono quindi essere gestiti tramite l'interfaccia del gruppo di coerenza di Gestione sistema o gli endpoint del gruppo di coerenza nell'API REST di ONTAP. A partire da ONTAP 9.14.1, questi snapshot possono essere mirrorati sul volume di destinazione, se si sta utilizzando una policy asincrona di SnapMirror. Per ulteriori informazioni, vedere xref:protect-task.html#configure-snapmirror-asynchronous[Configurazione asincrona di SnapMirror].
@@ -137,60 +148,58 @@ NOTE: Gli snapshot creati con i comandi ONTAPI `cg-start` `cg-commit` non vengon
 [[supported-features-by-release]]
 == Funzionalità supportate dalla release
 
-[cols="3,1,1,1,1,1,1,1"]
+[cols="2"]
 |===
-|  | ONTAP 9.16.1 | ONTAP 9.15.1 | ONTAP 9.14.1 | ONTAP 9.13.1 | ONTAP 9.12.1 | ONTAP 9.11.1 | ONTAP 9.10.1 
+| Inizio con ONTAP... | Funzionalità supportate 
 
 
-| Gruppi di coerenza gerarchica | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 
+| 9.20.1 | protezione SnapLock for SnapVault sui sistemi secondari 
 
 
-| Protezione locale con snapshot | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 
+| 9.16.1  a| 
+Verifica multi-admin
 
 
-| Sincronizzazione attiva di SnapMirror | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ 
+
+| 9.14.1  a| 
+* Disaster recovery di SVM (solo gruppo di coerenza singolo)
+* Supporto CLI
 
 
-| Supporto MetroCluster | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  
 
 
-| Commit bifase (solo API REST) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |  
+| 9.13.1  a| 
+* Spostare i volumi tra i gruppi di coerenza figlio
+* Modificare la geometria del gruppo di coerenza
+* Monitoraggio
+* SnapMirror asincrono (solo singoli gruppi di coerenza)
 
 
-| Tag di applicazioni e componenti | ✓ | ✓ | ✓ | ✓ | ✓ |  |  
 
 
-| Clonare i gruppi di coerenza | ✓ | ✓ | ✓ | ✓ | ✓ |  |  
+| 9.12.1  a| 
+* Aggiungere e rimuovere volumi
+* Tag di applicazioni e componenti
+* Clonare i gruppi di coerenza
+* Crea CG con nuovi volumi NAS (solo API REST)
+* Crea CG con namespace NVMe (solo API REST)
 
 
-| Aggiungere e rimuovere volumi | ✓ | ✓ | ✓ | ✓ | ✓ |  |  
 
 
-| Crea CGS con nuovi volumi NAS | ✓ | ✓ | ✓ | ✓ | Solo API REST |  |  
+| 9.11.1  a| 
+* Configurazioni MetroCluster
+* Commit bifase (solo API REST)
 
 
-| Crea CGS con i nuovi NVMe Namespace | ✓ | ✓ | ✓ | ✓ | Solo API REST |  |  
 
 
-| Spostare i volumi tra i gruppi di coerenza figlio | ✓ | ✓ | ✓ | ✓ |  |  |  
+| 9.10.1  a| 
+* Gruppi di coerenza gerarchica
+* Protezione locale con snapshot
+* Sincronizzazione attiva di SnapMirror
 
 
-| Modificare la geometria del gruppo di coerenza | ✓ | ✓ | ✓ | ✓ |  |  |  
-
-
-| Monitoraggio | ✓ | ✓ | ✓ | ✓ |  |  |  
-
-
-| Verifica multi-admin | ✓ |  |  |  |  |  |  
-
-
-| SnapMirror asincrono (solo singoli gruppi di coerenza) | ✓ | ✓ | ✓ | ✓ |  |  |  
-
-
-| Disaster recovery SVM (solo gruppi di coerenza singoli) | ✓ | ✓ | ✓ |  |  |  |  
-
-
-| Supporto CLI | ✓ | ✓ | ✓ |  |  |  |  
 |===
 
 

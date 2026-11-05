@@ -1,0 +1,39 @@
+---
+permalink: revert/remove-persistent-reservation-registrations.html 
+sidebar: sidebar 
+keywords: revert, persistent reservation, registrations, SCSI-3, LUN, 9.20.1 
+summary: Se un LUN ha superato in passato il limite di 182 registrazioni di prenotazioni persistenti SCSI-3, ONTAP blocca il ripristino a versioni precedenti a ONTAP 9.20.1. Prima di eseguire il ripristino, controlla ogni LUN e rimuovi tutte le registrazioni. 
+---
+= Rimuovere le registrazioni di prenotazione persistenti prima di ripristinare la versione precedente da ONTAP 9.20.1
+:allow-uri-read: 
+:icons: font
+:imagesdir: ../media/
+
+
+[role="lead"]
+Le versioni di ONTAP precedenti alla 9.20.1 supportano un massimo di 182 registrazioni di prenotazioni persistenti SCSI-3 per LUN. A partire da ONTAP 9.20.1, questo limite aumenta a 256. Se un LUN ha storicamente superato le 182 registrazioni, ONTAP blocca la reversione indipendentemente dal numero attuale di registrazioni. Prima di tornare dalla 9.20.1 alla 9.19.1, individua e rimuovi le registrazioni di prenotazioni persistenti sui LUN interessati.
+
+
+IMPORTANT: La rimozione delle registrazioni di prenotazione persistenti può richiedere una riconfigurazione lato host negli ambienti clusterizzati. A seconda del sistema operativo host e del software di clustering, potrebbe essere necessario portare offline le risorse del cluster, rimuovere le LUN interessate dalla gestione del cluster e ripristinare l'accesso al cluster dopo la reversione. Consulta la documentazione della tua soluzione di clustering e convalida il flusso di lavoro di ripristino in un ambiente di test prima di eseguire la reversione.
+
+.Fasi
+. Verifica se in passato qualche LUN ha superato le 182 registrazioni di prenotazioni persistenti:
++
+[source, cli]
+----
+lun show -field persistent-reservation-scale-tier
+----
++
+Un valore superiore a 182 nel campo persistent-reservation-scale-tier indica che la LUN ha allocato metadati di prenotazione persistente aggiuntivi. Ciò impedisce la reversione, indipendentemente dal numero corrente di registrazioni.
+
+. Per ogni LUN interessata, mostra il numero corrente di registrazioni attive:
++
+[source, cli]
+----
+lun persistent-reservation show -vserver <vserver_name> -path <lun_path>
+----
+. Rimuovi le registrazioni di prenotazione persistenti su tutte le LUN interessate.
++
+Esegui il controllo preliminare di ripristino. Se viene rilevata questa condizione, l'output del controllo preliminare include i comandi di pulizia specifici necessari.
+
+
