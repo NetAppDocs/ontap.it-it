@@ -2,7 +2,7 @@
 permalink: snaplock/snapshot-lock-concept.html 
 sidebar: sidebar 
 keywords: snaplock, snapshot, lock, tamperproof 
-summary: A partire da ONTAP 9.12.1, puoi bloccare uno snapshot su un volume non SnapLock per fornire protezione contro gli attacchi ransomware. Il blocco delle istantanee garantisce che non possano essere eliminate accidentalmente o in modo pericoloso. 
+summary: Puoi bloccare uno snapshot su un volume non-SnapLock per proteggerlo dagli attacchi ransomware. Il blocco degli snapshot garantisce che non possano essere eliminati accidentalmente o in modo malevolo. 
 ---
 = Blocca uno snapshot ONTAP per proteggerti dagli attacchi ransomware
 :allow-uri-read: 
@@ -15,14 +15,14 @@ A partire da ONTAP 9.12.1, puoi bloccare uno snapshot su un volume non SnapLock 
 
 La funzione orologio SnapLock Compliance consente di bloccare le istantanee per un periodo specificato, in modo che non possano essere eliminate fino al raggiungimento dell'ora di scadenza. Il blocco degli snapshot li rende a prova di manomissione, proteggendoli dalle minacce ransomware. Puoi utilizzare snapshot bloccate per ripristinare i dati se un volume viene compromesso da un attacco ransomware.
 
-A partire da ONTAP 9.14.1, il blocco degli snapshot supporta la conservazione degli snapshot a lungo termine nelle destinazioni del vault SnapLock e nei volumi di destinazione non SnapLock SnapMirror. Il blocco degli snapshot viene attivato impostando il periodo di conservazione utilizzando le regole dei criteri SnapMirror associate a un xref:Modify an existing policy to apply long-term retention[etichetta criterio esistente]. La regola ha la priorità sul periodo di conservazione predefinito impostato sul volume. Se non esiste un periodo di conservazione associato all'etichetta SnapMirror, viene utilizzato il periodo di conservazione predefinito del volume.
+A partire da ONTAP 9.14.1, il blocco degli snapshot supporta gli snapshot di conservazione a lungo termine su volumi di destinazione SnapMirror vault e mirror-vault non SnapLock. Puoi abilitare il blocco degli snapshot impostando il periodo di conservazione con le regole del criterio SnapMirror associate a un xref:Modify an existing policy to apply long-term retention[etichetta criterio esistente]. La regola sovrascrive il periodo di conservazione predefinito impostato sul volume. Se non c'è alcun periodo di conservazione associato all'etichetta SnapMirror, viene utilizzato il periodo di conservazione predefinito del volume.
 
 .Requisiti e considerazioni di snapshot a prova di manomissione
 * Se si utilizza l'interfaccia utente di ONTAP, tutti i nodi del cluster devono eseguire ONTAP 9.12.1 o versione successiva. Se si utilizza Gestore di sistema, tutti i nodi devono eseguire ONTAP 9.13.1 o versione successiva.
 * link:../system-admin/install-license-task.html["La licenza SnapLock deve essere installata sul cluster"]. Questa licenza è inclusa in link:../system-admin/manage-licenses-concept.html#licenses-included-with-ontap-one["ONTAP uno"].
 * link:../snaplock/initialize-complianceclock-task.html["È necessario inizializzare il clock di conformità sul cluster"].
-* Quando su un volume è abilitato il blocco degli snapshot, è possibile aggiornare i cluster a una versione di ONTAP successiva a ONTAP 9.12.1; tuttavia, non è possibile ripristinare una versione precedente di ONTAP finché tutti gli snapshot bloccati non hanno raggiunto la data di scadenza e non vengono eliminati e il blocco degli snapshot non è disattivato.
-* Quando uno snapshot è bloccato, il tempo di scadenza del volume è impostato sul tempo di scadenza dello snapshot. Se sono bloccati più snapshot, il tempo di scadenza del volume riflette il tempo di scadenza più grande tra tutti gli snapshot.
+* Quando il blocco degli snapshot è abilitato su un volume, puoi aggiornare i cluster a una versione di ONTAP successiva a ONTAP 9.12.1. Tuttavia, non puoi tornare a una versione precedente di ONTAP finché tutti gli snapshot bloccati non hanno raggiunto la data di scadenza, non sono stati eliminati e il blocco degli snapshot non è stato disabilitato.
+* Quando uno snapshot è bloccato, il tempo di scadenza del volume è impostato sul tempo di scadenza dello snapshot stesso. Se sono bloccati più snapshot, il tempo di scadenza del volume corrisponde al tempo di scadenza più lungo tra tutti gli snapshot.
 * Il periodo di conservazione per gli snapshot bloccati ha la precedenza sul conteggio di conservazione degli snapshot, il che significa che il limite di mantenimento degli snapshot non viene rispettato se il periodo di conservazione degli snapshot per gli snapshot bloccati non è scaduto.
 * In una relazione SnapMirror, è possibile impostare un periodo di conservazione su una regola dei criteri del vault dei mirror e il periodo di conservazione viene applicato per gli snapshot replicati nella destinazione se il volume di destinazione ha attivato il blocco degli snapshot. Il periodo di conservazione ha la precedenza sul conteggio dei valori di mantenimento; ad esempio, gli snapshot che non hanno superato la scadenza verranno conservati anche se viene superato il conteggio dei valori di mantenimento.
 * È possibile rinominare uno snapshot su un volume non SnapLock. Le operazioni di ridenominazione di Snapshot sul volume primario di una relazione SnapMirror si riflettono sul volume secondario solo se il criterio è MirrorAllSnapshots. Per gli altri tipi di criteri, l'istantanea rinominata non viene propagata durante gli aggiornamenti.
@@ -71,7 +71,7 @@ L'orologio di conformità deve essere inizializzato sia sull'origine che sulla d
 
 
 .Funzionalità non supportate
-Le seguenti funzioni attualmente non sono supportate con gli snapshot antimanomissione:
+Le istantanee a prova di manomissione non supportano queste funzionalità:
 
 * Gruppi di coerenza
 * link:../fabricpool/index.html["FabricPool"]
@@ -181,7 +181,7 @@ A partire da ONTAP 9.12.1, è possibile creare policy di snapshot per applicare 
 . Nella finestra *Add Snapshot Policy*, inserire il nome del criterio.
 . Selezionare image:icon_add.gif["Icona Add (Aggiungi)"].
 . Fornire i dettagli della pianificazione delle snapshot, inclusi il nome della pianificazione, il numero massimo di snapshot da conservare e il periodo di conservazione SnapLock.
-. Nella colonna *periodo di conservazione SnapLock*, immettere il numero di ore, giorni, mesi o anni per conservare le istantanee. Ad esempio, un criterio snapshot con un periodo di conservazione di 5 giorni blocca uno snapshot per 5 giorni a partire dal momento in cui viene creato e non può essere eliminato durante tale periodo. Sono supportati i seguenti intervalli di periodi di conservazione:
+. Nella colonna *SnapLock Periodo di conservazione*, immetti il numero di ore, giorni, mesi o anni per cui conservare gli snapshot. Ad esempio, una policy di snapshot con un periodo di conservazione di cinque giorni blocca uno snapshot per cinque giorni dal momento della sua creazione e non può essere eliminato durante tale periodo. Sono supportati i seguenti intervalli per il periodo di conservazione:
 +
 ** Anni: 0 - 100
 ** Mesi: 0 - 1200
@@ -322,19 +322,19 @@ cluster1> volume snapshot modify-snaplock-expiry-time -volume vol1 -snapshot sna
 
 In una relazione SnapMirror, è possibile impostare un periodo di conservazione su una regola dei criteri del vault dei mirror e il periodo di conservazione viene applicato per gli snapshot replicati nella destinazione se il volume di destinazione ha attivato il blocco degli snapshot. Il periodo di conservazione ha la precedenza sul conteggio dei valori di mantenimento; ad esempio, gli snapshot che non hanno superato la scadenza verranno conservati anche se viene superato il conteggio dei valori di mantenimento.
 
-A partire da ONTAP 9.14.1, è possibile modificare un criterio SnapMirror esistente aggiungendo una regola per impostare la conservazione a lungo termine degli snapshot. La regola viene utilizzata per ignorare il periodo di conservazione dei volumi predefinito sulle destinazioni del vault SnapLock e sui volumi di destinazione non SnapLock SnapMirror.
+A partire da ONTAP 9.14.1, puoi modificare una policy SnapMirror esistente aggiungendo una regola per impostare la conservazione a lungo termine degli snapshot. La regola sovrascrive il periodo di conservazione predefinito del volume nei volumi di destinazione di SnapMirror vault e mirror-vault non SnapLock.
 
 . Aggiunta di una regola a una policy SnapMirror esistente:
 +
 `snapmirror policy add-rule -vserver <SVM name> -policy <policy name> -snapmirror-label <label name> -keep <number of snapshots> -retention-period [<integer> days|months|years]`
 
 +
-Nell'esempio seguente viene creata una regola che applica un periodo di conservazione di 6 mesi al criterio esistente denominato "lockvault":
+L'esempio seguente crea una regola che applica un periodo di conservazione di 6 mesi alla policy esistente denominata "snapvault":
 
 +
 [listing]
 ----
-snapmirror policy add-rule -vserver vs1 -policy lockvault -snapmirror-label test1 -keep 10 -retention-period "6 months"
+snapmirror policy add-rule -vserver vs1 -policy snapvault -snapmirror-label test1 -keep 10 -retention-period "6 months"
 ----
 +
 Ulteriori informazioni su `snapmirror policy add-rule` nella link:https://docs.netapp.com/us-en/ontap-cli/snapmirror-policy-add-rule.html["Riferimento al comando ONTAP"^].
