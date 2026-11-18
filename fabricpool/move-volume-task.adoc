@@ -2,7 +2,7 @@
 permalink: fabricpool/move-volume-task.html 
 sidebar: sidebar 
 keywords: aggregate, local tier, moving, volume, fabricpool, fabric pool, tiering, policy, policies, block, capacity, cold data, 
-summary: 'È importante comprendere come funziona lo spostamento dei volumi con FabricPool, perché le modifiche che avvengono sia nel Tier locale, che nel Tier cloud collegato e nel volume (policy di tiering dei volumi) possono avere un notevole impatto sulla funzionalità.' 
+summary: Sposta un volume senza interruzioni in un livello locale abilitato per FabricPool e scopri in che modo i dati del livello cloud, le policy di tiering e gli spostamenti ottimizzati dei volumi influiscono sullo spostamento. 
 ---
 = Sposta un volume in un Tier locale ONTAP abilitato per FabricPool
 :allow-uri-read: 
@@ -11,9 +11,9 @@ summary: 'È importante comprendere come funziona lo spostamento dei volumi con 
 
 
 [role="lead"]
-A link:../volumes/move-volume-task.html["spostamento del volume"] è il modo in cui ONTAP sposta un volume senza interruzioni da un Tier locale (origine) a un altro (destinazione). È possibile eseguire lo spostamento dei volumi per diversi motivi, anche se i motivi più comuni sono la gestione del ciclo di vita dell'hardware, l'espansione dei cluster e il bilanciamento del carico.
+Un link:../volumes/move-volume-task.html["spostamento del volume"] sposta senza interruzioni un volume da un livello locale ONTAP (origine) a un altro (destinazione), in genere per la gestione del ciclo di vita dell'hardware, l'espansione del cluster o il bilanciamento del carico. Quando sposti un volume in un livello locale abilitato per FabricPool, capire come lo spostamento influisce sui dati sottoposti a tiering e sui criteri di tiering ti aiuta a evitare traffico di rete e costi inutili dell'archivio di oggetti.
 
-È importante comprendere come funziona lo spostamento dei volumi con FabricPool, perché le modifiche che avvengono sia nel Tier locale, che nel Tier cloud collegato e nel volume (policy di tiering dei volumi) possono avere un notevole impatto sulla funzionalità.
+Le modifiche apportate da uno spostamento di volume al livello locale, al livello cloud collegato e alle policy di tiering dei volumi possono avere un impatto significativo sulla funzionalità di FabricPool.
 
 
 NOTE: Prima di ONTAP 9,7, System Manager utilizza il termine _aggregate_ per descrivere un _livello locale_. A prescindere dalla versione di ONTAP, la CLI di ONTAP utilizza il termine _aggregate_. Per ulteriori informazioni sui livelli locali, vedere link:../disks-aggregates/index.html["Dischi e Tier locali"].
@@ -23,20 +23,20 @@ NOTE: Prima di ONTAP 9,7, System Manager utilizza il termine _aggregate_ per des
 [[destination-local-tier]]
 == Tier locale di destinazione
 
-Se il Tier locale di destinazione di uno spostamento del volume non ha un Tier cloud collegato, i dati del volume di origine archiviati nel Tier cloud vengono scritti nel Tier locale nel Tier locale di destinazione.
+Se il livello locale di destinazione di uno spostamento di volume non ha un livello cloud collegato, i dati sul volume di origine archiviati nel livello cloud vengono scritti nel livello locale di destinazione.
 
-A partire da ONTAP 9,8, quando un volume è link:determine-data-inactive-reporting-task.html["report dei dati inattivi"] abilitato, FabricPool utilizzerà la mappa termica del volume per mettere immediatamente in coda i dati cold e iniziare il tiering non appena vengono scritti nel Tier locale di destinazione.
+A partire da ONTAP 9.8, quando un volume ha link:determine-data-inactive-reporting-task.html["report dei dati inattivi"] abilitato, FabricPool utilizza la mappa termica del volume per mettere in coda i dati inattivi per il tiering non appena i dati vengono scritti nel livello locale di destinazione.
 
-Prima di ONTAP 9,8, lo spostamento di un volume in un altro livello locale ripristina il periodo di inattività dei blocchi nel livello locale. Ad esempio, un volume che utilizza la policy di tiering automatico dei volumi con dati nel Tier locale che non è stato attivo da 20 giorni, ma non è ancora stato sottoposto a tiering, ripristinerà la temperatura dei dati a 0 giorni dopo lo spostamento di un volume.
+In ONTAP 9.7 e versioni precedenti, lo spostamento di un volume in un altro livello locale reimposta il periodo di inattività dei blocchi sul livello locale. Ad esempio, se un volume utilizza la policy di tiering del volume Auto e contiene dati sul livello locale rimasti inattivi per 20 giorni ma non ancora sottoposti a tiering, lo spostamento del volume reimposta la temperatura di tali dati a 0 giorni.
 
 
 
 [[optimized-volume-moves]]
 == Spostamenti dei volumi ottimizzati
 
-A partire da ONTAP 9,6, se il Tier locale di destinazione di uno spostamento del volume utilizza lo stesso bucket del Tier locale di origine, i dati sul volume di origine memorizzato nel bucket non si spostano di nuovo nel Tier locale. I dati in tiering rimangono a riposo e solo i dati più utilizzati devono essere spostati da un Tier locale a un altro. Questo spostamento ottimizzato dei volumi produce una notevole efficienza della rete.
+A partire da ONTAP 9.6, se il livello locale di destinazione di uno spostamento di volume utilizza lo stesso bucket del livello locale di origine, i dati sul volume di origine archiviati nel bucket non vengono spostati di nuovo nel livello locale. I dati sottoposti a tiering rimangono inattivi e solo i dati attivi devono essere spostati da un livello locale a un altro. Questo spostamento di volume ottimizzato garantisce notevoli efficienze di rete.
 
-Ad esempio, uno spostamento di volume ottimizzato da 300 TB significa che, anche se 300 TB di dati inattivi vengono spostati da un livello locale a un altro, non verranno attivati 300 TB di letture e 300 TB di scritture nell'archivio oggetti.
+Ad esempio, in uno spostamento ottimizzato del volume da 300 TB, anche se 300 TB di dati freddi vengono spostati da un livello locale a un altro, lo spostamento non attiva 300 TB di letture e 300 TB di scritture nell'archivio di oggetti.
 
 Gli spostamenti di volumi non ottimizzati generano traffico aggiuntivo di rete e calcolo (letture/GET e scritture/put), un aumento delle richieste sul cluster ONTAP e sull'archivio di oggetti, aumentando potenzialmente i costi durante il tiering negli archivi di oggetti pubblici.
 
@@ -44,46 +44,49 @@ Gli spostamenti di volumi non ottimizzati generano traffico aggiuntivo di rete e
 ====
 Alcune configurazioni sono incompatibili con spostamenti ottimizzati dei volumi:
 
-* Modifica della policy di tiering durante lo spostamento dei volumi
+* Modifica della politica di tiering durante uno spostamento di volume
 * Tier locali di origine e destinazione utilizzando chiavi di crittografia diverse
 * Volumi FlexClone
 * Volumi padre FlexClone
 * MetroCluster (supporta spostamenti di volumi ottimizzati in ONTAP 9,8 e versioni successive)
 * Bucket mirror FabricPool non sincronizzati
+* Il volume si sposta da una piattaforma che supporta la tecnologia QuickAssist (QAT) a una piattaforma che non la supporta
 
+
+Scopri di più su link:https://kb.netapp.com/on-prem/ontap/DP/SnapMirror/SnapMirror-KBs/How_do_platforms_supporting_QAT_or_zlib_compression_impact_SnapMirror_and_volume_move["come QAT influisce sugli spostamenti di volume"^].
 
 ====
-Se il Tier locale di destinazione di uno spostamento del volume ha un Tier cloud collegato, i dati del volume di origine archiviati nel Tier cloud vengono dapprima scritti nel Tier locale nel Tier locale di destinazione. Viene quindi scritto nel Tier cloud sul Tier locale di destinazione se questo approccio è appropriato per la policy di tiering del volume.
+Se il tier locale di destinazione di uno spostamento di volume ha un tier cloud collegato, i dati sul volume di origine archiviati nel tier cloud vengono prima scritti nel tier locale di destinazione. Successivamente, se la policy di tiering del volume lo consente, i dati vengono scritti nel tier cloud collegato al tier locale di destinazione.
 
-La scrittura dei dati nel Tier locale migliora per prima cosa le performance dello spostamento del volume e riduce il tempo di cutover. Se non viene specificata una policy di tiering dei volumi durante lo spostamento di un volume, il volume di destinazione utilizza la policy di tiering del volume di origine.
+Scrivere prima i dati nel livello locale migliora le prestazioni dello spostamento del volume e riduce il tempo di cutover. Se non specifichi una policy di tiering del volume durante lo spostamento, il volume di destinazione utilizza la policy di tiering del volume di origine.
 
-Se durante lo spostamento del volume viene specificata un'altra policy di tiering, il volume di destinazione viene creato con la policy di tiering specificata e lo spostamento del volume non è ottimizzato.
+Se specifichi una policy di tiering diversa quando sposti il volume, il volume di destinazione viene creato con la policy di tiering specificata e lo spostamento del volume non è ottimizzato.
 
 
 
 [[volume-metadata]]
 === Metadati per volumi
 
-Indipendentemente dall'ottimizzazione dello spostamento di un volume, ONTAP memorizza una quantità significativa di metadati relativi a posizione, efficienza di archiviazione, autorizzazioni, modelli di utilizzo, ecc. di tutti i dati, sia locali che a livelli. I metadati rimangono sempre sul livello locale e non sono a livelli. Quando un volume viene spostato da un Tier locale a un altro, queste informazioni devono essere spostate anche nel Tier locale di destinazione.
+Indipendentemente dal fatto che uno spostamento del volume sia ottimizzato, ONTAP memorizza una quantità significativa di metadati su tutti i dati, sia locali sia sottoposti a tiering, inclusi posizione, efficienza dello storage, autorizzazioni e modelli di utilizzo. I metadati rimangono sempre nel tier locale e non sono soggetti a tiering. Quando un volume viene spostato da un tier locale a un altro, anche queste informazioni devono essere spostate nel tier locale di destinazione.
 
 
 
 [[duration]]
 === Durata
 
-Gli spostamenti di volume richiedono ancora tempo per essere completati e ci si dovrebbe aspettare che uno spostamento di volume ottimizzato richieda all'incirca lo stesso tempo dello spostamento di una stessa quantità di dati non suddivisi in livelli.
+Lo spostamento dei volumi richiede comunque tempo per essere completato. Aspettati che uno spostamento di volumi ottimizzato richieda all'incirca lo stesso tempo necessario per spostare una quantità equivalente di dati senza tiering.
 
-È importante capire che la "capacità di elaborazione" riportata dal  `volume move show` il comando non rappresenta la produttività in termini di dati spostati dal livello cloud, ma dati di volume aggiornati localmente.
+Il throughput che il `volume move show` comando riporta rappresenta i dati del volume aggiornati localmente, non i dati spostati dal livello cloud.
 
 
-NOTE: Quando si utilizza una relazione di disaster recovery di SVM, i volumi di origine e destinazione devono utilizzare la stessa policy di tiering.
+NOTE: Quando i volumi sono in una relazione di disaster recovery SVM, i volumi di origine e di destinazione devono utilizzare la stessa policy di tiering.
 
 .Fasi
 . Utilizzare il `volume move start` comando per spostare un volume da un Tier locale di origine a un Tier locale di destinazione.
 
 
 .Esempio di spostamento di un volume
-Nell'esempio seguente viene spostato un volume denominato `myvol2` `vs1` SVM in `dest_FabricPool` un Tier locale abilitato per FabricPool.
+L'esempio seguente sposta un volume denominato  `myvol2` dell'SVM  `vs1` in  `dest_FabricPool`, un livello locale abilitato per FabricPool.
 
 [listing]
 ----
