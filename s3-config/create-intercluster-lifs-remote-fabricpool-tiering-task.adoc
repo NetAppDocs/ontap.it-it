@@ -2,7 +2,7 @@
 permalink: s3-config/create-intercluster-lifs-remote-fabricpool-tiering-task.html 
 sidebar: sidebar 
 keywords: create, intercluster, lifs, remote fabricpool, tiering 
-summary: 'Se si abilita il tiering della capacità FabricPool remota (cloud) utilizzando ONTAP S3, è necessario configurare le LIF tra cluster. È possibile configurare le LIF di intercluster sulle porte condivise con la rete dati. In questo modo si riduce il numero di porte necessarie per la rete tra cluster.' 
+summary: Crea LIF intercluster su porte condivise con la rete dati per abilitare il tiering remoto di FabricPool con ONTAP S3 e ridurre il numero di porte intercluster. 
 ---
 = Creazione di LIF intercluster LIF per tiering remoto di FabricPool con ONTAP S3
 :allow-uri-read: 
@@ -14,12 +14,12 @@ summary: 'Se si abilita il tiering della capacità FabricPool remota (cloud) uti
 Se si abilita il tiering della capacità FabricPool remota (cloud) utilizzando ONTAP S3, è necessario configurare le LIF tra cluster. È possibile configurare le LIF di intercluster sulle porte condivise con la rete dati. In questo modo si riduce il numero di porte necessarie per la rete tra cluster.
 
 .Prima di iniziare
-* La porta di rete fisica o logica sottostante deve essere configurata con stato amministrativo  `up`.
+* La porta di rete fisica o logica sottostante deve essere configurata con stato amministrativo `up`.
 * La politica di servizio LIF deve già esistere.
 
 
 .A proposito di questa attività
-Le LIF intercluster non sono richieste per il tiering del pool di fabric locale o per la fornitura di applicazioni S3 esterne.
+Le LIF intercluster non sono necessarie per il tiering locale di FabricPool o per servire applicazioni S3 esterne.
 
 .Fasi
 . Elencare le porte nel cluster:
@@ -53,7 +53,7 @@ Ulteriori informazioni su `network port show` nella link:https://docs.netapp.com
 
 . Creazione di LIF intercluster sulla SVM di sistema:
 +
-`network interface create -vserver Cluster -lif _LIF_name_ -service-policy default-intercluster -home-node _node_ -home-port _port_ -address _port_IP_ -netmask _netmask_`
+`network interface create -vserver _system_SVM_ -lif _LIF_name_ -service-policy default-intercluster -home-node _node_ -home-port _port_ -address _port_IP_ -netmask _netmask_`
 
 +
 Nell'esempio seguente vengono create le LIF tra cluster `cluster01_icl01` e. `cluster01_icl02`:
@@ -62,11 +62,11 @@ Nell'esempio seguente vengono create le LIF tra cluster `cluster01_icl01` e. `cl
 [listing]
 ----
 
-cluster01::> network interface create -vserver Cluster -lif cluster01_icl01 -service-
+cluster01::> network interface create -vserver cluster01 -lif cluster01_icl01 -service-
 policy default-intercluster -home-node cluster01-01 -home-port e0c -address 192.168.1.201
 -netmask 255.255.255.0
 
-cluster01::> network interface create -vserver Cluster -lif cluster01_icl02 -service-
+cluster01::> network interface create -vserver cluster01 -lif cluster01_icl02 -service-
 policy default-intercluster -home-node cluster01-02 -home-port e0c -address 192.168.1.202
 -netmask 255.255.255.0
 ----
